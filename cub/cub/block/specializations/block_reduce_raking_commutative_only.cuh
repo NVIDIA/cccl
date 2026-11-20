@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -72,7 +72,7 @@ struct BlockReduceRakingCommutativeOnly
   static constexpr int RAKING_THREADS = WARP_THREADS;
 
   /// Number of threads actually sharing items with the raking threads
-  static constexpr int SHARING_THREADS = ::cuda::std::max(1, BLOCK_THREADS - RAKING_THREADS);
+  static constexpr int SHARING_THREADS = (::cuda::std::max) (1, BLOCK_THREADS - RAKING_THREADS);
 
   /// Number of raking elements per warp synchronous raking thread
   static constexpr int SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS;
@@ -107,7 +107,7 @@ struct BlockReduceRakingCommutativeOnly
   unsigned int linear_tid;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -124,7 +124,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
     if (USE_FALLBACK || !FullTile)
     {
@@ -168,7 +168,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Binary reduction operator
    */
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
     if (USE_FALLBACK || !FullTile)
     {

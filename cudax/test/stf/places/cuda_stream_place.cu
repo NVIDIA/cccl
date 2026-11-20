@@ -68,7 +68,7 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    assert(fabs(Y[i] - (Y0(i) + 2 * 10.0 * alpha * X0(i))) < 0.0001);
+    assert(fabs(Y[i] - (Y0(i) + (2 * 10.0 * alpha * X0(i)))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
 

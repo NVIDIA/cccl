@@ -358,7 +358,7 @@ struct bit_values
 
 // Each vec test file must define test_type<T, N>() and then define test() using this macro.
 // clang-format off
-#if defined(__cccl_lib_char8_t)
+#ifdef __cccl_lib_char8_t
 #  define _SIMD_TEST_CHAR8_T()                                    \
     test_type<char8_t, 1>();                                      \
     test_type<char8_t, 4>();

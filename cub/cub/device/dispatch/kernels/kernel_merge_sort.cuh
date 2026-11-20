@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -210,7 +210,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   const int items_per_tile)
 {
   const OffsetT partition_idx =
-    static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+    static_cast<OffsetT>((blockDim.x * blockIdx.x) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (partition_idx < num_partitions)
   {
     AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{

@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
+_CCCL_HOST_DEVICE_API OutputType reduce(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator begin,
   InputIterator end,

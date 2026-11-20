@@ -15,7 +15,7 @@
 
 #include <cub/util_namespace.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -463,7 +463,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Run grids in epochs (in case number of tiles exceeds max x-dimension
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
@@ -578,7 +578,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       static_cast<int>(kernel_src.OutputAlign()),
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  ifdef CUB_DEFINE_RUNTIME_POLICIES
     _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                  "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
@@ -793,7 +793,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Run grids in epochs (in case number of tiles exceeds max x-dimension
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
@@ -848,7 +848,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     struct policy_getter
     {
       // host-device not api, because clang warns about exclude_from_explicit_instantiation in local types
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return _CUB::detail::scan::convert_policy<ActivePolicyT>();
       }
@@ -1086,7 +1086,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                                "The memory consistency model does not apply to texture accesses");
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.tiles_per_batch > 0, "Lookback scan batch size must be positive");
   CUB_DETAIL_STATIC_ISH_ASSERT(
-    active_policy.tiles_per_batch <= ::cuda::std::numeric_limits<int>::max() - detail::warp_threads,
+    active_policy.tiles_per_batch <= (::cuda::std::numeric_limits<int>::max)() - detail::warp_threads,
     "Lookback scan batch size must leave room for tile-state padding");
 
   // Number of input tiles
@@ -1192,7 +1192,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   }
 
   // Run grids in epochs (in case number of tiles exceeds max x-dimension
-  const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+  const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration
@@ -1323,7 +1323,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     static_cast<int>(kernel_src.OutputAlign()),
     static_cast<int>(kernel_src.AccumSize()),
     static_cast<int>(kernel_src.AccumAlign()));
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  ifdef CUB_DEFINE_RUNTIME_POLICIES
   _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)

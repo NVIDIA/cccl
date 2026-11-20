@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -42,7 +42,7 @@ struct empty_problem_init_t
 {
   T init;
 
-  _CCCL_HOST_DEVICE operator T() const
+  _CCCL_HOST_DEVICE_API operator T() const
   {
     return init;
   }
@@ -56,20 +56,20 @@ struct no_init_t
 inline constexpr auto no_init = no_init_t{};
 
 template <class OutputIteratorT, class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&& d_out, InitValueT init)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&& d_out, InitValueT init)
 {
   *d_out = init;
 }
 
 template <class OutputIteratorT, class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 handle_empty_problem(OutputIteratorT&& d_out, empty_problem_init_t<InitValueT> empty_problem_init)
 {
   *d_out = empty_problem_init.init;
 }
 
 template <class OutputIteratorT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&, no_init_t)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&, no_init_t)
 {}
 
 /**
@@ -81,7 +81,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&,
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitValueT init, AccumT block_aggregate)
 {
   *d_out = reduction_op(init, block_aggregate);
@@ -94,14 +94,14 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, I
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
-_CCCL_HOST_DEVICE void finalize_and_store_aggregate(
+_CCCL_HOST_DEVICE_API void finalize_and_store_aggregate(
   OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }
 
 template <class OutputIteratorT, class ReductionOpT, class AccumT>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
@@ -437,7 +437,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 
   // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(int(0), num_items);
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(0, num_items);
 
   // Output result
   if (threadIdx.x == 0)

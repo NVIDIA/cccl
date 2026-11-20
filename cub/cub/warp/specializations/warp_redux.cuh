@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,6 @@
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional.h>
@@ -244,7 +243,7 @@ warp_redux_min_max_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   using generalized_op_t        = generalize_operator_t<ReductionOp>; // map minimum<int64_t> to minimum<>
   constexpr auto generalized_op = generalized_op_t{};
   constexpr auto identity       = ::cuda::identity_element<generalized_op_t, unsigned>();
-  constexpr auto last           = sizeof(T) / sizeof(unsigned) - 1;
+  constexpr auto last           = (sizeof(T) / sizeof(unsigned)) - 1;
 
   auto words = cub::detail::to_words(input);
   // Perform the reduction from the most significant word. Only the top word is affected by the sign, lower words are
@@ -357,13 +356,9 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
     }
 #endif // __cccl_ptx_isa >= 860
 
-    // maps floating-point values to signed integers that preserve their ordering
-    using generalized_op_t = generalize_operator_t<ReductionOp>; // map minimum<float> to minimum<>
-    const auto input_int   = cub::detail::floating_point_to_comparable_int(input);
-    // the NaN mapping is derived from the identity element of the reduction operator
-    constexpr auto nan_int = ::cuda::identity_element<generalized_op_t, decltype(input_int)>();
-    const auto input_int1  = ::cuda::std::isnan(input) ? nan_int : input_int;
-    if (const auto output = cub::detail::warp_redux(input_int1, mask, generalized_op_t{}))
+    using op_t _CCCL_NODEBUG = _CUB::detail::generalize_operator_t<ReductionOp>;
+    const auto value         = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
+    if (const auto output = cub::detail::warp_redux(value, mask, op_t{}))
     {
       return cub::detail::comparable_int_to_floating_point<T>(*output);
     }

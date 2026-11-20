@@ -5,15 +5,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <thrust/detail/type_traits.h>
 
 #include <cuda/std/__type_traits/remove_reference.h>
 
@@ -30,17 +28,17 @@ private:
   Allocator alloc;
 
 public:
-  _CCCL_HOST_DEVICE execute_with_allocator(super_t const& super, Allocator alloc_)
+  _CCCL_HOST_DEVICE_API execute_with_allocator(super_t const& super, Allocator alloc_)
       : super_t(super)
       , alloc(alloc_)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE execute_with_allocator(Allocator alloc_)
+  _CCCL_HOST_DEVICE_API execute_with_allocator(Allocator alloc_)
       : alloc(alloc_)
   {}
 
-  _CCCL_HOST_DEVICE ::cuda::std::remove_reference_t<Allocator>& get_allocator()
+  _CCCL_HOST_DEVICE_API ::cuda::std::remove_reference_t<Allocator>& get_allocator()
   {
     return alloc;
   }

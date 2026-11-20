@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -52,9 +52,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ForPolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceFor can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>` that
+//! returns a :cpp:struct:`cub::ForPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
 //!      :language: c++
@@ -80,7 +79,7 @@ struct DeviceFor
     RandomAccessIteratorT input;
     OpT op;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(OffsetT i)
     {
       // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
       // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
@@ -108,7 +107,7 @@ struct DeviceFor
     // Type of the vector that is used to load the input data
     using vector_t = typename CubVector<T, vec_size>::Type;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(OffsetT i)
     {
       // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
       // check for out-of-bounds access here.
@@ -121,7 +120,7 @@ struct DeviceFor
       }
       else
       { // Case of fully filled vector
-        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + (vec_size * i));
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)

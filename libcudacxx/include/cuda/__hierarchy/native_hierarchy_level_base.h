@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -63,7 +63,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::rank;
   using __base_type::rank_as;
 
-#    if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#    ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
   using __base_type::is_root_rank;
 #    endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 

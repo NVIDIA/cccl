@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
@@ -123,7 +123,7 @@ __global__ void
 for_each_ref_kernel(Ref ref, KeyIt keys, int num_keys, int* visits) // NOLINT(readability-non-const-parameter)
 {
   const auto block     = ::cooperative_groups::this_thread_block();
-  const auto thread_id = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const auto thread_id = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if constexpr (Ref::cg_size == 1)
   {

@@ -1775,7 +1775,7 @@ stf_error_t stf_cuda_kernel_add_desc_cufunc(
 //!
 //! \see stf_cuda_kernel_add_desc_cufunc(), stf_cuda_kernel_get_arg()
 
-inline cudaError_t stf_cuda_kernel_add_desc(
+inline cudaError_t stf_cuda_kernel_add_desc( // NOLINT(cccl-hide-from-abi)
   stf_cuda_kernel_handle k,
   const void* func,
   dim3 grid_dim_,
@@ -2473,6 +2473,11 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
 
 //! \brief Create a stackable synchronization token (no payload).
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
+
+//! \brief Name the current (innermost) scope of a stackable context, for DOT
+//! output and diagnostics (the default is the source location of the push).
+//! Call it right after pushing the scope.
+stf_error_t stf_stackable_set_scope_symbol(stf_ctx_handle ctx, const char* symbol);
 
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
 stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);

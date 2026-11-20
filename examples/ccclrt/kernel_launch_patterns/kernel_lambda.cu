@@ -11,7 +11,7 @@
 // This example demonstrates how kernel lambdas can be launched using cuda::launch. Kernel lambdas behave mostly the
 // same way as other kernel functors, but there are some differences.
 
-#if !defined(__CUDACC_EXTENDED_LAMBDA__)
+#ifndef __CUDACC_EXTENDED_LAMBDA__
 #  error "This example requires extended lambda support."
 #endif // !__CUDACC_EXTENDED_LAMBDA__
 

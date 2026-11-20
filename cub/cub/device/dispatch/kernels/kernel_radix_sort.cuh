@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -111,8 +111,8 @@ __launch_bounds__(int(AltDigitBits ? _CUB::detail::current_policy<PolicySelector
                 "equal alt_downsweep.radix_bits");
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+    (::cuda::std::max) (active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                        active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
   using ActiveUpsweepPolicyT = detail::agent_radix_sort_upsweep_policy<
     active_upsweep_policy.threads_per_block,
@@ -280,8 +280,8 @@ __launch_bounds__(int(AltDigitBits ? _CUB::detail::current_policy<PolicySelector
                 "RadixSortPolicy: alt_downsweep.radix_bits must equal downsweep.radix_bits or be one less");
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+    (::cuda::std::max) (active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                        active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
   using ActiveDownsweepPolicyT = detail::agent_radix_sort_downsweep_policy<
     active_downsweep_policy.threads_per_block,
@@ -446,7 +446,7 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().single_tile.thr
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
   {
-    const int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
+    const int item_offset = (ITEM * BLOCK_THREADS) + threadIdx.x;
     if (item_offset < num_items)
     {
       d_keys_out[item_offset] = keys[ITEM];
@@ -505,8 +505,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
-  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-       idx < ::cuda::std::max(num_items0, num_items1);
+  for (size_t idx = (static_cast<size_t>(blockIdx.x) * blockDim.x) + threadIdx.x;
+       idx < (::cuda::std::max) (num_items0, num_items1);
        idx += stride)
   {
     if (idx < num_items0)
@@ -612,7 +612,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
-    const int bin = threadIdx.x * BINS_PER_THREAD + u;
+    const int bin = (threadIdx.x * BINS_PER_THREAD) + u;
     if (bin >= RADIX_DIGITS)
     {
       break;
@@ -627,7 +627,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
-    const int bin = threadIdx.x * BINS_PER_THREAD + u;
+    const int bin = (threadIdx.x * BINS_PER_THREAD) + u;
     if (bin >= RADIX_DIGITS)
     {
       break;

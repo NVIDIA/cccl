@@ -102,7 +102,7 @@ TEST_CASE("TestReduceIntoCudaStreamsNoSync", "[reduce_into]")
   test_reduce_into_cuda_streams(thrust::cuda::par_nosync);
 }
 
-#if defined(THRUST_RDC_ENABLED)
+#ifdef THRUST_RDC_ENABLED
 TEST_CASE("TestReduceIntoLargeInput", "[reduce_into]")
 {
   using T                 = unsigned long long;

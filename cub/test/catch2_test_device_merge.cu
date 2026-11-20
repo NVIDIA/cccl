@@ -6,6 +6,7 @@
 #include <cub/device/device_merge.cuh>
 
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/sequence.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
@@ -330,7 +331,7 @@ CUB_TEST("DeviceMerge::MergePairs iterators", "[merge][device]", CUB_SMALL)
       if (i < 2 * smaller_size)
       {
         CHECK(result_keys_h[i + 0] == i / 2);
-        CHECK(result_values_h[i + 0] == values_start + i / 2);
+        CHECK(result_values_h[i + 0] == values_start + (i / 2));
       }
       else
       {

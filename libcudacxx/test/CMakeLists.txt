@@ -102,7 +102,7 @@ set(
   LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   ""
   CACHE STRING
-  "Semicolon-separated libcu++ FileCheck codegen suites to enable (all, atomics-ptx, atomics-sass, random-sass, simd-ptx, simd-sass, warp-sass)."
+  "Semicolon-separated libcu++ FileCheck codegen suites to enable (all, atomics-ptx, atomics-sass, random-sass, cmath-ptx, simd-ptx, simd-sass, warp-sass)."
 )
 set(
   libcudacxx_codegen_filecheck_valid_suites
@@ -110,6 +110,7 @@ set(
   atomics-ptx
   atomics-sass
   random-sass
+  cmath-ptx
   simd-ptx
   simd-sass
   warp-sass
@@ -146,6 +147,12 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
   endif()
   if (
     all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR cmath-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_cmath_ptx ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
     OR simd-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   )
     set(libcudacxx_codegen_filecheck_simd_ptx ON)
@@ -171,6 +178,9 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
   endif()
   if (libcudacxx_codegen_filecheck_random_sass)
     add_subdirectory(random_codegen)
+  endif()
+  if (libcudacxx_codegen_filecheck_cmath_ptx)
+    add_subdirectory(cmath_codegen)
   endif()
   if (
     libcudacxx_codegen_filecheck_simd_ptx

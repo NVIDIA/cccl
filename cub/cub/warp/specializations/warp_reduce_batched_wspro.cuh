@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -150,7 +150,7 @@ struct warp_reduce_batched_wspro
   {
     // "Transpose" index
     constexpr auto base_idx_blocked =
-      BaseIdxStriped / LogicalWarpThreads + (BaseIdxStriped % LogicalWarpThreads) * max_out_per_thread;
+      (BaseIdxStriped / LogicalWarpThreads) + ((BaseIdxStriped % LogicalWarpThreads) * max_out_per_thread);
     constexpr auto base_idx = ToBlocked ? base_idx_blocked : BaseIdxStriped;
     // Important: By catching out-of-range indices at all levels instead of just at the base level we avoid unnecessary
     // shuffles.

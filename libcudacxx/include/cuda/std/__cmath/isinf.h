@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -139,7 +139,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isinf(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISINF)
+#  ifdef _CCCL_BUILTIN_ISINF
   return _CCCL_BUILTIN_ISINF(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISINF ^^^ / vvv !_CCCL_BUILTIN_ISINF vvv
   return ::cuda::std::__isinf_impl(__x);
@@ -197,6 +197,13 @@ template <class _Tp>
   return (__x.__x & __fp_exp_mant_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_ue5m3) noexcept
+{
+  return false;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_e8m0) noexcept

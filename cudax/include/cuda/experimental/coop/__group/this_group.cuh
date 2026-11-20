@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,7 +43,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -58,6 +58,11 @@ struct __this_mapping_result
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const
   {
     return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return 0;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
@@ -253,6 +258,14 @@ public:
     return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
 
+  //! @brief Returns the group rank within the level known at compile time, or @c cuda::std::dynamic_extent.
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _InLevel&)
+  {
+    return static_count(_InLevel{}) == 1 ? 0 : ::cuda::std::dynamic_extent;
+  }
+
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp
   __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
@@ -276,7 +289,7 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const
+  [[nodiscard]] _CCCL_DEVICE_API typename _InLevel::__product_type rank(const _InLevel& __in_level) const
   {
     return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -175,10 +175,10 @@ public:
       : __value_(::cuda::std::move(__value))
   {}
 
-  constexpr counting_iterator(const counting_iterator&)            = default;
-  constexpr counting_iterator(counting_iterator&&)                 = default;
-  constexpr counting_iterator& operator=(const counting_iterator&) = default;
-  constexpr counting_iterator& operator=(counting_iterator&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(const counting_iterator&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(counting_iterator&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(const counting_iterator&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(counting_iterator&&)      = default;
 
   //! @brief Creates a @c counting_iterator from another @c counting_iterator of a different
   //! difference type.
