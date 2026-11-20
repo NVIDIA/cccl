@@ -56,7 +56,11 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::args::__is_deferred_v<decltype(def)>);
     static_assert(cuda::std::is_same_v<decltype(def), cuda::args::deferred<int*, cuda::args::runtime_bounds<int>>>);
     static_assert(!cuda::std::is_constructible_v<decltype(def), int*>);
-    static_assert(cuda::std::is_constructible_v<cuda::args::deferred<int*>, int*, cuda::args::runtime_bounds<int>>);
+    using unbounded_t = cuda::args::deferred<int*>;
+    using bounds_t    = cuda::args::runtime_bounds<int>;
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, cuda::args::no_bounds, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t, cuda::args::no_bounds>);
     assert(cuda::args::__lowest_(def) == 0);
     assert(cuda::args::__highest_(def) == 100);
 
@@ -138,8 +142,11 @@ TEST_FUNC constexpr bool test()
     static_assert(
       cuda::std::is_same_v<decltype(def), cuda::args::deferred_sequence<int*, cuda::args::runtime_bounds<int>>>);
     static_assert(!cuda::std::is_constructible_v<decltype(def), int*>);
-    static_assert(
-      cuda::std::is_constructible_v<cuda::args::deferred_sequence<int*>, int*, cuda::args::runtime_bounds<int>>);
+    using unbounded_t = cuda::args::deferred_sequence<int*>;
+    using bounds_t    = cuda::args::runtime_bounds<int>;
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, cuda::args::no_bounds, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t, cuda::args::no_bounds>);
     assert(cuda::args::__lowest_(def) == 0);
     assert(cuda::args::__highest_(def) == 100);
 

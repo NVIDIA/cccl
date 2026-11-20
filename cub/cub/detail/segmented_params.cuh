@@ -366,18 +366,32 @@ normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __a
 template <class Arg, class Bounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto normalize_param(const ::cuda::args::deferred<Arg, Bounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
-  return ::cuda::args::deferred<Arg, __bounds_t>{
-    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+  if constexpr (::cuda::std::is_same_v<Bounds, ::cuda::args::no_bounds>)
+  {
+    return __arg;
+  }
+  else
+  {
+    using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
+    return ::cuda::args::deferred<Arg, __bounds_t>{
+      ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+  }
 }
 
 template <class Arg, class Bounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 normalize_param(const ::cuda::args::deferred_sequence<Arg, Bounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
-  return ::cuda::args::deferred_sequence<Arg, __bounds_t>{
-    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+  if constexpr (::cuda::std::is_same_v<Bounds, ::cuda::args::no_bounds>)
+  {
+    return __arg;
+  }
+  else
+  {
+    using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
+    return ::cuda::args::deferred_sequence<Arg, __bounds_t>{
+      ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+  }
 }
 
 // =====================================================================
