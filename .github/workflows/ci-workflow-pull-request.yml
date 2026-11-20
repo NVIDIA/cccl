@@ -561,15 +561,27 @@ jobs:
         run: pip install pyyaml
 
       - name: Download the SASS comment artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: sass-*-comment
-          path: sass-comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # actions/download-artifact truncates discovery at 1000 artifacts; gh follows all pages.
+          # gh does not retry failed requests, so make a few attempts.
+          for _ in 1 2 3; do
+            rm -rf sass-comment
+            if gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+                --pattern 'sass-*-comment' --dir sass-comment; then
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::The SASS comment artifacts could not be downloaded."
+          exit 1
 
       - name: Render the comment
         id: compose
         run: |
-          # download-artifact puts the artifact of each matrix job into its own
+          # gh run download puts the artifact of each matrix job into its own
           # directory under sass-comment, named after the artifact:
           #
           # sass-comment/
