@@ -72,14 +72,12 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmax(
     *__res_lo = __x_lo;
     return;
   }
-  // Of two fp32mp2 zeros, +0 is the larger one (IEEE 754-2019 maximumNumber). The low limbs are
-  // compared first: a low-accuracy pair can carry a zero high limb over a nonzero low one.
+  // Of two zeros, +0 is the larger one (IEEE 754-2019 maximumNumber). The low limbs are compared
+  // first: a low-accuracy pair can carry a zero high limb over a nonzero low one.
   const bool __x_greater =
     (__x_hi > __y_hi)
     || (__x_hi == __y_hi
-        && (__x_lo > __y_lo
-            || (__fpmp2_is_fp32_v<_FpType> && __x_lo == __y_lo && __x_hi == _FpType(0)
-                && ::cuda::std::signbit(__y_hi))));
+        && (__x_lo > __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__y_hi))));
   if (__x_greater)
   {
     *__res_hi = __x_hi;
@@ -127,13 +125,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmin(
     *__res_lo = __x_lo;
     return;
   }
-  // Of two fp32mp2 zeros, -0 is the smaller one (IEEE 754-2019 minimumNumber); low limbs first, as in fmax.
+  // Of two zeros, -0 is the smaller one (IEEE 754-2019 minimumNumber); low limbs first, as in fmax.
   const bool __x_less =
     (__x_hi < __y_hi)
     || (__x_hi == __y_hi
-        && (__x_lo < __y_lo
-            || (__fpmp2_is_fp32_v<_FpType> && __x_lo == __y_lo && __x_hi == _FpType(0)
-                && ::cuda::std::signbit(__x_hi))));
+        && (__x_lo < __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__x_hi))));
   if (__x_less)
   {
     *__res_hi = __x_hi;
@@ -226,7 +222,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_min(
 
 /*
  * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp32mp2)
+ * Positive difference fdim(x, y) (fp32mp2 and fp64mp2)
  * --------------------------------------------------------------------
  * x - y where x > y and +0 otherwise, the comparison being the lexicographic one of fmax.
  * The difference is the accurate one (fpmp2_accuracy::high) whatever the accuracy of the
@@ -259,23 +255,6 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
   {
     *__res_hi = *__res_lo = _FpType(0);
   }
-}
-
-/*
- * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
-  const double __x_hi,
-  const double __x_lo,
-  const double __y_hi,
-  const double __y_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  ::cuda::__fpmp2_from_double(
-    ::fdim(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(fdim)

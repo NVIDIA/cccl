@@ -1900,6 +1900,18 @@ __internal_fpmp2_high_atan(const float __x_hi, const float __x_lo, float* __res_
 }
 
 /*
+ * A NaN result of the fp64mp2 inverse trigonometric functions goes into both limbs, as in
+ * their fp32mp2 counterparts.
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_nan_both_limbs(double* __res_hi, double* __res_lo) noexcept
+{
+  if (*__res_hi != *__res_hi)
+  {
+    *__res_lo = *__res_hi;
+  }
+}
+
+/*
  * --------------------------------------------------------------------
  * Arc tangent atan(x) (fp64mp2) - binary128 wrapper
  * --------------------------------------------------------------------
@@ -1907,7 +1919,14 @@ __internal_fpmp2_high_atan(const float __x_hi, const float __x_lo, float* __res_
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_atan(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
+  if (__x_hi == 0.0 && __x_lo == 0.0) // atan(+-0) = +-0: the conversions do not keep the sign of zero
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
   _CCCL_FPMP_CALL_FP64MP2_MATH(atan, _CCCL_FPMP_ATANQ, __x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_nan_both_limbs(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one atan for every level */
@@ -2075,6 +2094,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_high_atan2(
  * --------------------------------------------------------------------
  * Note: On CUDA device, _CCCL_FPMP_ATAN2Q widens through double atan2 (no fp128 intrinsic); _CCCL_FPMP_CBRTQ is
  * reconstructed from __nv_fp128_pow.
+ *
+ * The conversions do not keep the sign of a zero y, so that case is answered here:
+ * atan2(+-0, x) = +-0 for x > 0 or +0, +-pi for x < 0 or -0. The sign of x is that of its high
+ * limb, or of its low limb under a zero high limb (a low-accuracy difference).
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
   const double __y_hi,
@@ -2084,6 +2107,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
   double* __res_hi,
   double* __res_lo) noexcept
 {
+  if (__y_hi == 0.0 && __y_lo == 0.0 && __x_hi == __x_hi)
+  {
+    const bool __x_neg = ::cuda::std::signbit((__x_hi == 0.0 && __x_lo != 0.0) ? __x_lo : __x_hi);
+    const bool __y_neg = ::cuda::std::signbit(__y_hi);
+    const double __hi  = __x_neg ? 0x1.921fb54442d18p+1 : 0.0; // pi = __hi + __lo
+    const double __lo  = __x_neg ? 0x1.1a62633145c07p-53 : 0.0;
+    *__res_hi          = __y_neg ? -__hi : __hi;
+    *__res_lo          = __y_neg ? -__lo : __lo;
+    return;
+  }
 #  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1)
   __fpmp_fp128 __res =
     _CCCL_FPMP_ATAN2Q(::cuda::__fpmp2_to_quad(__y_hi, __y_lo), ::cuda::__fpmp2_to_quad(__x_hi, __x_lo));
@@ -2093,6 +2126,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
     ::cuda::std::atan2(::cuda::__fpmp2_to_double(__y_hi, __y_lo), ::cuda::__fpmp2_to_double(__x_hi, __x_lo));
   ::cuda::__fpmp2_from_double(__res, __res_hi, __res_lo);
 #  endif
+  ::cuda::__internal_fpmp2_nan_both_limbs(__res_hi, __res_lo);
 } // __internal_fpmp2_atan2
 
 /* fp64mp2 has one atan2 for every level */
@@ -2187,13 +2221,66 @@ __internal_fpmp2_high_asin(const float __x_hi, const float __x_lo, float* __res_
 
 /*
  * --------------------------------------------------------------------
+ * asin and acos of an fp64mp2 x with 1/2 <= |x| <= 1
+ * --------------------------------------------------------------------
+ * There the functions depend on 1 - |x|: acos(|x|) = h = 2 asin(sqrt((1 - |x|) / 2)), which is
+ * small near 1, and asin(|x|) = pi/2 - h, acos(-|x|) = pi - h. The sum of the limbs in
+ * binary128 (or binary64) drops a low limb beyond its precision, and with it 1 - |x|, so
+ * 1 - |x| is formed from the limbs instead: the high limbs subtract exactly. `__form` selects
+ * h (0), pi - h (1) or pi/2 - h (2). |x| > 1 gives NaN through the square root.
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_acos_from_one(
+  const double __a_hi, const double __a_lo, const int __form, double* __res_hi, double* __res_lo) noexcept
+{
+#  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1)
+  // pi to 113 bits, as the sum of three doubles
+  const __fpmp_fp128 __pi =
+    static_cast<__fpmp_fp128>(0x1.921fb54442d18p+1) + static_cast<__fpmp_fp128>(0x1.1a62633145c07p-53)
+    + static_cast<__fpmp_fp128>(-0x1.f1976b7ed8fbcp-109);
+  const __fpmp_fp128 __two = static_cast<__fpmp_fp128>(2);
+  const __fpmp_fp128 __d   = static_cast<__fpmp_fp128>(1.0 - __a_hi) - static_cast<__fpmp_fp128>(__a_lo);
+  const __fpmp_fp128 __h   = __two * _CCCL_FPMP_ASINQ(_CCCL_FPMP_SQRTQ(__d / __two));
+  ::cuda::__fpmp2_from_quad((__form == 0) ? __h : ((__form == 1) ? __pi - __h : __pi / __two - __h), __res_hi, __res_lo);
+#  else
+  constexpr double __pi = 0x1.921fb54442d18p+1;
+  const double __d      = (1.0 - __a_hi) - __a_lo;
+  // sqrt(1/2) sqrt(d) rather than sqrt(d / 2), which underflows for the smallest subnormal d
+  const double __h = 2.0 * ::asin(0x1.6a09e667f3bcdp-1 * ::sqrt(__d));
+  ::cuda::__fpmp2_from_double((__form == 0) ? __h : ((__form == 1) ? __pi - __h : 0.5 * __pi - __h), __res_hi, __res_lo);
+#  endif
+  ::cuda::__internal_fpmp2_nan_both_limbs(__res_hi, __res_lo);
+}
+
+/*
+ * --------------------------------------------------------------------
  * Arc sine asin(x) (fp64mp2) - binary128 wrapper
  * --------------------------------------------------------------------
+ * asin(+-0) = +-0 is answered here (the conversions lose the sign of zero), and |x| >= 1/2
+ * goes through 1 - |x|, which also decides the domain on both limbs.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_asin(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
+  if (__x_hi == 0.0 && __x_lo == 0.0)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
+  const bool __neg    = __x_hi < 0.0;
+  const double __a_hi = __neg ? -__x_hi : __x_hi;
+  if (__a_hi >= 0.5)
+  {
+    ::cuda::__internal_fpmp2_acos_from_one(__a_hi, __neg ? -__x_lo : __x_lo, 2, __res_hi, __res_lo);
+    if (__neg)
+    {
+      *__res_hi = -*__res_hi;
+      *__res_lo = -*__res_lo;
+    }
+    return;
+  }
   _CCCL_FPMP_CALL_FP64MP2_MATH(asin, _CCCL_FPMP_ASINQ, __x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_nan_both_limbs(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one asin for every level */
@@ -2281,11 +2368,21 @@ __internal_fpmp2_high_acos(const float __x_hi, const float __x_lo, float* __res_
  * --------------------------------------------------------------------
  * Arc cosine acos(x) (fp64mp2) - binary128 wrapper
  * --------------------------------------------------------------------
+ * |x| >= 1/2 goes through 1 - |x|, which keeps acos accurate where it is small (x near 1) and
+ * decides the domain on both limbs.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_acos(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
+  const bool __neg    = __x_hi < 0.0;
+  const double __a_hi = __neg ? -__x_hi : __x_hi;
+  if (__a_hi >= 0.5)
+  {
+    ::cuda::__internal_fpmp2_acos_from_one(__a_hi, __neg ? -__x_lo : __x_lo, __neg ? 1 : 0, __res_hi, __res_lo);
+    return;
+  }
   _CCCL_FPMP_CALL_FP64MP2_MATH(acos, _CCCL_FPMP_ACOSQ, __x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_nan_both_limbs(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one acos for every level */
