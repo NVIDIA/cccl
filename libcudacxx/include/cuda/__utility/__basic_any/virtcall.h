@@ -111,7 +111,6 @@ _CCCL_HOST_DEVICE_API auto __virtcall(_Self* __self, _Args&&... __args) //
 {
   auto* __vptr = __basic_any_access::__get_vptr(*__self)->__query_interface(_Interface());
   _CCCL_ASSERT(__vptr != nullptr, "__query_interface returned a null pointer");
-  _CCCL_ASSUME(__vptr != nullptr);
   auto* __obj = __basic_any_access::__get_optr(*__self);
   // map the member function pointer to the correct one if necessary
   using __virtual_fn_t = __virtual_fn_for<_Mbr, _Interface, _Super>;

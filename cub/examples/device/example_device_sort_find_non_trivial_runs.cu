@@ -323,8 +323,8 @@ int main(int argc, char** argv)
     printf("%d timing iterations, average time to sort and isolate non-trivial duplicates: %.3f ms (%.3f ms spent in "
            "RLE isolation)\n",
            timing_iterations,
-           elapsed_millis / static_cast<float>(timing_iterations),
-           elapsed_rle_millis / static_cast<float>(timing_iterations));
+           static_cast<double>(elapsed_millis / static_cast<float>(timing_iterations)),
+           static_cast<double>(elapsed_rle_millis / static_cast<float>(timing_iterations)));
   }
 
   return 0;

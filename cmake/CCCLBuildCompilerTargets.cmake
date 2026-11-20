@@ -229,19 +229,16 @@ function(cccl_build_compiler_targets)
       cxx_compile_options
     )
     append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
-    # Disable GNU extensions (flags are clang only — GCC rejects unknown
-    # -Wno-* flags under -Werror)
-    if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-      append_option_if_available("-Wgnu" cxx_compile_options)
-      append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
-      # Calling a variadic macro with zero args is a GNU extension until C++20,
-      # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
-      # is a real problem worth fixing.
-      append_option_if_available(
-        "-Wno-gnu-zero-variadic-macro-arguments"
-        cxx_compile_options
-      )
-    endif()
+    # Disable GNU extensions (flag is clang only)
+    append_option_if_available("-Wgnu" cxx_compile_options)
+    append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
+    # Calling a variadic macro with zero args is a GNU extension until C++20,
+    # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
+    # is a real problem worth fixing.
+    append_option_if_available(
+      "-Wno-gnu-zero-variadic-macro-arguments"
+      cxx_compile_options
+    )
 
     # Strict warnings: catch shadowed variables, missing virtual destructors,
     # implicit float-to-double, and format string issues.
