@@ -875,18 +875,6 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_rsqrt_rn(double __x) noexc
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
 }
-// The double-precision seed of the fpmp2 square root kernel: as above, the device taking its
-// reciprocal square root as it is.
-_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_sqrt_seed(const double __a, double* __h) noexcept
-{
-  double __y;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (const double __r = (__a == 0.0) ? 0.0 : ::cuda::__fpmp_rsqrt_rn(__a); *__h = ::cuda::__fpmp_mul_rn(0.5, __r);
-     __y                                                                        = ::cuda::__fpmp_mul_rn(__a, __r);),
-    (__y = ::cuda::std::sqrt(__a); *__h = (__a == 0.0) ? 0.0 : 0.5 / __y;))
-  return __y;
-}
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int32_t __fpmp_fp2int_rz(double __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2int_rz(__x);), (return static_cast<int32_t>(__x);))
