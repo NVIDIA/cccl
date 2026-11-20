@@ -12,7 +12,7 @@
   {
   public:
     using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
+    using scope_type      = typename ParentGroup::scope_type;
     using hierarchy_type  = typename ParentGroup::hierarchy_type;
 
     template <typename Mapping>

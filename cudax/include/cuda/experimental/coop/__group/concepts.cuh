@@ -41,8 +41,8 @@ _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&&
   // Member types.
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
-  typename(typename _Group::level_type),
-  requires(__is_hierarchy_level_v<typename _Group::level_type>),
+  typename(typename _Group::scope_type),
+  requires(__is_hierarchy_level_v<typename _Group::scope_type>),
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
 

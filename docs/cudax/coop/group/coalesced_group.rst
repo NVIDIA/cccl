@@ -12,7 +12,7 @@
   {
   public:
     using unit_type       = thread_level;
-    using level_type      = warp_level;
+    using scope_type      = warp_level;
     using hierarchy_type  = Hierarchy;
 
     coalesced_group() = delete;

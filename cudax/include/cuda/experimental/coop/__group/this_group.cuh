@@ -139,7 +139,7 @@ class __this_group_base
 
 public:
   using unit_type                    = _Level;
-  using level_type                   = _Level;
+  using scope_type                   = _Level;
   using __mapping_result_type        = _MappingResult;
   using __synchronizer_instance_type = _SynchronizerInstance;
   using hierarchy_type               = _Hierarchy;

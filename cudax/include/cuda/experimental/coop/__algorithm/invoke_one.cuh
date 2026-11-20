@@ -47,7 +47,7 @@ namespace cuda::experimental::coop
 template <class _Group>
 [[nodiscard]] _CCCL_DEVICE_API bool __elect_one(const _Group& __group)
 {
-  if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+  if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::scope_type, warp_level>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({ return ::cuda::ptx::elect_sync(~0u); }))
   }

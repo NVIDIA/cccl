@@ -31,7 +31,7 @@ The original cooperative groups solve this issue by adding an upper boundary wit
 
 Even though this design solves the synchronization efficiency issue, the design could be improved even further. When writing a collective algorithm, often you can do an operation more efficiently when you know how the threads are actually grouped within the upper boundary. For example, when you have a group of threads within a block and you know that the threads always form a full warp, you could use this information to implement the algorithm more efficiently. However, the original cooperative groups don't store this information inside the group.
 
-CCCL Cooperative Groups address this problem by changing the group definition again. In this new design, a group is a collection of units within an upper boundary that can synchronize, where the unit can be any CUDA hierarchy level below or the same as the upper boundary. This means that when writing a cooperative algorithm, you know what the biggest building block of the group is and can optimize the algorithm accordingly.
+CCCL Cooperative Groups address this problem by changing the group definition again. In this new design, a group is a collection of units within an upper boundary that can synchronize, where the unit can be any CUDA hierarchy level below or the same as the upper boundary. This upper boundary is the group's scope. This means that when writing a cooperative algorithm, you know what the biggest building block of the group is and can optimize the algorithm accordingly.
 
 .. figure:: images/group-definitions.svg
    :width: 100%
@@ -92,7 +92,7 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   {
     // Member types.
     requires /*is-hierarchy-level*/<typename T::unit_type>;     // (1)
-    requires /*is-hierarchy-level*/<typename T::level_type>;    // (2)
+    requires /*is-hierarchy-level*/<typename T::scope_type>;    // (2)
     requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
 
     // Getters.
@@ -199,7 +199,7 @@ Example:
 Super-Level Queries
 ^^^^^^^^^^^^^^^^^^^
 
-Super-level queries can be used to query a group's information within the group's parent group or a hierarchy level when the group is one of the special group types. When it's a hierarchy level, it must be the same as or above the group's level type. See the concrete group's documentation for more information.
+Super-level queries can be used to query a group's information within the group's parent group or a hierarchy level when the group is one of the special group types. When it's a hierarchy level, it must be the same as or above the group's scope type. See the concrete group's documentation for more information.
 
 Super-level queries look like:
 

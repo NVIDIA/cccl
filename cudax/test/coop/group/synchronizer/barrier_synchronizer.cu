@@ -130,14 +130,14 @@ test_barrier_range(Range&& barriers, const ParentGroup& parent_group, const Mapp
   }
 }
 
-template <class Level, class Config>
-__device__ void test_barrier_synchronizer(const Level& level, Config config)
+template <class Scope, class Config>
+__device__ void test_barrier_synchronizer(const Scope& scope, Config config)
 {
   constexpr cuda::std::size_t nbarriers = 8;
-  auto& barriers                        = get_barriers<nbarriers>(level);
+  auto& barriers                        = get_barriers<nbarriers>(scope);
   using Barrier = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
-  const auto parent_group = cudax::coop::make_this_group(level, config);
+  const auto parent_group = cudax::coop::make_this_group(scope, config);
   const ThreadsInWarpMappingResult prev_mapping_result;
   const cudax::coop::group_by mapping{4};
   const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);

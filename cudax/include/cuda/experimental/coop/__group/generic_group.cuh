@@ -70,7 +70,7 @@ class generic_group
 
 public:
   using unit_type                    = _Unit;
-  using level_type                   = typename _ParentGroup::level_type;
+  using scope_type                   = typename _ParentGroup::scope_type;
   using hierarchy_type               = _Hierarchy;
   using __mapping_result_type        = _MappingResult;
   using __synchronizer_instance_type = _SynchronizerInstance;
@@ -236,7 +236,7 @@ public:
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
-    return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __count_as_impl<typename scope_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
@@ -264,9 +264,9 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename scope_type::__product_type rank(const _Arg& __parent) const
   {
-    return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __rank_as_impl<typename scope_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 

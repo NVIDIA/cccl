@@ -21,8 +21,8 @@
 
 namespace
 {
-template <class Level, class Config>
-__device__ void test_lane_synchronizer(const Level& level, Config config)
+template <class Scope, class Config>
+__device__ void test_lane_synchronizer(const Scope& scope, Config config)
 {
   const auto& hierarchy = config.hierarchy();
 
@@ -34,7 +34,7 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
 
   // Test make_instance(...).
   {
-    const auto parent_group = cudax::coop::make_this_group(level, config);
+    const auto parent_group = cudax::coop::make_this_group(scope, config);
     const ThreadsInWarpMappingResult prev_mapping_result;
 
     const cudax::coop::group_by mapping{2};

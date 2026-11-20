@@ -22,10 +22,10 @@
 Overview
 --------
 
-``cuda::experimental::coop::level_synchronizer`` is a synchronizer that synchronizes all threads within the group's level. The synchronization behaviour is equivalent to:
+``cuda::experimental::coop::level_synchronizer`` is a synchronizer that synchronizes all threads within the group's scope. The synchronization behaviour is equivalent to:
 
 +--------------+---------------------------------------------------------------------+-----------------------------------------------------------------+
-| Level        | ``.do_sync(...)``                                                   | ``.do_sync_aligned(...)``                                       |
+| Scope        | ``.do_sync(...)``                                                   | ``.do_sync_aligned(...)``                                       |
 +==============+=====================================================================+=================================================================+
 | Thread       | Noop                                                                | Noop                                                            |
 +--------------+---------------------------------------------------------------------+-----------------------------------------------------------------+
