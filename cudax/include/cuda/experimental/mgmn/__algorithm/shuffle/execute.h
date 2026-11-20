@@ -224,8 +224,8 @@ _CCCL_HOST_API void __execute(
   {
     return;
   }
-  const __index __ranks           = ::cuda::std::ranges::begin(__comms)->size();
-  constexpr __index __coarse_bins = 1024;
+  const __index __ranks       = ::cuda::std::ranges::begin(__comms)->size();
+  const __index __coarse_bins = __ranks * 1024;
   ::cuda::__simple_vector<_State> __states{__num_local, ::cuda::no_init};
   for (auto&& [__env, __n] : ::cuda::std::ranges::views::zip(__envs, __sizes))
   {
@@ -308,10 +308,10 @@ _CCCL_HOST_API void __execute(
       __prefix[__i + 1] = __prefix[__i] + __histogram[__i];
     }
     auto& __splits = __state.__host_splits_;
+    __index __bin  = 0;
     for (__index __r = 1; __r < __ranks; ++__r)
     {
       const auto __target = (__total / __ranks) * __r + ::cuda::std::min(__r, __total % __ranks);
-      __index __bin       = 0;
       while (__bin < __coarse_bins && __prefix[__bin] < __target)
       {
         ++__bin;
