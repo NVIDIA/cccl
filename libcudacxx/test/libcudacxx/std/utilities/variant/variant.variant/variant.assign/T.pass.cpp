@@ -17,12 +17,12 @@
 // variant& operator=(T&&) noexcept(see below);
 
 #include <cuda/std/cassert>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
 #  include <cuda/std/memory>
 #endif // _LIBCUDACXX_HAS_MEMORY
 
@@ -148,7 +148,7 @@ TEST_FUNC void test_T_assignment_sfinae()
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<cuda::std::string, cuda::std::string>;
     static_assert(!cuda::std::is_assignable<V, const char*>::value, "ambiguous");
@@ -163,7 +163,7 @@ TEST_FUNC void test_T_assignment_sfinae()
                   "no matching operator=");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
   {
     using V = cuda::std::variant<cuda::std::unique_ptr<int>, bool>;
     static_assert(!cuda::std::is_assignable<V, cuda::std::unique_ptr<char>>::value, "no explicit bool in operator=");
@@ -189,7 +189,7 @@ TEST_FUNC void test_T_assignment_sfinae()
     using V = cuda::std::variant<X>;
     static_assert(cuda::std::is_assignable<V, Y>::value, "regression on user-defined conversions in operator=");
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int, int&&>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
@@ -233,7 +233,7 @@ TEST_FUNC void test_T_assignment_basic()
     assert(cuda::std::get<0>(v) == 43);
   }
 #endif // TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     cuda::std::variant<cuda::std::string, bool> v = true;
     v                                             = "bar";
@@ -241,7 +241,7 @@ TEST_FUNC void test_T_assignment_basic()
     assert(cuda::std::get<0>(v) == "bar");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
   {
     cuda::std::variant<bool, cuda::std::unique_ptr<int>> v;
     v = nullptr;
@@ -249,7 +249,7 @@ TEST_FUNC void test_T_assignment_basic()
     assert(cuda::std::get<1>(v) == nullptr);
   }
 #endif // _LIBCUDACXX_HAS_MEMORY
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&, int&&, long>;
     int x   = 42;
@@ -274,7 +274,7 @@ TEST_FUNC void test_T_assignment_basic()
 void test_T_assignment_performs_construction()
 {
   using namespace RuntimeHelpers;
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<cuda::std::string, ThrowsCtorT>;
     V v(cuda::std::in_place_type<cuda::std::string>, "hello");
@@ -312,7 +312,7 @@ void test_T_assignment_performs_assignment()
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 42);
   }
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<ThrowsCtorT, cuda::std::string>;
     V v;
@@ -335,7 +335,7 @@ void test_T_assignment_performs_assignment()
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 100);
   }
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<cuda::std::string, ThrowsAssignT>;
     V v(100);

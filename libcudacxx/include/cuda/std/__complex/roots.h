@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -185,7 +185,7 @@ template <class _Tp>
 
   // (__im_scaled) can have under/overflowed when scaled so we go back to using (__im) briefly.
   // Multiply by (__im) last to avoid over/underflow:
-  const _Tp __hard_part = (__im) * (__ldexp_combined * __sqrt_easy_part);
+  const _Tp __hard_part = __im * (__ldexp_combined * __sqrt_easy_part);
 
   __easy_part = __ldexp_factor_2 * ::cuda::std::sqrt(__easy_part);
 

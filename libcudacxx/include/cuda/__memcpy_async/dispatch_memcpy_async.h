@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -133,10 +133,9 @@ template <::cuda::std::size_t _Align, typename _Group>
           && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared)) {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      } else {
-        return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
-          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      }),
+      } return ::cuda::
+        __dispatch_memcpy_async_any_to_any<_Align>(
+          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);),
     (
       // Host code path:
       if (__group.thread_rank() == 0) {

@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/climits>
 
@@ -42,13 +43,13 @@ struct key_prefix_storage_t<KeyT, true>
 
 // Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
 template <typename T>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
 {
   return ::cuda::ceil_div<int>(sizeof(T) * CHAR_BIT, bits_per_pass);
 }
 
 template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
 {
   return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
 }
@@ -56,25 +57,15 @@ template <int BitsPerPass>
 // Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
 // We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
 template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = int{sizeof(T)} * CHAR_BIT - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
+  return (::cuda::max) ((int{sizeof(T)} * CHAR_BIT) - ((pass + 1) * BitsPerPass), 0);
 }
 
 template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
 {
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
+  return (::cuda::max) (total_bits - ((pass + 1) * BitsPerPass), 0);
 }
 
 // Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing
@@ -83,13 +74,13 @@ template <int BitsPerPass>
 template <typename KeyT>
 struct key_prefix_storage_t<KeyT, false>
 {
-  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * CHAR_BIT + 31, 32);
+  static constexpr int num_words = ::cuda::ceil_div<int>((sizeof(KeyT) * CHAR_BIT) + 31, 32);
   unsigned int words[num_words];
 
   // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
   // vacated low bits. Each word receives carry bits from its lower neighbor (high-to-low order
   // so each word reads its neighbor's original value). The final word is filled from `value`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
   {
     _CCCL_ASSERT(shift > 0 && shift < 32, "shift_or requires 0 < shift < 32");
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -102,13 +93,13 @@ struct key_prefix_storage_t<KeyT, false>
 };
 
 template <typename KeyT, int BitsPerPass>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
 {
   if constexpr (detail::radix::can_twiddle<KeyT>)
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
-    const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
+    const int start_bit = _CUB::detail::topk::calc_start_bit<KeyT, BitsPerPass>(pass);
     const bits_t bucket = bin_index;
     prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
   }
@@ -130,9 +121,10 @@ enum class candidate_class
 
 // Used in the bin ID calculation to exclude bits unrelated to the current pass
 template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
-  const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
+  const int num_bits = _CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1)
+                     - _CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
 }
 
@@ -143,7 +135,7 @@ template <typename T, int BitsPerPass>
 // fix-up. Every sign-clear pattern is unchanged and every sign-set pattern moves by exactly +1, so the relative order
 // is preserved everywhere (-NaN stays below -inf, +NaN above +inf) and the only new equivalence is the two zeros.
 template <typename T, bool NormalizeMinusZero>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename Traits<T>::UnsignedBits
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE typename Traits<T>::UnsignedBits
 twiddle_in_bits(typename Traits<T>::UnsignedBits bits)
 {
   using bits_t = typename Traits<T>::UnsignedBits;
@@ -187,16 +179,16 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeM
   int start_bit{};
   unsigned mask{};
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : pass(pass)
-      , start_bit(calc_start_bit<T, BitsPerPass>(pass))
-      , mask(calc_mask<T, BitsPerPass>(pass))
+      , start_bit(_CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass))
+      , mask(_CUB::detail::topk::calc_mask<T, BitsPerPass>(pass))
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits);
+    bits      = _CUB::detail::topk::twiddle_in_bits<T, NormalizeMinusZero>(bits);
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
@@ -217,15 +209,16 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeM
   DecomposerT decomposer{};
   digit_extractor_t digit_extractor;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
       : decomposer(decomposer)
       , digit_extractor(radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(
-          calc_start_bit<BitsPerPass>(total_bits, pass),
-          calc_start_bit<BitsPerPass>(total_bits, pass - 1) - calc_start_bit<BitsPerPass>(total_bits, pass),
+          _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
+          _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass - 1)
+            - _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
           decomposer))
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int operator()(T key) const
   {
     bit_ordered_type ordered = key;
     ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
@@ -249,16 +242,17 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
   using key_prefix_t    = key_prefix_storage_t<T>;
   unsigned_bits_t* kth_key_bits;
   int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : kth_key_bits(&kth_key_bits->bits)
-      , start_bit(calc_start_bit<T, BitsPerPass>(pass - 1))
+      , start_bit(_CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1))
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits); // must match extract_bin_op_t, which built kth_key_bits
+    bits = _CUB::detail::topk::twiddle_in_bits<T, NormalizeMinusZero>(bits); // must match extract_bin_op_t, which built
+                                                                             // kth_key_bits
 
     if constexpr (SelectDirection != select::min)
     {
@@ -287,7 +281,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
   int total_bits{};
   DecomposerT decomposer{};
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int total_bits, DecomposerT decomposer)
       : kth_key_bits(kth_key_bits)
       , pass(pass)
@@ -295,7 +289,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
       , decomposer(decomposer)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     if (pass <= 0)
     {
@@ -309,9 +303,9 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
     key_prefix_t key_prefix{};
     for (int prefix_pass = 0; prefix_pass < pass; ++prefix_pass)
     {
-      const int start_bit = calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
-      const int num_bits =
-        calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1) - calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      const int start_bit = _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      const int num_bits  = _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1)
+                          - _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
       auto extractor =
         radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(start_bit, num_bits, decomposer);
       key_prefix.shift_or(BitsPerPass, static_cast<unsigned int>(extractor.Digit(ordered)));

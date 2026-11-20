@@ -19,7 +19,7 @@
 #define RAPID_CXX_TEST_PP_STR(...)   RAPID_CXX_TEST_PP_STR_2(__VA_ARGS__)
 #define RAPID_CXX_TEST_PP_STR_2(...) #__VA_ARGS__
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  define TEST_FUNC_NAME()      __PRETTY_FUNCTION__
 #  define RAPID_CXX_TEST_UNUSED __attribute__((unused))
 #else
@@ -63,7 +63,7 @@
 //                          TEST_CASE
 ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__clang__)
+#ifndef __clang__
 #
 #  define TEST_CASE(Name)                                                                              \
     void Name();                                                                                       \
@@ -776,7 +776,7 @@ public:
     }
   }
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wswitch-default"
 #endif
@@ -822,7 +822,7 @@ public:
         break;
     }
   }
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
 
@@ -1007,7 +1007,7 @@ bool check_equal_collections_impl(Iter1 start1, Iter1 const end1, Iter2 start2, 
 } // namespace detail
 } // namespace rapid_cxx_test
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
 

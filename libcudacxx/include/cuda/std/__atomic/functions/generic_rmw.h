@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -248,7 +248,7 @@ struct __cuda_atomic_op_fetch_add
     }
     else
     {
-      return __old + __op;
+      return ::cuda::std::__cuda_atomic_add(__old, __op);
     }
   }
 };
@@ -267,7 +267,7 @@ struct __cuda_atomic_op_fetch_sub
     }
     else
     {
-      return __old - __op;
+      return ::cuda::std::__cuda_atomic_sub(__old, __op);
     }
   }
 };

@@ -9,6 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
+from .._caching import _key_for
 from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
@@ -302,10 +303,14 @@ class TransformIterator(IteratorBase):
             if isinstance(self._value_type, list)
             else self._value_type
         )
+        # Key the op adapter the way algorithm arguments are keyed, rather than
+        # placing the adapter itself in the key: a JIT adapter holds the Python
+        # function (and, for a stateful op, its captured device arrays), and
+        # this kind ends up in process-wide cache keys.
         return (
             "TransformIterator",
             self._is_input,
-            self._transform_op,
+            _key_for(self._transform_op),
             self._underlying.kind,
             value_type,
         )

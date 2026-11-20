@@ -82,7 +82,7 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
   auto classic_data = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
   const auto part   = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
   auto write        = [] _CCCL_DEVICE(size_t x, size_t y, auto values) {
-    values(x, y) = x + 100 * y;
+    values(x, y) = x + (100 * y);
   };
 
   ctx.parallel_for(part, grid, typed_data.shape(), typed_data.write())->*decltype(write)(write);
@@ -93,7 +93,7 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
     {
       for (size_t x = 0; x < nx; x++)
       {
-        EXPECT(typed(x, y) == x + 100 * y);
+        EXPECT(typed(x, y) == x + (100 * y));
         EXPECT(classic(x, y) == typed(x, y));
       }
     }
@@ -105,7 +105,8 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
 // same partition
 void test_make_partition_from_shape(const exec_place& grid)
 {
-  const size_t nx = 48, ny = 20;
+  const size_t nx       = 48;
+  const size_t ny       = 20;
   const auto shape      = shape_of<slice<size_t, 2>>(nx, ny);
   const auto from_dims  = make_partition(shape.get_data_dims(), partition_spec{whole, blocked<0>}, grid.get_dims());
   const auto from_shape = make_partition(shape, partition_spec{whole, blocked<0>}, grid.get_dims());
@@ -130,12 +131,12 @@ void test_cute_graph_backend(const exec_place& grid)
   const auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
   ctx.parallel_for(part, grid, data.shape(), data.write())->*[] _CCCL_DEVICE(size_t i, auto values) {
-    values(i) = 5 * i + 3;
+    values(i) = (5 * i) + 3;
   };
   ctx.host_launch(data.read())->*[=](auto values) {
     for (size_t i = 0; i < n; i++)
     {
-      EXPECT(values(i) == 5 * i + 3);
+      EXPECT(values(i) == (5 * i) + 3);
     }
   };
   ctx.finalize();
@@ -167,13 +168,13 @@ int main()
     auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, auto a) {
-      a(i) = 3 * i + 7;
+      a(i) = (3 * i) + 7;
     };
 
     ctx.host_launch(lA.read())->*[&](auto a) {
       for (size_t i = 0; i < n; i++)
       {
-        EXPECT(a(i) == 3 * i + 7);
+        EXPECT(a(i) == (3 * i) + 7);
       }
     };
   }
@@ -181,13 +182,15 @@ int main()
   // 3-D: dimension 1 blocked over the grid (the per-dimension expressiveness
   // the classic blocked_partition cannot provide)
   {
-    const size_t nx = 32, ny = 64, nz = 16;
-    auto lB = ctx.logical_data(shape_of<slice<size_t, 3>>(nx, ny, nz));
+    const size_t nx = 32;
+    const size_t ny = 64;
+    const size_t nz = 16;
+    auto lB         = ctx.logical_data(shape_of<slice<size_t, 3>>(nx, ny, nz));
 
     auto part = make_partition(dim4(nx, ny, nz), partition_spec{whole, blocked<0>, whole}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lB.shape(), lB.write())->*[] _CCCL_DEVICE(size_t x, size_t y, size_t z, auto b) {
-      b(x, y, z) = x + 100 * y + 10000 * z;
+      b(x, y, z) = x + (100 * y) + (10000 * z);
     };
 
     ctx.host_launch(lB.read())->*[&](auto b) {
@@ -197,7 +200,7 @@ int main()
         {
           for (size_t z = 0; z < nz; z++)
           {
-            EXPECT(b(x, y, z) == x + 100 * y + 10000 * z);
+            EXPECT(b(x, y, z) == x + (100 * y) + (10000 * z));
           }
         }
       }
@@ -230,13 +233,13 @@ int main()
     auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lD.shape(), lD.write())->*[] _CCCL_DEVICE(size_t i, auto d) {
-      d(i) = 2 * i + 1;
+      d(i) = (2 * i) + 1;
     };
 
     ctx.host_launch(lD.read())->*[&](auto d) {
       for (size_t i = 0; i < n; i++)
       {
-        EXPECT(d(i) == 2 * i + 1);
+        EXPECT(d(i) == (2 * i) + 1);
       }
     };
   }
@@ -245,8 +248,9 @@ int main()
   // built for; each place computes its owned coordinates restricted to the
   // box, and the boundary stays untouched
   {
-    const size_t nx = 64, ny = 32;
-    auto lE = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+    const size_t nx = 64;
+    const size_t ny = 32;
+    auto lE         = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
     auto part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
 
@@ -277,8 +281,9 @@ int main()
   // constructed equal partitions producing the same composite identity -
   // guarded here.
   {
-    const size_t nx = 64, ny = 32;
-    auto lF = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+    const size_t nx = 64;
+    const size_t ny = 32;
+    auto lF         = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
     auto part                  = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
     auto dist                  = cuda::experimental::places::make_composite_data_place(grid, part);

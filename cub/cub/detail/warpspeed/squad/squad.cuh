@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -133,7 +133,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[NumSquads], F f, in
         {
           squadsLeft[gi] = squads[gi];
         }
-        squadDispatch(sr, squadsLeft, f, warpIdxStart);
+        _CUB::detail::warpspeed::squadDispatch(sr, squadsLeft, f, warpIdxStart);
       }
     }
     else
@@ -143,7 +143,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[NumSquads], F f, in
       {
         squadsRight[gi] = squads[mid + gi];
       }
-      squadDispatch(sr, squadsRight, f, warpIdxStartMid);
+      _CUB::detail::warpspeed::squadDispatch(sr, squadsRight, f, warpIdxStartMid);
     }
   }
 }
@@ -152,7 +152,7 @@ template <::cuda::std::size_t NumSquads, typename F>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 squadDispatch(SpecialRegisters sr, ::cuda::std::array<SquadDesc, NumSquads> squads, F f, int warpIdxStart = 0)
 {
-  squadDispatch<NumSquads>(sr, squads.__elems_, f, warpIdxStart);
+  _CUB::detail::warpspeed::squadDispatch<NumSquads>(sr, squads.__elems_, f, warpIdxStart);
 }
 } // namespace detail::warpspeed
 

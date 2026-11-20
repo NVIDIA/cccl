@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,10 +28,12 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
@@ -41,7 +43,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -58,13 +60,29 @@ struct __this_mapping_result
     return 1;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return 0;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     return 0;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
   {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < static_group_count(), "__i out of range");
     return 1;
   }
 
@@ -138,6 +156,14 @@ public:
   __this_group_base(__this_group_base&&)                 = delete;
   __this_group_base& operator=(const __this_group_base&) = delete;
   __this_group_base& operator=(__this_group_base&&)      = delete;
+
+  //! @brief Invokes the callable with a view specialized for this group's static unit count.
+  //! Counts that are only known at runtime remain dynamic.
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
   {
@@ -232,6 +258,14 @@ public:
     return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
 
+  //! @brief Returns the group rank within the level known at compile time, or @c cuda::std::dynamic_extent.
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _InLevel&)
+  {
+    return static_count(_InLevel{}) == 1 ? 0 : ::cuda::std::dynamic_extent;
+  }
+
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp
   __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
@@ -255,7 +289,7 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const
+  [[nodiscard]] _CCCL_DEVICE_API typename _InLevel::__product_type rank(const _InLevel& __in_level) const
   {
     return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }

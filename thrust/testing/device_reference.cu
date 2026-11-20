@@ -306,7 +306,7 @@ TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
   { // test different reference types
     using device_ref    = thrust::device_reference<T1>;
     using other_ref     = thrust::tagged_reference<T1, thrust::device_system_tag>;
-    using other_pointer = typename other_ref::pointer;
+    using other_pointer = other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
     const device_ref ref1 = v1.front();
@@ -334,7 +334,7 @@ TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
   { // test different reference types with different element types
     using device_ref    = thrust::device_reference<T1>;
     using other_ref     = thrust::tagged_reference<T2, thrust::device_system_tag>;
-    using other_pointer = typename other_ref::pointer;
+    using other_pointer = other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
     const device_ref ref1 = v1.front();
@@ -366,8 +366,7 @@ TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<T1, thrust::host_system_tag>;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
-    static_assert(
-      !thrust::detail::is_pointer_system_convertible_v<typename device_ref::pointer, typename other_ref::pointer>);
+    static_assert(!thrust::detail::is_pointer_system_convertible_v<device_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ref, other_ref>);
   }
@@ -377,8 +376,7 @@ TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<T2, thrust::host_system_tag>;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
-    static_assert(
-      !thrust::detail::is_pointer_system_convertible_v<typename device_ref::pointer, typename other_ref::pointer>);
+    static_assert(!thrust::detail::is_pointer_system_convertible_v<device_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ref, other_ref>);
   }
@@ -389,8 +387,7 @@ TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<cuda::std::pair<T1, T2>, thrust::device_system_tag>;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
-    static_assert(
-      thrust::detail::is_pointer_system_convertible_v<typename device_ref::pointer, typename other_ref::pointer>);
+    static_assert(thrust::detail::is_pointer_system_convertible_v<device_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<T1, cuda::std::pair<T1, T2>>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ref, other_ref>);
@@ -405,7 +402,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
 
   { // test same element type
     using tagged_ref = thrust::tagged_reference<T1, thrust::device_system_tag>;
-    using tagged_ptr = typename tagged_ref::pointer;
+    using tagged_ptr = tagged_ref::pointer;
 
     const tagged_ref ref1{tagged_ptr{thrust::raw_pointer_cast(v1.data())}};
     const tagged_ref ref2{tagged_ptr{thrust::raw_pointer_cast(v1.data() + 1)}};
@@ -460,7 +457,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
   { // test different reference types
     using tagged_ref    = thrust::device_reference<T1>;
     using other_ref     = thrust::tagged_reference<T1, thrust::device_system_tag>;
-    using other_pointer = typename other_ref::pointer;
+    using other_pointer = other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
     const tagged_ref ref1 = v1.front();
@@ -488,7 +485,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
   { // test different reference types with different element types
     using tagged_ref    = thrust::device_reference<T1>;
     using other_ref     = thrust::tagged_reference<T2, thrust::device_system_tag>;
-    using other_pointer = typename other_ref::pointer;
+    using other_pointer = other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
     const tagged_ref ref1 = v1.front();
@@ -519,8 +516,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<T1, thrust::host_system_tag>;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
-    static_assert(
-      !thrust::detail::is_pointer_system_convertible_v<typename tagged_ref::pointer, typename other_ref::pointer>);
+    static_assert(!thrust::detail::is_pointer_system_convertible_v<tagged_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<tagged_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<tagged_ref, other_ref>);
   }
@@ -530,8 +526,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<T2, thrust::host_system_tag>;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
-    static_assert(
-      !thrust::detail::is_pointer_system_convertible_v<typename tagged_ref::pointer, typename other_ref::pointer>);
+    static_assert(!thrust::detail::is_pointer_system_convertible_v<tagged_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<tagged_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<tagged_ref, other_ref>);
   }
@@ -542,8 +537,7 @@ TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
     using other_ref  = thrust::tagged_reference<cuda::std::pair<T1, T2>, thrust::device_system_tag>;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
-    static_assert(
-      thrust::detail::is_pointer_system_convertible_v<typename tagged_ref::pointer, typename other_ref::pointer>);
+    static_assert(thrust::detail::is_pointer_system_convertible_v<tagged_ref::pointer, other_ref::pointer>);
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<tagged_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<tagged_ref, other_ref>);
   }

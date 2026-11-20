@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,6 +34,7 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -83,6 +84,7 @@ struct __constraints
 {
   template <class _StridedLayoutMapping, class _Extents>
   static constexpr bool __converts_implicit =
+    // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
     is_convertible_v<typename _StridedLayoutMapping::extents_type, _Extents>
     && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
@@ -133,7 +135,7 @@ private:
     if constexpr (is_integral_v<_OtherIndexType>)
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
-      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
+      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>(numeric_limits<index_type>::max());
     }
     else
     {
@@ -162,11 +164,12 @@ private:
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
-        if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
+        if (::cuda::std::__mdspan_detail::__mul_overflow(
+              __prod, static_cast<index_type>(__strides[__r]), ::cuda::std::addressof(__prod)))
         {
           return false;
         }
-        if (__add_overflow(__size, __prod, &__size))
+        if (__add_overflow(__size, __prod, ::cuda::std::addressof(__size)))
         {
           return false;
         }
@@ -408,10 +411,7 @@ public:
     {
       return index_type{0};
     }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
+    return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept

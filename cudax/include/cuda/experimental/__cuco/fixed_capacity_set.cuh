@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -200,6 +200,64 @@ public:
     __impl_->clear_async(__stream);
   }
 
+  //! @brief Reinserts every stored key into new storage of the same capacity.
+  //!
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `rehash_async`.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @throws cuda_error if allocation, the operation, or stream synchronization fails
+  //! @param[in] __stream Stream used for rehashing
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream)
+  {
+    rehash_async(__stream);
+    __stream.sync();
+  }
+
+  //! @brief Reinserts every stored key into new storage of at least `__capacity` slots.
+  //!
+  //! The new capacity is the smallest valid slot count not less than `__capacity`.
+  //! @pre `__capacity` is large enough to hold every stored key.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `rehash_async`.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @note Only available for sets with dynamic capacity.
+  //! @throws cuda_error if allocation, the operation, or stream synchronization fails
+  //! @throws std::logic_error if a valid capacity cannot be represented
+  //! @param[in] __stream Stream used for rehashing
+  //! @param[in] __capacity Requested minimum number of slots
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    rehash_async(__stream, __capacity);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously reinserts every stored key into new storage of the same capacity.
+  //!
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @throws cuda_error if allocation or the operation fails to launch
+  //! @param[in] __stream Stream used for rehashing
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
+  {
+    __impl_->rehash_async(__stream, *this);
+  }
+
+  //! @brief Asynchronously reinserts every stored key into new storage of at least `__capacity` slots.
+  //!
+  //! The new capacity is the smallest valid slot count not less than `__capacity`.
+  //! @pre `__capacity` is large enough to hold every stored key.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @note Only available for sets with dynamic capacity.
+  //! @throws cuda_error if allocation or the operation fails to launch
+  //! @throws std::logic_error if a valid capacity cannot be represented
+  //! @param[in] __stream Stream used for rehashing
+  //! @param[in] __capacity Requested minimum number of slots
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __impl_->rehash_async(__stream, __capacity, *this);
+  }
+
   //! @brief Inserts keys and returns the number of new keys inserted.
   //!
   //! Duplicate keys and keys that cannot fit in the set do not contribute to the count.
@@ -230,6 +288,54 @@ public:
   _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
     __impl_->insert_async(__stream, __first, __last, ref());
+  }
+
+  //! @brief Inserts keys whose stencil satisfies `__pred` and returns the number of new keys inserted.
+  //!
+  //! The key `__first[i]` is inserted when `__pred(__stencil[i])` is true. Duplicate keys and keys
+  //! that cannot fit in the set do not contribute to the count.
+  //! @pre No selected input key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @note Synchronizes the supplied stream for nonempty input. For asynchronous execution use `insert_if_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate's argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select keys for insertion
+  //! @return Number of successfully inserted keys
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API size_type
+  insert_if(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    return __impl_->insert_if(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
+  //! @brief Asynchronously inserts keys whose stencil satisfies `__pred` without returning an insertion count.
+  //!
+  //! The key `__first[i]` is inserted when `__pred(__stencil[i])` is true. Duplicate keys and keys
+  //! that cannot fit in the set are ignored.
+  //! @pre No selected input key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @throws cuda_error if insertion fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate's argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select keys for insertion
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API void insert_if_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    __impl_->insert_if_async(__stream, __first, __last, __stencil, __pred, ref());
   }
 
   //! @brief Writes whether each query key is present.
@@ -266,6 +372,111 @@ public:
   contains_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
     __impl_->contains_async(__stream, __first, __last, __output_begin, ref());
+  }
+
+  //! @brief Writes whether each query key is present, or false for keys not selected by `__pred`.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //! @pre No selected query key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `contains_if_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator with values convertible to the predicate argument
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to the stencil to select the keys to query
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously writes whether each query key is present, or false for keys not selected by `__pred`.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //! @pre No selected query key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @throws cuda_error if lookup fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator with values convertible to the predicate argument
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to the stencil to select the keys to query
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    __impl_->contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
+  //! @brief Applies `__callback_op` to a copy of the stored key equivalent to each query key.
+  //!
+  //! Query keys that are not present in the set contribute no callback invocation. The callback
+  //! receives the stored key, which differs from the query when the key equality predicate treats
+  //! distinct values as equivalent.
+  //! @pre No query key equals the empty sentinel.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `for_each_async`.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __callback_op Function applied to every matching stored key
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    for_each_async(__stream, __first, __last, __callback_op);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously applies `__callback_op` to a copy of the stored key equivalent to each
+  //! query key.
+  //!
+  //! Query keys that are not present in the set contribute no callback invocation.
+  //! @pre No query key equals the empty sentinel.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //! @throws cuda_error if the operation fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __callback_op Function applied to every matching stored key
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    __impl_->for_each_async(__stream, __first, __last, __callback_op, ref());
   }
 
   //! @brief Returns the total number of slots.

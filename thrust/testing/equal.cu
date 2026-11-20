@@ -103,7 +103,7 @@ struct only_set_when_both_expected
   long long expected;
   bool* flag;
 
-  _CCCL_DEVICE bool operator()(long long x, long long y)
+  _CCCL_DEVICE bool operator()(long long x, long long y) const
   {
     if (x == expected && y == expected)
     {

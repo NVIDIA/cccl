@@ -20,10 +20,23 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  static_assert(cuda::std::is_same_v<decltype(simd::ilogb(x)), simd::rebind_t<int, V>>);
+  static_assert(noexcept(simd::ilogb(x)));
+
+  check_math_values(simd::ilogb(x), 2);
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_wrapper<T, N>();
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
   Vec vec(positive_math_values<T>{});

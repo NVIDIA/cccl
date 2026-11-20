@@ -7,7 +7,7 @@
 
   namespace cuda::experimental::coop {
 
-  template <typename Unit, typename Group>
+  template <typename Unit, typename Group, typename MappingResult>
   class group_view : public /*group-interface-for*/<group_view>
   {
   public:
@@ -22,9 +22,9 @@
 
     __device__ explicit group_view(const Unit& unit, const Group& group);
 
-    template <typename OtherUnit>
+    template <typename OtherUnit, typename OtherMappingResult>
       requires /*unit-same-as-or-below*/<Unit, OtherUnit>
-    __device__ explicit group_view(const Unit& unit, const group_view<OtherUnit, Group>& other);
+    __device__ explicit group_view(const Unit& unit, const group_view<OtherUnit, Group, OtherMappingResult>& other);
 
     group_view(const group_view&) = default;
 
@@ -36,17 +36,21 @@
   };
 
   template <group Group>
-  group_view(const Group&) -> group_view<typename Group::unit_type, Group>;
+  group_view(const Group&)
+    -> group_view<typename Group::unit_type,
+                  Group,
+                  /*view-mapping-result*/<typename Group::unit_type, Group>>;
 
-  template <typename Unit, class Group>
-  group_view(const group_view<Unit, Group>&) -> group_view<Unit, Group>;
+  template <typename Unit, class Group, class MappingResult>
+  group_view(const group_view<Unit, Group, MappingResult>&) -> group_view<Unit, Group, MappingResult>;
 
   template </*hierarchy-level-type*/ Unit, group Group>
-  group_view(const Unit&, const Group&) -> group_view<Unit, Group>;
+  group_view(const Unit&, const Group&) -> group_view<Unit, Group, /*view-mapping-result*/<Unit, Group>>;
 
-  template </*hierarchy-level-type*/ Unit, class OtherUnit, class Group>
+  template </*hierarchy-level-type*/ Unit, class OtherUnit, class Group, class MappingResult>
     requires /*unit-same-as-or-below*/<Unit, OtherUnit>
-  group_view(const Unit&, const group_view<OtherUnit, Group>&) -> group_view<Unit, Group>;
+  group_view(const Unit&, const group_view<OtherUnit, Group, MappingResult>&)
+    -> group_view<Unit, Group, /*view-mapping-result*/<Unit, group_view<OtherUnit, Group, MappingResult>>>;
 
   } // namespace cuda::experimental::coop
 

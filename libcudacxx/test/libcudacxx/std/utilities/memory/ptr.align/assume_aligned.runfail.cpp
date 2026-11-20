@@ -17,7 +17,7 @@
 int main(int, char**)
 {
 // the alignment check is disabled when it is not possible to evaluate the alignment at compile time
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   auto ptr                  = cuda::std::bit_cast<int*>(uintptr_t{0x4});
   volatile auto aligned_ptr = cuda::std::assume_aligned<64>(ptr);
   assert(ptr + 1 == aligned_ptr);

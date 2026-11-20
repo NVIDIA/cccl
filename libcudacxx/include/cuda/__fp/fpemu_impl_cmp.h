@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -217,7 +217,7 @@ __internal_fp64emu_cmp_ne_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked 
 // ============================================================================
 // Builtin declarations/implementations for comparison operations
 // ============================================================================
-#if defined(_CCCL_FPEMU_INLINE)
+#ifdef _CCCL_FPEMU_INLINE
 #  if (_CCCL_FPEMU_PACKED_VIA_UNPACKED == 1)
 // Packed-via-unpacked (testing): route the packed comparison builtins through the
 // unpacked cores. unpack(x) yields the fully-accurate, order-preserving form the

@@ -29,10 +29,10 @@ int main()
   int array4[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i]  = static_cast<int>(1 + i * i);
+    array[i]  = static_cast<int>(1 + (i * i));
     array2[i] = static_cast<int>(4 - i);
-    array3[i] = static_cast<int>(19 + 5 * i);
-    array4[i] = static_cast<int>(2 - i * i);
+    array3[i] = static_cast<int>(19 + (5 * i));
+    array4[i] = static_cast<int>(2 - (i * i));
   }
 
   auto lA  = sctx.logical_data(array).set_symbol("A");
@@ -80,21 +80,21 @@ int main()
   // Ensure the write-back mechanism was effective
   for (size_t i = 0; i < 1024; i++)
   {
-    EXPECT(array[i] == (1 + i * i) + 2 * i);
+    EXPECT(array[i] == (1 + (i * i)) + (2 * i));
   }
 
   for (size_t i = 0; i < 1024; i++)
   {
-    EXPECT(array2[i] == (4 - i) + 4 * i);
+    EXPECT(array2[i] == (4 - i) + (4 * i));
   }
 
   for (size_t i = 0; i < 1024; i++)
   {
-    EXPECT(array3[i] == (19 + 5 * i) + i);
+    EXPECT(array3[i] == (19 + (5 * i)) + i);
   }
 
   for (size_t i = 0; i < 1024; i++)
   {
-    EXPECT(array4[i] == 2 * (2 - i * i + 4 * i));
+    EXPECT(array4[i] == 2 * (2 - (i * i) + (4 * i)));
   }
 }

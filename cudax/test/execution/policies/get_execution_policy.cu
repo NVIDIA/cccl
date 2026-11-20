@@ -56,7 +56,7 @@ struct with_get_execution_policy_non_const
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy get_execution_policy() noexcept
+  execution::any_execution_policy get_execution_policy() noexcept // NOLINT(readability-make-member-function-const)
   {
     return pol_;
   }
@@ -108,7 +108,8 @@ struct env_with_query_non_const
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) noexcept
+  execution::any_execution_policy query( // NOLINT(readability-make-member-function-const)
+    cuda::experimental::execution::get_execution_policy_t) noexcept
   {
     return pol_;
   }
