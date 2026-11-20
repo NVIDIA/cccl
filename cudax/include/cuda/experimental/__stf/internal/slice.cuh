@@ -28,8 +28,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
+#include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -37,8 +39,11 @@
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
 
+#include <array>
 #include <iostream>
+#include <tuple>
 
 namespace cuda::experimental::stf
 {

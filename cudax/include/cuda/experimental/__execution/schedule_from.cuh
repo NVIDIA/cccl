@@ -21,26 +21,14 @@
 #  pragma system_header
 #endif // no sys
 
-#include <cuda/__utility/immovable.h>
-#include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__utility/pod_tuple.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/completion_signatures.cuh>
-#include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
-#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
-#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
-#include <cuda/experimental/__execution/transform_sender.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
-#include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

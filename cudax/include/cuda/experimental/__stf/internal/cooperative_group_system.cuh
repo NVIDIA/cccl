@@ -21,6 +21,11 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/cassert>
+
+#  include <nv/target>
+
 #  include <cooperative_groups.h>
 #endif // _CCCL_CUDA_COMPILATION()
 

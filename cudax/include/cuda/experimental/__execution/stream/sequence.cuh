@@ -21,10 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__execution/fwd.cuh>
-#include <cuda/experimental/__execution/sequence.cuh>
-#include <cuda/experimental/__execution/stream/domain.cuh>
-
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution

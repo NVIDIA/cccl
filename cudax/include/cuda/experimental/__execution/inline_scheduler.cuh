@@ -23,13 +23,10 @@
 
 #include <cuda/__utility/immovable.h>
 
-#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

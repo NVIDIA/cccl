@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__copy_bytes/mdspan_d2h_h2d.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_COPY_BYTES_CUH

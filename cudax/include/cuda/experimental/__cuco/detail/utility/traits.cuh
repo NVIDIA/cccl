@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/device_reference.h>
 
-#include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__type_traits/is_bitwise_comparable.h> // IWYU pragma: keep
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>

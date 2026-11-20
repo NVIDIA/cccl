@@ -23,6 +23,8 @@
 #endif // no system header
 
 #include <cuda/__nvtx/nvtx.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/readable_traits.h>

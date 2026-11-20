@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/hierarchy>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 

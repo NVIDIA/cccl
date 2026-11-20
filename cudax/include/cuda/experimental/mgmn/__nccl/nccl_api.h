@@ -24,7 +24,9 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__functional/operations_traits.h>
 #include <cuda/std/__host_stdlib/cstdio> // snprintf
@@ -36,6 +38,8 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/mgmn/__nccl/shared_library.h>
+
+#include <cuda.h>
 #if _CCCL_HOSTED()
 #  include <exception> // uncaught_exceptions
 #endif // _CCCL_HOSTED()
