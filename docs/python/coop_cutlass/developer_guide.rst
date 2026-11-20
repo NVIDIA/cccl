@@ -661,9 +661,9 @@ that diagram.
   ``:no-special-members:`` and ``:no-index:``, followed by
   ``.. currentmodule:: cuda.coop.cutlass``. Notes for maintainers go in an
   ``# Implementation notes.`` comment below the docstring.
-* When a CUB block or warp primitive under ``cub/cub/block`` or
-  ``cub/cub/warp`` changes, or a new one is added, update this package, its
-  tests and its documentation in the same pull request.
+* When a new or changed CUB primitive under ``cub/cub/block/`` or
+  ``cub/cub/warp/`` affects ``cuda.coop.cutlass``, update the affected
+  package code, tests and documentation in the same pull request.
 * User pages and public docstrings follow the prose rules in
   ``python/cuda_coop_cutlass/AGENTS.md``. This guide, the primer and the
   integration example follow them too, and may use the implementation's

@@ -360,9 +360,9 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 For changes to `python/cuda_coop_cutlass/`, `docs/python/coop_cutlass/`,
 `docs/_static/coop-*`, or `docs/_ext/coop_visualization.py`, read
 [the package's contributor and review guidance](python/cuda_coop_cutlass/AGENTS.md).
-When a CUB block or warp primitive under `cub/cub/block/` or `cub/cub/warp/`
-changes, or a new one is added, update `python/cuda_coop_cutlass/`, its tests
-and `docs/python/coop_cutlass/` in the same pull request.
+When a new or changed CUB primitive under `cub/cub/block/` or `cub/cub/warp/`
+affects `cuda.coop.cutlass`, update the affected package code, tests and
+documentation in the same pull request.
 Update affected documentation, runnable examples, and diagrams in the same
 change when behavior or a depicted compiler path changes. Reviewers should
 check for stale contracts, symbol names, phase order, and storage ownership.

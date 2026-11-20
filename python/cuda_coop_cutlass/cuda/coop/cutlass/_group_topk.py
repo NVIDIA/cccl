@@ -60,10 +60,12 @@ launch selects from its own tile. They take these controls:
      - Puts the call's scratch in a :ref:`TempStorage <coop-temp-storage>`.
 
 The number of keys selected is ``k``, or ``valid_items`` when that is
-smaller. To get them in order, pass the result of ``topk_min_keys`` or
-``topk_max_keys`` to :func:`~cuda.coop.cutlass.merge_sort_keys` with
-``valid_items`` set to that number and an ``oob_default`` that sorts after
-them. After ``topk_min_pairs`` or ``topk_max_pairs``, pass both payloads to
+smaller. Sorting the selected keys with block merge sort requires a
+power-of-two thread count, such as ``block=64``. Pass the result of
+``topk_min_keys`` or ``topk_max_keys`` to
+:func:`~cuda.coop.cutlass.merge_sort_keys` with ``valid_items`` set to that
+number and an ``oob_default`` that sorts after them. After ``topk_min_pairs`` or
+``topk_max_pairs``, pass both payloads to
 :func:`~cuda.coop.cutlass.merge_sort_pairs` in the same way, and each value
 moves with its key. This kernel stores the seven smallest keys of a block
 in ascending order:

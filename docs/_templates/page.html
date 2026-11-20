@@ -5,12 +5,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 {% extends "!page.html" %}
 
 {% block body %}
-{% if pagename.startswith("python/coop_cutlass/") and page_source_suffix %}
+{% if pagename.startswith("python/coop_cutlass/") and show_source and has_source and sourcename %}
 <div class="admonition note coop-raw-source">
   <p class="admonition-title">Agents</p>
   <p>For a more token-efficient view of this page, read the
-    <a class="reference external"
-       href="https://raw.githubusercontent.com/NVIDIA/cccl/main/docs/{{ pagename | e }}{{ page_source_suffix | e }}">raw documentation source</a>.
+    <a href="{{ pathto('_sources/' + sourcename, true) | e }}">raw documentation source</a>.
     Follow its includes and API references for code examples and docstrings.</p>
 </div>
 {% endif %}
