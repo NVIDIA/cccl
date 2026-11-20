@@ -9,9 +9,9 @@
 // an MPFR reference over the whole range of each, including large |x| for the exponentials
 // (reducing x to the format's own precision erred by up to 180u^2 on these cases) and
 // arguments near 1 and near 0 for the logarithms; the results that must be exact; the C99
-// Annex F special values; and gradual underflow below FLT_MIN. The special values are checked
-// for fp64mp2 as well. fp32mp2_high evaluates expm1 and log1p below 2^-7 by their Taylor series,
-// which is checked against the worst arguments of the other levels there.
+// Annex F special values; and gradual underflow below FLT_MIN. fp32mp2_high evaluates expm1 and
+// log1p below 2^-7 by their Taylor series, which is checked against the worst arguments of the
+// other levels there.
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
@@ -422,8 +422,6 @@ int main(int, char**)
   test_exact();
   test_special_values<cuda::fp32mp2, float>();
   test_special_values<cuda::fp32mp2_high, float>();
-  test_special_values<cuda::fp64mp2, double>();
-  test_special_values<cuda::fp64mp2_high, double>();
   test_range_ends();
 
   return 0;

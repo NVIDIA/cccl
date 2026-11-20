@@ -799,16 +799,16 @@ _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
  * ====================================================================
  * hypot, rhypot, norm3d, norm4d, rnorm3d, rnorm4d - Euclidean norms and their reciprocals
  * ====================================================================
- * rhypot and the 3- and 4-operand norms are the pair kernel below for fp32mp2 and fp64mp2, and
- * so is the fp64mp2 hypot. The fp32mp2 hypot has a kernel of its own after it, which sums the
- * two squares with one more error-free step (2.9u^2 against 3.1u^2). In fp32mp2_high the
- * fp32mp2 norm3d, norm4d, rnorm3d and rnorm4d are computed in double instead (the kernels of
- * #12641, after the pair kernel).
+ * For fp32mp2, rhypot and the 3- and 4-operand norms are the pair kernel below. The fp32mp2
+ * hypot has a kernel of its own after it, which sums the two squares with one more error-free
+ * step (2.9u^2 against 3.1u^2). In fp32mp2_high the norm3d, norm4d, rnorm3d and rnorm4d are
+ * computed in double instead (the kernels of #12641, after the pair kernel). fp64mp2 keeps its
+ * double fallbacks, which follow the fp32mp2 hypot.
  */
 
 /*
  * --------------------------------------------------------------------
- * Euclidean norm sqrt(x_1^2 + ... + x_n^2) and its reciprocal (fp32mp2 and fp64mp2)
+ * Euclidean norm sqrt(x_1^2 + ... + x_n^2) and its reciprocal (fp32mp2)
  * --------------------------------------------------------------------
  * The operands are scaled by a power of two chosen from the largest high limb, so that
  * no square overflows and the square of the largest one, with its rounding error, is a
@@ -1070,7 +1070,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   *__res_lo          = (*__res_hi < ::cuda::std::__fp_inf<float>()) ? __h_lo * __back : 0.0f; /* (inf, 0) on overflow */
 }
 
-/* fp64mp2 hypot: the pair kernel above */
+/*
+ * --------------------------------------------------------------------
+ * Hypotenuse hypot(x, y) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   const double __x_hi,
   const double __x_lo,
@@ -1079,12 +1083,135 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  const double __hi[2] = {__x_hi, __y_hi};
-  const double __lo[2] = {__x_lo, __y_lo};
-  ::cuda::__internal_fpmp2_norm<double, 2, false>(__hi, __lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(
+    ::cuda::std::hypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
+    __res_hi,
+    __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(hypot)
+
+/*
+ * --------------------------------------------------------------------
+ * Reciprocal hypotenuse rhypot(x, y) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
+  const double __x_hi,
+  const double __x_lo,
+  const double __y_hi,
+  const double __y_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(
+       ::rhypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
+       __res_hi,
+       __res_lo);),
+    (::cuda::__fpmp2_from_double(
+       1.0 / ::cuda::std::hypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
+       __res_hi,
+       __res_lo);))
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Vector norm norm3d(a, b, c) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_norm3d(
+  const double __a_hi,
+  const double __a_lo,
+  const double __b_hi,
+  const double __b_lo,
+  const double __c_hi,
+  const double __c_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
+         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo);
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::norm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
+    (::cuda::__fpmp2_from_double(::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Vector norm norm4d(a, b, c, d) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_norm4d(
+  const double __a_hi,
+  const double __a_lo,
+  const double __b_hi,
+  const double __b_lo,
+  const double __c_hi,
+  const double __c_lo,
+  const double __d_hi,
+  const double __d_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
+         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo), __dd = ::cuda::__fpmp2_to_double(__d_hi, __d_lo);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::__fpmp2_from_double(::norm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
+                    (::cuda::__fpmp2_from_double(
+                       ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Reciprocal vector norm rnorm3d(a, b, c) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm3d(
+  const double __a_hi,
+  const double __a_lo,
+  const double __b_hi,
+  const double __b_lo,
+  const double __c_hi,
+  const double __c_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
+         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo);
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::rnorm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
+    (::cuda::__fpmp2_from_double(1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Reciprocal vector norm rnorm4d(a, b, c, d) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm4d(
+  const double __a_hi,
+  const double __a_lo,
+  const double __b_hi,
+  const double __b_lo,
+  const double __c_hi,
+  const double __c_lo,
+  const double __d_hi,
+  const double __d_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
+         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo), __dd = ::cuda::__fpmp2_to_double(__d_hi, __d_lo);
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::rnorm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
+    (::cuda::__fpmp2_from_double(
+       1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
+}
 
 _CCCL_FPMP_NORM_2A(rhypot, true)
 _CCCL_FPMP_NORM_3A(norm3d, false)
@@ -1099,8 +1226,8 @@ _CCCL_FPMP_NORM_4A(rnorm4d, true)
  * The operands are converted to double, which holds a float pair exactly, and the norm is
  * taken in double (CUDA's norm3d etc. on the device), within 0.6u^2 of the norm and of its
  * reciprocal. The kernels of #12641; the other levels take the pair kernel above, which has
- * no FP64 operation and is the faster one wherever FP64 is rationed. fp64mp2 takes the pair
- * kernel at every level, since a double would drop the low limb.
+ * no FP64 operation and is the faster one wherever FP64 is rationed. fp64mp2 takes its double
+ * fallback at every level.
  *
  * Special cases are answered on entry, as by the pair kernel (C Annex F for hypot, extended
  * to n operands and to the reciprocal): an infinite operand gives +inf (+0 for the

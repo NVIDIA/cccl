@@ -467,17 +467,6 @@ static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_exp_table_entry __fpmp2_expm1
   return __table[__i];
 }
 
-// The fp64mp2 functions below call the system's binary128 or double function and convert its
-// result, which leaves a NaN or infinite low limb next to an infinite high limb. An infinite
-// result gets a zero low limb here, and NaN goes into both limbs.
-_CCCL_FPMP_CORE_API void __internal_fpmp2_canonical_nonfinite(const double* __res_hi, double* __res_lo) noexcept
-{
-  if (!(::cuda::__fpmp_internal_fabs(*__res_hi) < ::cuda::std::__fp_inf<double>()))
-  {
-    *__res_lo = (*__res_hi != *__res_hi) ? *__res_hi : 0.0;
-  }
-}
-
 // 2^__e as a float, for __e in [-126, 127].
 _CCCL_FPMP_CORE_API float __internal_fpmp2_exp2i(const int __e) noexcept
 {
@@ -705,7 +694,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_exp(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(exp, _CCCL_FPMP_EXPQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(exp)
@@ -751,7 +739,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_exp2(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(exp2, _CCCL_FPMP_EXP2Q, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(exp2)
@@ -809,7 +796,6 @@ __internal_fpmp2_exp10(const double __x_hi, const double __x_lo, double* __res_h
                     (::cuda::__fpmp2_from_double(::exp10(__xd), __res_hi, __res_lo);),
                     (::cuda::__fpmp2_from_double(::cuda::std::pow(10.0, __xd), __res_hi, __res_lo);))
 #  endif
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(exp10)
@@ -948,14 +934,7 @@ __internal_fpmp2_high_expm1(const float __x_hi, const float __x_lo, float* __res
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_expm1(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0 && __x_lo == 0.0) // expm1(+-0) = +-0: the conversions do not keep the sign of zero
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   _CCCL_FPMP_CALL_FP64MP2_MATH(expm1, _CCCL_FPMP_EXPM1Q, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one expm1 for every level */
@@ -1250,7 +1229,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(log, _CCCL_FPMP_LOGQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(log)
@@ -1365,14 +1343,7 @@ __internal_fpmp2_high_log1p(const float __x_hi, const float __x_lo, float* __res
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log1p(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0 && __x_lo == 0.0) // log1p(+-0) = +-0: the conversions do not keep the sign of zero
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   _CCCL_FPMP_CALL_FP64MP2_MATH(log1p, _CCCL_FPMP_LOG1PQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one log1p for every level */
@@ -1421,7 +1392,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log2(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(log2, _CCCL_FPMP_LOG2Q, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(log2)
@@ -1470,7 +1440,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log10(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(log10, _CCCL_FPMP_LOG10Q, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(log10)
