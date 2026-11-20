@@ -5,6 +5,7 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/type_traits>
 
 #include "policy_selector.cuh"

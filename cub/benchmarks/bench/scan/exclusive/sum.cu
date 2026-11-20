@@ -3,6 +3,8 @@
 
 // Tuning parameters found for signed integer types apply equally for unsigned integer types
 
+#include <cuda/std/__functional/operations.h>
+
 #include <nvbench_helper.cuh>
 
 // This benchmark tunes the old, non-lookahead scan implementation. Using it for benchmarking, will pick the lookahead

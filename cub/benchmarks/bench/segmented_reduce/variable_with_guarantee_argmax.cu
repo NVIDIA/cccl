@@ -3,7 +3,7 @@
 
 // Note: This is not a tuning benchmark yet, since the max segmented size guarantee is not publicly exposed.
 
-#include <nvbench_helper.cuh>
+#include <cub/thread/thread_operators.cuh>
 
 using op_t = cub::detail::arg_max;
 

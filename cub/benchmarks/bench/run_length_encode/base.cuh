@@ -3,11 +3,24 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_run_length_encode.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
 
 #include "policy_selector.h"
+
+#if !TUNE_BASE
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 
 //! @tparam RunLengthT Offset type large enough to represent the longest run in the sequence
 template <class T, class OffsetT, class RunLengthT>

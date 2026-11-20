@@ -3,7 +3,7 @@
 
 // Note: This is not a tuning benchmark yet, since the max segmented size guarantee is not publicly exposed.
 
-#include <nvbench_helper.cuh>
+#include <cuda/std/__functional/operations.h>
 
 using op_t = ::cuda::std::plus<>;
 

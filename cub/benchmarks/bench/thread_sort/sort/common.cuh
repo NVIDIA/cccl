@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_sort.cuh>
 
 #include <cuda/std/functional>

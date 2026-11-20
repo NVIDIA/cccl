@@ -4,11 +4,28 @@
 #include <cub/device/device_select.cuh>
 
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/algorithm>
+
+#include <cstdint>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/detail/prefetch.cuh>
+#  include <cub/device/dispatch/tuning/tuning_select_if.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <nvbench_helper.cuh>
+
 #include "variable_common.cuh"
 
 NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))

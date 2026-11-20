@@ -5,6 +5,8 @@
 
 #include <cuda_bf16.h>
 
+#include <nv/target>
+
 #include <cmath>
 #include <cstdint>
 #include <cstring>

@@ -17,29 +17,44 @@
 #define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
 #include <thrust/copy.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/argument>
 #include <cuda/iterator>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/cstdint>
 
 #include <algorithm>
+#include <cstddef>
 #include <vector>
 
 #include <nvbench_helper.cuh>
 
 #include "common.cuh"
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_store.cuh>
+#endif // !TUNE_BASE
 
 #ifndef TUNE_BACKEND
 #  error "keys_common.cuh requires the includer to define TUNE_BACKEND (0 baseline/1 cluster/2 device/3 automatic)"
