@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,13 +19,12 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 for_each(thrust::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator, UnaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
@@ -33,7 +32,7 @@ for_each(thrust::execution_policy<DerivedPolicy>&, InputIterator first, InputIte
 } // end for_each()
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 for_each_n(thrust::execution_policy<DerivedPolicy>&, InputIterator first, Size, UnaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");

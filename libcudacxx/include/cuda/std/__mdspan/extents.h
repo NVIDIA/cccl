@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,6 +31,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -322,8 +323,8 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 
   template <class _To, class _From>
   inline constexpr bool __potentially_narrowing =
-    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+    static_cast<make_unsigned_t<_To>>(numeric_limits<_To>::max())
+    < static_cast<make_unsigned_t<_From>>(numeric_limits<_From>::max());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false
@@ -657,7 +658,7 @@ template <class _Extents>
     __index_type __prod = __ext.extent(0);
     for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
     {
-      if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+      if (__mul_overflow(__prod, __ext.extent(__r), ::cuda::std::addressof(__prod)))
       {
         return false;
       }

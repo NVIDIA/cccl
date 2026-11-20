@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -677,8 +677,8 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <auto _Value, class _Tp>
-[[nodiscard]] _CCCL_API constexpr typename constant<_Value, _Tp>::value_type
-__unwrap(const constant<_Value, _Tp>&) noexcept
+[[nodiscard]]
+_CCCL_API constexpr typename constant<_Value, _Tp>::value_type __unwrap(const constant<_Value, _Tp>&) noexcept
 {
   return constant<_Value, _Tp>::__get_value();
 }

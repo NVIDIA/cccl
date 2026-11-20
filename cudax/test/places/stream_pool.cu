@@ -23,7 +23,7 @@ using namespace cuda::experimental::places;
 
 __global__ void increment_kernel(int* data, int n)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid < n)
   {
     data[tid] += 1;

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -42,7 +42,7 @@ template <typename _Tp, typename _Extent>
 {
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 
-  const auto __ptr = __bytes + __index * sizeof(_Tp);
+  const auto __ptr = __bytes + (__index * sizeof(_Tp));
 
   if (::cuda::is_aligned(__ptr, alignof(_Tp)))
   {

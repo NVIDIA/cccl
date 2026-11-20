@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,10 +18,11 @@
 #endif // no system header
 
 #include <thrust/detail/allocator/destroy_range.h>
-#include <thrust/device_delete.h>
 #include <thrust/device_free.h>
 #include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -52,7 +53,7 @@ struct device_delete_allocator
  *  \endverbatim
  */
 template <typename T>
-inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
+_CCCL_HOST_API inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
 {
   // we don't have an allocator, so there is no need to go through thrust::detail::destroy_range
   thrust::for_each_n(device, ptr, n, detail::gozer{});

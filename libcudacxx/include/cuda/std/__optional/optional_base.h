@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -375,7 +375,7 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__available> : __opt
     return *this;
   }
 
-  __optional_copy_assign_base& operator=(__optional_copy_assign_base&&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base& operator=(__optional_copy_assign_base&&) = default;
 };
 
 template <class _Tp>

@@ -9,14 +9,19 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/disjoint_pool.h>
+#include <thrust/mr/memory_resource.h>
+#include <thrust/mr/pool_options.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 #include <mutex>
 
@@ -42,12 +47,11 @@ struct disjoint_synchronized_pool_resource : public memory_resource<typename Ups
 
   using void_ptr = typename Upstream::pointer;
 
-public:
   /*! Get the default options for a disjoint pool. These are meant to be a sensible set of values for many use cases,
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.
    */
-  static pool_options get_default_options()
+  _CCCL_HOST_API static pool_options get_default_options()
   {
     return unsync_pool::get_default_options();
   }
@@ -58,7 +62,7 @@ public:
    *  \param bookkeeper the upstream memory resource for bookkeeping
    *  \param options pool options to use
    */
-  disjoint_synchronized_pool_resource(
+  _CCCL_HOST_API disjoint_synchronized_pool_resource(
     Upstream* upstream, Bookkeeper* bookkeeper, pool_options options = get_default_options())
       : upstream_pool(upstream, bookkeeper, options)
   {}
@@ -67,19 +71,19 @@ public:
    *
    *  \param options pool options to use
    */
-  disjoint_synchronized_pool_resource(pool_options options = get_default_options())
+  _CCCL_HOST_API disjoint_synchronized_pool_resource(pool_options options = get_default_options())
       : upstream_pool(get_global_resource<Upstream>(), get_global_resource<Bookkeeper>(), options)
   {}
 
   /*! Releases all held memory to upstream.
    */
-  void release()
+  _CCCL_HOST_API void release()
   {
     const lock_t lock(mtx);
     upstream_pool.release();
   }
 
-  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
@@ -87,9 +91,9 @@ public:
     return upstream_pool.do_allocate(bytes, alignment);
   }
 
-  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
-                     std::size_t n,
-                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                                    std::size_t n,
+                                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     const lock_t lock(mtx);
     upstream_pool.do_deallocate(p, n, alignment);

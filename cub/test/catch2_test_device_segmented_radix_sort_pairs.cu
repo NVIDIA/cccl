@@ -322,7 +322,7 @@ catch (...)
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
-#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#ifdef CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments",
          "[pairs][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_LARGE,

@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,6 @@
 
 #include <thrust/detail/function.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/pragma_omp.h>

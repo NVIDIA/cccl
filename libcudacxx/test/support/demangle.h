@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_HAS_NO_DEMANGLE)
+#ifndef TEST_HAS_NO_DEMANGLE
 #  if defined(__GNUC__) || defined(__clang__)
 #    if __has_include("cxxabi.h") && !TEST_COMPILER(MSVC)
 #      include "cxxabi.h"
@@ -26,7 +26,7 @@
 #  endif
 #endif
 
-#if defined(TEST_HAS_NO_DEMANGLE)
+#ifdef TEST_HAS_NO_DEMANGLE
 inline std::string demangle(const char* mangled_name)
 {
   return mangled_name;

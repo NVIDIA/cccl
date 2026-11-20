@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <typename MR, typename DerivedPolicy>
-_CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
+_CCCL_HOST_API MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
 {
   static std::mutex map_lock;
   static std::unordered_map<int, MR> device_id_to_resource;

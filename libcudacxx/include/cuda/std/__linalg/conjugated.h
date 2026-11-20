@@ -21,7 +21,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,7 +45,6 @@ namespace linalg
 template <class _NestedAccessor>
 class conjugated_accessor
 {
-private:
   using __nested_element_type _CCCL_NODEBUG = typename _NestedAccessor::element_type;
   using __nc_result_type _CCCL_NODEBUG      = decltype(conj_if_needed(::cuda::std::declval<__nested_element_type>()));
 

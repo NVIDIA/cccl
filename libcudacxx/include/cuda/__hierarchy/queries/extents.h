@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,10 +45,7 @@ __hierarchy_static_extents_mul_helper(::cuda::std::size_t __lhs, ::cuda::std::si
   {
     return ::cuda::std::dynamic_extent;
   }
-  else
-  {
-    return __lhs * __rhs;
-  }
+  return __lhs * __rhs;
 }
 
 template <class _ResultIndex, class _LhsExts, class _RhsExts, ::cuda::std::size_t... _Is>

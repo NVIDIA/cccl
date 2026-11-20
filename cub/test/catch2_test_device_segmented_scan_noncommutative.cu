@@ -76,7 +76,7 @@ struct populate_input
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
-  using pair_t = typename op_t::pair_t;
+  using pair_t = op_t::pair_t;
 
   const unsigned num_items = 1'234'567;
   c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};

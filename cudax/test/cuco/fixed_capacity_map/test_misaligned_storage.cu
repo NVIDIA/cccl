@@ -12,7 +12,7 @@
 // atomic CAS, which forces the insert path onto the non-packed fallback.
 
 // Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #  pragma nv_diag_suppress 20011
 #endif
 
@@ -35,7 +35,7 @@ namespace cudax = cuda::experimental;
 template <class ValueType>
 __global__ void fill_sentinel_kernel(ValueType* slots, int cap, ValueType sentinel)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < cap)
   {
     slots[i] = sentinel;
@@ -45,7 +45,7 @@ __global__ void fill_sentinel_kernel(ValueType* slots, int cap, ValueType sentin
 template <class RefType, class Key>
 __global__ void insert_kernel(RefType ref, int num_keys)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < num_keys)
   {
     [[maybe_unused]] const bool inserted =
@@ -56,7 +56,7 @@ __global__ void insert_kernel(RefType ref, int num_keys)
 template <class RefType, class Key>
 __global__ void contains_kernel(RefType ref, int num_probes, int* out)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < num_probes)
   {
     out[i] = ref.contains(static_cast<Key>(i)) ? 1 : 0;
