@@ -422,7 +422,7 @@ extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim, dim3 blockDim, siz
 // line) so atexit is unavailable.  The CUDA module constructor calls atexit()
 // to register a cleanup function.  Provide a no-op stub — the JIT library is
 // short-lived and unloaded explicitly.
-#  if !defined(__HOSTJIT_DEVICE_COMPILATION__)
+#  ifndef __HOSTJIT_DEVICE_COMPILATION__
 #    ifdef _MSC_VER
 extern "C" int atexit(void(__cdecl*)(void))
 {

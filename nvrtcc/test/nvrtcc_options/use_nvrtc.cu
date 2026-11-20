@@ -10,7 +10,7 @@
 
 #include "../common/check_predefined_macros.h"
 
-#if !defined(__CUDACC_RTC__)
+#ifndef __CUDACC_RTC__
 #  include <cassert>
 #endif // !__CUDACC_RTC__
 
@@ -18,14 +18,14 @@ __managed__ int proof_var;
 
 __global__ void proof_kernel()
 {
-#if defined(__CUDACC_RTC__)
+#ifdef __CUDACC_RTC__
   proof_var = 1;
 #else // ^^^ __CUDACC_RTC__ ^^^ / vvv !__CUDACC_RTC__ vvv
   proof_var = -1;
 #endif // ^^^ !__CUDACC_RTC__ ^^^
 }
 
-#if !defined(__CUDACC_RTC__)
+#ifndef __CUDACC_RTC__
 int main()
 {
   proof_var = 0;
@@ -33,7 +33,7 @@ int main()
   proof_kernel<<<1, 1>>>();
   assert(cudaDeviceSynchronize() == cudaSuccess);
 
-#  if defined(__NVRTCC_USE_NVRTC__)
+#  ifdef __NVRTCC_USE_NVRTC__
   assert(proof_var == 1);
 #  else // ^^^ __NVRTCC_USE_NVRTC__ ^^^ / vvv !__NVRTCC_USE_NVRTC__ vvv
   assert(proof_var == -1);

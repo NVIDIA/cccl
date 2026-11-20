@@ -25,7 +25,7 @@
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifndef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
 #elif _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0

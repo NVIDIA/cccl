@@ -61,12 +61,10 @@ __device__ void test_group_and_views(const Group& group, const Parent& parent)
   const cudax::coop::group_view thread_view{cuda::gpu_thread, view};
   test_queries(thread_view, parent);
 
-  // An explicitly nested view forwards queries through both view layers.
-  using View          = decltype(view);
-  using Unit          = typename View::unit_type;
-  using MappingResult = typename View::__mapping_result_type;
-  const cudax::coop::group_view<Unit, View, MappingResult> nested_view{view};
-  test_queries(nested_view, parent);
+  // Copying a view preserves the underlying group type.
+  const cudax::coop::group_view copied_view{view};
+  static_assert(cuda::std::is_same_v<decltype(view), decltype(copied_view)>);
+  test_queries(copied_view, parent);
 }
 
 struct TestKernel
