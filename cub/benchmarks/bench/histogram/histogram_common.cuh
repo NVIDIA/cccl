@@ -5,7 +5,17 @@
 
 #include <cub/device/device_histogram.cuh>
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/type_traits>
+
+#if !TUNE_BASE
+#  include <cub/agent/agent_histogram.cuh>
+#  include <cub/block/block_load.cuh>
+#  include <cub/device/dispatch/tuning/tuning_histogram.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 #if !TUNE_BASE
 

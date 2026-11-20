@@ -7,6 +7,10 @@
 //! generation mirror `thrust/benchmarks/bench/vectorized_search/{lower,upper}_bound.cu`
 //! (Elements pow2 16..28 step 4, int8..int64, NeedlesRatio {1, 25, 50}).
 
+#include <cub/config.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 

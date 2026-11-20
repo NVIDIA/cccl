@@ -3,6 +3,10 @@
 
 #include <cub/device/device_for.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <nvbench_helper.cuh>
 
 template <class T>

@@ -5,6 +5,8 @@
 
 #include <cub/config.cuh>
 
+#include <cub/warp/warp_reduce.cuh>
+
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>

@@ -3,9 +3,25 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+#  include <cub/util_arch.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__cccl/execution_space.h>
+#endif // !TUNE_BASE
 
 #if !TUNE_BASE
 template <typename AccumT>

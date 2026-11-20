@@ -3,7 +3,24 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__functional/operations.h>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+#  include <cub/util_arch.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__cccl/execution_space.h>
+#  include <cuda/std/__functional/invoke.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

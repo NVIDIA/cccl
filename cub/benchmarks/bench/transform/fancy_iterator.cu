@@ -12,6 +12,10 @@
 #include <cuda/iterator>
 #include <cuda/std/tuple>
 
+#include <cstdint>
+
+#include <nvbench_helper.cuh>
+
 #include "common.h"
 
 using T = std::int8_t;

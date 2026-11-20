@@ -3,7 +3,7 @@
 
 // Tuning parameters found for signed integer types apply equally for unsigned integer types
 
-#include <nvbench_helper.cuh>
+#include <cuda/std/__functional/operations.h>
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32

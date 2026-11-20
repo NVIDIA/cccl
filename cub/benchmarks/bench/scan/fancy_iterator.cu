@@ -13,16 +13,20 @@
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <new>
 #include <stdexcept>
 #include <string>
 

@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/config.cuh>
+
 #include <cub/warp/warp_bitonic_sort.cuh>
+
+#include <cuda/std/__cccl/execution_space.h>
+
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 
