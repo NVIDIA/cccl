@@ -22,6 +22,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from itertools import takewhile
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 
@@ -138,13 +139,17 @@ def _parse_includes(
 
 
 def _docstrings(module: Path) -> Iterator[tuple[int, str]]:
-    """Yield the first line number and raw text of each docstring."""
+    """Yield each docstring with its source line numbers and RST indentation."""
     tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
     for node in ast.walk(tree):
         if isinstance(node, _DOCUMENTED):
             text = ast.get_docstring(node, clean=False)
             if text:
-                yield node.body[0].lineno, text
+                # Autodoc dedents the body independently of the opening line.
+                # Keep leading blank lines so diagnostics point into the file.
+                first, newline, body = text.expandtabs().partition("\n")
+                normalized = first.lstrip() + newline + dedent(body)
+                yield node.body[0].lineno, normalized
 
 
 def _page_includes(docs_root: Path) -> list[_Include]:
@@ -424,6 +429,29 @@ def scan():
         :language: python
     """
 '''
+
+
+@pytest.mark.parametrize(
+    "opening,line", [("Example::", 6), ("\n\n    Example::", 8)]
+)
+def test_docstring_include_after_literal_block(
+    tmp_path: Path, opening: str, line: int
+) -> None:
+    module = tmp_path / "example.py"
+    module.write_text(
+        f'''\
+def example():
+    """{opening}
+
+        .. literalinclude:: shown-only.py
+
+    .. literalinclude:: missing.py
+    """
+''',
+        encoding="utf-8",
+    )
+    (include,) = _docstring_includes(tmp_path)
+    assert (include.target, include.line) == ("missing.py", line)
 
 
 @pytest.mark.parametrize(
