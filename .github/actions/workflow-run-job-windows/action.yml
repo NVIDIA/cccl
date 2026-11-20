@@ -75,7 +75,7 @@ runs:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_KEY_PREFIX=cccl-test/sccache-v0.18.0-rapids.7-2" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_KEY_PREFIX=cccl-test/sccache-v0.18.0-rapids.16" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
 
@@ -184,7 +184,7 @@ runs:
         # Install latest sccache client
         pushd "C:\tools"
         Remove-Item "C:\tools\sccache" -Force -Recurse
-        Invoke-WebRequest -Uri "https://github.com/trxcllnt/sccache/releases/latest/download/sccache-x86_64-pc-windows-msvc.zip" -OutFile "./sccache.zip" -UseBasicParsing
+        Invoke-WebRequest -Uri "https://github.com/rapidsai/sccache/releases/latest/download/sccache-x86_64-pc-windows-msvc.zip" -OutFile "./sccache.zip" -UseBasicParsing
         Expand-Archive "./sccache.zip"
         Remove-Item "./sccache.zip"
         # Remove the versioned subdirectory:
