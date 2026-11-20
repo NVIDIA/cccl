@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -342,7 +342,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpac
 // ============================================================================
 // Builtin declarations/implementations for sqrt operations
 // ============================================================================
-#if defined(_CCCL_FPEMU_INLINE)
+#ifdef _CCCL_FPEMU_INLINE
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_rn(__fpbits64 __x) noexcept
 {
   return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::high>(__x);

@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,6 +31,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/__algorithm/copy.h>
@@ -148,14 +149,14 @@ struct DeviceHistogramKernelSource
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
       // The unary plus promotes plain char to int, which cuda::std::cmp_greater requires
-      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
+      if (::cuda::std::cmp_greater(num_bins, +(::cuda::std::numeric_limits<CommonT>::max)()))
       {
         return true;
       }
       const auto upper_level_cast = static_cast<IntArithmeticT>(upper_level[channel]);
       const auto lower_level_cast = static_cast<IntArithmeticT>(lower_level[channel]);
       const auto range            = static_cast<IntArithmeticT>(upper_level_cast - lower_level_cast);
-      return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      return range > ((::cuda::std::numeric_limits<IntArithmeticT>::max)() / static_cast<IntArithmeticT>(num_bins));
     }
     else
     {
@@ -269,10 +270,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
   const int items_per_tile = threads_per_block * items_per_thread;
   const int tiles_per_row  = static_cast<int>(::cuda::ceil_div(num_row_items, items_per_tile));
-  const int blocks_per_row = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
+  const int blocks_per_row = (::cuda::std::min) (histogram_sweep_occupancy, tiles_per_row);
   const int blocks_per_col =
     (blocks_per_row > 0)
-      ? int(::cuda::std::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
+      ? int((::cuda::std::min) (static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
       : 0;
   const int num_thread_blocks = blocks_per_row * blocks_per_col;
 
@@ -505,10 +506,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
-    }
+    max_levels = (::cuda::max) (max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -680,10 +678,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
-    }
+    max_levels = (::cuda::max) (max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -1034,10 +1029,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       output_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
+      max_levels = (::cuda::max) (max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 
@@ -1100,10 +1092,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
+      max_levels = (::cuda::max) (max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,19 +24,22 @@
 #if _CCCL_CTK_AT_LEAST(12, 2)
 
 #  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/cstddef>
 #  include <cuda/std/span>
 
 #  include <cuda/experimental/__driver/driver_api.cuh>
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
+
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

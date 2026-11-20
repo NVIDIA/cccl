@@ -64,7 +64,7 @@
 #define _CCCL_COMPILER_NVRTC()    _CCCL_VERSION_INVALID()
 
 // Determine the host compiler and its version
-#if defined(__INTEL_COMPILER)
+#ifdef __INTEL_COMPILER
 #  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
 #    warning \
       "The Intel C++ Compiler Classic (icc/icpc) is not supported by CCCL. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message."
@@ -122,7 +122,7 @@
 
 // Determine the cuda compiler
 #if _CCCL_CUDA_COMPILATION()
-#  if defined(__NVCC__)
+#  ifdef __NVCC__
 #    undef _CCCL_CUDA_COMPILER_NVCC
 #    define _CCCL_CUDA_COMPILER_NVCC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #  elif defined(_NVHPC_CUDA)
@@ -139,7 +139,7 @@
 
 // Determine if we are compiling host code, this includes both CUDA and C++ compilation
 // nvc++ does not define __CUDA_ARCH__, but it compiles both host and device code at the same time
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 #  define _CCCL_HOST_COMPILATION() 1
 #else // ^^^ compiling host code ^^^ / vvv not compiling host code vvv
 #  define _CCCL_HOST_COMPILATION() 0

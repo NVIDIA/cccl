@@ -25,7 +25,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
 
 TEST_HOST_DEVICE_FUNC void f()
 {
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   static_assert(test());
 #else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
   static_assert(false);

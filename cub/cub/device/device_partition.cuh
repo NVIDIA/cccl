@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -64,9 +64,9 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DevicePartition, except @p If with three partitions, that accept an environment can be tuned by
-//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::PartitionPolicy`, as
-//! shown in the example below:
+//! All algorithms in DevicePartition, except @p If with three partitions, can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::PartitionPolicy`, as shown in the
+//! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
 //!      :language: c++
@@ -80,8 +80,7 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin partition-if-tuning
 //!      :end-before: example-end partition-if-tuning
 //!
-//! The environment overload of the three-way @p If algorithm can be tuned using a
-//! :cpp:struct:`cub::ThreeWayPartitionPolicy` instead:
+//! The three-way @p If algorithm can be tuned using a :cpp:struct:`cub::ThreeWayPartitionPolicy` instead:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
 //!      :language: c++

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,4 +50,4 @@ copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, Outpu
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy_if.inl>
+#include <thrust/detail/copy_if.inl> // IWYU pragma: export

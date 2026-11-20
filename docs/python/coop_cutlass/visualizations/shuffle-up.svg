@@ -1,0 +1,98 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 285" role="img" aria-labelledby="title desc">
+  <title id="title">Up shuffle: previous item in blocked order</title>
+  <desc id="desc">Eight threads each start with two values. Output position p reads input p minus one. The first output is undefined, and the other fifteen contain input zero through fourteen.</desc>
+  <rect width="1000" height="285" rx="12" fill="#f7f9fc" />
+  <text x="24" y="30" text-anchor="start" font-family="sans-serif" font-size="15" fill="#172b3a">INPUT VALUES</text>
+  <text x="72" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 0</text>
+  <rect x="28" y="70" width="40" height="38" rx="5" fill="#e2f0cb" stroke="#68798b" />
+  <text x="48" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">0</text>
+  <path d="M 48 112 L 92 180" stroke="#8798a9" fill="none" />
+  <rect x="28" y="185" width="40" height="38" rx="5" fill="#eceff2" stroke="#68798b" />
+  <text x="48" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">?</text>
+  <rect x="72" y="70" width="40" height="38" rx="5" fill="#e2f0cb" stroke="#68798b" />
+  <text x="92" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">1</text>
+  <path d="M 92 112 L 170 180" stroke="#8798a9" fill="none" />
+  <rect x="72" y="185" width="40" height="38" rx="5" fill="#e2f0cb" stroke="#68798b" />
+  <text x="92" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">0</text>
+  <text x="194" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 1</text>
+  <rect x="150" y="70" width="40" height="38" rx="5" fill="#d3eff6" stroke="#68798b" />
+  <text x="170" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">2</text>
+  <path d="M 170 112 L 214 180" stroke="#8798a9" fill="none" />
+  <rect x="150" y="185" width="40" height="38" rx="5" fill="#e2f0cb" stroke="#68798b" />
+  <text x="170" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">1</text>
+  <rect x="194" y="70" width="40" height="38" rx="5" fill="#d3eff6" stroke="#68798b" />
+  <text x="214" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">3</text>
+  <path d="M 214 112 L 292 180" stroke="#8798a9" fill="none" />
+  <rect x="194" y="185" width="40" height="38" rx="5" fill="#d3eff6" stroke="#68798b" />
+  <text x="214" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">2</text>
+  <text x="316" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 2</text>
+  <rect x="272" y="70" width="40" height="38" rx="5" fill="#fff0c9" stroke="#68798b" />
+  <text x="292" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">4</text>
+  <path d="M 292 112 L 336 180" stroke="#8798a9" fill="none" />
+  <rect x="272" y="185" width="40" height="38" rx="5" fill="#d3eff6" stroke="#68798b" />
+  <text x="292" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">3</text>
+  <rect x="316" y="70" width="40" height="38" rx="5" fill="#fff0c9" stroke="#68798b" />
+  <text x="336" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">5</text>
+  <path d="M 336 112 L 414 180" stroke="#8798a9" fill="none" />
+  <rect x="316" y="185" width="40" height="38" rx="5" fill="#fff0c9" stroke="#68798b" />
+  <text x="336" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">4</text>
+  <text x="438" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 3</text>
+  <rect x="394" y="70" width="40" height="38" rx="5" fill="#f8d9e7" stroke="#68798b" />
+  <text x="414" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">6</text>
+  <path d="M 414 112 L 458 180" stroke="#8798a9" fill="none" />
+  <rect x="394" y="185" width="40" height="38" rx="5" fill="#fff0c9" stroke="#68798b" />
+  <text x="414" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">5</text>
+  <rect x="438" y="70" width="40" height="38" rx="5" fill="#f8d9e7" stroke="#68798b" />
+  <text x="458" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">7</text>
+  <path d="M 458 112 L 536 180" stroke="#8798a9" fill="none" />
+  <rect x="438" y="185" width="40" height="38" rx="5" fill="#f8d9e7" stroke="#68798b" />
+  <text x="458" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">6</text>
+  <text x="560" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 4</text>
+  <rect x="516" y="70" width="40" height="38" rx="5" fill="#e7dff4" stroke="#68798b" />
+  <text x="536" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">8</text>
+  <path d="M 536 112 L 580 180" stroke="#8798a9" fill="none" />
+  <rect x="516" y="185" width="40" height="38" rx="5" fill="#f8d9e7" stroke="#68798b" />
+  <text x="536" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">7</text>
+  <rect x="560" y="70" width="40" height="38" rx="5" fill="#e7dff4" stroke="#68798b" />
+  <text x="580" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">9</text>
+  <path d="M 580 112 L 658 180" stroke="#8798a9" fill="none" />
+  <rect x="560" y="185" width="40" height="38" rx="5" fill="#e7dff4" stroke="#68798b" />
+  <text x="580" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">8</text>
+  <text x="682" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 5</text>
+  <rect x="638" y="70" width="40" height="38" rx="5" fill="#ffe3cf" stroke="#68798b" />
+  <text x="658" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">10</text>
+  <path d="M 658 112 L 702 180" stroke="#8798a9" fill="none" />
+  <rect x="638" y="185" width="40" height="38" rx="5" fill="#e7dff4" stroke="#68798b" />
+  <text x="658" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">9</text>
+  <rect x="682" y="70" width="40" height="38" rx="5" fill="#ffe3cf" stroke="#68798b" />
+  <text x="702" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">11</text>
+  <path d="M 702 112 L 780 180" stroke="#8798a9" fill="none" />
+  <rect x="682" y="185" width="40" height="38" rx="5" fill="#ffe3cf" stroke="#68798b" />
+  <text x="702" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">10</text>
+  <text x="804" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 6</text>
+  <rect x="760" y="70" width="40" height="38" rx="5" fill="#d0eee8" stroke="#68798b" />
+  <text x="780" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">12</text>
+  <path d="M 780 112 L 824 180" stroke="#8798a9" fill="none" />
+  <rect x="760" y="185" width="40" height="38" rx="5" fill="#ffe3cf" stroke="#68798b" />
+  <text x="780" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">11</text>
+  <rect x="804" y="70" width="40" height="38" rx="5" fill="#d0eee8" stroke="#68798b" />
+  <text x="824" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">13</text>
+  <path d="M 824 112 L 902 180" stroke="#8798a9" fill="none" />
+  <rect x="804" y="185" width="40" height="38" rx="5" fill="#d0eee8" stroke="#68798b" />
+  <text x="824" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">12</text>
+  <text x="926" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#172b3a">Thread 7</text>
+  <rect x="882" y="70" width="40" height="38" rx="5" fill="#e0e7ef" stroke="#68798b" />
+  <text x="902" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">14</text>
+  <path d="M 902 112 L 946 180" stroke="#8798a9" fill="none" />
+  <rect x="882" y="185" width="40" height="38" rx="5" fill="#d0eee8" stroke="#68798b" />
+  <text x="902" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">13</text>
+  <rect x="926" y="70" width="40" height="38" rx="5" fill="#e0e7ef" stroke="#68798b" />
+  <text x="946" y="95" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">15</text>
+  <rect x="926" y="185" width="40" height="38" rx="5" fill="#e0e7ef" stroke="#68798b" />
+  <text x="946" y="210" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">14</text>
+  <text x="24" y="265" text-anchor="start" font-family="sans-serif" font-size="15" fill="#172b3a">OUTPUT: input[p - 1]; position 0 is undefined</text>
+</svg>

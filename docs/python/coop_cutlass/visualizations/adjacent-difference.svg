@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 430" role="img" aria-labelledby="title desc">
+<title id="title">Adjacent Difference: left, with a partial tile</title>
+<desc id="desc">Eight threads each own one item. Five items are valid and the predecessor is zero. Input 2,2,5,5,9,9,9,3 yields 2,0,3,0,4,9,9,3. The invalid suffix is copied unchanged.</desc>
+<rect width="1080" height="430" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="24" y="34" font-size="22" text-anchor="start" font-weight="600">Adjacent Difference: left, with a partial tile</text>
+<text x="24" y="62" font-size="15" text-anchor="start" font-weight="normal">8 teaching threads; 1 item per thread; valid_items = 5; tile_predecessor_item = 0</text>
+<text x="226" y="97" font-size="14" text-anchor="middle" font-weight="600">T0</text>
+<text x="334" y="97" font-size="14" text-anchor="middle" font-weight="600">T1</text>
+<text x="442" y="97" font-size="14" text-anchor="middle" font-weight="600">T2</text>
+<text x="550" y="97" font-size="14" text-anchor="middle" font-weight="600">T3</text>
+<text x="658" y="97" font-size="14" text-anchor="middle" font-weight="600">T4</text>
+<text x="766" y="97" font-size="14" text-anchor="middle" font-weight="600">T5</text>
+<text x="874" y="97" font-size="14" text-anchor="middle" font-weight="600">T6</text>
+<text x="982" y="97" font-size="14" text-anchor="middle" font-weight="600">T7</text>
+<text x="24" y="145" font-size="16" text-anchor="start" font-weight="600">Input</text>
+<rect x="180" y="113" width="92" height="55" rx="6" fill="#dceac1" stroke="#8e9cac"/>
+<text x="226" y="147" font-size="21" text-anchor="middle" font-weight="600">2</text>
+<rect x="288" y="113" width="92" height="55" rx="6" fill="#c9eaf0" stroke="#8e9cac"/>
+<text x="334" y="147" font-size="21" text-anchor="middle" font-weight="600">2</text>
+<rect x="396" y="113" width="92" height="55" rx="6" fill="#fff0bd" stroke="#8e9cac"/>
+<text x="442" y="147" font-size="21" text-anchor="middle" font-weight="600">5</text>
+<rect x="504" y="113" width="92" height="55" rx="6" fill="#f5d5e4" stroke="#8e9cac"/>
+<text x="550" y="147" font-size="21" text-anchor="middle" font-weight="600">5</text>
+<rect x="612" y="113" width="92" height="55" rx="6" fill="#e8def7" stroke="#8e9cac"/>
+<text x="658" y="147" font-size="21" text-anchor="middle" font-weight="600">9</text>
+<rect x="720" y="113" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="766" y="147" font-size="21" text-anchor="middle" font-weight="600">9</text>
+<rect x="828" y="113" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="874" y="147" font-size="21" text-anchor="middle" font-weight="600">9</text>
+<rect x="936" y="113" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="982" y="147" font-size="21" text-anchor="middle" font-weight="600">3</text>
+<path d="M 713 106 V 175" stroke="#435971" stroke-dasharray="5 4"/>
+<text x="24" y="227" font-size="16" text-anchor="start" font-weight="600">Left neighbor</text>
+<rect x="180" y="195" width="92" height="55" rx="6" fill="#dceac1" stroke="#8e9cac"/>
+<text x="226" y="229" font-size="21" text-anchor="middle" font-weight="600">0</text>
+<rect x="288" y="195" width="92" height="55" rx="6" fill="#c9eaf0" stroke="#8e9cac"/>
+<text x="334" y="229" font-size="21" text-anchor="middle" font-weight="600">2</text>
+<rect x="396" y="195" width="92" height="55" rx="6" fill="#fff0bd" stroke="#8e9cac"/>
+<text x="442" y="229" font-size="21" text-anchor="middle" font-weight="600">2</text>
+<rect x="504" y="195" width="92" height="55" rx="6" fill="#f5d5e4" stroke="#8e9cac"/>
+<text x="550" y="229" font-size="21" text-anchor="middle" font-weight="600">5</text>
+<rect x="612" y="195" width="92" height="55" rx="6" fill="#e8def7" stroke="#8e9cac"/>
+<text x="658" y="229" font-size="21" text-anchor="middle" font-weight="600">5</text>
+<rect x="720" y="195" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="766" y="229" font-size="21" text-anchor="middle" font-weight="600">none</text>
+<rect x="828" y="195" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="874" y="229" font-size="21" text-anchor="middle" font-weight="600">none</text>
+<rect x="936" y="195" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="982" y="229" font-size="21" text-anchor="middle" font-weight="600">none</text>
+<path d="M 713 188 V 257" stroke="#435971" stroke-dasharray="5 4"/>
+<text x="24" y="309" font-size="16" text-anchor="start" font-weight="600">Result</text>
+<rect x="180" y="277" width="92" height="55" rx="6" fill="#dceac1" stroke="#8e9cac"/>
+<text x="226" y="311" font-size="21" text-anchor="middle" font-weight="600">2</text>
+<rect x="288" y="277" width="92" height="55" rx="6" fill="#c9eaf0" stroke="#8e9cac"/>
+<text x="334" y="311" font-size="21" text-anchor="middle" font-weight="600">0</text>
+<rect x="396" y="277" width="92" height="55" rx="6" fill="#fff0bd" stroke="#8e9cac"/>
+<text x="442" y="311" font-size="21" text-anchor="middle" font-weight="600">3</text>
+<rect x="504" y="277" width="92" height="55" rx="6" fill="#f5d5e4" stroke="#8e9cac"/>
+<text x="550" y="311" font-size="21" text-anchor="middle" font-weight="600">0</text>
+<rect x="612" y="277" width="92" height="55" rx="6" fill="#e8def7" stroke="#8e9cac"/>
+<text x="658" y="311" font-size="21" text-anchor="middle" font-weight="600">4</text>
+<rect x="720" y="277" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="766" y="311" font-size="21" text-anchor="middle" font-weight="600">9</text>
+<rect x="828" y="277" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="874" y="311" font-size="21" text-anchor="middle" font-weight="600">9</text>
+<rect x="936" y="277" width="92" height="55" rx="6" fill="#e4e8ed" stroke="#8e9cac"/>
+<text x="982" y="311" font-size="21" text-anchor="middle" font-weight="600">3</text>
+<path d="M 713 270 V 339" stroke="#435971" stroke-dasharray="5 4"/>
+<text x="24" y="380" font-size="14" text-anchor="start" font-weight="normal">Positions 0 through 4 subtract the left neighbor. Positions 5 through 7 copy their input.</text>
+<text x="24" y="404" font-size="14" text-anchor="start" font-weight="normal">The input payload remains unchanged. The dashed line ends the valid prefix.</text>
+</g>
+</svg>

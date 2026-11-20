@@ -57,7 +57,7 @@ TEST_FUNC void test_argument_forwarding()
     cuda::std::visit<ReturnType>(obj, cuda::std::move(cv));
     assert(Fn::check_call<const int&&>(Val));
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   { // single argument - lvalue reference
     using V = cuda::std::variant<int&>;
     int x   = 42;

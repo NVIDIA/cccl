@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -80,7 +80,7 @@ struct BlockReduceWarpReductions
   static constexpr int warps = ::cuda::ceil_div(threads_per_block, warp_threads);
 
   /// The logical warp size for warp reductions
-  static constexpr int logical_warp_size = ::cuda::std::min(threads_per_block, warp_threads);
+  static constexpr int logical_warp_size = (::cuda::std::min) (threads_per_block, warp_threads);
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
@@ -205,7 +205,7 @@ struct BlockReduceWarpReductions
       if (warp_id == 0)
       {
         const int num_warps =
-          FullTile ? warps : ::cuda::std::min(::cuda::ceil_div(num_valid, logical_warp_size), +warps);
+          FullTile ? warps : (::cuda::std::min) (::cuda::ceil_div(num_valid, logical_warp_size), +warps);
 
         const T val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
 

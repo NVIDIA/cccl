@@ -341,7 +341,7 @@ TEST_FUNC bool tests()
   return true;
 }
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
 TEST_FUNC constexpr bool basic_constexpr_test()
 {
   struct Nested
@@ -358,7 +358,7 @@ TEST_FUNC constexpr bool basic_constexpr_test()
 int main(int, char**)
 {
   tests();
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
   static_assert(basic_constexpr_test());
 #endif // _CCCL_BUILTIN_BIT_CAST
   return 0;

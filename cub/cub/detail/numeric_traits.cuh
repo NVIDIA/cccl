@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -186,7 +186,7 @@ struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
   CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Max()
   {
-    return ::cuda::std::numeric_limits<T>::max();
+    return (::cuda::std::numeric_limits<T>::max)();
   }
 
   //! deprecated [Since 3.0]

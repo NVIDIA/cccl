@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 #if !TEST_COMPILER(NVRTC)
-#  if defined(__cpp_lib_span)
+#  ifdef __cpp_lib_span
 #    include <span>
 #  endif //__cpp_lib_span
 #  include <vector>
@@ -135,7 +135,7 @@ void test_std()
     assert(s1.data() == val.data() && s1.size() == 1);
     assert(s2.data() == cVal.data() && s2.size() == 1);
   }
-#  if defined(__cpp_lib_span)
+#  ifdef __cpp_lib_span
   { // from std::span
     // we are requiring `cuda::std::enable_borrowed_range` but only get `std::enable_borrowed_range`
     // cuda::std::span<T> s1{std::span{val}};

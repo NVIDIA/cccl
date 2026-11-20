@@ -159,7 +159,7 @@ def test_clone_returns_independent_wrappers_sharing_loaded_code():
         assert bound.d_out_cccl is not portable.d_out_cccl
         assert bound.op_cccl is not portable.op_cccl
     assert first.d_in_cccl is not second.d_in_cccl
-    first.d_in_cccl.bind_pointer_state(0x2000, None)
+    first.d_in_cccl.bind_pointer_state(0x2000)
     assert second.d_in_cccl.state == 0
     assert source.load_count == 1
     assert source.serialize_count == 0
@@ -175,7 +175,7 @@ def test_clone_none_is_unbound_without_device_access(monkeypatch, bound):
     if bound:
         original = original._clone(device_id=0, cc=80)
     original_binding = original._bound_build_result
-    original.d_in_cccl.bind_pointer_state(0x2000, None)
+    original.d_in_cccl.bind_pointer_state(0x2000)
     load_count = source.load_count
 
     def unexpected_device_access(*args, **kwargs):
@@ -255,15 +255,17 @@ def test_clone_binding_controls_call_device_resolution(monkeypatch, clone_target
     array = SimpleNamespace(
         __cuda_array_interface__={"data": (0x2000, False)},
     )
+    n_iters = 2
     for executor in executors:
         queries_before = len(device_queries)
-        for _ in range(2):
+        calls_before = len(source.calls)
+        for _ in range(n_iters):
             executor(d_in=array, d_out=array, op=OpKind.PLUS, num_items=1)
-        expected_queries = 2 if executor._bound_build_result is None else 0
-        assert len(device_queries) - queries_before == expected_queries
-        assert executor.loaded_build_result is source
+        expected_queries = n_iters if executor._bound_build_result is None else 0
+        assert len(device_queries) == queries_before + expected_queries
+        assert len(source.calls) == calls_before + n_iters
         assert executor.d_in_cccl.state == 0x2000
-    assert len(source.calls) == 2 * len(executors)
+    assert len(source.calls) == n_iters * len(executors)
     assert source.load_count == 1
     assert source.serialize_count == 0
 

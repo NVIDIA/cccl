@@ -11,12 +11,12 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
-* :doc:`cuda.coop <coop>` — Cooperative Block and Warp Load and Store
-  primitives for Python GPU kernel compilers.
-
 * :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
   logical data and tasks with read/write annotations; STF orchestrates execution
   and data movement.
+
+* :doc:`cuda.coop.cutlass <coop_cutlass/index>` — Cooperative CUB primitives
+  inside CuTe kernels.
 
 These libraries expose the generic, highly-optimized algorithms from the
 :doc:`CCCL C++ libraries </cccl/index>`,
@@ -37,7 +37,7 @@ Who is this for?
 
    setup
    compute/index
-   coop
+   coop_cutlass/index
    stf
    resources
    api_reference

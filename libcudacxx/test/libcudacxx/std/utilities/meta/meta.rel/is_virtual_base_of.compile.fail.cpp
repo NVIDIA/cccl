@@ -12,7 +12,7 @@
 
 __host__ __device__ constexpr bool test()
 {
-#if !defined(_CCCL_BUILTIN_IS_VIRTUAL_BASE_OF)
+#ifndef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
   static_assert(!cuda::std::is_virtual_base_of<int, int>::value);
   static_assert(!cuda::std::is_virtual_base_of_v<int, int>);
 #else

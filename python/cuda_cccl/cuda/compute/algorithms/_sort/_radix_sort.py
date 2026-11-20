@@ -29,7 +29,6 @@ class _RadixSort(Serializable):
         "d_out_values_cccl",
         "decomposer_op",
         "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -107,7 +106,7 @@ class _RadixSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -142,7 +141,7 @@ class _RadixSort(Serializable):
 
         selector = -1
 
-        temp_storage_bytes, selector = self.loaded_build_result.compute(
+        temp_storage_bytes, selector = loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

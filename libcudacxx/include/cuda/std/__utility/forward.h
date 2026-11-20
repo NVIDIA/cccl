@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,7 +45,7 @@
 #endif // _CCCL_ENABLE_FREESTANDING
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_FORWARD
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
 #endif // defined(__CUDACC_TILE__)

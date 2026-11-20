@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,13 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/variant.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
+
+#include <nv/target>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
