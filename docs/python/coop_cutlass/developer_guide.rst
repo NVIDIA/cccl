@@ -376,11 +376,9 @@ selection. A mismatch reports an error before provider compilation. The
 final linker must also accept the generated LTO-IR; successful NVRTC
 compilation alone does not establish that compatibility.
 
-On a JIT miss, NVRTC can reuse a compatible precompiled header from this
-process to compile the new specialization. The JIT cache identity includes
-the rendered source, header identity, compiler options, architecture, and
-resolved toolkit/compiler information. Cache
-loads validate the artifact and any recorded scratch layouts. Cache writes
+The JIT cache identity includes the rendered source, header identity,
+compiler options, architecture, and resolved toolkit/compiler information.
+Cache loads validate the artifact and any recorded scratch layouts. Cache writes
 use a lock and atomic replacement. The LTO-IR file remains available until
 the final linker has read it. Finalization removes stale managed library
 paths from persistent compiler options so the next trace cannot link an
@@ -567,6 +565,7 @@ exists, add the entry to its ``configurations`` list:
          "env": {
            "PYTHONPATH": "${workspaceFolder}/python/cuda_coop_cutlass",
            "CUDA_COOP_CUTLASS_CCCL_ROOT": "${workspaceFolder}",
+           "CUDA_COOP_CUTLASS_AOT_MODE": "off",
            "CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-cutlass-debug-sources"
          }
        }
@@ -575,10 +574,9 @@ exists, add the entry to its ``configurations`` list:
 
 ``justMyCode: false`` permits stepping into library code. ``PYTHONPATH`` and
 ``CUDA_COOP_CUTLASS_CCCL_ROOT`` select this checkout's Python sources and C++ headers.
-``cute.compile`` explicitly requests CuTe compilation. When run as a script,
-the example also selects a fresh temporary provider-cache directory and
-removes it on exit. A new process with that empty provider cache lets each
-debug session reach NVRTC.
+``CUDA_COOP_CUTLASS_AOT_MODE=off`` disables environment-selected provider
+packs for the debug session. The script creates a fresh temporary provider
+cache, so the first ``cute.compile`` reaches NVRTC.
 
 On a machine with several GPUs, add ``CUDA_VISIBLE_DEVICES`` to ``env``.
 Use the toolkit configured for your compatible compiler environment.
@@ -788,7 +786,7 @@ and start a new debug session. From a terminal, the equivalent is:
 
 .. code-block:: bash
 
-   python docs/python/coop_cutlass/debugger_walkthrough.py --algorithm transpose
+   CUDA_COOP_CUTLASS_AOT_MODE=off python docs/python/coop_cutlass/debugger_walkthrough.py --algorithm transpose
 
 The kernel, launch dimensions, and expected output are unchanged. At the
 plan stop, ``ALGORITHM`` now selects ``BLOCK_LOAD_TRANSPOSE`` or
@@ -843,12 +841,12 @@ If a breakpoint does not stop
 * If compiler initialization is skipped, check the example's import order.
   Read any dependency error or compiler initialization warning before
   investigating later compiler stops.
-* If NVRTC is skipped, restart the complete script. Its temporary provider
-  cache is created only under ``if __name__ == "__main__"``. Check that
-  the provider directory is new and that you set the breakpoint before
-  ``cute.compile``. In ``_jit_bundle()``, inspect the result of the provider
-  cache lookup. The backend writes the source dump before that lookup,
-  including when the cache supplies the compiled provider.
+* If NVRTC is skipped, check that the debugger sets
+  ``CUDA_COOP_CUTLASS_AOT_MODE=off``. A matching pack supplies the provider
+  before ``_jit_bundle()`` runs. Set the breakpoint before ``cute.compile``
+  and restart the complete script to get a fresh temporary provider cache.
+  In ``_jit_bundle()``, inspect the cache lookup. The backend can write the
+  source dump even on a cache hit.
 * If a later launch retraces, check that you are calling ``compiled``.
   This walkthrough retains the callable returned by ``cute.compile``
   and invokes it twice; calling the decorated ``launch`` directly follows
