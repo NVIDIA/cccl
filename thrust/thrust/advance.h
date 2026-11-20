@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/prev.h>
 

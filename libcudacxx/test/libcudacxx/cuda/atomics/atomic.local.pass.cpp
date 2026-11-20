@@ -125,7 +125,7 @@ TEST_DEVICE_FUNC inline void tests()
 
 int main(int arg, char** argv)
 {
-#if !defined(_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
+#ifndef _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (cuda_thread_count = 64;),

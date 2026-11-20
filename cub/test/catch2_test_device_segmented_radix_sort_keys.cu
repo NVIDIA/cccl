@@ -133,7 +133,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+#ifdef SINGLE_TEST_CASE_INSTANTIATION
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data",
          "[keys][segmented][radix][sort][device]",
@@ -265,7 +265,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+#ifdef SINGLE_TEST_CASE_INSTANTIATION
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments",
          "[keys][segmented][radix][sort][device]",
@@ -505,7 +505,7 @@ catch (...)
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
-#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#  ifdef CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_LARGE,

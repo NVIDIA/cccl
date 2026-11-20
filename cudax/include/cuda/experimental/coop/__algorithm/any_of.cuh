@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo: Can we make any_of be implemented as reduce(group, data, cuda::std::logical_or{})?
 

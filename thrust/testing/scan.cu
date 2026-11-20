@@ -461,7 +461,7 @@ TEST_CASE("TestScanWithLargeTypes", "[scan]")
 {
   test_scan_with_large_types<int, 1>();
 
-#if !defined(__QNX__)
+#ifndef __QNX__
   test_scan_with_large_types<int, 8>();
   test_scan_with_large_types<int, 64>();
 #endif

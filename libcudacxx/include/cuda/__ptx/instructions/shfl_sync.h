@@ -60,7 +60,11 @@ __shfl_sync_dst_lane(__dot_shfl_mode __shfl_mode, uint32_t __lane_idx_offset, ui
   }
   else if (__shfl_mode == __dot_shfl_mode::__up)
   {
-    __j = __lane_idx_offset >= __lane ? 0 : __lane - __lane_idx_offset;
+    if (__lane_idx_offset > __lane)
+    {
+      return 1u << __lane;
+    }
+    __j = __lane - __lane_idx_offset;
   }
   else if (__shfl_mode == __dot_shfl_mode::__down)
   {

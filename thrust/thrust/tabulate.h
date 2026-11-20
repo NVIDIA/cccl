@@ -117,4 +117,4 @@ _CCCL_HOST_API void tabulate(ForwardIterator first, ForwardIterator last, UnaryO
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/tabulate.inl>
+#include <thrust/detail/tabulate.inl> // IWYU pragma: export

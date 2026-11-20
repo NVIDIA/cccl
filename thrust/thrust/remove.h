@@ -803,4 +803,4 @@ _CCCL_HOST_API OutputIterator remove_copy_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/remove.inl>
+#include <thrust/detail/remove.inl> // IWYU pragma: export

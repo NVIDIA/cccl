@@ -16,7 +16,7 @@ _CCCL_HOST_DEVICE void universal_vector_access(VecInT& in, VecOutT& out)
            in.back() == expected_back;
 }
 
-#if defined(THRUST_TEST_DEVICE_SIDE)
+#ifdef THRUST_TEST_DEVICE_SIDE
 template <class VecInT, class VecOutT>
 __global__ void universal_vector_device_access_kernel(VecInT& vec, VecOutT& out)
 {
