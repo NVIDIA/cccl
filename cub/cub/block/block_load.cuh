@@ -11,7 +11,7 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -385,7 +385,7 @@ template <int ThreadsPerBlock,
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  constexpr int vec_size = ::cuda::std::min(ItemsPerThread, static_cast<int>(VecSize));
+  constexpr int vec_size = (::cuda::std::min) (ItemsPerThread, static_cast<int>(VecSize));
   static_assert(ItemsPerThread % vec_size == 0, "The vector size must evenly divide ItemsPerThread");
 
   using vector_t                   = typename CubVector<InputT, vec_size>::Type;

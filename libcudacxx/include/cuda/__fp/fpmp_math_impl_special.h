@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 
 /*
  * --------------------------------------------------------------------
@@ -113,7 +113,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // _CCCL_FPMP_USE_LIB block, which would otherwise fuse into infinite recursion and
 // be eliminated under device LTO. See the _CCCL_FPMP_CORE_API note in fpmp_impl.h.
 */
-#  if defined(_CCCL_FPMP_BUILD_LIB)
+#  ifdef _CCCL_FPMP_BUILD_LIB
 #    define _CCCL_FPMP_INTERNAL_CUSTOM_DECL _CCCL_FPMP_CORE_API
 #  else
 #    define _CCCL_FPMP_INTERNAL_CUSTOM_DECL _CCCL_HOST_DEVICE_API inline

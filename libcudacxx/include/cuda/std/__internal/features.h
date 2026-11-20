@@ -12,7 +12,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifndef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
 #elif _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
@@ -83,7 +83,7 @@
 #endif // ^^^ no constexpr allocations ^^^
 
 // Enable removed C++17 features
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 #  define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 

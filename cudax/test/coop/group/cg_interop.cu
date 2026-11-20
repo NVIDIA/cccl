@@ -41,7 +41,7 @@ __device__ void test_cg_interop(Config config)
   }
 
   // Test cg::this_cluster().
-#if defined(_CG_HAS_CLUSTER_GROUP)
+#ifdef _CG_HAS_CLUSTER_GROUP
   {
     auto cg_group   = cg::this_cluster();
     auto cccl_group = cudax::coop::make_group(cg_group, config);

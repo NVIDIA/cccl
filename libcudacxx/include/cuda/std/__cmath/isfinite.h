@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -62,7 +62,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool isfinite(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISFINITE)
+#ifdef _CCCL_BUILTIN_ISFINITE
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
 #  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
@@ -101,7 +101,7 @@ template <class _Tp>
   {
     _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isfinite_storage(__x);)
   }
-#if defined(_CCCL_BUILTIN_ISFINITE)
+#ifdef _CCCL_BUILTIN_ISFINITE
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
 #  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
@@ -121,7 +121,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isfinite(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISFINITE)
+#  ifdef _CCCL_BUILTIN_ISFINITE
   return _CCCL_BUILTIN_ISFINITE(__x);
 #  else
   return ::cuda::std::__isfinite_impl(__x);

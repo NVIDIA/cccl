@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr bool isnormal(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNORMAL)
+#ifdef _CCCL_BUILTIN_ISNORMAL
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
@@ -69,7 +69,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   {
     _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnormal_storage(__x);)
   }
-#if defined(_CCCL_BUILTIN_ISNORMAL)
+#ifdef _CCCL_BUILTIN_ISNORMAL
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
@@ -79,7 +79,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNORMAL)
+#  ifdef _CCCL_BUILTIN_ISNORMAL
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;

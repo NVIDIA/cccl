@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -3139,4 +3139,4 @@ _CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/set_operations.inl>
+#include <thrust/detail/set_operations.inl> // IWYU pragma: export

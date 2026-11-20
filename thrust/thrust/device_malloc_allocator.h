@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,9 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <new>
 
@@ -181,7 +182,7 @@ public:
    */
   _CCCL_HOST_API size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T); // NOLINT(readability-redundant-parentheses)
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.

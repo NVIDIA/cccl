@@ -107,7 +107,7 @@ int main(int, char**)
   test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>();
   test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>();
 
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
   static_assert(test_aligned_constexpr<1>());
   static_assert(test_aligned_constexpr<2>());
   static_assert(test_aligned_constexpr<4>());

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -152,7 +152,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // no * CUB_SUBSCRIPTION_FACTOR(0) because max_blocks gets too big
   const int max_blocks       = find_if_sm_occupancy * sm_count;
-  const int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
+  const int findif_grid_size = (::cuda::std::min) (num_tiles, max_blocks);
 
   // Temporary storage allocation requirements
   void* allocations[1]             = {};

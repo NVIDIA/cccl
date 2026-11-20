@@ -62,7 +62,7 @@ public:
 
   __host__ __device__ bool do_is_equal(const memory_resource& other) const noexcept override
   {
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
     (void) other;
     return false;
 #else

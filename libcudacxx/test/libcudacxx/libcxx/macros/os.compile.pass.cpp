@@ -116,7 +116,7 @@
 #  endif // CCCL_OS(QNX)
 #endif // __APPLE__
 
-#if !defined(__CUDACC_RTC__)
+#ifndef __CUDACC_RTC__
 #  if _CCCL_OS(WINDOWS)
 #    include <windows.h>
 #  endif

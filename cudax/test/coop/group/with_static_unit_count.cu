@@ -84,6 +84,7 @@ template <class Config, class Level>
 __device__ void test_hardware_group(Config config, Level level)
 {
   const auto group = cudax::coop::make_this_group(level, config);
+  static_assert(group.static_rank(level) == 0);
   test_uniform(group);
 
   // Changing to thread units must preserve any available static count.
@@ -174,8 +175,8 @@ C2H_TEST("Static unit count dispatch for uniform groups", "[with_static_unit_cou
   stream.sync();
 }
 
-template <class Group>
-__device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
+template <class Group, class Parent>
+__device__ void test_nonuniform(const Group& group, const Parent& parent, unsigned units_per_warp)
 {
   using Original = typename Group::__mapping_result_type;
   using Unit     = typename Group::unit_type;
@@ -193,6 +194,22 @@ __device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
     constexpr auto count = unit.static_count(view);
     static_assert(count == Original::static_unit_count(0) || count == Original::static_unit_count(1));
     CHECK(count == expected);
+
+    // The selected rank is part of the result type, even when two groups share a count.
+    using Mapping = typename decltype(view)::__mapping_result_type;
+    static_assert(cudax::coop::__group_mapping_result<Mapping>);
+
+    constexpr auto group_rank = view.static_rank(cudax::coop::parent_group);
+    static_assert(count == Original::static_unit_count(group_rank));
+    static_assert(
+      cuda::std::is_same_v<
+        Mapping,
+        cudax::coop::__mapping_result<cudax::coop::__per_group_count<Original::static_group_count(), group_rank, count>,
+                                      Original::is_always_exhaustive(),
+                                      Original::is_always_contiguous()>>);
+    CHECK(group_rank == group.__mapping_result().group_rank());
+    CHECK(view.rank(parent) == group_rank);
+    CHECK(view.template rank_as<unsigned>(parent) == group_rank);
 
     check_mapping(group, view);
 
@@ -233,24 +250,38 @@ __device__ void test_nonuniform_groups(Config config, Counts counts)
 
   // Check nonuniform mappings while retaining the parent block synchronizer.
   const cudax::coop::virtual_group virtual_group{cuda::warp, parent, mapping};
-  test_nonuniform(virtual_group, 1);
+  test_nonuniform(virtual_group, parent, 1);
+  virtual_group.with_static_unit_count([&](auto view) {
+    constexpr auto rank = view.static_rank(cudax::coop::parent_group);
+    static_assert(rank < 3);
+    CHECK(view.rank(parent) == rank);
+    CHECK(view.template rank_as<unsigned>(parent) == rank);
+
+    CHECK(view.rank(parent) == virtual_group.rank(parent));
+  });
   CHECK(virtual_group.count(parent) == 3);
 
   const cudax::coop::group_view threads{cuda::gpu_thread, virtual_group};
-  test_nonuniform(threads, 32);
+  test_nonuniform(threads, parent, 32);
 
   // Repeat with independent barriers for the three groups.
   auto& barriers = get_barriers<3>(cuda::warp);
   const cudax::coop::generic_group group{cuda::warp, parent, mapping, cudax::coop::barrier_synchronizer{barriers}};
-  test_nonuniform(group, 1);
+  test_nonuniform(group, parent, 1);
   CHECK(group.count(parent) == 3);
 
   const cudax::coop::group_view group_threads{cuda::gpu_thread, group};
-  test_nonuniform(group_threads, 32);
+  test_nonuniform(group_threads, parent, 32);
 
   // Super-group queries and synchronization must survive specialization too.
   group.with_static_unit_count([&](auto view) {
     CHECK(view.count(parent) == group.count(parent));
+
+    constexpr auto rank = view.static_rank(cudax::coop::parent_group);
+    static_assert(rank < 3);
+    CHECK(view.rank(parent) == rank);
+    CHECK(view.template rank_as<unsigned>(parent) == rank);
+
     CHECK(view.rank(parent) == group.rank(parent));
     view.sync();
   });

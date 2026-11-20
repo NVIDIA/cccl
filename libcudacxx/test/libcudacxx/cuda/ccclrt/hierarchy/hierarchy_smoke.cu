@@ -326,7 +326,7 @@ C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
     cuda::make_hierarchy(cuda::block_dims<256>(), cuda::grid_dims<4>()),
     cuda::make_hierarchy(cuda::block_dims<16, 2, 4>(), cuda::grid_dims<2, 3, 4>()),
     cuda::make_hierarchy(cuda::block_dims(dim3(8, 4, 2)), cuda::grid_dims<4, 5, 6>()),
-#if defined(NDEBUG)
+#ifdef NDEBUG
     cuda::make_hierarchy(cuda::block_dims<32>(), cuda::grid_dims<(1 << 30) - 2>()),
 #endif
     cuda::make_hierarchy(cuda::block_dims<8, 2, 4>(), cuda::grid_dims(dim3(5, 4, 3))));

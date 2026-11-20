@@ -71,7 +71,7 @@ int main(int, char**)
   test_is_arithmetic<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
-#  if defined(__CUDA_NO_HALF_OPERATORS__)
+#  ifdef __CUDA_NO_HALF_OPERATORS__
   test_is_not_arithmetic<__half>();
 #  else
   test_is_arithmetic<__half>();
@@ -79,7 +79,7 @@ int main(int, char**)
   test_is_not_arithmetic<__half2>();
 #endif // _CCCL_HAS_NVFP16
 #if _CCCL_HAS_NVBF16()
-#  if defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+#  ifdef __CUDA_NO_BFLOAT16_OPERATORS__
   test_is_not_arithmetic<__nv_bfloat16>();
 #  else
   test_is_arithmetic<__nv_bfloat16>();

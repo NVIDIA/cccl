@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -76,7 +76,7 @@ template <typename TargetT, typename ParameterT>
 
   if constexpr (args_traits_t::is_deferred)
   {
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     return parameter;
 #  else
     return ::cuda::args::__unwrap(parameter);
@@ -88,7 +88,7 @@ template <typename TargetT, typename ParameterT>
   }
 }
 
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
 // Work around for NVCC emitting invalid lambda-dependent type aliases
 template <typename TargetT, typename SourceT, typename StaticBoundsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto

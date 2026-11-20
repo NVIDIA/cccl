@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,8 +43,8 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void MergePathSearch(
   /// The value type of the input iterator
   using T = cub::detail::it_value_t<AIteratorT>;
 
-  OffsetT split_min = ::cuda::std::max(diagonal - b_len, 0);
-  OffsetT split_max = ::cuda::std::min(diagonal, a_len);
+  OffsetT split_min = (::cuda::std::max) (diagonal - b_len, 0);
+  OffsetT split_max = (::cuda::std::min) (diagonal, a_len);
 
   while (split_min < split_max)
   {
@@ -61,7 +61,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void MergePathSearch(
     }
   }
 
-  path_coordinate.x = ::cuda::std::min(split_min, a_len);
+  path_coordinate.x = (::cuda::std::min) (split_min, a_len);
   path_coordinate.y = diagonal - split_min;
 }
 
