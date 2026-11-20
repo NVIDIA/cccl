@@ -322,6 +322,20 @@ def _cached_artifact_is_valid(cached: _CachedBundle) -> bool:
     return artifact_digest.hexdigest() == cached.artifact_sha256
 
 
+def materialize_pack_artifact(blob: bytes) -> str:
+    """Give CuTe a stable local link path identified by the packed bytes."""
+
+    digest = hashlib.sha256(blob).hexdigest()
+    path = os.path.join(
+        ensure_cache_dir("cuda.coop.cutlass"), f"aot-{digest}.ltoir"
+    )
+    expected = _CachedBundle(path, len(blob), digest)
+    with artifact_lock(path, scope="cuda.coop.cutlass"):
+        if not _cached_artifact_is_valid(expected):
+            write_binary_atomic(path, blob, scope="cuda.coop.cutlass")
+    return path
+
+
 def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
     """Reuse an artifact whose contents and stored layouts pass validation.
 

@@ -167,8 +167,9 @@ end-of-trace hook runs after these requests have been collected and before
 device linking.
 
 The next figure expands this boundary. It shows a nonempty session on a
-provider-cache miss, with deferred scratch. NVRTC compiles the provider
-bundle; CuTe compiles the enclosing kernel and arranges the final link.
+JIT provider-cache miss, with deferred scratch and no selected AOT pack.
+NVRTC compiles the provider bundle. CuTe compiles the enclosing kernel and
+arranges the final link.
 The figures show the device-LTO path that produces a cubin. CuTe supplies
 kernel LTO-IR and provider LTO-IR to nvJitLink.
 
@@ -213,8 +214,9 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
 
 Equivalent provider requests share one generated wrapper. Scratch events
 retain each traced use, because separate uses can need separate slices.
-A valid cache entry supplies both the LTO-IR and the queried layouts, so
-that path does not call NVRTC. A session with no providers needs no bundle.
+A matching :ref:`AOT pack <coop-cutlass-aot-packs>` or a valid cache entry
+supplies both LTO-IR and the queried layouts. Either hit skips provider
+compilation. A session with no providers needs no bundle.
 Separate trace modules keep separate sessions. A trace module can contain
 several kernels; deferred scratch is allocated separately for each kernel.
 
@@ -361,20 +363,23 @@ bundle; finalization compiles the three providers together.
 ``cuda.coop.cutlass`` registers one persistent trace-finalization hook with CuTe.
 The hook runs for every trace on that DSL. It finds the session belonging
 to the module being finalized and leaves unrelated or nested sessions alone.
-The hook renders the requests into one C++ translation unit, compiles it
-to NVIDIA LTO-IR, and attaches the artifact to each ``gpu.module`` in the
-trace through its ``link-libraries`` attribute. The CuTe compiler and final linker then resolve
-the ``cute.ffi`` calls while compiling the enclosing kernel.
+The hook renders the requests into one C++ translation unit, resolves its
+LTO-IR from a selected AOT pack, the JIT cache or NVRTC, and attaches the
+artifact to each ``gpu.module`` through its ``link-libraries`` attribute.
+The CuTe compiler and final linker resolve the ``cute.ffi`` calls while
+compiling the enclosing kernel.
 
-Header and toolkit discovery use the helpers under ``_headers``.
+On the JIT path, header and toolkit discovery use the helpers under ``_headers``.
 The compiler libraries for the selected toolkit are loaded before importing
 the NVRTC bindings, and the loaded NVRTC version is checked against that
 selection. A mismatch reports an error before provider compilation. The
 final linker must also accept the generated LTO-IR; successful NVRTC
 compilation alone does not establish that compatibility.
 
-The cache identity includes the rendered source, header identity, compiler
-options, architecture, and resolved toolkit/compiler information. Cache
+On a JIT miss, NVRTC can reuse a compatible precompiled header from this
+process to compile the new specialization. The JIT cache identity includes
+the rendered source, header identity, compiler options, architecture, and
+resolved toolkit/compiler information. Cache
 loads validate the artifact and any recorded scratch layouts. Cache writes
 use a lock and atomic replacement. The LTO-IR file remains available until
 the final linker has read it. Finalization removes stale managed library
@@ -478,7 +483,7 @@ provider calls.
      - ``_compiler/_state.py``, ``_compiler/_finalize.py``
    * - Rendering, compilation, and artifacts
      - ``_compiler/_rendering.py``, ``_compiler/_bundle.py``,
-       ``_compiler/_nvrtc.py``, ``_compiler/_cache.py``
+       ``_compiler/_nvrtc.py``, ``_compiler/_cache.py``, ``_aot_pack.py``
    * - Scratch layout, materialization, and lifetime
      - ``_compiler/_layout.py``, ``_compiler/_storage.py``,
        ``_compiler/_lifetime.py``
@@ -720,7 +725,7 @@ a two-item C++ array, calls ``BlockLoad::Load``, and writes the result
 buffer; Store builds its array from the two scalar arguments and calls
 ``BlockStore::Store``.
 
-In ``_compiler/_bundle.py:_compile_bundle_source()``, break on
+In ``_compiler/_bundle.py:_jit_bundle()``, break on
 ``options = _nvrtc.compiler_options(context, arch)``. Continue, inspect
 ``context.include_dirs`` and ``context.toolkit_root``, then step over
 the assignment. ``options`` contains C++17, relocatable device code,
@@ -841,9 +846,9 @@ If a breakpoint does not stop
 * If NVRTC is skipped, restart the complete script. Its temporary provider
   cache is created only under ``if __name__ == "__main__"``. Check that
   the provider directory is new and that you set the breakpoint before
-  ``cute.compile``. A stop in ``_compile_bundle_source()`` can show a
-  provider-cache hit. A source dump alone does not prove NVRTC ran: the
-  backend writes the dump before looking up a cached provider.
+  ``cute.compile``. In ``_jit_bundle()``, inspect the result of the provider
+  cache lookup. The backend writes the source dump before that lookup,
+  including when the cache supplies the compiled provider.
 * If a later launch retraces, check that you are calling ``compiled``.
   This walkthrough retains the callable returned by ``cute.compile``
   and invokes it twice; calling the decorated ``launch`` directly follows
