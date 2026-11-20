@@ -184,10 +184,6 @@ projects:
       - 'ci/cuda_coop_cutlass_requirements\.txt$'
       - 'ci/validate_cuda_coop_cutlass_artifacts\.py$'
       - 'ci/test/test_cuda_coop_cutlass_ci\.py$'
-      - '^LICENSE$'
-      - '^cub/LICENSE\.TXT$'
-      - '^libcudacxx/LICENSE\.TXT$'
-      - '^thrust/LICENSE$'
 
   packaging:
     name: "CCCL Packaging"
@@ -323,5 +319,9 @@ ignore_regexes:
   - 'ci/rapids/'
   - '^ci/util/pre-commit/'
   - 'docs/'
+  - '^LICENSE$'
+  - '^cub/LICENSE\.TXT$'
   - '^cudax/LICENSE\.TXT$'
+  - '^libcudacxx/LICENSE\.TXT$'
   - '^libcudacxx/test/LICENSE\.TXT$'
+  - '^thrust/LICENSE$'
