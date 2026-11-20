@@ -24,6 +24,7 @@
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/swap.h>
@@ -46,11 +47,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   return __align ? (::cuda::std::max) (__align, alignof(void*)) : __default_small_object_align;
 }
 
+//! Types deriving from this tag are always heap-allocated by `__basic_any`, so references
+//! to them stay valid when the owning `__basic_any` is moved from or reassigned.
+struct __basic_any_heap_storage
+{};
+
 template <class _Tp, bool _RequiresMovable = true>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr auto __is_small(size_t __size, size_t __align) noexcept -> bool
 {
   return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0)
-      && (!_RequiresMovable || ::cuda::std::is_nothrow_move_constructible_v<_Tp>);
+      && (!_RequiresMovable || ::cuda::std::is_nothrow_move_constructible_v<_Tp>)
+      && !::cuda::std::is_base_of_v<__basic_any_heap_storage, _Tp>;
 }
 
 _CCCL_HOST_DEVICE_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept

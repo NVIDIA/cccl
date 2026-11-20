@@ -198,6 +198,26 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     CHECK(this->counts == expected);
   }
 
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("resource_ref from any_resource survives reassignment of the any_resource")
+  {
+    test_fixture_ other_fixture;
+    cuda::mr::any_resource<::cuda::mr::host_accessible> holder{
+      cuda::mr::shared_resource<TestResource>{cuda::std::in_place_type<TestResource>, 42, this}};
+    cuda::mr::resource_ref<::cuda::mr::host_accessible> ref = holder;
+
+    auto previous = cuda::std::exchange(
+      holder,
+      cuda::mr::any_resource<::cuda::mr::host_accessible>{
+        cuda::mr::shared_resource<TestResource>{cuda::std::in_place_type<TestResource>, 7, &other_fixture}});
+
+    auto* ptr = ref.allocate_sync(this->bytes(64), this->align(8));
+    CHECK(ptr == this);
+    ref.deallocate_sync(ptr, this->bytes(64), this->align(8));
+  }
+
   SECTION("dynamic_accessibility_property forwards through shared_resource")
   {
     const cuda::mr::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};

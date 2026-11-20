@@ -27,6 +27,7 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/shared_block_ptr.h>
+#  include <cuda/__utility/__basic_any/storage.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/in_place.h>
 
@@ -53,6 +54,7 @@ struct shared_resource
     : ::cuda::mr::__copy_default_queries<_Resource>
     , ::cuda::forward_property<shared_resource<_Resource>, _Resource>
     , ::cuda::mr::memory_resource_base<shared_resource<_Resource>>
+    , ::cuda::__basic_any_heap_storage
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>);
 
