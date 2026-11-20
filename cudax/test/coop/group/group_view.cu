@@ -366,7 +366,10 @@ __device__ void test_nonuniform_group_view(Config config)
     using Result      = decltype(result);
 
     static_assert(Result::static_group_count() == 2);
-    static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
+    if constexpr (Result::static_group_rank() != cuda::std::dynamic_extent)
+    {
+      CHECK(Result::static_group_rank() == group_rank);
+    }
     static_assert(Result::is_always_exhaustive() == Exhaustive);
     static_assert(Result::is_always_contiguous() == Contiguous);
 
@@ -407,6 +410,7 @@ __device__ void test_nonuniform_group_view(Config config)
     using Result      = typename Specialized::__mapping_result_type;
     using Group       = cuda::std::remove_cv_t<decltype(group)>;
     static_assert(cuda::std::is_same_v<Specialized, cudax::coop::group_view<cuda::warp_level, Group, Result>>);
+    static_assert((Result::static_group_rank() != cuda::std::dynamic_extent) == Static);
     check(specialized, cuda::warp, 4);
     specialized.with_static_unit_count([&](const auto& again) {
       static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(again)>, Specialized>);
