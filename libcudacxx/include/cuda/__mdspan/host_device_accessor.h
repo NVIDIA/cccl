@@ -207,7 +207,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size) const noexcept
   {
@@ -345,7 +345,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
@@ -466,7 +466,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {

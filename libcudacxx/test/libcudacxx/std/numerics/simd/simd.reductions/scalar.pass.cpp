@@ -92,7 +92,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_type<wchar_t>();
   test_type<char16_t>();
   test_type<char32_t>();
-#if defined(__cccl_lib_char8_t)
+#ifdef __cccl_lib_char8_t
   test_type<char8_t>();
 #endif // defined(__cccl_lib_char8_t)
 

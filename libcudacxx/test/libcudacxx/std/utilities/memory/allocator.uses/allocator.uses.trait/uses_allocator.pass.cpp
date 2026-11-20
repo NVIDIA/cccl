@@ -12,7 +12,7 @@
 // template <class T, class Alloc> struct uses_allocator;
 
 #include <cuda/std/__memory_>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
 #  include <cuda/std/vector>
 #endif // _LIBCUDACXX_HAS_VECTOR
 #include <cuda/std/type_traits>
@@ -62,7 +62,7 @@ TEST_FUNC void test()
 int main(int, char**)
 {
   test<false, int, cuda::std::allocator<int>>();
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
   test<true, cuda::std::vector<int>, cuda::std::allocator<int>>();
 #endif //_LIBCUDACXX_HAS_VECTOR
   test<false, A, cuda::std::allocator<int>>();
@@ -77,7 +77,7 @@ int main(int, char**)
 #endif // !TEST_COMPILER(GCC)
 
   static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int>>::value));
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
   static_assert((cuda::std::uses_allocator<cuda::std::vector<int>, cuda::std::allocator<int>>::value));
 #endif // _LIBCUDACXX_HAS_VECTOR
   static_assert((!cuda::std::uses_allocator<A, cuda::std::allocator<int>>::value));

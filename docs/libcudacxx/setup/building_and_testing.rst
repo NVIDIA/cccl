@@ -3,7 +3,7 @@
 Building & Testing libcu++
 ==========================
 
-libcu++ can be build and tested as shown in our `contributor guidelines <https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md#building-and-testing>`_.
+See :ref:`infra-install-build-test` for instructions on building and testing libcu++.
 
 However, often only a small subset of the full test suite needs to be run during development. For that we rely on ``lit``.
 After libcu++ has been configured either through the build scripts or directly via a cmake preset one can then run.

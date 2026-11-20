@@ -38,11 +38,13 @@
 
     Supported Formats:
     -------------------------------------------------------------------------
-    - Double-Float (fp32mp2): Pairs of single-precision floats (2×32-bit), providing up to ~46 bits of effective
-   mantissa (algorithm/method dependent; between IEEE-754 float and double). Ideal for consumer GPUs where FP64
+    - Double-Float (fp32mp2): Pairs of single-precision floats (2×32-bit), representing 48 contiguous significand bits.
+   Arithmetic accuracy is algorithm/method dependent. Ideal for consumer GPUs where FP64
    performance is limited (often 1/32 of FP32 throughput).
-    - Double-Double (fp64mp2): Pairs of double-precision floats (2×64-bit), providing up to ~104 bits of effective
-   mantissa (algorithm/method dependent; between IEEE-754 double and binary128).
+    - Double-Double (fp64mp2): Pairs of double-precision floats (2×64-bit), representing 106 contiguous significand
+   bits. Arithmetic accuracy is algorithm/method dependent (between IEEE-754 double and binary128). For both formats,
+   full contiguous precision requires an exponent where the high component does not overflow and the low component
+   remains normal.
 
     Key Features:
     -------------------------------------------------------------------------

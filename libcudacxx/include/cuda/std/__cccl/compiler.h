@@ -139,7 +139,7 @@
 
 // Determine if we are compiling host code, this includes both CUDA and C++ compilation
 // nvc++ does not define __CUDA_ARCH__, but it compiles both host and device code at the same time
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 #  define _CCCL_HOST_COMPILATION() 1
 #else // ^^^ compiling host code ^^^ / vvv not compiling host code vvv
 #  define _CCCL_HOST_COMPILATION() 0

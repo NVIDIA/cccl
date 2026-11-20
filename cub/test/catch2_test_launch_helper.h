@@ -32,7 +32,7 @@
 //! environment-based APIs (using the wrapper macros suffixed with `_ENV`). See the "Launch wrappers" section of
 //! docs/cub/developer/test_overview.rst for usage.
 
-#if !defined(TEST_LAUNCH)
+#ifndef TEST_LAUNCH
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 

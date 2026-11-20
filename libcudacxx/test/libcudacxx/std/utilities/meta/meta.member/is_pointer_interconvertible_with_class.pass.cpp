@@ -46,7 +46,7 @@ struct NonStandard
 
 TEST_FUNC constexpr bool test()
 {
-#if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
+#ifdef _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS
   // 1. Only the first member of a class is pointer interconvertible with the class itself
   assert(cuda::std::is_pointer_interconvertible_with_class(&A::ma1));
   assert(cuda::std::is_pointer_interconvertible_with_class(&B::mb1));

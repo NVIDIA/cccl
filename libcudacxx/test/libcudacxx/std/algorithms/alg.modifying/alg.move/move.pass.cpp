@@ -17,7 +17,7 @@
 
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
 #  include <cuda/std/memory>
 #endif // _LIBCUDACXX_HAS_MEMORY
 
@@ -150,7 +150,7 @@ TEST_FUNC constexpr void test()
   }
 }
 
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
 template <class InIter, class OutIter>
 TEST_FUNC constexpr void test()
 {
@@ -219,7 +219,7 @@ TEST_FUNC constexpr bool test()
   NV_IF_TARGET(NV_IS_DEVICE, (test<int*, device_only_iterator<int*>>();))
 #endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_output_iterator<cuda::std::unique_ptr<int>*>>();
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_input_iterator<cuda::std::unique_ptr<int>*>>();
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, forward_iterator<cuda::std::unique_ptr<int>*>>();

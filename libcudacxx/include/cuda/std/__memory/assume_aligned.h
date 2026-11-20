@@ -35,7 +35,7 @@ template <size_t _Align, class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
   static_assert(::cuda::__is_valid_alignment<_Tp>(_Align), "invalid _Align value for _Tp");
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifndef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   return __ptr;
 #else
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT

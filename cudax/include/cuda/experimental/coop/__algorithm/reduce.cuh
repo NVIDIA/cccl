@@ -51,7 +51,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo(dabayer): We share the temporary storage in shared/global memory for all reduce invocations. This is a temporary
 // state before we make it a parameter.

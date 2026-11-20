@@ -38,9 +38,9 @@ static_assert(nl<cuda::fp32mp2>::is_signed, "fp32mp2 is signed");
 static_assert(!nl<cuda::fp32mp2>::is_integer, "fp32mp2 is not integer");
 static_assert(!nl<cuda::fp32mp2>::is_exact, "fp32mp2 is not exact");
 static_assert(nl<cuda::fp32mp2>::radix == 2, "fp32mp2 radix is 2");
-static_assert(nl<cuda::fp32mp2>::digits == 46, "fp32mp2 has 2*24-2 = 46 mantissa bits");
-static_assert(nl<cuda::fp32mp2>::digits10 == 13, "fp32mp2 digits10");
-static_assert(nl<cuda::fp32mp2>::max_digits10 == 15, "fp32mp2 max_digits10");
+static_assert(nl<cuda::fp32mp2>::digits == 48, "fp32mp2 has 2*24 = 48 mantissa bits");
+static_assert(nl<cuda::fp32mp2>::digits10 == 14, "fp32mp2 digits10");
+static_assert(nl<cuda::fp32mp2>::max_digits10 == 16, "fp32mp2 max_digits10");
 static_assert(nl<cuda::fp32mp2>::max_exponent == nl<float>::max_exponent, "fp32mp2 shares float's max exponent");
 static_assert(nl<cuda::fp32mp2>::min_exponent == nl<float>::min_exponent + nl<float>::digits, "fp32mp2 min exponent");
 static_assert(!nl<cuda::fp32mp2>::is_iec559, "double-word is not an IEEE-754 format");
@@ -50,7 +50,7 @@ static_assert(nl<cuda::fp32mp2>::has_quiet_NaN, "fp32mp2 has quiet NaN");
 static_assert(nl<cuda::fp32mp2>::round_style == cs::round_to_nearest, "fp32mp2 rounds to nearest");
 
 // exact (hi, lo) constants -- all powers of two, so equality is exact.
-static_assert(nl<cuda::fp32mp2>::epsilon().hi() == 0x1p-45f, "fp32mp2 epsilon = 2^(1-46) = 2^-45");
+static_assert(nl<cuda::fp32mp2>::epsilon().hi() == 0x1p-47f, "fp32mp2 epsilon = 2^(1-48) = 2^-47");
 static_assert(nl<cuda::fp32mp2>::epsilon().lo() == 0.0f, "fp32mp2 epsilon lo is zero");
 static_assert(nl<cuda::fp32mp2>::max().hi() == nl<float>::max(), "fp32mp2 max hi = FLT_MAX");
 static_assert(nl<cuda::fp32mp2>::max().lo() == nl<float>::max() * 0x1p-25f, "fp32mp2 max lo");
@@ -62,7 +62,7 @@ static_assert(nl<cuda::fp32mp2>::round_error().hi() == 0.5f, "fp32mp2 round_erro
 static_assert(nl<cuda::fp64mp2>::is_specialized, "fp64mp2 must be specialized");
 static_assert(nl<cuda::fp64mp2>::is_signed, "fp64mp2 is signed");
 static_assert(nl<cuda::fp64mp2>::radix == 2, "fp64mp2 radix is 2");
-static_assert(nl<cuda::fp64mp2>::digits == 104, "fp64mp2 has 2*53-2 = 104 mantissa bits");
+static_assert(nl<cuda::fp64mp2>::digits == 106, "fp64mp2 has 2*53 = 106 mantissa bits");
 static_assert(nl<cuda::fp64mp2>::digits10 == 31, "fp64mp2 digits10");
 static_assert(nl<cuda::fp64mp2>::max_digits10 == 33, "fp64mp2 max_digits10");
 static_assert(nl<cuda::fp64mp2>::max_exponent == nl<double>::max_exponent, "fp64mp2 shares double's max exponent");
@@ -73,19 +73,19 @@ static_assert(nl<cuda::fp64mp2>::has_infinity, "fp64mp2 has infinity");
 static_assert(nl<cuda::fp64mp2>::has_quiet_NaN, "fp64mp2 has quiet NaN");
 
 // exact (hi, lo) constants.
-static_assert(nl<cuda::fp64mp2>::epsilon().hi() == 0x1p-103, "fp64mp2 epsilon = 2^(1-104) = 2^-103");
+static_assert(nl<cuda::fp64mp2>::epsilon().hi() == 0x1p-105, "fp64mp2 epsilon = 2^(1-106) = 2^-105");
 static_assert(nl<cuda::fp64mp2>::max().hi() == nl<double>::max(), "fp64mp2 max hi = DBL_MAX");
 static_assert(nl<cuda::fp64mp2>::max().lo() == nl<double>::max() * 0x1p-54, "fp64mp2 max lo");
 static_assert(nl<cuda::fp64mp2>::min().hi() == 0x1p-969, "fp64mp2 min hi = 2^-969 (matches __ibm128)");
 static_assert(nl<cuda::fp64mp2>::lowest().hi() == -nl<double>::max(), "fp64mp2 lowest = -max");
 
 // ----- accuracy variants and cv-qualified forwarding -----
-static_assert(nl<cuda::fp32mp2_low>::digits == 46, "low variant is specialized");
+static_assert(nl<cuda::fp32mp2_low>::digits == 48, "low variant is specialized");
 static_assert(nl<cuda::fp32mp2_high>::is_specialized, "high variant is specialized");
-static_assert(nl<cuda::fp64mp2_low>::digits == 104, "low variant is specialized");
+static_assert(nl<cuda::fp64mp2_low>::digits == 106, "low variant is specialized");
 static_assert(nl<cuda::fp64mp2_high>::max_exponent == nl<double>::max_exponent, "high variant is specialized");
-static_assert(nl<const cuda::fp32mp2>::digits == 46, "const-qualified forwards to the specialization");
-static_assert(nl<volatile cuda::fp64mp2>::digits == 104, "volatile-qualified forwards to the specialization");
+static_assert(nl<const cuda::fp32mp2>::digits == 48, "const-qualified forwards to the specialization");
+static_assert(nl<volatile cuda::fp64mp2>::digits == 106, "volatile-qualified forwards to the specialization");
 
 // the value members are usable in a constexpr context (they use the constexpr (hi, lo) ctor).
 static constexpr cuda::fp32mp2 kEps32 = nl<cuda::fp32mp2>::epsilon();

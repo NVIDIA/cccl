@@ -52,7 +52,7 @@ TEST_FUNC void test_default_ctor_sfinae()
     using V = cuda::std::variant<NonDefaultConstructible, int>;
     static_assert(!cuda::std::is_default_constructible<V>::value);
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&, int>;
     static_assert(!cuda::std::is_default_constructible<V>::value);

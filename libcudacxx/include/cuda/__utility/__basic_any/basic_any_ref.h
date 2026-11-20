@@ -137,7 +137,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
     return true;
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;

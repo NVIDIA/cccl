@@ -17,7 +17,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
 #  include <cuda/std/memory>
 #endif
 
@@ -63,7 +63,7 @@ int main(int, char**)
     A a;
     test(&a, A());
   }
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
   {
     int i;
     cuda::std::unique_ptr<int, do_nothing> p(&i);
