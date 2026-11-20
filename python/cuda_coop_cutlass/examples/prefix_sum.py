@@ -52,20 +52,22 @@ def run_example(items_per_thread=4):
     result = np.zeros_like(source)
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
-    dst = _check(driver.cuMemAlloc(result.nbytes))
     try:
-        _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
-        # The source pointer's type tells load that the items are Int32.
-        launch(
-            make_ptr(cutlass.Int32, int(src), cute.AddressSpace.gmem),
-            make_ptr(cutlass.Int32, int(dst), cute.AddressSpace.gmem),
-            items_per_thread,
-        )
-        _check(driver.cuCtxSynchronize())
-        _check(driver.cuMemcpyDtoH(result.ctypes.data, dst, result.nbytes))
+        dst = _check(driver.cuMemAlloc(result.nbytes))
+        try:
+            _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
+            # The source pointer's type tells load that the items are Int32.
+            launch(
+                make_ptr(cutlass.Int32, int(src), cute.AddressSpace.gmem),
+                make_ptr(cutlass.Int32, int(dst), cute.AddressSpace.gmem),
+                items_per_thread,
+            )
+            _check(driver.cuCtxSynchronize())
+            _check(driver.cuMemcpyDtoH(result.ctypes.data, dst, result.nbytes))
+        finally:
+            _check(driver.cuMemFree(dst))
     finally:
         _check(driver.cuMemFree(src))
-        _check(driver.cuMemFree(dst))
     np.testing.assert_array_equal(result, np.cumsum(source, dtype=np.int32))
     return result
 
