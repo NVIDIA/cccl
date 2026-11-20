@@ -16,7 +16,7 @@ from ..._utils.protocols import (
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...op import OpAdapter, make_op_adapter
+from ...op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -30,6 +30,10 @@ class _MergeSort(Serializable):
         "op_adapter",
         "op_cccl",
         "build_results",
+        "loaded_build_result",
+        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
+        # positives).
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -64,6 +68,7 @@ class _MergeSort(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
+        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceMergeSortBuildResult,
             d_in_keys,
@@ -83,6 +88,11 @@ class _MergeSort(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized.
+        self._last_stateless_op = None
+
     def __call__(
         self,
         *,
@@ -92,11 +102,15 @@ class _MergeSort(Serializable):
         d_out_keys: DeviceArrayLike,
         d_out_values: DeviceArrayLike | None,
         num_items: int,
-        op: Operator,
+        op: Operator | _Unchanged = UNCHANGED,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -111,8 +125,10 @@ class _MergeSort(Serializable):
         if present_out_values:
             set_cccl_iterator_state(self.d_out_values_cccl, d_out_values)
 
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -124,7 +140,7 @@ class _MergeSort(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = loaded_build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

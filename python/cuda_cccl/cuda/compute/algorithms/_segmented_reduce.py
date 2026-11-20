@@ -15,7 +15,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
-    to_cccl_value_state,
+    set_cccl_value_state,
 )
 from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
@@ -23,7 +23,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -37,6 +37,9 @@ class _SegmentedReduce(Serializable):
         "end_offsets_in_cccl",
         "h_init_cccl",
         "op_cccl",
+        # Perf cache, keyed by identity (strong ref, no GC-reuse false
+        # positives). See _Reduce.__slots__ for the full rationale.
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -70,6 +73,7 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
             d_in,
@@ -91,6 +95,13 @@ class _SegmentedReduce(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized -- without this, a
+        # deserialized _SegmentedReduce would raise AttributeError the
+        # first time __call__ reads it.
+        self._last_stateless_op = None
+
     def __call__(
         self,
         *,
@@ -100,11 +111,15 @@ class _SegmentedReduce(Serializable):
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
-        op: Callable | OpAdapter,
-        h_init,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        h_init=UNCHANGED,
         max_segment_size: int | None = None,
         stream=None,
     ):
+        """``op``/``h_init`` default to ``UNCHANGED``: omit them to reuse
+        whatever was last bound (construction, or a previous call that
+        passed them), skipping their re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -128,7 +143,7 @@ class _SegmentedReduce(Serializable):
 
                 warnings.warn(
                     "max_segment_size is not used by the v2 backend and will be ignored",
-                    stacklevel=4,
+                    stacklevel=2,
                 )
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -136,10 +151,13 @@ class _SegmentedReduce(Serializable):
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
-        self.h_init_cccl.state = to_cccl_value_state(h_init)
+        if h_init is not UNCHANGED:
+            set_cccl_value_state(self.h_init_cccl, h_init)
 
         stream_handle = validate_and_get_stream(stream)
 

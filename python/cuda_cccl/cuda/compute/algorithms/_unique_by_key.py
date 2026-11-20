@@ -16,7 +16,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -30,6 +30,9 @@ class _UniqueByKey(Serializable):
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
         "op_cccl",
+        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
+        # positives).
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -62,6 +65,7 @@ class _UniqueByKey(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.uint8)
 
+        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUniqueByKeyBuildResult,
             d_in_keys,
@@ -83,6 +87,11 @@ class _UniqueByKey(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized.
+        self._last_stateless_op = None
+
     def __call__(
         self,
         *,
@@ -92,10 +101,14 @@ class _UniqueByKey(Serializable):
         d_out_keys: DeviceArrayLike | IteratorT,
         d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
-        op: Operator,
+        op: Operator | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -107,9 +120,10 @@ class _UniqueByKey(Serializable):
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
-        # Update op state for stateful ops
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
