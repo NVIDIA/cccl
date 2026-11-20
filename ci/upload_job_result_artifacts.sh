@@ -44,50 +44,36 @@ if [[ "$exit_code" -eq 0 ]]; then
   touch "$job_artifacts/success"
 fi
 
-# Finds a matching file in the root and copies it to the artifact directory.
-find_and_copy_job_artifact_from() {
-  root="$1"
-  name="$2"
-  if find "$root"/ -maxdepth 4 -name "$name" -type f -printf '' -quit 2>/dev/null; then
-    find "$root"/ -maxdepth 4 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
-  else
-    echo "No file matching '$name' found in '$root'."
-    return 1
-  fi
-}
-
-# Like find_and_copy_job_artifact_from, but keeps each file's path relative to the repo root.
-# Use this for files that every build tree has: a job can have one tree per preset, plus the
-# dependency sub-builds under `_deps/`. Copied into a single directory, they would overwrite
-# each other.
-# A leading '.' is dropped from the copied file's name (`.ninja_log` -> `ninja_log`), because
-# hidden files are excluded from uploaded artifacts.
-find_and_copy_job_artifact_tree_from() {
-  local root="$1"
-  local name="$2"
-  local found=false
-  local file file_name dest_dir
-  while IFS= read -r -d '' file; do
-    found=true
-    file_name="${file##*/}"
-    dest_dir="$job_artifacts/${file%/*}"
-    mkdir -p "$dest_dir"
-    cp -v "$file" "$dest_dir/${file_name#.}"
-  done < <(find "$root"/ -maxdepth 4 -name "$name" -type f -print0 2>/dev/null)
-
-  if [[ "$found" == false ]]; then
-    echo "No file matching '$name' found in '$root'."
-    return 1
-  fi
-}
-
-find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
 # The workflow-results action reads this file from the top of the job's directory:
-find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
+if [[ -d build ]]; then
+  find build/ -maxdepth 4 -type f -name "sccache_stats.json" \
+    -exec cp -v {} "$job_artifacts"/ \; || : # Nonfatal
+fi
 
-find_and_copy_job_artifact_tree_from build ".ninja_log"  || : # Nonfatal if not found
-find_and_copy_job_artifact_tree_from build "build.ninja" || : # Nonfatal if not found
-find_and_copy_job_artifact_tree_from build "rules.ninja" || : # Nonfatal if not found
-find_and_copy_job_artifact_tree_from build "ctest.log"   || : # Nonfatal if not found
+# Build diagnostics, for debugging a build after the fact. Nothing in CI reads them.
+# They go into one archive so that every file keeps its original path and name: a job can have
+# several build trees with same-named files, and hidden files such as `.ninja_log` are excluded
+# from uploaded artifacts.
+# Every step is nonfatal: a problem here must not keep the job's result from being registered.
+diagnostics=()
+mapfile -d '' -t diagnostics < <(
+  {
+    find build/ -maxdepth 4 -type f \
+      \( -name ".ninja_log" -o -name "build.ninja" -o -name "rules.ninja" -o -name "ctest.log" \) \
+      -print0 || :
+    find /tmp/ -maxdepth 4 -type f -name "sccache*.log" -print0 || :
+  } 2>/dev/null
+) || :
+
+if [[ "${#diagnostics[@]}" -gt 0 ]]; then
+  diagnostics_archive="$job_artifacts/diagnostics.tar.gz"
+  # `-P --transform` stores `/tmp/...` as `tmp/...` without tar warning about it in every job log.
+  # tar reports an error for a log that is still being written, but still archives it.
+  printf '%s\0' "${diagnostics[@]}" \
+    | tar --null -T - -P --transform 's,^/,,' -cf - \
+    | gzip > "$diagnostics_archive" || :
+  # Do not upload an archive that cannot be read or holds nothing (tar or gzip failed):
+  [[ -n "$(tar -tz 2>/dev/null < "$diagnostics_archive")" ]] || rm -f "$diagnostics_archive" || :
+fi
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
