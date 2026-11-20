@@ -200,4 +200,4 @@ _CCCL_HOST_DEVICE_API OutputIterator fill_n(OutputIterator first, Size n, const 
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/fill.inl>
+#include <thrust/detail/fill.inl> // IWYU pragma: export

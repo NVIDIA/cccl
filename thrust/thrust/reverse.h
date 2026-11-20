@@ -216,4 +216,4 @@ reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIter
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/reverse.inl>
+#include <thrust/detail/reverse.inl> // IWYU pragma: export

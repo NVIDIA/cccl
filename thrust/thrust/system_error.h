@@ -40,5 +40,5 @@ namespace system
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/error_code.h>
-#include <thrust/system/system_error.h>
+#include <thrust/system/error_code.h> // IWYU pragma: export
+#include <thrust/system/system_error.h> // IWYU pragma: export

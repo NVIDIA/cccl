@@ -438,4 +438,4 @@ _CCCL_HOST_API OutputIterator transform_exclusive_scan(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/transform_scan.inl>
+#include <thrust/detail/transform_scan.inl> // IWYU pragma: export
