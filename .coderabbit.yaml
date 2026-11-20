@@ -83,7 +83,7 @@ reviews:
 
     - path: "thrust/**/*"
       instructions: |
-        Use docs/thrust/developer/systems.rst for execution policy and backend dispatch context. Focus on
+        Use docs/cpp/thrust/developer/systems.rst for execution policy and backend dispatch context. Focus on
         correctness, API compatibility, dispatch behavior, synchronization, iterator/system interactions, and
         regressions.
 
@@ -100,7 +100,7 @@ reviews:
 
     - path: "**/benchmarks/**/*"
       instructions: |
-        Use docs/cub/benchmarking.rst for benchmark conventions. Check that benchmark changes measure meaningful
+        Use docs/cpp/cub/benchmarking.rst for benchmark conventions. Check that benchmark changes measure meaningful
         workloads, keep axes comparable, avoid excessive runtime, and preserve useful comparison data.
 
     - path: "docs/**/*"
@@ -145,17 +145,17 @@ knowledge_base:
       - ".agent/skills/cccl-test/SKILL.md"
       - ".agent/skills/cccl-test/references/common.md"
       - ".agent/skills/cccl-test/references/libcudacxx.md"
-      - "docs/contributors/index.rst"
-      - "docs/cccl/config_macros.rst"
-      - "docs/cccl/development/macro.rst"
-      - "docs/cccl/development/visibility.rst"
-      - "docs/cccl/development/testing.rst"
-      - "docs/cccl/development/coding_conventions.rst"
-      - "docs/cccl/development/review_checks.md"
-      - "docs/cub/developer_overview.rst"
-      - "docs/cub/developer/*.rst"
-      - "docs/cub/benchmarking.rst"
-      - "docs/thrust/developer/systems.rst"
+      - "docs/site/contributors/index.rst"
+      - "docs/cpp/cccl/config_macros.rst"
+      - "docs/cpp/cccl/development/macro.rst"
+      - "docs/cpp/cccl/development/visibility.rst"
+      - "docs/cpp/cccl/development/testing.rst"
+      - "docs/cpp/cccl/development/coding_conventions.rst"
+      - "docs/cpp/cccl/development/review_checks.md"
+      - "docs/cpp/cub/developer_overview.rst"
+      - "docs/cpp/cub/developer/*.rst"
+      - "docs/cpp/cub/benchmarking.rst"
+      - "docs/cpp/thrust/developer/systems.rst"
       - "docs/python/compute/index.rst"
       - "docs/python/compute/developer_overview.rst"
       - "cudax/README.md"

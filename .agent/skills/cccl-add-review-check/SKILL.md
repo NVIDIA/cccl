@@ -1,13 +1,13 @@
 ---
 name: cccl-add-review-check
-description: Use when adding or extending a rule in docs/cccl/development/review_checks.md; describes how to research, word, place, and validate a new review check.
+description: Use when adding or extending a rule in docs/cpp/cccl/development/review_checks.md; describes how to research, word, place, and validate a new review check.
 ---
 
 # Adding a CCCL Review Check
 
 ## Workflow
 
-1. Read `docs/cccl/development/review_checks.md` and follow its `Format` section exactly.
+1. Read `docs/cpp/cccl/development/review_checks.md` and follow its `Format` section exactly.
    If the rule was distilled from a historical regression, list it in the provenance comment
    (one `#intro→#fix note` per line); otherwise omit the provenance comment entirely.
 2. Research first: read the relevant PRs and/or a few representative code sites. Verify every

@@ -98,7 +98,7 @@ Extra options:
 * `--good-ref <rev>` — Known good commit/tag, or `-Nd` for origin/main N days ago (default: latest release)
 * `--bad-ref <rev>` — Known bad commit/tag, or `-Nd` (default: origin/main)
 
-See `docs/cccl/development/build_and_bisect_tools.rst` for details.
+See `docs/cpp/cccl/development/build_and_bisect_tools.rst` for details.
 
 ---
 
@@ -270,7 +270,7 @@ Test organization:
 
 ## Continuous Integration (CI)
 
-See `docs/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
+See `docs/site/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
 
 CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
 
@@ -359,7 +359,7 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 
 * Validate changes with builds/tests; report results.
 * Run `pre-commit` before committing.
-* Review `CONTRIBUTING.md` and `docs/infrastructure/ci/references/ci_overview.rst` before starting work.
+* Review `CONTRIBUTING.md` and `docs/site/infrastructure/ci/references/ci_overview.rst` before starting work.
 
 ### Performance Tips
 

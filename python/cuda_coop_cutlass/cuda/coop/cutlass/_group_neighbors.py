@@ -162,7 +162,7 @@ def adjacent_difference(
     int count.
 
     See the :doc:`Adjacent Difference visualization
-    </python/coop_cutlass/visualizations/adjacent-difference>` for tile
+    </coop_cutlass/visualizations/adjacent-difference>` for tile
     boundaries.
 
     Examples
@@ -252,7 +252,7 @@ def discontinuity(
     infinities and NaNs are accepted.
 
     See the :doc:`Discontinuity visualization
-    </python/coop_cutlass/visualizations/discontinuity>` for head and tail
+    </coop_cutlass/visualizations/discontinuity>` for head and tail
     flags.
 
     Examples

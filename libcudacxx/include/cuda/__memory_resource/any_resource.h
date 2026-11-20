@@ -909,8 +909,6 @@ public:
 };
 
 //! @rst
-//! .. _libcudacxx-memory-resource-any-resource:
-//!
 //! Type erased wrapper around a `synchronous_resource`
 //! ----------------------------------------------------
 //!
@@ -928,8 +926,6 @@ template <class... _Properties>
 using any_synchronous_resource = basic_any_resource<_ResourceKind::_Synchronous, _Properties...>;
 
 //! @rst
-//! .. _libcudacxx-memory-resource-any-async-resource:
-//!
 //! Type erased wrapper around an `resource`
 //! ----------------------------------------------
 //!

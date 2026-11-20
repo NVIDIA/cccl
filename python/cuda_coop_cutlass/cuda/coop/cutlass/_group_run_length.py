@@ -153,7 +153,7 @@ def run_length_decode(
     while preparing the table once.
 
     See the :doc:`Run Length Decode visualization
-    </python/coop_cutlass/visualizations/run-length-decode>` for windows and
+    </coop_cutlass/visualizations/run-length-decode>` for windows and
     zero-filled tails.
 
     Examples
@@ -243,7 +243,7 @@ def run_length_decode_into(
     :func:`cuda.coop.cutlass.run_length_decode`.
 
     See the :doc:`Run Length Decode visualization
-    </python/coop_cutlass/visualizations/run-length-decode>` for bulk output and
+    </coop_cutlass/visualizations/run-length-decode>` for bulk output and
     run ordering.
 
     Examples

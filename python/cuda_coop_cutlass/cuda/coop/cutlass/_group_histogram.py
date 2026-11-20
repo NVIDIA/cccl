@@ -111,7 +111,7 @@ def histogram(
     ``valid_items`` control; padding contributes samples. Sample indices must
     lie in ``[0, bins)``; the operation does not check their bounds. See the
     :doc:`Histogram visualization
-    </python/coop_cutlass/visualizations/histogram>` for sample and counter
+    </coop_cutlass/visualizations/histogram>` for sample and counter
     layouts.
 
     Examples

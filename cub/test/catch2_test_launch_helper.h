@@ -30,7 +30,7 @@
 //! @file
 //! This file contains utilities for device-scope API tests of both conventional two-phase APIs and single-phase
 //! environment-based APIs (using the wrapper macros suffixed with `_ENV`). See the "Launch wrappers" section of
-//! docs/cub/developer/test_overview.rst for usage.
+//! docs/cpp/cub/developer/test_overview.rst for usage.
 
 #if !defined(TEST_LAUNCH)
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2

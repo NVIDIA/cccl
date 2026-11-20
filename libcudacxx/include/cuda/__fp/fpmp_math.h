@@ -570,7 +570,7 @@
 #include <cuda/std/cassert>
 
 // Header-mode implementations are provided by the per-family implementation
-// headers below (see docs/libcudacxx/fp/fpmp_spec.rst, "Function Families").
+// headers below (see docs/cpp/libcudacxx/fp/fpmp_spec.rst, "Function Families").
 // In library mode (_CCCL_FPMP_USE_LIB) the kernels come from the compiled
 // library and only the declarations in the #else branch below are used.
 #if !(defined _CCCL_FPMP_USE_LIB)

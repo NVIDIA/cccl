@@ -111,7 +111,7 @@ read.
 configures every lane with the tuning preset, and drives the search from `build/gpu0/lane0`.
 Each lane keeps its own `cccl_meta_bench.db`, so a variant is always compared against a
 baseline measured in the same lane on the same physical GPU - stricter than the per-GPU
-database `docs/cub/tuning_infra.rst` requires, and it keeps lanes off a shared sqlite file.
+database `docs/cpp/cub/tuning_infra.rst` requires, and it keeps lanes off a shared sqlite file.
 
 ## Knobs and risks
 

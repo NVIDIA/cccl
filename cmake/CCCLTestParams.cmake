@@ -1,4 +1,4 @@
-# Further documentation and examples are provided in docs/cccl/development/testing.rst.
+# Further documentation and examples are provided in docs/cpp/cccl/development/testing.rst.
 
 # The function below reads the filepath `src`, extracts the %PARAM% comments,
 # and fills `all_variant_labels_var` with a list of `label1_value1.label2_value2...`

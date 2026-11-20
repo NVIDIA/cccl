@@ -1,0 +1,32 @@
+# The products whose docs are published, in build order. A product can link to
+# the products listed above it, because those are built first.
+#
+#   key         folder in the site: /cccl/<key>/<version>/
+#   name        name shown on the landing page
+#   tag_prefix  release tags start with this, followed by the version
+#   build       command that builds the product, run from docs/
+#   summary     one line for the landing page
+
+site:
+  title: CUDA Core Compute Libraries
+  summary: >-
+    Thrust, CUB, libcu++, CUDA Experimental and the CCCL Python libraries,
+    documented per product and per release.
+  base_url: https://nvidia.github.io/cccl
+
+products:
+  - key: cpp
+    name: C++
+    tag_prefix: v
+    build: ./gen_docs.bash --allow-dep-install --label {label}
+    summary: >-
+      Thrust, CUB, libcu++ and CUDA Experimental, the CUDA C++ core libraries,
+      released and versioned together.
+
+  - key: python
+    name: Python
+    tag_prefix: python-
+    build: ./gen_python_docs.bash --allow-dep-install --label {label}
+    summary: >-
+      cuda.compute and cuda.cccl, the Python interfaces to the same algorithms,
+      on their own release line.

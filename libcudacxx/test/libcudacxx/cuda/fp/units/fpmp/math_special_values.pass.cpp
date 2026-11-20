@@ -26,7 +26,7 @@
 //    - sqrt and rsqrt take no branch for special arguments and return NaN
 //      for +inf, a negative argument, NaN and (on the device) a subnormal;
 //      that is documented with the function list in
-//      docs/libcudacxx/extended_api/fp/fpmp.rst.
+//      docs/cpp/libcudacxx/extended_api/fp/fpmp.rst.
 //    - the sign of a zero result of the other functions, which fpmp2 does not
 //      track; the same docs page has the note on the sign of zero.
 //
