@@ -152,22 +152,33 @@ def test_capture_use_and_inspect_accept_home_relative_paths(
         )
 
 
-@pytest.mark.parametrize("corruption", ["artifact", "layout", "key", "digest"])
-def test_pack_corruption_fails_closed_in_auto_mode(pack, corruption):
+@pytest.mark.parametrize(
+    ("corruption", "message"),
+    [
+        ("artifact", "Corrupt AOT artifact"),
+        ("layout", "Invalid storage layout"),
+        ("key", "Invalid AOT bundle metadata"),
+        ("digest", "manifest checksum mismatch"),
+    ],
+)
+def test_pack_corruption_fails_closed_in_auto_mode(pack, corruption, message):
     manifest_path = pack / "manifest.json"
     manifest = json.loads(manifest_path.read_bytes())
+    del manifest["sha256"]
     if corruption == "artifact":
         (pack / f"{_KEY}.ltoir").write_bytes(b"!" * len(_BLOB))
     elif corruption == "layout":
-        manifest["entries"][0]["layouts"][0][1] *= 2
+        manifest["entries"][0]["layouts"][0][2] = 3
     elif corruption == "key":
         manifest["entries"][0]["key"] = "../escape"
-        del manifest["sha256"]
-        manifest["sha256"] = _aot_pack._checksum(manifest)
-    else:
-        manifest["sha256"] = "0" * 64
+    manifest["sha256"] = (
+        "0" * 64 if corruption == "digest" else _aot_pack._checksum(manifest)
+    )
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    with pytest.raises(aot.PackIntegrityError), aot.use(pack, mode="auto"):
+    with (
+        pytest.raises(aot.PackIntegrityError, match=message),
+        aot.use(pack, mode="auto"),
+    ):
         pytest.fail("a corrupt pack was selected")
 
 
