@@ -928,8 +928,6 @@ struct policy_selector
   bool output_trivially_copyable;
   bool output_default_constructible;
   bool accum_is_primitive_or_trivially_copy_constructible;
-  // TODO(griwes): remove this field before policy_selector is publicly exposed
-  bool benchmark_match;
   bool require_stable_reduction_order = false;
   bool is_deferred                    = false;
 
@@ -1144,7 +1142,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
-      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
+      if (operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
       {
         if (offset_size == 4)
         {
@@ -1362,7 +1360,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{8, 0})
     {
       // separate tunings for deferred lookback scan
-      if (is_deferred && benchmark_match && operation_t == op_kind_t::plus)
+      if (is_deferred && operation_t == op_kind_t::plus)
       {
         switch (accum_type)
         {
@@ -1514,8 +1512,8 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{7, 5})
     {
-      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes
-          && offset_size == 8 && input_value_size == 4)
+      if (operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes && offset_size == 8
+          && input_value_size == 4)
       {
         // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
         return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
@@ -1594,25 +1592,6 @@ struct policy_selector
 static_assert(scan_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT, typename = void>
-struct benchmark_match_for_policy_selector
-{
-  static constexpr bool value = false;
-};
-
-template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT>
-struct benchmark_match_for_policy_selector<
-  ScanOpT,
-  InputValueT,
-  OutputValueT,
-  AccumT,
-  ::cuda::std::void_t<::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>>>
-{
-  static constexpr bool value =
-    sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>)
-    && sizeof(InputValueT) == sizeof(OutputValueT);
-};
-
 // stateless version which can be passed to kernels
 template <typename InputIteratorT,
           typename OutputIteratorT,
@@ -1627,11 +1606,6 @@ struct policy_selector_from_types
   {
     using InputValueT  = it_value_t<InputIteratorT>;
     using OutputValueT = non_void_value_t<OutputIteratorT, AccumT>;
-
-    // output iterators without a value type (e.g. transform_output_iterator) never match the tuning benchmarks
-    constexpr bool output_has_value_type = ::cuda::std::is_same_v<OutputValueT, it_value_t<OutputIteratorT>>;
-    constexpr bool benchmark_match =
-      output_has_value_type && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
 
     constexpr bool accum_is_primitive_or_trivially_copy_constructible =
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
@@ -1653,7 +1627,6 @@ struct policy_selector_from_types
       ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match,
       StableReductionOrder,
       IsDeferred};
     return policies(cc);
