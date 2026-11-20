@@ -56,6 +56,7 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
     static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test do_sync(...).
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(hierarchy))>);
     synchronizer_instance.do_sync(hierarchy);
 
@@ -65,10 +66,12 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
 
     // Test do_wait(...).
     static_assert(
+      // NOLINTNEXTLINE(cccl-simplify-type-traits)
       cuda::std::is_same_v<void, decltype(synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token)))>);
     synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token));
 
     // Test do_sync_aligned(...).
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(hierarchy))>);
     synchronizer_instance.do_sync_aligned(hierarchy);
 
@@ -78,11 +81,12 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
 
     // Test do_wait_aligned(...).
     static_assert(
-      cuda::std::
-        is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
+      cuda::std:: // NOLINT(cccl-simplify-type-traits)
+      is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
     synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
 
     // Test deinit(...);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
     synchronizer_instance.deinit(mapping_result, hierarchy);
   }

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,11 +37,11 @@
 #    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
 #  endif // ^^^ has cuda compiler ^^^
 
-#  if !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
-#    if defined(__CUDA_ARCH_SPECIFIC__)
+#  ifndef _LIBCUDA_PTX_ARCH_SPECIFIC
+#    ifdef __CUDA_ARCH_SPECIFIC__
 #      define _LIBCUDA_PTX_ARCH_SPECIFIC() __CUDA_ARCH_SPECIFIC__
 #    else
-#      if defined(__CUDA_ARCH_FEAT_SM90_ALL)
+#      ifdef __CUDA_ARCH_FEAT_SM90_ALL
 #        define _LIBCUDA_PTX_ARCH_SPECIFIC() 900
 #      elif defined(__CUDA_ARCH_FEAT_SM100_ALL)
 #        define _LIBCUDA_PTX_ARCH_SPECIFIC() 1000
@@ -55,7 +55,7 @@
 #    endif // ^^^ !defined(__CUDA_ARCH_SPECIFIC__)
 #  endif // ^^^ !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
 
-#  if !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+#  ifndef __CUDA_HAS_ARCH_FAMILY_SPECIFIC
 
 #    define __CUDA_HAS_ARCH_FAMILY_SPECIFIC(N) false
 

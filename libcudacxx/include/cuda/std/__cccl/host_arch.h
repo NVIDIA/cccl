@@ -133,7 +133,7 @@
 #  endif // __BYTE_ORDER == __BIG_ENDIAN
 #endif // ^^^ has endian.h ^^^
 
-#if !defined(_CCCL_ENDIAN_NATIVE)
+#ifndef _CCCL_ENDIAN_NATIVE
 _CCCL_WARNING("failed to determine the endianness of the host architecture, defaulting to little-endian")
 #  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
 #endif // !_CCCL_ENDIAN_NATIVE

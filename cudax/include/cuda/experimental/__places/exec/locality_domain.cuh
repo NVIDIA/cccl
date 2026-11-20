@@ -85,7 +85,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/limits>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,6 +94,7 @@
 #endif // no system header
 
 #include <cuda/__memory_pool/memory_pool_base.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
@@ -101,10 +102,11 @@
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
@@ -114,6 +116,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <cuda.h>
 
 // The locality-domain driver APIs (cuDevSmResourceSplit with
 // CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID, and

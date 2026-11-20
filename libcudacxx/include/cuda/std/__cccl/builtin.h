@@ -15,7 +15,7 @@
 #include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -106,7 +106,7 @@
 #  undef _CCCL_BUILTIN_CONSTANT_P
 #endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
 
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
+#ifdef _CCCL_BUILTIN_CONSTANT_P
 #  define _CCCL_IS_CONSTANT_P(...) _CCCL_BUILTIN_CONSTANT_P(__VA_ARGS__)
 #else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
 #  define _CCCL_IS_CONSTANT_P(...) false

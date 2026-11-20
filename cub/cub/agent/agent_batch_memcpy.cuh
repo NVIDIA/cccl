@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,11 +26,11 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/lazy_trait.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -400,14 +400,13 @@ template <uint32_t NumItems,
 class bit_packed_counter
 {
   /// The minimum number of bits required to represent all values from [0, MaxItemValue]
-  static constexpr uint32_t MIN_BITS_PER_ITEM =
-    (MaxItemValue == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MaxItemValue + 1U)>::VALUE;
+  static constexpr uint32_t MIN_BITS_PER_ITEM = (MaxItemValue == 0U) ? 1U : ::cuda::ilog2(MaxItemValue) + 1U;
 
   /// The number of bits allocated for each item. For pre-Volta, we prefer a power-of-2 here to
   /// have the compiler replace costly integer multiplication with bit-shifting.
   static constexpr uint32_t BITS_PER_ITEM =
     (PreferPowerOfTwoBits == prefer_power_of_two_bits_option::yes)
-      ? (0x01ULL << cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE)
+      ? (0x01ULL << ::cuda::ceil_ilog2(MIN_BITS_PER_ITEM))
       : MIN_BITS_PER_ITEM;
 
   /// The number of bits that each backing data type can store
@@ -561,7 +560,7 @@ class AgentBatchMemcpy
 
   // Buffers of up to WARP_LEVEL_THRESHOLD bytes are copied at thread level and their sizes are stored as
   // TLevBufferSizeT
-  static_assert(WARP_LEVEL_THRESHOLD <= ::cuda::std::numeric_limits<TLevBufferSizeT>::max(),
+  static_assert(WARP_LEVEL_THRESHOLD <= (::cuda::std::numeric_limits<TLevBufferSizeT>::max)(),
                 "BatchedCopyPolicy: lookback.small_buffer.warp_level_threshold must be at most 65535");
 
   /**

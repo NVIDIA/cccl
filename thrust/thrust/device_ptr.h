@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,11 +18,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/memory.h>
+#include <thrust/detail/pointer.h>
+#include <thrust/iterator/detail/device_system_tag.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__iterator/iterator_traits.h> // IWYU pragma: keep
 
 THRUST_NAMESPACE_BEGIN
 template <typename T>
@@ -239,5 +239,5 @@ _CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(device_ptr<T> const& dpt
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/device_ptr.inl>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/device_ptr.inl> // IWYU pragma: export
+#include <thrust/detail/raw_pointer_cast.h> // IWYU pragma: export

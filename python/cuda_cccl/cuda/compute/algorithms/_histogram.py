@@ -30,7 +30,6 @@ class _Histogram(Serializable):
         "h_lower_level_cccl",
         "h_upper_level_cccl",
         "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -103,7 +102,7 @@ class _Histogram(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -123,7 +122,7 @@ class _Histogram(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.loaded_build_result.compute_even(
+        temp_storage_bytes = loaded_build_result.compute_even(
             d_temp_storage,
             temp_storage_bytes,
             self.d_samples_cccl,

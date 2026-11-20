@@ -18,7 +18,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,11 +26,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__places/places.cuh>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
+
+#include <cuda/experimental/__places/places.cuh> // IWYU pragma: keep
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 
-#include <mutex>
+#include <string>
 
 namespace cuda::experimental::stf
 {

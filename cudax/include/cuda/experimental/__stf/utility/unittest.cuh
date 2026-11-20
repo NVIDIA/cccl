@@ -19,7 +19,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,12 +27,26 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
-#include <filesystem>
+#include <array>
+#include <cstdlib>
+#include <string>
+#include <tuple>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__host_stdlib/cstdio>
+
+#  include <filesystem>
+#endif // UNITTESTED_FILE
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // One level of macro indirection is required in order to resolve __COUNTER__,

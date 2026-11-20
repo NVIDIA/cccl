@@ -30,7 +30,6 @@ class _MergeSort(Serializable):
         "op_adapter",
         "op_cccl",
         "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -97,7 +96,7 @@ class _MergeSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -125,7 +124,7 @@ class _MergeSort(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.loaded_build_result.compute(
+        temp_storage_bytes = loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

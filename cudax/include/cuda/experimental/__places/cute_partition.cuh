@@ -46,7 +46,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/optional>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -55,7 +55,9 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -68,14 +70,19 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 
 #include <algorithm>
-#include <optional>
+#include <functional>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include <sys/types.h>
 
 namespace cuda::experimental::places
 {

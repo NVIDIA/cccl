@@ -528,7 +528,7 @@ void validate_managed(tester_list<Testers...>, Args... args)
   validate_in_managed_memory_helper(device_constructor, device_destructor, host_init_device_check);
   validate_in_managed_memory_helper(device_constructor, device_destructor, device_init_host_check);
 
-#if !defined(__clang__)
+#ifndef __clang__
   // The managed variable template part of this test is disabled under clang, pending nvbug 2790305 being fixed.
 
   auto host_variable_constructor = [args...]() -> T* {

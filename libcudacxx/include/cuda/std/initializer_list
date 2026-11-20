@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,7 @@
 #if !_CCCL_COMPILER(NVRTC)
 #  include <initializer_list>
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
-#  if !defined(__NV_BUILTIN_INITIALIZER_LIST)
+#  ifndef __NV_BUILTIN_INITIALIZER_LIST
 #    error "libcu++ requires -builtin-initializer-list=true when compiling with NVRTC"
 #  endif // !__NV_BUILTIN_INITIALIZER_LIST
 #endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^

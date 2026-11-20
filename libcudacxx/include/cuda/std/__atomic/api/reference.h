@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,7 @@
 #include <cuda/std/__atomic/wait/notify_wait.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/wait/polling.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -44,12 +45,12 @@ template <typename _Tp, typename _Sco>
 struct __atomic_ref_common
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_ref_common(_Tp& __v)
-      : __a(&__v)
+      : __a(::cuda::std::addressof(__v))
   {}
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -60,12 +61,12 @@ template <typename _Tp, typename _Sco>
 struct __atomic_ref_arithmetic
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_ref_arithmetic(_Tp& __v)
-      : __a(&__v)
+      : __a(::cuda::std::addressof(__v))
   {}
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -77,12 +78,12 @@ template <typename _Tp, typename _Sco>
 struct __atomic_ref_bitwise
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_ref_bitwise(_Tp& __v)
-      : __a(&__v)
+      : __a(::cuda::std::addressof(__v))
   {}
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -95,12 +96,12 @@ template <typename _Tp, typename _Sco>
 struct __atomic_ref_pointer
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_ref_pointer(_Tp& __v)
-      : __a(&__v)
+      : __a(::cuda::std::addressof(__v))
   {}
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 

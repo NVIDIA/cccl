@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -55,13 +55,8 @@ CUB_NAMESPACE_BEGIN
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
 //!
-//! - Uses special instructions when applicable (e.g., warp ``SHFL`` instructions)
-//! - Uses synchronization-free communication between warp lanes when applicable
-//! - Incurs zero bank conflicts for most types
-//! - Computation is slightly more efficient (i.e., having lower instruction overhead) for:
-//!
-//!   - Summation (**vs.** generic reduction)
-//!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//! The implementation uses warp-level shuffle, warp redux, vote instructions, and specialized paths, without relying on
+//! shared memory.
 //!
 //! Hardware Warp Redux Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,6 +86,28 @@ CUB_NAMESPACE_BEGIN
 //! - On SM100f and later in the same architecture family:
 //!
 //!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
+//!
+//! Warp Shuffle
+//! ~~~~~~~~~~~~
+//!
+//! The implementation performs a reduction using ``ceil(log2(LogicalWarpThreads))`` warp shuffle steps.
+//! This path is used when hardware reduction or vote optimizations do not apply, and the number of items is known
+//! at compile time and is a power of two.
+//!
+//! PTX Shuffle + Predicate Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For segmented reductions, run-time item counts, and non-power-of-two logical warps, ``WarpReduce`` uses the
+//! predicate output of ``shfl.sync.down.b32`` to guard ``cuda::std::plus`` for ``unsigned``, ``long long``,
+//! ``unsigned long long``, ``float``, and ``double``.
+//!
+//! Clamped Shuffle Min/Max Optimization
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! ``cuda::minimum`` and ``cuda::maximum`` use a clamped shuffle operation followed by a reduction operation without
+//! branches or predicates for all integers and extended floating-point types.
+//! The 8- and 16-bit integers are promoted to 32 bits. On targets with slow FP64 operations, ``double`` is mapped to
+//! ordered integers.
 //!
 //! Warp Vote Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

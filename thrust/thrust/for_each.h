@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -262,4 +261,4 @@ _CCCL_HOST_API InputIterator for_each_n(InputIterator first, Size n, UnaryFuncti
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/for_each.inl>
+#include <thrust/detail/for_each.inl> // IWYU pragma: export
