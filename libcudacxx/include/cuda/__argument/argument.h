@@ -445,7 +445,8 @@ public:
     __validate_bounds_intersection<__element_type, _Bounds>(__runtime_bounds_);
   }
 
-  template <class _BoundsTp>
+  _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
+  _CCCL_REQUIRES((!::cuda::std::is_same_v<_BoundsT, no_bounds>) )
   _CCCL_API constexpr __deferred_base(_Arg __arg, runtime_bounds<_BoundsTp> __rb) noexcept
       : __arg_{::cuda::std::move(__arg)}
       , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
@@ -455,7 +456,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
-  _CCCL_REQUIRES((!__is_runtime_bounds_v<_BoundsT>) )
+  _CCCL_REQUIRES(__is_static_bounds_v<_BoundsT>)
   _CCCL_API constexpr __deferred_base(_Arg __arg, _Bounds, runtime_bounds<_BoundsTp> __rb) noexcept
       : __arg_{::cuda::std::move(__arg)}
       , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
@@ -465,7 +466,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
-  _CCCL_REQUIRES((!__is_runtime_bounds_v<_BoundsT>) )
+  _CCCL_REQUIRES(__is_static_bounds_v<_BoundsT>)
   _CCCL_API constexpr __deferred_base(_Arg __arg, runtime_bounds<_BoundsTp> __rb, _Bounds __sb) noexcept
       : __deferred_base(::cuda::std::move(__arg), __sb, __rb)
   {}
@@ -476,7 +477,7 @@ public:
 //! @tparam _Bounds @c no_bounds, @c runtime_bounds<T>, or @c static_bounds<Low,High>.
 //!
 //! Deduction records runtime-only bounds or, when supplied, static bounds. Effective bounds intersect both ranges:
-//! the larger lower bound and the smaller upper bound. Explicit template arguments fix the recorded bounds type.
+//! the larger lower bound and the smaller upper bound. Runtime bounds require a bounds type other than @c no_bounds.
 template <class _Arg, class _Bounds = no_bounds>
 class deferred : public __deferred_base<_Arg, _Bounds>
 {
