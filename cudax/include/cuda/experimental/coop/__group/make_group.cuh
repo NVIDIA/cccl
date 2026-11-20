@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -143,7 +143,7 @@ make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier
   return this_grid{__hier_like};
 }
 
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto

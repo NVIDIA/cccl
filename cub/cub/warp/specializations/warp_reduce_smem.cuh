@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,11 +21,11 @@
 #endif // no system header
 
 #include <cub/detail/constant.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
@@ -60,7 +60,7 @@ struct WarpReduceSmem
   static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LogicalWarpThreads);
 
   /// The number of warp reduction steps
-  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
+  static constexpr int STEPS = ::cuda::ceil_ilog2(LogicalWarpThreads);
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
@@ -212,7 +212,7 @@ struct WarpReduceSmem
     // Clip the next segment at the warp boundary if necessary
     if (LogicalWarpThreads != 32)
     {
-      next_flag = ::cuda::std::min(next_flag, LogicalWarpThreads);
+      next_flag = (::cuda::std::min) (next_flag, LogicalWarpThreads);
     }
 
     _CCCL_PRAGMA_UNROLL_FULL()

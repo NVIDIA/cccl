@@ -13,7 +13,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -738,7 +738,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     {
       // The grid size for DeviceReduceKernel can be zero if the input size is zero.
       // The atomic code path does not run a second kernel, so block zero handles an empty input.
-      return ::cuda::std::max(1, even_share.grid_size);
+      return (::cuda::std::max) (1, even_share.grid_size);
     }
     else
     {

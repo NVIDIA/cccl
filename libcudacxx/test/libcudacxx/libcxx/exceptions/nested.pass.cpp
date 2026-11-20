@@ -286,7 +286,7 @@ TEST_FUNC void test()
   test_macros_compile_everywhere();
 #if _CCCL_HOSTED()
   test_nesting_without_rtti();
-#  if !defined(_CCCL_NO_RTTI)
+#  ifndef _CCCL_NO_RTTI
   test_rethrow_if_nested();
 #  endif // !_CCCL_NO_RTTI
 #endif // _CCCL_HOSTED()

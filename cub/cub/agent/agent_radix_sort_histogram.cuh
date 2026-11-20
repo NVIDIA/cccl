@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,7 +54,7 @@ struct agent_radix_sort_histogram_policy
     }
     else
     {
-      return ::cuda::std::max(1, Nominal4bNumParts * 4 / ::cuda::std::max(int{sizeof(ComputeType)}, 4));
+      return (::cuda::std::max) (1, Nominal4bNumParts * 4 / (::cuda::std::max) (int{sizeof(ComputeType)}, 4));
     }
   }
 
@@ -209,7 +209,7 @@ struct AgentRadixSortHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
-      const int num_bits = ::cuda::std::min(+RADIX_BITS, end_bit - current_bit);
+      const int num_bits = (::cuda::std::min) (+RADIX_BITS, end_bit - current_bit);
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
@@ -258,7 +258,7 @@ struct AgentRadixSortHistogram
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
-      OffsetT portion_size   = ::cuda::std::min(MAX_PORTION_SIZE, num_items - portion_offset);
+      OffsetT portion_size   = (::cuda::std::min) (MAX_PORTION_SIZE, num_items - portion_offset);
       for (OffsetT offset = static_cast<OffsetT>(blockIdx.x) * TILE_ITEMS; offset < portion_size;
            offset += OffsetT{TILE_ITEMS} * gridDim.x)
       {

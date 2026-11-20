@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -65,7 +65,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
     // The diagonal of the last partition reaches the combined input size, so the offset type must represent it.
     _CCCL_ASSERT(!::cuda::mul_overflow<Offset>(partition_idx, items_per_tile).overflow,
                  "cub::DeviceSetOps: partition_idx * items_per_tile overflows the offset type");
-    const Offset diag = ::cuda::std::min(partition_idx * items_per_tile, num_keys1 + num_keys2);
+    const Offset diag = (::cuda::std::min) (partition_idx * items_per_tile, num_keys1 + num_keys2);
     partitions[partition_idx] =
       _CUB::detail::set_ops::balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
   }
@@ -239,7 +239,7 @@ template <typename KeysIt1,
     // Initialize the tile state and zero the output count.
     {
       const int init_grid_size =
-        ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
+        (::cuda::std::max) (1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
               .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,

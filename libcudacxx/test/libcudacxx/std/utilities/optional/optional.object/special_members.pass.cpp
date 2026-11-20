@@ -15,7 +15,7 @@
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 
-#if !defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifndef _CCCL_BUILTIN_ADDRESSOF
 #  define TEST_WORKAROUND_NO_ADDRESSOF
 #endif
 

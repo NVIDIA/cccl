@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,16 +19,16 @@
 #include <cuda/std/cstdint>
 
 // RNGs
-#include <thrust/random/discard_block_engine.h>
-#include <thrust/random/linear_congruential_engine.h>
-#include <thrust/random/linear_feedback_shift_engine.h>
-#include <thrust/random/subtract_with_carry_engine.h>
-#include <thrust/random/xor_combine_engine.h>
+#include <thrust/random/discard_block_engine.h> // IWYU pragma: export
+#include <thrust/random/linear_congruential_engine.h> // IWYU pragma: export
+#include <thrust/random/linear_feedback_shift_engine.h> // IWYU pragma: export
+#include <thrust/random/subtract_with_carry_engine.h> // IWYU pragma: export
+#include <thrust/random/xor_combine_engine.h> // IWYU pragma: export
 
 // distributions
-#include <thrust/random/normal_distribution.h>
-#include <thrust/random/uniform_int_distribution.h>
-#include <thrust/random/uniform_real_distribution.h>
+#include <thrust/random/normal_distribution.h> // IWYU pragma: export
+#include <thrust/random/uniform_int_distribution.h> // IWYU pragma: export
+#include <thrust/random/uniform_real_distribution.h> // IWYU pragma: export
 
 THRUST_NAMESPACE_BEGIN
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,11 +38,13 @@
 
     Supported Formats:
     -------------------------------------------------------------------------
-    - Double-Float (fp32mp2): Pairs of single-precision floats (2×32-bit), providing up to ~46 bits of effective
-   mantissa (algorithm/method dependent; between IEEE-754 float and double). Ideal for consumer GPUs where FP64
+    - Double-Float (fp32mp2): Pairs of single-precision floats (2×32-bit), representing 48 contiguous significand bits.
+   Arithmetic accuracy is algorithm/method dependent. Ideal for consumer GPUs where FP64
    performance is limited (often 1/32 of FP32 throughput).
-    - Double-Double (fp64mp2): Pairs of double-precision floats (2×64-bit), providing up to ~104 bits of effective
-   mantissa (algorithm/method dependent; between IEEE-754 double and binary128).
+    - Double-Double (fp64mp2): Pairs of double-precision floats (2×64-bit), representing 106 contiguous significand
+   bits. Arithmetic accuracy is algorithm/method dependent (between IEEE-754 double and binary128). For both formats,
+   full contiguous precision requires an exponent where the high component does not overflow and the low component
+   remains normal.
 
     Key Features:
     -------------------------------------------------------------------------
@@ -1951,7 +1953,7 @@ atomicAdd(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // pointer to the first is not valid, however the class happens to be laid out.
   _FpType __old_hi{};
   _FpType __old_lo{};
-#  if defined(_CCCL_FPMP_USE_LIB)
+#  ifdef _CCCL_FPMP_USE_LIB
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
@@ -1976,7 +1978,7 @@ atomicSub(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // Same shape as atomicAdd above.
   _FpType __old_hi{};
   _FpType __old_lo{};
-#  if defined(_CCCL_FPMP_USE_LIB)
+#  ifdef _CCCL_FPMP_USE_LIB
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {

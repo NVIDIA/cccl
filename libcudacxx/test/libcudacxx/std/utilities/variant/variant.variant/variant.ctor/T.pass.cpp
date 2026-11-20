@@ -116,7 +116,7 @@ TEST_FUNC void test_T_ctor_sfinae()
     static_assert(!cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>>::value, "no matching constructor");
   }
 
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int, int&&>;
     static_assert(!cuda::std::is_constructible<V, int>::value, "ambiguous");
@@ -170,7 +170,7 @@ TEST_FUNC void test_T_ctor_basic()
     cuda::std::variant<RValueConvertibleFrom<int>, AnyConstructible> v2 = x;
     assert(v2.index() == 1);
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<const int&, int&&, long>;
     static_assert(cuda::std::is_convertible<int&, V>::value, "must be implicit");
