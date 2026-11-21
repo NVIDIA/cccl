@@ -269,7 +269,14 @@ def main():
         registration.add_string_axis("Case", list(by_name))
         registration.add_int64_axis("Blocks", args.blocks)
         registration.add_int64_axis("Launches", args.launches)
-        bench.run_all_benchmarks([sys.argv[0], *nvbench_args])
+        # The CuTe DSL parses sys.argv during compilation, and argparse would
+        # read NVBench's "-d" as an abbreviation of the DSL's "-diagnostic".
+        argv = sys.argv
+        sys.argv = argv[:1]
+        try:
+            bench.run_all_benchmarks([argv[0], *nvbench_args])
+        finally:
+            sys.argv = argv
         if args.artifacts:
 
             def version(name):
