@@ -372,7 +372,7 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
  * the quartic, with s^3 - r = fma(s2_hi, s, -r) + s2_lo s for the exact
  * square s2_hi + s2_lo = s^2. A relative error e becomes 2/3 e^3:
  * 4.4e-9, below the rounding of the step. */
-_CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed_host(const float __r) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed_host(const float __r) noexcept
 {
   float __s = ::cuda::__fpmp_fma_rn(-0x1.1d6df4p-4f, __r, 0x1.8bab52p-2f);
   __s       = ::cuda::__fpmp_fma_rn(__s, __r, -0x1.b0554p-1f);
@@ -389,7 +389,7 @@ _CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed_host(const float __r) noexc
 /* Host seed for rcbrt: two division-free steps s (1 + u/3 + 2u^2/9),
  * u = 1 - r s^3, on the cubic. A relative error e becomes 14/3 e^3:
  * 2.2e-5 after the first step and 5e-14 after the second. */
-_CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed_host(const float __r) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed_host(const float __r) noexcept
 {
   float __s = ::cuda::__fpmp_fma_rn(-0x1.092b32p-2f, __r, 0x1.2a688p+0f);
   __s       = ::cuda::__fpmp_fma_rn(__s, __r, -0x1.e31ca6p+0f);
@@ -406,7 +406,7 @@ _CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed_host(const float __r) noex
 
 #  endif // _CCCL_FPMP_HOST_SEED_POLY
 
-_CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed(const float __r) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed(const float __r) noexcept
 {
 #  if _CCCL_FPMP_HOST_SEED_POLY
   NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_cbrt_seed_host(__r);))
@@ -414,7 +414,7 @@ _CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed(const float __r) noexcept
   return ::cuda::__fpmp_fast_exp2(0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));
 }
 
-_CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed(const float __r) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed(const float __r) noexcept
 {
 #  if _CCCL_FPMP_HOST_SEED_POLY
   NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_rcbrt_seed_host(__r);))
@@ -1236,7 +1236,7 @@ _CCCL_FPMP_NORM_4A(rnorm4d, true)
  * --------------------------------------------------------------------
  */
 template <int _Np>
-_CCCL_FPMP_CORE_API bool __internal_fpmp2_high_norm_special(
+[[nodiscard]] _CCCL_FPMP_CORE_API bool __internal_fpmp2_high_norm_special(
   const float (&__x_hi)[_Np], const bool __reciprocal, float* __res_hi, float* __res_lo) noexcept
 {
   bool __has_inf = false;

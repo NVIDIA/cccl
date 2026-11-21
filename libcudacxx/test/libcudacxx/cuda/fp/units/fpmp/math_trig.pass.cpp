@@ -390,7 +390,7 @@ TEST_HOST_DEVICE_FUNC void test_special()
   test_zero<MP2>(-0.0f);
 
   float denorm_min = cuda::std::numeric_limits<float>::denorm_min();
-  float min        = cuda::std::numeric_limits<float>::min();
+  float min        = (cuda::std::numeric_limits<float>::min)();
   float tiny[]     = {denorm_min, -denorm_min, 0x1.fffffcp-127f, min, -min, 0x1p-100f, -0x1.8p-80f};
   for (float v : tiny)
   {

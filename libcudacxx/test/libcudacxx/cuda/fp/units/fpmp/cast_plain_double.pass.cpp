@@ -15,6 +15,7 @@
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP=0
 
+// UNSUPPORTED: enable-tile
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 

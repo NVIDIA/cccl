@@ -106,7 +106,7 @@ TEST_HOST_DEVICE_FUNC void test_erfc_saturated()
 {
   // From the float above 10.0546875 on the result is exactly 0, and exactly 2 for -x.
   float inf  = cuda::std::numeric_limits<float>::infinity();
-  float xs[] = {0x1.41c002p+3f, 10.5f, 27.5f, 28.0f, 1e10f, cuda::std::numeric_limits<float>::max(), inf};
+  float xs[] = {0x1.41c002p+3f, 10.5f, 27.5f, 28.0f, 1e10f, (cuda::std::numeric_limits<float>::max)(), inf};
   for (float x : xs)
   {
     MP2 p = cuda::erfc(MP2(x));

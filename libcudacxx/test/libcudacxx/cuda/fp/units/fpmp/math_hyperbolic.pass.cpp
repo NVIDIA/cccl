@@ -72,13 +72,13 @@ TEST_HOST_DEVICE_FUNC double rel_err_u2(T r, hyp_case c)
 }
 
 // The largest error MPFR sweeps of 2M to 4M arguments per range found, rounded up. Default and low
-// level: 6.2 for sinh, 3.5 for cosh, 7.4 for tanh, 6.9 for asinh, 9.7 for acosh and 9.3 for atanh.
-// High level: 3.8 for sinh, 2.3 for tanh and 5.2 for atanh; cosh, asinh and acosh have one kernel.
+// level: 6.2 for sinh, 3.5 for cosh, 7.4 for tanh, 5.2 for asinh, 4.9 for acosh and 8.3 for atanh.
+// High level: 3.8 for sinh, 2.3 for tanh and 2.8 for atanh; cosh, asinh and acosh have one kernel.
 template <class T>
 TEST_HOST_DEVICE_FUNC void test_accuracy(bool high)
 {
-  const double tolerance_default[fn_count] = {7.5, 4.5, 9.0, 8.0, 11.0, 10.5};
-  const double tolerance_high[fn_count]    = {4.5, 4.5, 3.0, 8.0, 11.0, 6.5};
+  const double tolerance_default[fn_count] = {7.5, 4.5, 9.0, 6.0, 5.5, 9.0};
+  const double tolerance_high[fn_count]    = {4.5, 4.5, 3.0, 6.0, 5.5, 3.5};
   const double* tolerance                  = high ? tolerance_high : tolerance_default;
   // MPFR 4.2.2, 256-bit precision: the function, x, and its value. Small arguments, the worst
   // arguments of the sweeps, the arguments where a function changes path, and the ends of each
@@ -238,8 +238,8 @@ TEST_HOST_DEVICE_FUNC void test_special_values()
 {
   const F inf  = cuda::std::numeric_limits<F>::infinity();
   const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn = cuda::std::numeric_limits<F>::max();
-  const F minn = cuda::std::numeric_limits<F>::min();
+  const F maxn = (cuda::std::numeric_limits<F>::max)();
+  const F minn = (cuda::std::numeric_limits<F>::min)();
 #if TEST_HAS_CUDA_FAST_MATH
   // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
   // in for the smallest subnormal there
