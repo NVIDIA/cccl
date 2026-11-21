@@ -240,23 +240,34 @@ public:
             combine_access_mode(combined_modes, info.logical_data_id, info.mode);
           }
 
-          // 2. Validate and auto-push with combined modes
-          if constexpr (sizeof...(initial_args) > 0)
-          {
-            auto validate = [&](const auto& arg) {
-              arg.get_d().validate_access(
-                offset_, sctx_, lookup_combined_mode(combined_modes, arg.get_d().get_unique_id()), arg.get_dplace());
-            };
-            (validate(initial_args), ...);
-          }
-
-          for (const auto& info : additional_deps_)
-          {
-            info.validate_access_op(sctx_, offset_, lookup_combined_mode(combined_modes, info.logical_data_id));
-          }
-
-          // 3. Resolve initial deps and create the task
           auto task = [&]() {
+            // Hold the context-tree shared lock across validation, auto-push and
+            // task creation, as parallel_for()/launch()/cuda_kernel()/host_launch()
+            // do. task() itself only holds it while reading the head offset, so
+            // without this lock a concurrent push() on another thread may grow the
+            // node vector and invalidate the node references taken by push_at(),
+            // and a concurrent pop() may release a shared freeze that push_at() is
+            // reusing. The lock is released before the task body runs, like the
+            // other entry points, which return their scope object before the body
+            // is applied.
+            auto tree_lock = sctx_.pimpl->acquire_shared_lock();
+
+            // 2. Validate and auto-push with combined modes
+            if constexpr (sizeof...(initial_args) > 0)
+            {
+              auto validate = [&](const auto& arg) {
+                arg.get_d().validate_access(
+                  offset_, sctx_, lookup_combined_mode(combined_modes, arg.get_d().get_unique_id()), arg.get_dplace());
+              };
+              (validate(initial_args), ...);
+            }
+
+            for (const auto& info : additional_deps_)
+            {
+              info.validate_access_op(sctx_, offset_, lookup_combined_mode(combined_modes, info.logical_data_id));
+            }
+
+            // 3. Resolve initial deps and create the task
             auto& ctx = sctx_.get_ctx(offset_);
 
             auto task_deps = ::std::apply(
@@ -265,18 +276,20 @@ public:
               },
               task_deps_tuple_);
 
-            return ::std::apply(
+            auto new_task = ::std::apply(
               [&ctx, exec_place = exec_place_](auto&&... deps) {
                 return ctx.task(exec_place, deps...);
               },
               task_deps);
-          }();
 
-          // 4. Resolve and add additional deps from add_deps calls
-          for (const auto& info : additional_deps_)
-          {
-            task.add_deps(info.resolve_op(offset_, lookup_combined_mode(combined_modes, info.logical_data_id)));
-          }
+            // 4. Resolve and add additional deps from add_deps calls
+            for (const auto& info : additional_deps_)
+            {
+              new_task.add_deps(info.resolve_op(offset_, lookup_combined_mode(combined_modes, info.logical_data_id)));
+            }
+
+            return new_task;
+          }();
 
           if (symbol_.has_value())
           {
