@@ -6,21 +6,28 @@
 #include <cub/device/device_run_length_encode.cuh>
 
 #include <thrust/copy.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/bit>
 
 #include <algorithm>
-#include <limits>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
 #include <random>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 

@@ -11,14 +11,19 @@ struct stream_registry_factory_t;
 #include <cub/util_device.cuh>
 #include <cub/util_runs_on.cuh>
 
-#include <cuda/execution>
-#include <cuda/std/tuple>
+#include <thrust/detail/vector_base.h>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/execution>
+
+#include <cstddef>
 #include <cstdint>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // Note: no TEST_LAUNCH=1, runs-on isn't meant for device (because it's obvious which device
 // you are running on).

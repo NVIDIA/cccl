@@ -7,6 +7,8 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/std/__functional/invoke.h>
+
 template <typename InputIt, typename OutputIt, typename InitValueT, typename BinaryOp>
 void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitValueT init, BinaryOp op)
 {

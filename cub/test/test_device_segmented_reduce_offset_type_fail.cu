@@ -3,7 +3,14 @@
 
 // %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7
 
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__utility/pair.h>
+
+#include <cstddef>
+#include <cstdint>
 
 template <typename T>
 void mark_as_used(T&&)

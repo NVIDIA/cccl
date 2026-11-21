@@ -19,7 +19,7 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <iostream>
+#include <cstdlib>
 
 #include "../../test/test_util.h"
 

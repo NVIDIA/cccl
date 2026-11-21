@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/execution>
 #include <cuda/stream>
 

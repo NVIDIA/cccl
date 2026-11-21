@@ -19,8 +19,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/detail/config/namespace.h>
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/algorithm>
 #include <cuda/stream>
 
@@ -30,6 +33,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <memory>

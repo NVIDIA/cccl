@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <nvbench_helper.cuh>
+
 #include "variable_common.cuh"
 
 // No guarantee (max segment size of 0): every segment takes the large segment path

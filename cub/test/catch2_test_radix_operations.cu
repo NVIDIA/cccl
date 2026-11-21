@@ -5,12 +5,23 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/integer_sequence.h>
+
+#include <algorithm>
 #include <bitset>
 #include <climits>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
 #include <type_traits>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <typename KeyT>
 struct fundamental_extractor_t

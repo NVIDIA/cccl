@@ -3,18 +3,18 @@
 
 #include <cub/device/device_copy.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_ptx.cuh>
 
-#include <thrust/logical.h>
-#include <thrust/sequence.h>
+#include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/__cmath/round_up.h>
 #include <cuda/iterator>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/tuple>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <limits>
 #include <numeric>
 #include <random>
 #include <string>

@@ -5,7 +5,12 @@
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
+#include <cuda/std/cstdint>
+
+#include <cstddef>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // Guard tests: each public DeviceSegmentedRadixSort method must resolve unambiguously
 // to the legacy temp-storage overload when called in its minimal form (no explicit

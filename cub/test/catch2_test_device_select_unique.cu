@@ -5,19 +5,25 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+
 #include <cuda/cmath>
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/execution>
-#include <cuda/stream>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_custom_streams.cuh"
-#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 struct fake_equal_to
 {

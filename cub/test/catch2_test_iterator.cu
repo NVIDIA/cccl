@@ -9,19 +9,19 @@
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
-#include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/util_allocator.cuh>
+#include <cub/thread/thread_store.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/iterator>
-#include <cuda/std/__cccl/dialect.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 #include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
 

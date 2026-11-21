@@ -3,13 +3,28 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_reduce.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <cstdint>
+#include <tuple>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 

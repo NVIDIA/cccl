@@ -5,12 +5,26 @@
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
 
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_store.cuh>
+#  include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 #if !TUNE_BASE
 #  if TUNE_LOAD == 0

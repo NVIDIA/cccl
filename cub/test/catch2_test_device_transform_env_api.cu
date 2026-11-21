@@ -3,17 +3,25 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_transform.cuh>
-
-#include <thrust/device_vector.h>
-
-#include <cuda/__execution/tune.h>
-
-#include <iostream>
+#include <cuda/std/__cccl/dialect.h>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 #if _CCCL_STD_VER >= 2020
+#  include <cub/device/device_transform.cuh>
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+
+#  include <thrust/detail/vector_base.h>
+#  include <thrust/device_vector.h>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#  include <cuda/std/__cccl/compiler.h>
+#  include <cuda/std/__cccl/diagnostic.h>
+#  include <cuda/std/__functional/operations.h>
+
+#  include <iostream>
 
 // nvcc turns the `.member = value,` C++ syntax into GNU's `member: value,` when clang (14 - 21) is used
 _CCCL_DIAG_PUSH

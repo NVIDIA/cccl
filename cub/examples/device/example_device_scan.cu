@@ -16,6 +16,7 @@
 #define CUB_STDERR
 
 #include <cub/device/device_scan.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cuda/buffer>
 #include <cuda/devices>
@@ -24,6 +25,7 @@
 #include <cuda/stream>
 
 #include <cstdio>
+#include <cstdlib>
 
 #include "../../test/test_util.h"
 

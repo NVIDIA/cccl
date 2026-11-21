@@ -4,6 +4,7 @@
 #include <cub/util_arch.cuh>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <auto V>
 struct show;

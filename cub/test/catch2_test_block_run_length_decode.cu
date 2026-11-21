@@ -3,9 +3,12 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_run_length_decode.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/util_allocator.cuh>
+#include <cub/util_debug.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -13,7 +16,13 @@
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS

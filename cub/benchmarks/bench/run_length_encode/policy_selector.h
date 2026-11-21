@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/device/device_run_length_encode.cuh>
-
 #ifndef USES_LOOKAHEAD
 #  define USES_LOOKAHEAD() 0
 #endif

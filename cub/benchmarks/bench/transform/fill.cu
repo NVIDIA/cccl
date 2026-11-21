@@ -12,6 +12,15 @@
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
 
+#include <thrust/device_vector.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <new>
+
+#include <nvbench_helper.cuh>
+
 #include "common.h"
 
 template <typename T>

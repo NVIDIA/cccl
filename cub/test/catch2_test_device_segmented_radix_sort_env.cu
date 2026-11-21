@@ -7,18 +7,35 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/config.cuh>
 
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);

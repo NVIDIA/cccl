@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/config.cuh>
+
+#include <cuda/std/__cccl/extended_data_types.h>
+#include <cuda/std/__complex/complex.h>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
 
 using value_types = nvbench::type_list<

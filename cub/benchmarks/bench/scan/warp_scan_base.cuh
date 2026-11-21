@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda_runtime_api.h>

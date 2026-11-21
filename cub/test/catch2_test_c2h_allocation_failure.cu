@@ -1,12 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <thrust/system/cuda/error.h>
+#include <thrust/system/error_code.h>
+
 #include <new>
 #include <stdexcept>
 
 #include "cub_test_macros.h"
+#include <c2h/allocation_failure.h>
 #include <c2h/catch2_allocation_failure.h>
 #include <c2h/catch2_test_helper.h>
+#include <catch2/internal/catch_test_failure_exception.hpp>
 
 namespace
 {

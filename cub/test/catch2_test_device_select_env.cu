@@ -7,21 +7,32 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_select_if.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/tune.h>
-#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/iterator>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::If, device_select_if);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::Flagged, device_select_flagged);
@@ -29,8 +40,6 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::FlaggedIf, device_select_flagged_i
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::Unique, device_select_unique);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-#include <cuda/__execution/require.h>
 
 #include "cub_test_macros.h"
 

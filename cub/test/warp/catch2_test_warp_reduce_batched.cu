@@ -1,27 +1,30 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_reduce_batched.cuh>
 
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/ptx>
+#include <cuda/std/__fwd/extents.h>
+#include <cuda/std/array>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
 #include <numeric>
 
 #include <test_util.h>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/generator_common.h>
 #include <c2h/operator.cuh>
 
 // %PARAM% TEST_TYPES types 0:1:2

@@ -7,12 +7,17 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstdlib/abs.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/iota.h>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_warps = 4;
 

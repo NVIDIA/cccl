@@ -5,6 +5,7 @@
 
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
 #include <thrust/reverse.h>

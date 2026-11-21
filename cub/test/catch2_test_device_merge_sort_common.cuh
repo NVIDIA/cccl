@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cuda/std/tuple>
+
 /**
  * Custom comparator that simply uses `operator <` of the given type.
  */

@@ -4,6 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -13,8 +14,11 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdint>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

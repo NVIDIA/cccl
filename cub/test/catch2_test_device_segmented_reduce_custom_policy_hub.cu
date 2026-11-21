@@ -8,14 +8,23 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/agent/agent_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
+
+#include <cstddef>
 
 #include "catch2_test_device_reduce.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 using namespace cub;
 

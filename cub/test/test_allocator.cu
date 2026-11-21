@@ -20,6 +20,7 @@
 #include <cuda/std/cstdint>
 
 #include <cstdio>
+#include <cstdlib>
 
 #include "cub_non_catch2_test_memory.h"
 #include "test_util.h"

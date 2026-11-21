@@ -6,8 +6,9 @@
 #define _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
 
 #include <cub/device/device_batched_topk.cuh>
-#include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>

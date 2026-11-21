@@ -3,23 +3,38 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/device_reduce.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
-#include <cub/util_type.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/iterator>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <numeric>
 
-#include "catch2_test_device_reduce.cuh"
 #include "cub_test_macros.h"
-#include <c2h/generators.h>
+#include <c2h/catch2_test_helper.h>
 
 using float_type_list =
   c2h::type_list<float

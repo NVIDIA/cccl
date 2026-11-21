@@ -1,4 +1,9 @@
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_radix_sort.cuh>
+
+#include <cstddef>
+#include <cstdio>
 
 void b()
 {

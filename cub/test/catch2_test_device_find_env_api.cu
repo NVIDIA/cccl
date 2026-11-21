@@ -5,15 +5,24 @@
 
 #include <cub/device/device_find.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/device/dispatch/tuning/tuning_find.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 // example-begin find-if-predicate
 struct is_greater_than_t

@@ -7,9 +7,17 @@ struct limited_grid_factory;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/device_find.cuh>
+#include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cuda/__device/compute_capability.h>
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -17,6 +25,7 @@ struct limited_grid_factory;
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

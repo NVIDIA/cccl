@@ -5,12 +5,29 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/block/block_store.cuh>
+#  include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0

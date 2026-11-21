@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/device/device_scan.cuh>
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/block/block_store.cuh>
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__cccl/execution_space.h>
+#endif // !TUNE_BASE
 
 #ifndef USES_LOOKAHEAD
 #  define USES_LOOKAHEAD() 0

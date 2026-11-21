@@ -7,9 +7,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/std/numeric>
+#include <cuda/__functional/maximum.h>
+
+#include <cstddef>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;

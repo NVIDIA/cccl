@@ -1,11 +1,25 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/block/block_scan.cuh>
+#include <cub/config.cuh>
 
+#include <cub/block/block_scan.cuh>
+#include <cub/util_ptx.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <algorithm>
 #include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,

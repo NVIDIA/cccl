@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_sort.cuh>
 
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/ptx>
 #include <cuda/std/functional>
 

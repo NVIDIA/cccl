@@ -5,12 +5,15 @@
 
 #include <cub/device/device_merge.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cstddef>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
 {

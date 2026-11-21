@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
+
+#include <cub/detail/double_buffer.cuh>
+
+#include <thrust/detail/vector_base.h>
+
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <c2h/catch2_test_helper.h>
 // above header needs to be included first
 
 #include <cub/device/device_radix_sort.cuh>
@@ -9,13 +17,25 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/agent/agent_radix_sort_onesweep.cuh>
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_radix_rank.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/block/block_store.cuh>
+#  include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 // example-begin radix-sort-keys-custom-decomposer
 struct custom_key_t

@@ -1,6 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/detail/null_type.cuh>
+#include <cub/device/device_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
+#include <cstddef>
+
 #include <nvbench_helper.cuh>
 
 // %//RANGE//% TUNE_RADIX_BITS bits 8:9:1

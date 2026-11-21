@@ -3,11 +3,22 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cub/device/device_transform.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/cmath>
+
+#include <cstddef>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>

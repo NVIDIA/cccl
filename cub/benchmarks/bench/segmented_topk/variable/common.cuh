@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/tabulate.h>
 

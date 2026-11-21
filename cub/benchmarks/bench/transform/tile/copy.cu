@@ -7,6 +7,20 @@
 // otherwise it falls through to CUB's standard transform. This file disappears once tile dispatch is
 // fully transparent.
 
+#include <cub/config.cuh>
+
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <new>
+
+#include <nvbench_helper.cuh>
+
 #include "../common.h"
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()

@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <thrust/execution_policy.h>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
-#include <algorithm>
-#include <type_traits>
-#include <utility>
+#include <cuda/std/__cccl/extended_data_types.h>
+
+#include <cstdint>
 
 #include "catch2_test_block_radix_sort.cuh"
 #include "cub_test_macros.h" // _CCCL_HAS_NVFP8()
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1

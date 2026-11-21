@@ -3,9 +3,13 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_topk.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/fill.h>
 #include <thrust/sort.h>
 
@@ -13,16 +17,22 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+
 #include "catch2_large_problem_helper.cuh"
-#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include "cuda/__iterator/tabulate_output_iterator.h"
+#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
+#include <c2h/half.cuh>
 
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,

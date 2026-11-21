@@ -4,7 +4,18 @@
 #pragma once
 
 // keep checks at the top so compilation of discarded variants fails really fast
+#include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
+
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#if !TUNE_BASE
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 #if !TUNE_BASE
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #    error "When tuning, this benchmark does not support being compiled for multiple architectures"

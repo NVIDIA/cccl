@@ -10,6 +10,7 @@
 
 #include <cub/device/device_batched_topk.cuh>
 
+#include <cuda/__argument/argument_bounds.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
@@ -19,6 +20,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/span>
 
+#include <cstddef>
 #include <iostream>
 
 // Verifies that cub::DeviceBatchedTopK rejects, at compile time, requests the public contract marks as ill-formed.

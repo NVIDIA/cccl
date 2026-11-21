@@ -3,8 +3,15 @@
 
 #include <cub/device/device_for.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/cmath>
+#include <cuda/std/__fwd/extents.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/mdspan>
+
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 

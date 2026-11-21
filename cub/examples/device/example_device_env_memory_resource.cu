@@ -9,16 +9,22 @@
 #define CUB_STDERR
 
 #include <cub/device/device_reduce.cuh>
+#include <cub/util_debug.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/devices>
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include <cstdio>
+#include <cstdlib>
 #include <stdexcept>
+#include <vector>
 
 #include "../../test/test_util.h"
 

@@ -7,6 +7,7 @@
 
 #include <cuda/std/limits>
 
+#include <cstddef>
 #include <string>
 
 #include <device_side_benchmark.cuh>

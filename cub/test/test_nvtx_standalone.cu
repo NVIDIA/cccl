@@ -9,6 +9,7 @@
 #include <cub/device/device_for.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/iterator>
 #include <cuda/std/functional>
 

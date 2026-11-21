@@ -6,17 +6,18 @@
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/functional.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/iterator>
+#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/type_traits>
 
-#include <algorithm>
+#include <climits>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
@@ -24,7 +25,9 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

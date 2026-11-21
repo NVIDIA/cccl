@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_macro.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/functional>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/array>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
@@ -15,12 +16,12 @@
 
 #include <cstring>
 #include <functional>
-#include <limits>
 #include <numeric>
 
 #include "c2h/extended_types.h"
-#include "c2h/generators.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 /***********************************************************************************************************************

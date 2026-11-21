@@ -6,15 +6,19 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+
 #include <cuda/iterator>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/algorithm>
+#include <cuda/std/cstdint>
 
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
-#include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
