@@ -10,6 +10,9 @@
 // UNSUPPORTED: force-tile
 // error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cmath>
 
 #include <cuda/std/__floating_point/fp.h>
@@ -43,6 +46,10 @@ TEST_HOST_DEVICE_FUNC void test(T val)
     // If a range error due to overflow occurs, +HUGE_VAL, +HUGE_VALF, or +HUGE_VALL is returned.
     assert(eq(cuda::std::fdim(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::min()),
               cuda::std::numeric_limits<T>::max()));
+
+    // x <= y returns +0, not -0
+    assert(!cuda::std::signbit(cuda::std::fdim(T(), val)));
+    assert(!cuda::std::signbit(cuda::std::fdim(val, val)));
 
     // Fast device math flushes float subnormals, including bfloat16 values promoted to float, to zero.
     T expected = cuda::std::numeric_limits<T>::denorm_min();
@@ -111,6 +118,9 @@ TEST_HOST_DEVICE_FUNC bool test(float val)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(val);
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>(val);
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(::__float2half(val));
