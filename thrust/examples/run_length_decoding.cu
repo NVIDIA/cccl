@@ -5,6 +5,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/scan.h>
 
+#include <cstddef>
 #include <iostream>
 #include <iterator>
 

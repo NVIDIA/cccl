@@ -1,6 +1,8 @@
-#include <thrust/detail/config.h>
-
+#include <thrust/device_allocator.h>
 #include <thrust/device_vector.h>
+#include <thrust/mr/allocator.h>
+#include <thrust/system/cuda/memory_resource.h>
+#include <thrust/system/cuda/pointer.h>
 
 // If you create a global `thrust::device_vector` with the default allocator,
 // you'll get an error during program termination when the memory of the vector

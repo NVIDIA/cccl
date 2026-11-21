@@ -5,6 +5,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/zip_function.h>
 
+#include <cstddef>
 #include <iostream>
 
 // This example shows how to implement an arbitrary transformation of

@@ -2,11 +2,17 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
 
+#include <cuda/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 #include <iostream>
 #include <iterator>
+#include <string>
 
 // This example demonstrates how to expand an input sequence by
 // replicating each element a variable number of times. For example,

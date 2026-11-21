@@ -1,10 +1,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
 #include <thrust/random.h>
+#include <thrust/reduce.h>
 #include <thrust/transform_reduce.h>
 
 #include <cuda/std/utility>
 
+#include <cstddef>
 #include <iostream>
 
 // This example shows how to compute a bounding box
