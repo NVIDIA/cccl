@@ -30,7 +30,7 @@ class block_merge_ping_pong
   template <typename CompareOp>
   using cursor_t _CCCL_NODEBUG = typename MergePolicy::template cursor_t<CompareOp>;
 
-  static constexpr unsigned int items_per_thread = MergePolicy::items_per_thread;
+  static constexpr unsigned items_per_thread = MergePolicy::items_per_thread;
 
 public:
   using storage_t _CCCL_NODEBUG = typename MergePolicy::template storage_t<layout_t::tile_size + 1>;

@@ -13,7 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/block/block_store.cuh>
 #include <cub/block/specializations/block_merge_ping_pong.cuh>
 #include <cub/block/specializations/block_merge_register_staged.cuh>
 #include <cub/detail/log2.cuh>
@@ -22,10 +24,14 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -66,7 +72,7 @@ enum class BlockMergeAlgorithm
 namespace detail
 {
 // The storage type depends only on the keys and the number of scratch slots.
-template <typename KeyT, unsigned int NumKeys>
+template <typename KeyT, int NumKeys>
 struct block_merge_storage
 {
   KeyT keys[NumKeys];
@@ -78,22 +84,35 @@ template <typename KeyIt1, typename KeyIt2, typename OffsetT = int, typename Com
 block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, OffsetT diagonal, CompareOp compare_op)
 {
   static_assert(::cuda::std::__cccl_is_integer_v<OffsetT>);
-  using CounterT _CCCL_NODEBUG = ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(int)), int, OffsetT>;
+  using CounterT _CCCL_NODEBUG = decltype(+OffsetT{});
   const CounterT a_count       = count1;
   const CounterT b_count       = count2;
   const CounterT target        = diagonal;
-  CounterT first               = target < b_count ? CounterT{0} : target - b_count;
-  CounterT last                = (::cuda::min) (target, a_count);
+
+  _CCCL_ASSERT(a_count >= 0 && b_count >= 0 && target >= 0, "Merge counts and diagonal must be nonnegative");
+  _CCCL_ASSUME(a_count >= 0 && b_count >= 0 && target >= 0);
+  _CCCL_ASSERT(a_count <= (::cuda::std::numeric_limits<CounterT>::max)() - b_count,
+               "Combined merge count must fit in CounterT");
+  _CCCL_ASSUME(a_count <= (::cuda::std::numeric_limits<CounterT>::max)() - b_count);
+  _CCCL_ASSERT(target <= a_count + b_count, "Merge diagonal must not exceed the combined count");
+  _CCCL_ASSUME(target <= a_count + b_count);
+
+  CounterT first = target < b_count ? CounterT{0} : target - b_count;
+  CounterT last  = (::cuda::std::min) (target, a_count);
 
   if (first < last)
   {
-    const float prediction =
-      ::__fdividef(static_cast<float>(target) * static_cast<float>(a_count), static_cast<float>(a_count + b_count));
+    const float total = static_cast<float>(a_count + b_count);
+    _CCCL_ASSERT(::cuda::std::isfinite(total), "Combined merge count must have a finite float representation");
+    // Divide first so even valid 64-bit counts cannot overflow the float product.
+    const float prediction = ::__fdividef(static_cast<float>(target), total) * static_cast<float>(a_count);
+    _CCCL_ASSERT(::cuda::std::isfinite(prediction) && prediction >= 0,
+                 "Merge prediction must be finite and nonnegative");
     // A rounded prediction can exceed CounterT's range near its maximum value.
     // Clamp its upper end before converting back to the integral offset type.
     const CounterT estimate =
       prediction >= static_cast<float>(last) ? last - CounterT{1} : static_cast<CounterT>(prediction);
-    const CounterT pivot = ::cuda::clamp(estimate, first, last - CounterT{1});
+    const CounterT pivot = ::cuda::std::clamp(estimate, first, last - CounterT{1});
     const auto left      = compare_op(keys2[target - CounterT{1} - pivot], keys1[pivot]);
 
     if (left)
@@ -104,7 +123,11 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
     {
       first = pivot + CounterT{1};
     }
-    for (int probe = 0; probe < 3; ++probe)
+
+    constexpr int probes = 3;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int probe = 0; probe < probes; ++probe)
     {
       const CounterT distance = CounterT{16} << (2 * probe);
       // Check before subtracting/adding so unsigned offsets cannot wrap around.
@@ -135,7 +158,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
   const CounterT span = last - first;
 
   return static_cast<OffsetT>(
-    first + _CUB::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
+    first + CUB_NS_QUALIFIER::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
 }
 
 struct block_merge_window
@@ -152,17 +175,24 @@ struct block_merge_pair
 };
 
 // Reusable scheduling helpers do not depend on the key type or storage strategy.
-template <unsigned int BlockThreads, unsigned int ItemsPerThread, bool UseWarpPairs = false>
+template <int BlockThreads, int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_layout
 {
-  static constexpr unsigned int tile_size = BlockThreads * ItemsPerThread;
-  static constexpr unsigned int warps     = BlockThreads / detail::warp_threads;
-  static constexpr bool full_warps =
-    BlockThreads % warp_threads == 0 && warps > 0 && ::cuda::is_power_of_two(warps);
-  static constexpr int log_warps = ::cuda::ilog2(warps > 0 ? warps : 1);
+  static_assert(BlockThreads > 0 && BlockThreads <= 1024);
+  static_assert(ItemsPerThread > 0 && ItemsPerThread <= (::cuda::std::numeric_limits<int>::max)() / BlockThreads - 2,
+                "Tile size and per-thread merge slack must fit in int");
+
+  static constexpr unsigned tile_size = BlockThreads * ItemsPerThread;
+  static constexpr unsigned warps     = BlockThreads / warp_threads;
+  static constexpr bool full_warps    = BlockThreads % warp_threads == 0 && warps > 0 && ::cuda::is_power_of_two(warps);
+  static constexpr int log_warps      = ::cuda::ilog2(warps > 0 ? warps : 1);
 
   [[nodiscard]] _CCCL_DEVICE_API static block_merge_window thread_window(unsigned int tid, int total)
   {
+    _CCCL_ASSERT(tid < BlockThreads && total >= 0 && static_cast<unsigned>(total) <= tile_size,
+                 "Thread and live count must be within the tile");
+    _CCCL_ASSUME(tid < BlockThreads && total >= 0 && static_cast<unsigned>(total) <= tile_size);
+
     const int begin = static_cast<int>(tid * ItemsPerThread);
     const int end   = (::cuda::std::min) (begin + static_cast<int>(ItemsPerThread), total);
 
@@ -171,11 +201,17 @@ struct block_merge_layout
 
   [[nodiscard]] _CCCL_DEVICE_API static bool use_pairs(int runs)
   {
-    return UseWarpPairs && full_warps && (runs & (runs - 1)) == 0 && static_cast<unsigned int>(runs) <= 2 * warps;
+    _CCCL_ASSERT(runs >= 1 && runs <= 32, "Run count must be between 1 and 32");
+    _CCCL_ASSUME(runs >= 1 && runs <= 32);
+
+    return UseWarpPairs && full_warps && ::cuda::is_power_of_two(runs) && static_cast<unsigned int>(runs) <= 2 * warps;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static int effective_runs(int runs)
   {
+    _CCCL_ASSERT(runs >= 1 && runs <= 32, "Run count must be between 1 and 32");
+    _CCCL_ASSUME(runs >= 1 && runs <= 32);
+
     if (runs <= 2)
     {
       return runs;
@@ -183,7 +219,7 @@ struct block_merge_layout
 
     const int padded = 1 << (32 - ::__clz(static_cast<unsigned int>(runs - 1)));
     // A lone unmatched run does not benefit from padding.
-    const bool pad = UseWarpPairs && full_warps && (runs & (runs - 1)) != 0 && ((runs - 1) & (runs - 2)) != 0
+    const bool pad = UseWarpPairs && full_warps && !::cuda::is_power_of_two(runs) && !::cuda::is_power_of_two(runs - 1)
                   && static_cast<unsigned int>(padded) <= 2 * warps;
     return pad ? padded : runs;
   }
@@ -207,11 +243,11 @@ struct block_merge_layout
   {
     const int live = (runs + span - 1) >> round;
     int lo         = 0;
-    int hi         = (live + 1) >> 1;
+    int hi         = (live + 1) / 2;
 
     while (hi - lo > 1)
     {
-      const int mid = lo + (hi - lo) / 2;
+      const int mid = ::cuda::std::midpoint(lo, hi);
       if (offsets[mid * 2 * span] <= position)
       {
         lo = mid;
@@ -230,6 +266,13 @@ struct block_merge_layout
   // to force this odd-alignment.
   [[nodiscard]] _CCCL_DEVICE_API static block_merge_window pair_window(int count, int log_threads, int lane)
   {
+    _CCCL_ASSERT(count >= 0 && static_cast<unsigned>(count) <= tile_size, "Pair count must fit within the tile");
+    _CCCL_ASSERT(log_threads >= 0 && log_threads <= log_warps + 5, "Pair thread count must fit within the block");
+    _CCCL_ASSUME(count >= 0 && static_cast<unsigned>(count) <= tile_size);
+    _CCCL_ASSUME(log_threads >= 0 && log_threads <= log_warps + 5);
+    _CCCL_ASSERT(lane >= 0 && lane < (1 << log_threads), "Lane must be within the pair thread group");
+    _CCCL_ASSUME(lane >= 0 && lane < (1 << log_threads));
+
     constexpr int items = static_cast<int>(ItemsPerThread);
     const int threads   = 1 << log_threads;
 
@@ -242,7 +285,7 @@ struct block_merge_layout
 
     const int stride    = count <= (items + 1) * threads ? items : ((count >> log_threads) - 1) | 1;
     const int remainder = count - stride * threads;
-    const int pairs     = remainder >> 1;
+    const int pairs     = remainder / 2;
     const int odd       = remainder & 1;
     const int begin     = stride * lane + 2 * (::cuda::std::min) (lane, pairs) + (lane > pairs ? odd : 0);
 
@@ -271,7 +314,7 @@ public:
           pair.begin
           + CUB_NS_QUALIFIER::detail::block_merge_path(
             input + pair.begin, input + pair.middle, pair.middle - pair.begin, pair.end - pair.middle, diagonal, compare))
-      , index2(pair.middle + diagonal - (index1 - pair.begin))
+      , index2(pair.middle + (diagonal - (index1 - pair.begin)))
       , end1(pair.middle)
       , end2(pair.end)
       , key1(input[index1])
@@ -298,7 +341,7 @@ public:
 
 // Supplies shared helpers without making the algorithm headers include this header.
 // Device-wide callers may opt into pair-warps scheduling for suitably balanced runs.
-template <typename KeyT, unsigned int BlockThreads, unsigned int ItemsPerThread, bool UseWarpPairs = false>
+template <typename KeyT, int BlockThreads, int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_policy
 {
   using key_t _CCCL_NODEBUG = KeyT;
@@ -306,37 +349,24 @@ struct block_merge_policy
     CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
   using window_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_window;
 
-  static constexpr unsigned int items_per_thread = ItemsPerThread;
+  static constexpr unsigned items_per_thread = ItemsPerThread;
 
-  template <unsigned int Slots>
+  template <int Slots>
   using storage_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_storage<KeyT, Slots>;
 
   template <typename CompareOp>
   using cursor_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_cursor<KeyT, CompareOp>;
 
-  template <unsigned int Items>
+  template <int Items>
   _CCCL_DEVICE_API static void load(const KeyT* keys, unsigned int tid, int total, KeyT (&out)[Items])
   {
-    const unsigned int begin = tid * Items;
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (unsigned int item = 0; item < Items; ++item)
-    {
-      out[item] = begin + item < static_cast<unsigned int>(total) ? keys[begin + item] : KeyT{};
-    }
+    CUB_NS_QUALIFIER::LoadDirectBlocked(static_cast<int>(tid), keys, out, total, KeyT{});
   }
 
-  template <unsigned int Items>
-  _CCCL_DEVICE_API static void store(KeyT* keys, block_merge_window window, const KeyT (&items)[Items])
+  template <int Items>
+  _CCCL_DEVICE_API static void store(KeyT* keys, block_merge_window window, KeyT (&items)[Items])
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (unsigned int item = 0; item < Items; ++item)
-    {
-      if (static_cast<int>(item) < window.end - window.begin)
-      {
-        keys[window.begin + item] = items[item];
-      }
-    }
+    CUB_NS_QUALIFIER::StoreDirectBlocked(0, keys + window.begin, items, window.end - window.begin);
   }
 };
 } // namespace detail
@@ -369,16 +399,19 @@ struct block_merge_policy
 //! @tparam BlockDimY Y dimension of the block.
 //! @tparam BlockDimZ Z dimension of the block.
 template <typename KeyT,
-          unsigned int BlockDimX,
-          unsigned int ItemsPerThread,
-          unsigned int MaxRuns          = 32,
+          int BlockDimX,
+          int ItemsPerThread,
+          int MaxRuns                   = 32,
           BlockMergeAlgorithm Algorithm = BlockMergeAlgorithm::PING_PONG,
-          unsigned int BlockDimY        = 1,
-          unsigned int BlockDimZ        = 1>
+          int BlockDimY                 = 1,
+          int BlockDimZ                 = 1>
 class BlockMerge
 {
 private:
-  static constexpr unsigned int block_threads = BlockDimX * BlockDimY * BlockDimZ;
+  static_assert(BlockDimX > 0 && BlockDimX <= 1024 && BlockDimY > 0 && BlockDimY <= 1024 && BlockDimZ > 0
+                  && BlockDimZ <= 64,
+                "Block dimensions must be positive and within CUDA limits");
+  static constexpr unsigned block_threads = BlockDimX * BlockDimY * BlockDimZ;
   static_assert(BlockDimX > 0 && BlockDimY > 0 && BlockDimZ > 0 && BlockDimX <= 1024 && BlockDimY <= 1024
                   && BlockDimZ <= 64 && block_threads <= 1024,
                 "Block dimensions must specify 1 through 1024 threads");
@@ -441,6 +474,12 @@ public:
   _CCCL_DEVICE_API void
   Merge(KeyT* keys, const int* offsets, int num_runs, KeyT (&out)[ItemsPerThread], CompareOp compare_op)
   {
+    _CCCL_ASSERT(num_runs >= 1 && num_runs <= MaxRuns, "Run count must be between 1 and MaxRuns");
+    _CCCL_ASSUME(num_runs >= 1 && num_runs <= MaxRuns);
+    _CCCL_ASSERT(offsets[0] == 0 && offsets[num_runs] >= 0
+                   && static_cast<unsigned>(offsets[num_runs]) <= merge_policy_t::layout_t::tile_size,
+                 "Run offsets must describe a live prefix within the tile");
+
     internal_block_merge_t(temp_storage, linear_tid).merge(keys, offsets, num_runs, out, compare_op);
   }
 
@@ -454,6 +493,12 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const KeyT*
   MergeToShared(KeyT* keys, const int* offsets, int num_runs, CompareOp compare_op)
   {
+    _CCCL_ASSERT(num_runs >= 1 && num_runs <= MaxRuns, "Run count must be between 1 and MaxRuns");
+    _CCCL_ASSUME(num_runs >= 1 && num_runs <= MaxRuns);
+    _CCCL_ASSERT(offsets[0] == 0 && offsets[num_runs] >= 0
+                   && static_cast<unsigned>(offsets[num_runs]) <= merge_policy_t::layout_t::tile_size,
+                 "Run offsets must describe a live prefix within the tile");
+
     return internal_block_merge_t(temp_storage, linear_tid).merge_to_shared(keys, offsets, num_runs, compare_op);
   }
   //! @}

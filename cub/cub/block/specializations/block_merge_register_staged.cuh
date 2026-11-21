@@ -31,8 +31,8 @@ class block_merge_register_staged
   template <typename CompareOp>
   using cursor_t _CCCL_NODEBUG = typename MergePolicy::template cursor_t<CompareOp>;
 
-  static constexpr unsigned int items_per_thread = MergePolicy::items_per_thread;
-  static constexpr unsigned int pair_capacity    = items_per_thread + 2;
+  static constexpr unsigned items_per_thread = MergePolicy::items_per_thread;
+  static constexpr unsigned pair_capacity    = items_per_thread + 2;
   const unsigned int linear_tid;
 
   [[nodiscard]] _CCCL_DEVICE_API int pair_fit_mask(const int* offsets, int runs, int effective, int log_runs)
@@ -56,7 +56,7 @@ class block_merge_register_staged
       const int end          = end_lane >= 32 ? offsets[runs] : shuffled_end;
       int length             = lane < pairs ? end - begin : 0;
 
-      for (int distance = 16; distance > 0; distance >>= 1)
+      for (int distance = 16; distance > 0; distance /= 2)
       {
         length = (::cuda::std::max) (length, ::__shfl_xor_sync(0xffffffffu, length, distance));
       }
