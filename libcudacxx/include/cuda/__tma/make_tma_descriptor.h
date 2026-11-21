@@ -28,6 +28,7 @@
 #    include <cuda/__driver/driver_api.h>
 #    include <cuda/__memory/is_aligned.h>
 #    include <cuda/__memory/is_pointer_accessible.h>
+#    include <cuda/__numeric/mul_overflow.h>
 #    include <cuda/devices> // sub headers cause circular dependency
 #    include <cuda/std/__algorithm/min.h>
 #    include <cuda/std/__cstddef/types.h>
@@ -402,20 +403,24 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
 {
   using ::cuda::std::int64_t;
   __tma_strides_array_t __output_strides{1}; // inner stride is implicit = 1
-  const auto __input_strides                 = __tensor.strides;
-  const auto __input_sizes                   = __tensor.shape;
-  const auto __alignment                     = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
-  constexpr auto __max_allowed_stride_bytes  = int64_t{1} << 40; // 2^40
-  [[maybe_unused]] int64_t __cumulative_size = 1;
+  const auto __input_strides                = __tensor.strides;
+  const auto __input_sizes                  = __tensor.shape;
+  const auto __alignment                    = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
+  constexpr auto __max_allowed_stride_bytes = int64_t{1} << 40; // 2^40
   if (__input_strides == nullptr)
   {
 #    if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument, "__tensor.strides=nullptr is not supported for DLPack v1.2 and later");
 #    else // ^^^ _CCCL_DLPACK_AT_LEAST(1, 2) ^^^ / vvv _CCCL_DLPACK_BELOW(1, 2) vvv
+    int64_t __cumulative_size = 1;
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
-      // TODO(fbusato): check mul overflow
-      __cumulative_size *= __tensor_sizes[__i];
+      const auto [__next_size, __overflow] = ::cuda::mul_overflow<int64_t>(__cumulative_size, __tensor_sizes[__i]);
+      if (__overflow)
+      {
+        _CCCL_THROW(::std::invalid_argument, "Stride in bytes is greater than or equal to 2^40");
+      }
+      __cumulative_size         = __next_size;
       const auto __stride_bytes = ::cuda::__driver::__cutensormap_size_bytes(__cumulative_size, __data_type);
       if (__stride_bytes % __alignment != 0)
       {
@@ -438,13 +443,16 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
 
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
-    const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
-    // TODO(fbusato): check mul overflow
-    if (__input_strides[__i] != 0 && (__input_strides[__i] < __input_sizes[__i + 1] * __next_stride))
+    if (__input_strides[__i] != 0)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "Stride must be 0 or greater than or equal to the product of the next stride and the size of the "
-                  "next dimension");
+      const auto __next_stride              = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
+      const auto [__min_stride, __overflow] = ::cuda::mul_overflow(__input_sizes[__i + 1], __next_stride);
+      if (__overflow || __input_strides[__i] < __min_stride)
+      {
+        _CCCL_THROW(::std::invalid_argument,
+                    "Stride must be 0 or greater than or equal to the product of the next stride and the size of the "
+                    "next dimension");
+      }
     }
     const auto __input_stride_bytes = ::cuda::__driver::__cutensormap_size_bytes(__input_strides[__i], __data_type);
     if (__input_stride_bytes % __alignment != 0)
