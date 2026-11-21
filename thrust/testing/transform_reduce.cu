@@ -1,7 +1,13 @@
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

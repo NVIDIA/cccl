@@ -1,9 +1,13 @@
 #include <thrust/binary_search.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 
 #include <unittest/unittest.h>

@@ -1,6 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/generate.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
+
+#include <cuda/std/__cccl/execution_space.h>
 
 #include <unittest/unittest.h>
 

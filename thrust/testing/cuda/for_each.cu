@@ -1,7 +1,13 @@
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
+#include <thrust/host_vector.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
+
+#include <cuda/std/__cccl/execution_space.h>
 
 #include <algorithm>
+#include <cstddef>
 
 #include "thrust/device_vector.h"
 #include <unittest/unittest.h>

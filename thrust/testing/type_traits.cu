@@ -2,20 +2,28 @@
 #define CCCL_IGNORE_DEPRECATED_API
 
 #include <thrust/complex.h>
+#include <thrust/detail/config/device_system.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/complex>
 #include <cuda/std/iterator>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
+
+#include <string>
 
 #include <unittest/unittest.h>
 

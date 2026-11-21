@@ -1,7 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

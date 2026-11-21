@@ -1,6 +1,14 @@
+#include <thrust/detail/config/device_system.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/replace.h>
+
+#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/execution_space.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

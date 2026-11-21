@@ -1,21 +1,33 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/copy.h>
+#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <iterator>
 #include <list>
+#include <vector>
 
 #include <unittest/unittest.h>
 

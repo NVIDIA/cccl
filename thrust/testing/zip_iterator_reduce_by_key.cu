@@ -1,5 +1,15 @@
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

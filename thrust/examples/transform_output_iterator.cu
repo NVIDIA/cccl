@@ -3,6 +3,7 @@
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/transform_output_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 
 #include <iostream>
 

@@ -1,7 +1,13 @@
+#include <thrust/detail/preprocessor.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__functional/operations.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 
 #include <unittest/unittest.h>

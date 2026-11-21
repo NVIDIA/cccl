@@ -1,9 +1,18 @@
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/seq.h>
+#include <thrust/mr/allocator.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
+#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/cstddef>
+
+#include <cstddef>
+#include <memory>
 
 #include <unittest/unittest.h>
 

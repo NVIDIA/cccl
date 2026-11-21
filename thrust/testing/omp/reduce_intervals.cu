@@ -1,6 +1,14 @@
-#include <thrust/functional.h>
+#include <thrust/detail/function.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/internal/decompose.h>
+#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>
+
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

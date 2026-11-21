@@ -8,7 +8,9 @@
 
 #include <cmath>
 #include <iostream>
+#include <iterator>
 #include <limits>
+#include <string>
 
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:

@@ -6,6 +6,7 @@
 #include <thrust/detail/preprocessor.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
 #include <thrust/mr/host_memory_resource.h>
 #include <thrust/universal_vector.h>
@@ -23,8 +24,11 @@
 #include <typeinfo>
 #include <vector>
 
+// IWYU pragma: begin_exports
+#include <catch2/catch_message.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
@@ -32,6 +36,7 @@
 #include <catch2/matchers/catch_matchers_vector.hpp>
 #include <unittest/random.h>
 #include <unittest/special_types.h>
+// IWYU pragma: end_exports
 
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  include <cxxabi.h>

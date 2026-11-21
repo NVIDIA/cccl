@@ -1,8 +1,13 @@
+#include <thrust/device_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
+#include <thrust/mr/device_memory_resource.h>
 #include <thrust/mr/disjoint_pool.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/pool.h>
 
 #include <cassert>

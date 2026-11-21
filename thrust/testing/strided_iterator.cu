@@ -1,5 +1,8 @@
 #define CCCL_IGNORE_DEPRECATED_API
 
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
+
 #include <cuda/__cccl_config>
 
 _CCCL_DIAG_PUSH

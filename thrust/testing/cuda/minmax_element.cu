@@ -1,4 +1,15 @@
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/seq.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
+#include <thrust/host_vector.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/pair.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

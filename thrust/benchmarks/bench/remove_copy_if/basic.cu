@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/remove.h>
 
-#include <cuda/memory_pool>
-#include <cuda/stream>
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

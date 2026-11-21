@@ -1,6 +1,16 @@
+#include <thrust/device_vector.h>
 #include <thrust/generate.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
+
+#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

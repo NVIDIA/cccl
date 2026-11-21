@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
+
+#include <cuda/std/__cccl/extended_data_types.h>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "nvbench_helper.cuh"
 

@@ -1,7 +1,15 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/mismatch.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/atomic>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <unittest/unittest.h>
 

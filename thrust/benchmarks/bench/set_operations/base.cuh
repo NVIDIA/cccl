@@ -8,6 +8,11 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__cccl/visibility.h>
+
+#include <cstddef>
+#include <cstdint>
+
 #include "nvbench_helper.cuh"
 
 template <typename T, typename OpT>

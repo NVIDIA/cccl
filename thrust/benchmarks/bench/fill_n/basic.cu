@@ -4,8 +4,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 
-#include <cuda/memory_pool>
-#include <cuda/stream>
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

@@ -1,9 +1,14 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/for_each.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_categories.h>
 #include <thrust/sequence.h>
 
 #include <iostream>
+#include <iterator>
+#include <string>
 
 // This example illustrates how to use the raw_reference_cast to convert
 // system-specific reference wrappers into native references.

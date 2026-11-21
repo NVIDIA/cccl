@@ -1,7 +1,15 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

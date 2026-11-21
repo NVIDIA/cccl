@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/set_operations.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
+#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>

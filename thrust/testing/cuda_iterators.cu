@@ -1,7 +1,11 @@
+#include <thrust/copy.h>
 #include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/host_vector.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/cstdint>
 
 #include <vector>
 

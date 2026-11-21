@@ -1,5 +1,15 @@
+#include <thrust/device_allocator.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__concepts/semiregular.h>
+#include <cuda/std/__utility/move.h>
+
+#include <cstddef>
+#include <memory>
 
 #include <unittest/unittest.h>
 

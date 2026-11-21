@@ -1,5 +1,6 @@
-#include <thrust/execution_policy.h>
+#include <thrust/device_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <cuda/stream>
 

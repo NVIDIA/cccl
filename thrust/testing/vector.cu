@@ -1,5 +1,11 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
+#include <cstddef>
+
 // gcc >= 11 emits bogus -Werror=stringop-overflow and -Werror=array-bounds diagnostics for the memmove that thrust uses
 // to copy small vectors of narrow types (e.g. host_vector<signed char>). This needs to be suppressed before any header
 // pulls in the memmove implementation, since gcc ties the diagnostic state to where that code is first parsed.

@@ -3,6 +3,9 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
 #include <iostream>
 #include <iterator>
 

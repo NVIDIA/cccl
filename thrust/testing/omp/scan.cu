@@ -4,6 +4,8 @@
 #include <thrust/scan.h>
 #include <thrust/system/omp/execution_policy.h>
 
+#include <cuda/std/__cccl/diagnostic.h>
+
 #include <vector>
 
 #include <omp.h>

@@ -1,8 +1,17 @@
 #include <thrust/detail/allocator/allocator_system.h>
+#include <thrust/device_allocator.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
+#include <thrust/universal_vector.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__memory/allocator_traits.h>
+
+#include <cstddef>
+#include <memory>
 
 #include <unittest/unittest.h>
 

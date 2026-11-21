@@ -1,10 +1,20 @@
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
