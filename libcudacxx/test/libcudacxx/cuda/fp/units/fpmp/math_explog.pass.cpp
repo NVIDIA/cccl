@@ -79,8 +79,8 @@ template <class T>
 TEST_HOST_DEVICE_FUNC void test_accuracy()
 {
   // The largest error MPFR sweeps of 2M-4M arguments per range found, rounded up: 3.2 for exp,
-  // exp2 and exp10, 4.5 for expm1, 4.7 for log, 5.8 for log2 and log10, 9.8 for log1p.
-  const double tolerance[fn_count] = {4.0, 4.0, 4.0, 5.0, 6.0, 7.0, 7.0, 10.0};
+  // exp2 and exp10, 4.5 for expm1, 4.7 for log, 5.3 for log2 and log10, 5.7 for log1p.
+  const double tolerance[fn_count] = {4.0, 4.0, 4.0, 5.0, 6.0, 7.0, 7.0, 7.0};
   // MPFR 4.2.2, 256-bit precision: the function, x, and its value. Small arguments, the worst
   // arguments of the sweeps, and the ends of each range with a normal low limb.
   const explog_case cases[] = {
@@ -205,7 +205,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
 }
 
 // Below 2^-7 fp32mp2_high takes expm1 and log1p from their Taylor series, which MPFR sweeps put
-// within 2.5u^2 there; the other levels err by up to 4.5u^2 (expm1) and 9.8u^2 (log1p). The
+// within 2.5u^2 there; the other levels err by up to 4.5u^2 (expm1) and 3.9u^2 (log1p). The
 // arguments are the worst those sweeps found for the other levels.
 TEST_HOST_DEVICE_FUNC void test_series_high()
 {
@@ -290,8 +290,8 @@ TEST_HOST_DEVICE_FUNC void test_special_values()
 {
   const F inf  = cuda::std::numeric_limits<F>::infinity();
   const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn = cuda::std::numeric_limits<F>::max();
-  const F minn = cuda::std::numeric_limits<F>::min();
+  const F maxn = (cuda::std::numeric_limits<F>::max)();
+  const F minn = (cuda::std::numeric_limits<F>::min)();
 #if TEST_HAS_CUDA_FAST_MATH
   // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
   // in for the smallest subnormal there

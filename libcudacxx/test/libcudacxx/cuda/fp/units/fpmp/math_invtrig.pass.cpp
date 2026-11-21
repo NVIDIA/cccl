@@ -245,8 +245,8 @@ TEST_HOST_DEVICE_FUNC void test_special_values()
 {
   const F inf  = cuda::std::numeric_limits<F>::infinity();
   const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn = cuda::std::numeric_limits<F>::max();
-  const F minn = cuda::std::numeric_limits<F>::min();
+  const F maxn = (cuda::std::numeric_limits<F>::max)();
+  const F minn = (cuda::std::numeric_limits<F>::min)();
 #if TEST_HAS_CUDA_FAST_MATH
   // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
   // in for the smallest subnormal there
@@ -311,8 +311,8 @@ TEST_HOST_DEVICE_FUNC void test_atan2_special_values()
 {
   const F inf  = cuda::std::numeric_limits<F>::infinity();
   const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn = cuda::std::numeric_limits<F>::max();
-  const F minn = cuda::std::numeric_limits<F>::min();
+  const F maxn = (cuda::std::numeric_limits<F>::max)();
+  const F minn = (cuda::std::numeric_limits<F>::min)();
 #if TEST_HAS_CUDA_FAST_MATH
   // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
   // in for the smallest subnormal there

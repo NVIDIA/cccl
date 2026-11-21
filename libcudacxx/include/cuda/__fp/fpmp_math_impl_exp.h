@@ -62,7 +62,8 @@ struct alignas(8) __fpmp2_exp_table_entry
 // units that read it carry a copy. nvcc emits a namespace-scope device variable into the device
 // and host code of every translation unit that sees it, and with RDC it does the same for a
 // static local of an inline function with external linkage, whether or not anything reads them.
-static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_log_table_entry __fpmp2_log_table(const uint32_t __i) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE static _CCCL_FORCEINLINE __fpmp2_log_table_entry
+__fpmp2_log_table(const uint32_t __i) noexcept
 {
   static constexpr __fpmp2_log_table_entry __table[128] = {
     {0x1.6cp+0f, -0x1.686cp-2f, -0x1.03d362p-19f, -0x1.2bb11p-44f},
@@ -196,7 +197,8 @@ static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_log_table_entry __fpmp2_log_t
   };
   return __table[__i];
 }
-static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_exp_table_entry __fpmp2_exp_table(const int __i) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE static _CCCL_FORCEINLINE __fpmp2_exp_table_entry
+__fpmp2_exp_table(const int __i) noexcept
 {
   static constexpr __fpmp2_exp_table_entry __table[128] = {
     {0x1p+0f, 0.0f},
@@ -332,7 +334,8 @@ static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_exp_table_entry __fpmp2_exp_t
 }
 // 2^(j/128) - 1 = __hi + __lo for j = -64..63, in entry j + 64: each limb rounded by Sollya from a
 // 400-bit value, so that the pair is good to 2^-49 of 2^(j/128) - 1 itself.
-static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_exp_table_entry __fpmp2_expm1_table(const int __i) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE static _CCCL_FORCEINLINE __fpmp2_exp_table_entry
+__fpmp2_expm1_table(const int __i) noexcept
 {
   static constexpr __fpmp2_exp_table_entry __table[128] = {
     {-0x1.2bec34p-2f, 0x1.9fcef4p-27f},
@@ -468,7 +471,7 @@ static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_exp_table_entry __fpmp2_expm1
 }
 
 // 2^__e as a float, for __e in [-126, 127].
-_CCCL_FPMP_CORE_API float __internal_fpmp2_exp2i(const int __e) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API float __internal_fpmp2_exp2i(const int __e) noexcept
 {
   return ::cuda::std::bit_cast<float>(static_cast<uint32_t>(__e + 127) << 23);
 }
@@ -542,21 +545,22 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_small_series(
  * has 9 bits, so that k c0 and x_hi - k c0 are exact and the larger terms of phi are summed
  * without error; for exp2, x - k/128 is exact. The error of the result therefore does not grow
  * with |x|: against MPFR it stays within 3.2u^2 (u = 2^-24, mean 0.3u^2) over the whole range of
- * each function, 4.1u^2 for expm1.
+ * each function, 4.5u^2 for expm1.
  *
  * exp, exp2 and exp10 share the tail of pow: e^phi - 1 by a degree-5 polynomial and the product
  * with the table's 2^(j/128). expm1 needs e^phi - 1 itself to full accuracy, and 2^(j/128) - 1
  * from a table of its own.
  *
  * A result that overflows is +inf with a zero low limb, a subnormal one is rounded once, and one
- * below half the smallest subnormal is +0. NaN gives NaN in both limbs. The range of x_hi is
- * tested on entry, so that no intermediate is infinite or NaN.
+ * below half the smallest subnormal is +0. NaN gives NaN in both limbs. The range of x is tested
+ * on entry, so that no intermediate is infinite or NaN.
  * --------------------------------------------------------------------
  */
 
 // round(a b) for |a b| < 2^22, as an int and as the float *__kf: the fma that adds 1.5 2^23
 // rounds the exact product to an integer.
-_CCCL_FPMP_CORE_API int __internal_fpmp2_round_product(const float __a, const float __b, float* __kf) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API int
+__internal_fpmp2_round_product(const float __a, const float __b, float* __kf) noexcept
 {
   constexpr float __round_magic = 0x1.8p23f;
   const float __kt              = ::cuda::__fpmp_fma_rn(__a, __b, __round_magic);
@@ -566,9 +570,12 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_round_product(const float __a, const fl
   return __k;
 }
 
-// x = k c + phi for c = __c0 + __c1 + __c2 and k = round(x_hi / c), |k| < 2^15: returns k and phi
+// x = k c + phi for c = __c0 + __c1 + __c2 and k = round(x / c), |k| < 2^15: returns k and phi
 // as a pair. __c0 has at most 9 significant bits, which makes k __c0 and x_hi - k __c0 exact.
-_CCCL_FPMP_CORE_API int __internal_fpmp2_exp_reduce(
+// k is taken from x_hi + x_lo, which is x_hi for a normalized pair: a pair of low-accuracy
+// arithmetic whose high limb does not carry the value ((2^24, 0.25) - 2^24 is (0, 0.25)) is
+// then reduced like any other.
+[[nodiscard]] _CCCL_FPMP_CORE_API int __internal_fpmp2_exp_reduce(
   const float __x_hi,
   const float __x_lo,
   const float __inv_c,
@@ -579,7 +586,7 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_exp_reduce(
   float* __phi_lo) noexcept
 {
   float __kf;
-  const int __k   = ::cuda::__internal_fpmp2_round_product(__x_hi, __inv_c, &__kf);
+  const int __k   = ::cuda::__internal_fpmp2_round_product(::cuda::__fpmp_add_rn(__x_hi, __x_lo), __inv_c, &__kf);
   const float __d = ::cuda::__fpmp_fma_rn(-__kf, __c0, __x_hi);
   float __kc1_lo;
   const float __kc1_hi = ::cuda::__fpmp_two_mult_fma(__kf, __c1, &__kc1_lo);
@@ -638,16 +645,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scale(
   *__res_lo = __r_lo;
 }
 
-// b^x for an x_hi outside the range the function reduces: NaN, +inf above it and +0 below it.
-_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_out_of_range(const float __x_hi, float* __res_hi, float* __res_lo) noexcept
+// b^x for an x outside the range the function reduces: NaN, +inf above it and +0 below it.
+_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_out_of_range(const float __x, float* __res_hi, float* __res_lo) noexcept
 {
-  if (__x_hi != __x_hi)
+  if (__x != __x)
   {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_hi;
+    *__res_hi = __x;
+    *__res_lo = __x;
     return;
   }
-  *__res_hi = __x_hi > 0.0f ? ::cuda::std::__fp_inf<float>() : 0.0f;
+  *__res_hi = __x > 0.0f ? ::cuda::std::__fp_inf<float>() : 0.0f;
   *__res_lo = 0.0f;
 }
 
@@ -658,17 +665,18 @@ _CCCL_GLOBAL_CONSTANT float __fpmp2_ln2_128_1   = -0x1.bd0106p-20f;
 _CCCL_GLOBAL_CONSTANT float __fpmp2_ln2_128_2   = 0x1.cf79acp-47f;
 _CCCL_GLOBAL_CONSTANT float __fpmp2_inv_ln2_128 = 0x1.715476p+7f;
 
-// e^x 2^_Shift, _Shift = 0 or -1: sinh and cosh take e^|x| / 2 with the scale lowered by one, which
-// is exact and keeps them finite up to |x| = 89.416, where e^|x| alone overflows from 88.7228.
-template <int _Shift = 0>
+// ln2 = __fpmp2_ln2_hi + __fpmp2_ln2_lo, as a pair
+_CCCL_GLOBAL_CONSTANT float __fpmp2_ln2_hi = 0x1.62e43p-1f;
+_CCCL_GLOBAL_CONSTANT float __fpmp2_ln2_lo = -0x1.05c61p-29f;
+
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_exp_impl(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  static_assert(_Shift == 0 || _Shift == -1, "exp: the result is scaled by 2^Shift, 1 or 1/2");
-  // e^x 2^Shift >= 2^128 above 88.73 - Shift ln2 and e^x < 2^-150 below -103.98
-  if (!(__x_hi >= -104.5f && __x_hi <= ((_Shift == 0) ? 89.0f : 90.0f)))
+  // e^x >= 2^128 above 88.73 and e^x < 2^-150 below -103.98
+  const float __x = ::cuda::__fpmp_add_rn(__x_hi, __x_lo);
+  if (!(__x >= -104.5f && __x <= 89.0f))
   {
-    ::cuda::__internal_fpmp2_exp_out_of_range(__x_hi, __res_hi, __res_lo);
+    ::cuda::__internal_fpmp2_exp_out_of_range(__x, __res_hi, __res_lo);
     return;
   }
   float __phi_hi, __phi_lo, __y_hi, __y_lo;
@@ -676,13 +684,7 @@ __internal_fpmp2_exp_impl(const float __x_hi, const float __x_lo, float* __res_h
   const int __k = ::cuda::__internal_fpmp2_exp_reduce(
     __x_hi, __x_lo, __fpmp2_inv_ln2_128, __fpmp2_ln2_128_0, __fpmp2_ln2_128_1, __fpmp2_ln2_128_2, &__phi_hi, &__phi_lo);
   ::cuda::__internal_fpmp2_exp_tail(__phi_hi, __phi_lo, __k, &__y_hi, &__y_lo, &__n);
-  ::cuda::__internal_fpmp2_exp_scale(__y_hi, __y_lo, __n + _Shift, __res_hi, __res_lo);
-} // __internal_fpmp2_exp_impl
-
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
-{
-  ::cuda::__internal_fpmp2_exp_impl<0>(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_exp_scale(__y_hi, __y_lo, __n, __res_hi, __res_lo);
 } // __internal_fpmp2_exp
 
 /*
@@ -709,21 +711,20 @@ _CCCL_FPMP_MATH_DISPATCH_1A(exp)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  constexpr float __ln2_hi = 0x1.62e43p-1f; // ln2 = __ln2_hi + __ln2_lo
-  constexpr float __ln2_lo = -0x1.05c61p-29f;
-
-  if (!(__x_hi >= -150.5f && __x_hi <= 128.5f))
+  const float __x = ::cuda::__fpmp_add_rn(__x_hi, __x_lo);
+  if (!(__x >= -150.5f && __x <= 128.5f))
   {
-    ::cuda::__internal_fpmp2_exp_out_of_range(__x_hi, __res_hi, __res_lo);
+    ::cuda::__internal_fpmp2_exp_out_of_range(__x, __res_hi, __res_lo);
     return;
   }
   float __kf;
-  const int __k = ::cuda::__internal_fpmp2_round_product(__x_hi, 128.0f, &__kf);
-  // x_hi - k/128 is a float: zero, or at least an ulp of x_hi, which bounds 2 |x_lo|
+  const int __k = ::cuda::__internal_fpmp2_round_product(__x, 128.0f, &__kf);
+  // x_hi - k/128 is a float: for a normalized pair it is zero, or at least an ulp of x_hi, which
+  // bounds 2 |x_lo|
   float __t_lo;
   const float __t_hi = ::cuda::__fpmp_fast_two_sum(::cuda::__fpmp_fma_rn(__kf, -0x1p-7f, __x_hi), __x_lo, &__t_lo);
   float __phi_hi, __phi_lo;
-  ::cuda::__internal_fpmp2_mul_unnormalized(__t_hi, __t_lo, __ln2_hi, __ln2_lo, &__phi_hi, &__phi_lo);
+  ::cuda::__internal_fpmp2_mul_unnormalized(__t_hi, __t_lo, __fpmp2_ln2_hi, __fpmp2_ln2_lo, &__phi_hi, &__phi_lo);
   float __y_hi, __y_lo;
   int __n;
   ::cuda::__internal_fpmp2_exp_tail(__phi_hi, __phi_lo, __k, &__y_hi, &__y_lo, &__n);
@@ -761,9 +762,10 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
   constexpr float __ln10_lo = -0x1.12aabap-25f;
 
   // 10^x >= 2^128 above 38.54 and 10^x < 2^-150 below -45.16
-  if (!(__x_hi >= -45.5f && __x_hi <= 38.75f))
+  const float __x = ::cuda::__fpmp_add_rn(__x_hi, __x_lo);
+  if (!(__x >= -45.5f && __x <= 38.75f))
   {
-    ::cuda::__internal_fpmp2_exp_out_of_range(__x_hi, __res_hi, __res_lo);
+    ::cuda::__internal_fpmp2_exp_out_of_range(__x, __res_hi, __res_lo);
     return;
   }
   float __t_hi, __t_lo;
@@ -824,7 +826,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(exp10)
  */
 
 // e^x = 2^n (1 + s) for 2^-52 <= |x_hi| <= 89: returns n, with s in [-0.2929, 0.4142] as a pair.
-_CCCL_FPMP_CORE_API int
+[[nodiscard]] _CCCL_FPMP_CORE_API int
 __internal_fpmp2_expm1_reduced(const float __x_hi, const float __x_lo, float* __s_hi, float* __s_lo) noexcept
 {
   constexpr float __g0_hi = 0x1.555556p-3f; // g0 = __g0_hi + __g0_lo, fitted with g1 and g2 by Sollya
@@ -1046,7 +1048,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scales(const int32_t __k, float* _
  * The bucket around 1 has c = 1, so that ln(x) keeps its relative accuracy as x -> 1. k ln2 and
  * ln(c) enter through leading parts whose sum is exact, and the terms are added with their
  * rounding errors collected in the low limb. Against MPFR the result is within 5u^2 (u = 2^-24,
- * mean 0.3u^2), 6u^2 for log2 and log10 and 9u^2 for log1p.
+ * mean 0.3u^2), 6u^2 for log2, log10 and log1p.
  *
  * log2 and log10 scale ln(z) and add k, or k log10(2), afterwards, so that log2 of a power of
  * two is exact. log1p forms the same r from x where 1 + x is in [0.701, 1.402), without rounding
@@ -1066,7 +1068,7 @@ _CCCL_GLOBAL_CONSTANT float __fpmp2_ln2_2 = -0x1.c610cap-37f;
 
 // x_hi = 2^k z_hi with z_hi in [0.701, 1.402), for a positive normal x_hi: returns k, with z_hi and
 // the table entry of its bucket.
-_CCCL_FPMP_CORE_API int
+[[nodiscard]] _CCCL_FPMP_CORE_API int
 __internal_fpmp2_log_bucket(const float __x_hi, float* __z_hi, __fpmp2_log_table_entry* __t) noexcept
 {
   constexpr uint32_t __offset = 0x3f338000u; // puts 1.0 at the centre of its bucket
@@ -1096,18 +1098,38 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_log_residual(
   *__rho_hi = ::cuda::__fpmp_two_mult_fma(__z_lo, __t.__invc, __rho_lo);
 }
 
+// The same r as a normalized pair. r0 is zero or a multiple of an ulp of rho_hi, which makes the
+// fast two-sum exact where |r0| < |rho_hi|.
+_CCCL_FPMP_CORE_API void __internal_fpmp2_log_residual_pair(
+  const float __z_hi,
+  const float __x_lo,
+  const int __k,
+  const __fpmp2_log_table_entry& __t,
+  float* __r_hi,
+  float* __r_lo) noexcept
+{
+  float __r0, __rho_hi, __rho_lo, __e;
+  ::cuda::__internal_fpmp2_log_residual(__z_hi, __x_lo, __k, __t, &__r0, &__rho_hi, &__rho_lo);
+  *__r_hi = ::cuda::__fpmp_fast_two_sum(__r0, __rho_hi, &__e);
+  *__r_lo = ::cuda::__fpmp_add_rn(__e, __rho_lo);
+}
+
 /*
- * ln(c (1 + r)), plus k ln2 if _WithExponent, as a pair: __t is the table entry of c and
- * r = __r_a + __r_b + __r_c with |r| < 2^-7.5, where |__r_b| <= |__r_a| or __r_a is zero, and
- * |__r_c| <= 2^-24 |r|.
+ * ln(c (1 + r)), plus k ln2 if _WithExponent, as a pair: __t is the table entry of c and r is a
+ * normalized pair, |r| < 2^-7.5.
+ *
+ * The low limb is the sum of three rounding errors and r_lo, each up to an ulp of the high
+ * limb, and the rounding of that sum is the largest part of the error, 4.7u^2 in all. With
+ * _ExactLow the sum is error-free, at six more operations (5 % of the throughput of log and
+ * log1p on a GPU): log1p takes it where ln(c) and r cancel next to zero, and stays within
+ * 3.9u^2 there; ln itself would stay within 1.5u^2.
  */
-template <bool _WithExponent>
+template <bool _WithExponent, bool _ExactLow = false>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_log_tail(
   const float __kf,
   const __fpmp2_log_table_entry& __t,
-  const float __r_a,
-  const float __r_b,
-  const float __r_c,
+  const float __r_hi,
+  const float __r_lo,
   float* __res_hi,
   float* __res_lo) noexcept
 {
@@ -1118,14 +1140,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_log_tail(
   constexpr float __p3    = -0x1.555712p-3f;
   constexpr float __p4    = 0x1.24639p-3f;
 
-  // r as a pair for the nonlinear terms
-  float __r_lo;
-  const float __r_hi = ::cuda::__fpmp_fast_two_sum(__r_a, __r_b, &__r_lo);
-  __r_lo             = ::cuda::__fpmp_add_rn(__r_lo, __r_c);
-  float __w          = ::cuda::__fpmp_fma_rn(__r_hi, __p4, __p3);
-  __w                = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p2);
-  __w                = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p1);
-  __w                = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p0_lo);
+  float __w = ::cuda::__fpmp_fma_rn(__r_hi, __p4, __p3);
+  __w       = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p2);
+  __w       = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p1);
+  __w       = ::cuda::__fpmp_fma_rn(__r_hi, __w, __p0_lo);
   float __d_hi, __d_lo;
   ::cuda::__internal_fpmp2_sq_poly(__r_hi, __r_lo, -0.5f, __p0_hi, __w, &__d_hi, &__d_lo);
 
@@ -1141,20 +1159,30 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_log_tail(
     __h2 = ::cuda::__fpmp_fma_rn(__kf, __fpmp2_ln2_2, __t.__logc2);
   }
   // Each fast two-sum adds a term no larger than the running sum, or into a zero sum.
-  float __e0, __e1, __e2, __e3;
-  float __sum      = ::cuda::__fpmp_fast_two_sum(__h0, __h1, &__e0);
-  __sum            = ::cuda::__fpmp_fast_two_sum(__sum, __r_a, &__e1);
-  __sum            = ::cuda::__fpmp_fast_two_sum(__sum, __r_b, &__e2);
-  __sum            = ::cuda::__fpmp_fast_two_sum(__sum, __d_hi, &__e3);
-  const float __lo = ::cuda::__fpmp_add_rn(
-    ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__e0, __e1), ::cuda::__fpmp_add_rn(__e2, __e3)),
-    ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__h1_lo, __h2), ::cuda::__fpmp_add_rn(__r_c, __d_lo)));
-  *__res_hi = ::cuda::__fpmp_fast_two_sum(__sum, __lo, __res_lo);
+  float __e0, __e1, __e2;
+  float __sum          = ::cuda::__fpmp_fast_two_sum(__h0, __r_hi, &__e0);
+  __sum                = ::cuda::__fpmp_fast_two_sum(__sum, __h1, &__e1);
+  __sum                = ::cuda::__fpmp_fast_two_sum(__sum, __d_hi, &__e2);
+  const float __e01    = ::cuda::__fpmp_add_rn(__e0, __e1);
+  const float __e2r    = ::cuda::__fpmp_add_rn(__e2, __r_lo);
+  const float __lo_rem = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__h1_lo, __h2), __d_lo);
+  if constexpr (_ExactLow)
+  {
+    float __g, __f;
+    const float __lo = ::cuda::__fpmp_two_sum(__e01, __e2r, &__g);
+    *__res_hi        = ::cuda::__fpmp_fast_two_sum(__sum, __lo, &__f);
+    *__res_lo        = ::cuda::__fpmp_add_rn(__f, ::cuda::__fpmp_add_rn(__g, __lo_rem));
+  }
+  else
+  {
+    *__res_hi = ::cuda::__fpmp_fast_two_sum(
+      __sum, ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__e01, __e2r), __lo_rem), __res_lo);
+  }
 }
 
 // The logarithm of an x whose high limb is not a positive normal number: returns true with the
 // result written, or false after scaling a positive subnormal x by 2^24 (*__k_adj = -24).
-_CCCL_FPMP_CORE_API bool
+[[nodiscard]] _CCCL_FPMP_CORE_API bool
 __internal_fpmp2_log_special(float* __x_hi, float* __x_lo, int* __k_adj, float* __res_hi, float* __res_lo) noexcept
 {
   if (*__x_hi != *__x_hi)
@@ -1192,7 +1220,7 @@ __internal_fpmp2_log_special(float* __x_hi, float* __x_lo, int* __k_adj, float* 
  * result of the logarithm written, for an x that is zero, negative, infinite or NaN.
  */
 template <bool _WithExponent>
-_CCCL_FPMP_CORE_API bool
+[[nodiscard]] _CCCL_FPMP_CORE_API bool
 __internal_fpmp2_log_reduced(float __x_hi, float __x_lo, float* __kf, float* __res_hi, float* __res_lo) noexcept
 {
   int __k_adj = 0;
@@ -1205,11 +1233,11 @@ __internal_fpmp2_log_reduced(float __x_hi, float __x_lo, float* __kf, float* __r
     }
   }
   __fpmp2_log_table_entry __t;
-  float __z_hi, __r0, __rho_hi, __rho_lo;
+  float __z_hi, __r_hi, __r_lo;
   const int __ke = ::cuda::__internal_fpmp2_log_bucket(__x_hi, &__z_hi, &__t);
-  ::cuda::__internal_fpmp2_log_residual(__z_hi, __x_lo, __ke, __t, &__r0, &__rho_hi, &__rho_lo);
+  ::cuda::__internal_fpmp2_log_residual_pair(__z_hi, __x_lo, __ke, __t, &__r_hi, &__r_lo);
   *__kf = static_cast<float>(__ke + __k_adj);
-  ::cuda::__internal_fpmp2_log_tail<_WithExponent>(*__kf, __t, __r0, __rho_hi, __rho_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_log_tail<_WithExponent>(*__kf, __t, __r_hi, __r_lo, __res_hi, __res_lo);
   return true;
 }
 
@@ -1239,17 +1267,20 @@ _CCCL_FPMP_MATH_DISPATCH_1A(log)
  * --------------------------------------------------------------------
  * 1 + x = s_hi + s_lo. Where s_hi is in [0.701, 1.402), r = (1 + x)/c - 1 = (1/c - 1) + x/c is
  * formed from x itself: 1/c - 1 is exact and x_hi/c is an exact pair, so r, and with c = 1
- * around x = 0 the result, keep the relative accuracy of x. Elsewhere the result is the
- * logarithm of the pair s.
+ * around x = 0 the result, keep the relative accuracy of x. In the buckets next to that one
+ * ln(c) and r have like magnitudes and opposite signs, and the low limb of their sum is formed
+ * without error (_ExactLow in __internal_fpmp2_log_tail): within 3.9u^2 for 1 + x in
+ * [0.701, 1.402). Elsewhere the result is the logarithm of the pair s, within 5.7u^2.
  *
  * Below 2^-52 in magnitude the result is x (the next term is x^2/2), which also keeps the sign
  * of zero. log1p(-1) = -inf, log1p(x < -1) = NaN, log1p(+inf) = +inf, and NaN gives NaN.
  *
  * fpmp2_accuracy::high (_Series): below 2^-7 in magnitude the result is the Taylor series
- * x + x^2 (-1/2 + x/3 - ... + x^6/8) in pair arithmetic instead. Next to zero ln(c) and r have
- * like magnitudes and opposite signs in the first buckets, and the rounding of the low limb of
- * their sum costs up to 9.8u^2 there, where the series stays within 1.8u^2. A warp that mixes
- * arguments on both sides of 2^-7 runs both paths, so the other levels leave the series out.
+ * x + x^2 (-1/2 + x/3 - ... + x^6/8) in pair arithmetic instead, which stays within 1.8u^2
+ * where the table-driven path reaches 3.9u^2. A warp that mixes arguments on both sides of
+ * 2^-7 runs both paths, so the other levels leave the series out. This level also forms the
+ * low limb without error where the result is the logarithm of the pair s, and stays within
+ * 2.7u^2 over the whole domain.
  * --------------------------------------------------------------------
  */
 template <bool _Series>
@@ -1311,16 +1342,19 @@ __internal_fpmp2_log1p_core(const float __x_hi, const float __x_lo, float* __res
   const int __ke = ::cuda::__internal_fpmp2_log_bucket(__s_hi, &__z_hi, &__t);
   if (__ke == 0) // r from x itself
   {
-    float __p_lo, __r_b;
+    // The leading sum can cancel, so that the terms an ulp of x_hi/c in size are not small
+    // against r: they are added before r is split into its limbs.
+    float __p_lo, __r_b, __r_lo;
     const float __p_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __t.__invc, &__p_lo);
     const float __r_a  = ::cuda::__fpmp_two_sum(::cuda::__fpmp_sub_rn(__t.__invc, 1.0f), __p_hi, &__r_b);
-    ::cuda::__internal_fpmp2_log_tail<false>(
-      0.0f, __t, __r_a, __r_b, ::cuda::__fpmp_fma_rn(__x_lo, __t.__invc, __p_lo), __res_hi, __res_lo);
+    const float __r_hi = ::cuda::__fpmp_fast_two_sum(
+      __r_a, ::cuda::__fpmp_add_rn(__r_b, ::cuda::__fpmp_fma_rn(__x_lo, __t.__invc, __p_lo)), &__r_lo);
+    ::cuda::__internal_fpmp2_log_tail<false, true>(0.0f, __t, __r_hi, __r_lo, __res_hi, __res_lo);
     return;
   }
-  float __r0, __rho_hi, __rho_lo;
-  ::cuda::__internal_fpmp2_log_residual(__z_hi, __s_lo, __ke, __t, &__r0, &__rho_hi, &__rho_lo);
-  ::cuda::__internal_fpmp2_log_tail<true>(static_cast<float>(__ke), __t, __r0, __rho_hi, __rho_lo, __res_hi, __res_lo);
+  float __r_hi, __r_lo;
+  ::cuda::__internal_fpmp2_log_residual_pair(__z_hi, __s_lo, __ke, __t, &__r_hi, &__r_lo);
+  ::cuda::__internal_fpmp2_log_tail<true, _Series>(static_cast<float>(__ke), __t, __r_hi, __r_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_log1p_core
 
 _CCCL_FPMP_CORE_API void

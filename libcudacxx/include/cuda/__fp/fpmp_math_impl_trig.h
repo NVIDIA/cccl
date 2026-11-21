@@ -784,7 +784,8 @@ struct alignas(8) __fpmp2_atan_entry
 
 // Rounded from 400-bit values (Sollya). A static local of a function with internal linkage, like
 // the tables of exp and log and for the same reason.
-static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_atan_entry __fpmp2_atan_table(const int __row, const int __i) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE static _CCCL_FORCEINLINE __fpmp2_atan_entry
+__fpmp2_atan_table(const int __row, const int __i) noexcept
 {
   static constexpr __fpmp2_atan_entry __table[5][17] = {
     // atan(i/16)
@@ -1781,7 +1782,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_tan_core(
   __mp2_t __s(__s_hi, __s_lo);
   __mp2_t __c(__c_hi, __c_lo);
 
-  __mp2_t __result = (__quadrant & 1) ? __mp2_t(-__c / __s) : __mp2_t(__s / __c);
+  // sin(r) / cos(r), or -cos(r) / sin(r) in an odd quadrant: one division of the selected operands
+  const bool __odd       = (__quadrant & 1) != 0;
+  const __mp2_t __result = (__odd ? -__c : __s) / (__odd ? __s : __c);
 
   // tan(-0) is -0; the quotient of the kernels is +0 there.
   *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __result.hi();
