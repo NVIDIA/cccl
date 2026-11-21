@@ -30,6 +30,7 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/span>
 

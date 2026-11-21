@@ -24,7 +24,7 @@
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>

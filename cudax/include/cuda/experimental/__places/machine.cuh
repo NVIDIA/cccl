@@ -27,6 +27,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 

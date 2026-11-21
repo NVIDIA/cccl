@@ -33,17 +33,33 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/mutex>
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
+#include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <limits>
 #include <stdexcept>
+#include <string>
+#include <tuple>
 #include <typeinfo>
+#include <vector>
+
+#include <cuda.h>
+
+#include <sys/types.h>
+
+#ifdef UNITTESTED_FILE
+#  include <unordered_map>
+#endif // UNITTESTED_FILE
 
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE

@@ -26,7 +26,6 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__utility/rel_ops.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/type_traits.cuh>

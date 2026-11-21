@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
+#include <cuda/__driver/driver_api.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/exchange.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/graph_builder_ref.cuh>
 

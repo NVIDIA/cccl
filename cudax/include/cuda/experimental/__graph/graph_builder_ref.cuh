@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -31,8 +32,11 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__driver/driver_api.cuh>
+#include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

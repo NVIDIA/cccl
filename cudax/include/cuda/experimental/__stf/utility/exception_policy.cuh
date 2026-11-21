@@ -56,6 +56,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
@@ -71,7 +72,6 @@
 #include <limits>
 #include <memory>
 #include <ostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -79,6 +79,16 @@
 #include <tuple>
 #include <typeinfo>
 #include <utility>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__host_stdlib/new>
+#  include <cuda/std/__host_stdlib/sstream>
+
+#  include <type_traits>
+
+#  include <cuda.h>
+#  include <cuda_occupancy.h>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

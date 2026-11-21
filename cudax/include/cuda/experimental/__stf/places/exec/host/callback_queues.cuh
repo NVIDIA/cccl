@@ -25,10 +25,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
+#include <cstring>
+#include <deque>
 #include <stack>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // do not document

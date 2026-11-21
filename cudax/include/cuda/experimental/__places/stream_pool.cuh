@@ -28,6 +28,8 @@
 #  pragma system_header
 #endif
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <memory>
@@ -35,7 +37,7 @@
 #include <vector>
 
 #include <cuda.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 namespace cuda::experimental::places
 {

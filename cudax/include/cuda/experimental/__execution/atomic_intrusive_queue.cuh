@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/atomic>
 
 #include <cuda/experimental/__execution/intrusive_queue.cuh>
