@@ -20,18 +20,92 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
+template <typename Allocator, typename T, typename = void>
+inline constexpr bool has_rebind_other_v = false;
+
+template <typename Allocator, typename T>
+inline constexpr bool
+  has_rebind_other_v<Allocator, T, ::cuda::std::void_t<typename Allocator::template rebind<T>::other>> = true;
+
+// Like allocator_traits::rebind_alloc, but false instead of a hard error. Without a nested rebind, only
+// allocators whose first template argument is their value_type are rebound (not e.g. alloc<Pool>).
+template <typename Allocator, typename T>
+inline constexpr bool is_rebindable_allocator_v = has_rebind_other_v<Allocator, T>;
+
+template <template <typename, typename...> class Allocator, typename U, typename... Args, typename T>
+inline constexpr bool is_rebindable_allocator_v<Allocator<U, Args...>, T> =
+  has_rebind_other_v<Allocator<U, Args...>, T> || ::cuda::std::is_same_v<U, typename Allocator<U, Args...>::value_type>;
+
+// Rebinding must not lower the alignment of the allocations: callers cast byte buffers to other types. So the
+// allocator is rebound to T or kept at its own value_type, whichever is more aligned. value_type void has no
+// alignment of its own and uses the default memory resource alignment.
+template <typename ValueType, typename T>
+struct temporary_buffer_value
+{
+  using type = ::cuda::std::conditional_t<(alignof(T) >= alignof(ValueType)), T, ValueType>;
+};
+
+template <typename T>
+struct temporary_buffer_value<void, T> : temporary_buffer_value<::cuda::std::max_align_t, T>
+{};
+
+template <typename Allocator, typename T>
+using temporary_buffer_value_t =
+  typename temporary_buffer_value<typename ::cuda::std::allocator_traits<Allocator>::value_type, T>::type;
+
+template <typename Allocator,
+          typename T,
+          typename U = temporary_buffer_value_t<Allocator, T>,
+          bool       = is_rebindable_allocator_v<Allocator, U>>
+struct temporary_buffer_allocator_impl
+{
+  using type = Allocator;
+};
+
+template <typename Allocator, typename T, typename U>
+struct temporary_buffer_allocator_impl<Allocator, T, U, true>
+{
+  using rebound = typename ::cuda::std::allocator_traits<Allocator>::template rebind_alloc<U>;
+  using type    = ::cuda::std::conditional_t<::cuda::std::is_constructible_v<rebound, Allocator&>, rebound, Allocator>;
+};
+
+// Allocators that cannot be rebound (e.g. non-template allocators of char) keep being used as they are.
+template <typename Allocator, typename T>
+using temporary_buffer_allocator_t = typename temporary_buffer_allocator_impl<Allocator, T>::type;
+
+// decltype(auto): returns either a reference to alloc or a rebound copy
+template <typename T, typename Allocator>
+_CCCL_HOST_API decltype(auto) temporary_buffer_allocator(Allocator& alloc)
+{
+  if constexpr (::cuda::std::is_same_v<temporary_buffer_allocator_t<Allocator, T>, Allocator>)
+  {
+    static_assert(!::cuda::std::is_void_v<typename ::cuda::std::allocator_traits<Allocator>::value_type>,
+                  "an allocator with value_type void must support rebinding");
+    return (alloc);
+  }
+  else
+  {
+    return temporary_buffer_allocator_t<Allocator, T>(alloc);
+  }
+}
+
 template <typename T, typename Allocator, template <typename> class BaseSystem>
 _CCCL_HOST_API ::cuda::std::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
+  using naked_allocator = temporary_buffer_allocator_t<::cuda::std::remove_reference_t<Allocator>, T>;
   using alloc_traits    = ::cuda::std::allocator_traits<naked_allocator>;
   using void_pointer    = typename alloc_traits::void_pointer;
   using size_type       = typename alloc_traits::size_type;
@@ -41,7 +115,8 @@ get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSyste
   // of type T?
   const size_type num_elements = static_cast<size_type>(::cuda::ceil_div(sizeof(T) * n, sizeof(value_type)));
 
-  const void_pointer ptr = alloc_traits::allocate(system.get_allocator(), num_elements);
+  auto&& alloc           = temporary_buffer_allocator<T>(system.get_allocator());
+  const void_pointer ptr = alloc_traits::allocate(alloc, num_elements);
 
   // Return the pointer and the number of elements of type T allocated.
   return ::cuda::std::make_pair(thrust::reinterpret_pointer_cast<T*>(ptr), n);
@@ -51,17 +126,18 @@ template <typename Pointer, typename Allocator, template <typename> class BaseSy
 _CCCL_HOST_API void return_temporary_buffer(
   thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, Pointer p, std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
+  using T               = typename ::cuda::std::pointer_traits<Pointer>::element_type;
+  using naked_allocator = temporary_buffer_allocator_t<::cuda::std::remove_reference_t<Allocator>, T>;
   using alloc_traits    = ::cuda::std::allocator_traits<naked_allocator>;
   using pointer         = typename alloc_traits::pointer;
   using size_type       = typename alloc_traits::size_type;
   using value_type      = typename alloc_traits::value_type;
-  using T               = typename ::cuda::std::pointer_traits<Pointer>::element_type;
 
   const size_type num_elements = ::cuda::ceil_div(sizeof(T) * n, sizeof(value_type));
 
   const pointer to_ptr = thrust::reinterpret_pointer_cast<pointer>(p);
-  alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
+  auto&& alloc         = temporary_buffer_allocator<T>(system.get_allocator());
+  alloc_traits::deallocate(alloc, to_ptr, num_elements);
 }
 } // namespace detail
 

@@ -3,7 +3,12 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
+#include <cuda/cmath>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+
+#include <memory>
+#include <new>
 
 #include <unittest/unittest.h>
 
@@ -30,6 +35,111 @@ struct test_memory_resource_t final : thrust::mr::memory_resource<>
     REQUIRE(ptr == reinterpret_cast<void*>(size)); // NOLINT(performance-no-int-to-ptr)
   }
 } test_memory_resource;
+
+// records the alignment of each request
+struct alignment_recording_resource_t final : thrust::mr::memory_resource<>
+{
+  void* do_allocate(std::size_t size, std::size_t alignment) override
+  {
+    last_alignment = alignment;
+    return ::operator new(size, std::align_val_t(alignment));
+  }
+
+  void do_deallocate(void* ptr, std::size_t, std::size_t alignment) override
+  {
+    REQUIRE(alignment == last_alignment);
+    ::operator delete(ptr, std::align_val_t(alignment));
+  }
+
+  std::size_t last_alignment = 0;
+};
+
+struct allocation_record
+{
+  std::size_t element_size = 0;
+  std::size_t count        = 0;
+};
+
+template <typename T>
+struct recording_allocator
+{
+  using value_type = T;
+
+  explicit recording_allocator(allocation_record& r)
+      : record(&r)
+  {}
+
+  template <typename U>
+  recording_allocator(const recording_allocator<U>& other)
+      : record(other.record)
+  {}
+
+  T* allocate(std::size_t n)
+  {
+    record->element_size = sizeof(T);
+    record->count        = n;
+    return std::allocator<T>{}.allocate(n);
+  }
+
+  void deallocate(T* ptr, std::size_t n)
+  {
+    REQUIRE(record->element_size == sizeof(T));
+    REQUIRE(record->count == n);
+    std::allocator<T>{}.deallocate(ptr, n);
+  }
+
+  allocation_record* record;
+};
+
+// cannot be rebound and must not be copied
+struct byte_allocator
+{
+  using value_type = char;
+
+  byte_allocator()                      = default;
+  byte_allocator(const byte_allocator&) = delete;
+
+  char* allocate(std::size_t n)
+  {
+    outstanding += n;
+    return std::allocator<char>{}.allocate(n);
+  }
+
+  void deallocate(char* ptr, std::size_t n)
+  {
+    outstanding -= n;
+    std::allocator<char>{}.deallocate(ptr, n);
+  }
+
+  std::size_t outstanding = 0;
+};
+
+struct byte_pool
+{
+  using pointer = char*;
+};
+
+// a template, but over a pool rather than the value type, so it must not be rebound
+template <typename Pool>
+struct pool_byte_allocator
+{
+  using value_type = char;
+  using pointer    = typename Pool::pointer;
+
+  pointer allocate(std::size_t n)
+  {
+    outstanding += n;
+    return std::allocator<char>{}.allocate(n);
+  }
+
+  void deallocate(pointer ptr, std::size_t n)
+  {
+    outstanding -= n;
+    std::allocator<char>{}.deallocate(ptr, n);
+  }
+
+  std::size_t outstanding = 0;
+};
 
 template <typename Policy, template <typename> class CRTPBase>
 struct policy_info
@@ -91,6 +201,78 @@ struct TestAllocatorAttachment
     test_temporary_allocation_valid(policy(alloc));
     test_temporary_allocation_valid(policy(const_alloc));
     test_temporary_allocation_valid(policy(&test_memory_resource));
+
+    test_rebinding(policy);
+  }
+
+  template <typename Policy>
+  void test_rebinding(Policy policy)
+  {
+    using thrust::detail::get_temporary_buffer;
+
+    allocation_record record;
+    {
+      auto p       = policy(recording_allocator<char>(record));
+      const auto b = get_temporary_buffer<double>(p, 123);
+      REQUIRE(record.element_size == sizeof(double));
+      REQUIRE(record.count == 123);
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    // void has no alignment, so small types are allocated as max_align_t
+    record = allocation_record{};
+    {
+      auto p       = policy(recording_allocator<void>(record));
+      const auto b = get_temporary_buffer<int>(p, 42);
+      REQUIRE(record.element_size == sizeof(cuda::std::max_align_t));
+      REQUIRE(record.count == ::cuda::ceil_div(42 * sizeof(int), sizeof(cuda::std::max_align_t)));
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    record = allocation_record{};
+    {
+      auto p       = policy(recording_allocator<void>(record));
+      const auto b = get_temporary_buffer<cuda::std::max_align_t>(p, 7);
+      REQUIRE(record.element_size == sizeof(cuda::std::max_align_t));
+      REQUIRE(record.count == 7);
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    // byte buffers keep the alignment of a more aligned allocator
+    record = allocation_record{};
+    {
+      auto p       = policy(recording_allocator<cuda::std::max_align_t>(record));
+      const auto b = get_temporary_buffer<cuda::std::uint8_t>(p, 100);
+      REQUIRE(record.element_size == sizeof(cuda::std::max_align_t));
+      REQUIRE(record.count == ::cuda::ceil_div(std::size_t{100}, sizeof(cuda::std::max_align_t)));
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    alignment_recording_resource_t resource;
+    {
+      auto p       = policy(&resource);
+      const auto b = get_temporary_buffer<cuda::std::uint8_t>(p, 100);
+      REQUIRE(resource.last_alignment == alignof(cuda::std::max_align_t));
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    byte_allocator bytes;
+    {
+      auto p       = policy(bytes);
+      const auto b = get_temporary_buffer<double>(p, 10);
+      REQUIRE(bytes.outstanding == 10 * sizeof(double));
+      return_temporary_buffer(p, b.first, b.second);
+      REQUIRE(bytes.outstanding == 0);
+    }
+
+    pool_byte_allocator<byte_pool> pool_bytes;
+    {
+      auto p       = policy(pool_bytes);
+      const auto b = get_temporary_buffer<double>(p, 10);
+      REQUIRE(pool_bytes.outstanding == 10 * sizeof(double));
+      return_temporary_buffer(p, b.first, b.second);
+      REQUIRE(pool_bytes.outstanding == 0);
+    }
   }
 };
 
