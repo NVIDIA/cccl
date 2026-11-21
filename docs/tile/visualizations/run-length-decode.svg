@@ -1,0 +1,107 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="712" viewBox="0 0 1000 712" role="img" aria-labelledby="title desc">
+<title id="title">Run-length decode: a fixed-capacity window</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="712" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">Run-length decode: a fixed-capacity window</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Python and C++. RunN = 128, DecodedN = 256, block width 128; abbreviated rows.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">run values</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="540.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<text x="26" y="175" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">run lengths</text>
+<rect x="228.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="306.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="540.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<text x="26" y="212" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Only the first three run lengths are nonzero; the expanded sequence has six items.</text>
+<path d="M26 249 H974" stroke="#cbd8e3"/>
+<text x="26" y="278" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Expand runs in input order</text>
+<text x="26" y="330" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">expanded values</text>
+<rect x="228.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<text x="264.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">0</text>
+<rect x="306.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<text x="342.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">1</text>
+<rect x="384.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<text x="420.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">2</text>
+<rect x="462.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<text x="498.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">3</text>
+<rect x="540.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<text x="576.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">4</text>
+<rect x="618.0" y="301" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<text x="654.5" y="295" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">5</text>
+<text x="26" y="388" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">within-run offsets</text>
+<rect x="228.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="540.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="618.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<path d="M26 429 H974" stroke="#cbd8e3"/>
+<text x="26" y="458" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">decoded_window_offset = 2, output capacity = 256</text>
+<text x="26" y="510" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">decoded values</text>
+<rect x="228.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="306.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="384.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="462.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="540.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="618.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="696.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="774.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<text x="26" y="568" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">relative offsets</text>
+<rect x="228.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="306.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="384.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="462.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="540.0" y="539" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="576.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">MAX</text>
+<rect x="618.0" y="539" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="654.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">MAX</text>
+<rect x="696.0" y="539" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="732.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="774.0" y="539" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="810.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">MAX</text>
+<text x="26" y="605" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">run_length_decode returns the value row; with_offsets returns both rows.</text>
+<text x="26" y="638" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">MAX is the unsigned length type maximum. It identifies padding, even for a zero run value.</text>
+<text x="26" y="671" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">An offset at or beyond 6 produces all-zero values and all-MAX relative offsets.</text>
+</g>
+</svg>

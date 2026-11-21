@@ -1,0 +1,49 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="492" viewBox="0 0 640 492" role="img" aria-labelledby="title desc">
+  <title id="title">How a row sum reaches CUB</title>
+  <desc id="desc">Python and C++ lower an eight-row, 128-column sum to the same TileLib declaration. The provider advertises implementations and scratch requirements. The compiler selects the implementation and provides storage. The provider compiles the selected CUB wrapper into LTO IR.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#526a7c"/>
+    </marker>
+  </defs>
+  <rect width="640" height="492" rx="8" fill="#fff"/>
+  <g fill="none" stroke="#526a7c" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M162 79 V93 H320 V110"/>
+    <path d="M478 79 V93 H320 V110"/>
+    <path d="M320 184 V211"/>
+    <path d="M320 282 V309"/>
+    <path d="M320 380 V407"/>
+  </g>
+  <g stroke-width="1.5">
+    <g fill="#e6f0fb" stroke="#7894af">
+      <rect x="12" y="9" width="300" height="70" rx="6"/>
+      <rect x="328" y="9" width="300" height="70" rx="6"/>
+      <rect x="40" y="310" width="560" height="70" rx="6"/>
+    </g>
+    <g fill="#e9f3e7" stroke="#6b8a64">
+      <rect x="40" y="112" width="560" height="72" rx="6"/>
+      <rect x="40" y="212" width="560" height="70" rx="6"/>
+      <rect x="40" y="408" width="560" height="70" rx="6"/>
+    </g>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#132c47" text-anchor="middle">
+    <g font-size="19" font-weight="bold">
+      <text x="162" y="38">cuTile Python</text>
+      <text x="478" y="38">CUDA C++ Tile</text>
+      <text x="320" y="141">Shared TileLib declaration</text>
+      <text x="320" y="240">Provider offers implementations</text>
+      <text x="320" y="338">Compiler chooses a compatible implementation</text>
+      <text x="320" y="436">Provider instantiates the selected call</text>
+    </g>
+    <g font-size="16">
+      <text x="162" y="62">coop.sum(x, axis=1)</text>
+      <text x="478" y="62">coop::sum&lt;1&gt;(x)</text>
+      <text x="320" y="167">cuda_coop_tile_sum_batched · 1,024 elements · 8 sums</text>
+      <text x="320" y="265">Each candidate specifies layout, participation, and scratch.</text>
+      <text x="320" y="364">It supplies scratch storage for the chosen implementation.</text>
+      <text x="320" y="460">NVRTC compiles the CUB wrapper to LTO IR for linking.</text>
+    </g>
+  </g>
+</svg>

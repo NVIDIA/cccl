@@ -87,6 +87,9 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['test_py_coop_tile_host'], project: 'cuda_coop_tile', ctk: '13.5', py_version: ['3.11', '3.15'], cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_tile_frontend'], project: 'cuda_coop_tile', ctk: '13.5', py_version: '3.12', cxx: 'gcc13'}
+    - {jobs: ['run_gpu'], project: 'target', ctk: '13.5', cxx: 'gcc13', gpu: 'rtxpro6000', args: '--preset cub-cpp20 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=120" --build-targets "cub.test.block.topk_ranges generate_ctest_json" --ctest-targets "cub.test.block.topk_ranges"'}
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
@@ -94,6 +97,10 @@ workflows:
     - {jobs: ['test_headers'],              project: 'python', py_version: '3.14',      ctk: '13.X', cxx: ['gcc13', 'msvc2022']}
 
   pull_request:
+    # Tile consumer checks use public CUDA 13.5; native provider builds require
+    # a separately supplied SDK and are not scheduled by this public matrix.
+    - {jobs: ['test_py_coop_tile_host'], project: 'cuda_coop_tile', ctk: '13.5', py_version: ['3.11', '3.15'], cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_tile_frontend'], project: 'cuda_coop_tile', ctk: '13.5', py_version: '3.12', cxx: 'gcc13'}
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
@@ -284,6 +291,8 @@ workflows:
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    # Tile declarations consume the public CCCL headers without the provider SDK.
+    - {jobs: ['test_py_coop_tile_frontend'], project: 'cuda_coop_tile', ctk: '13.5', cxx: 'gcc13', py_version: '3.12'}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 't4', sm: 'gpu'}
     - {project: 'packaging', jobs: ['test'], args: '-min-cmake', gpu: 't4', sm: 'gpu'}
@@ -701,6 +710,7 @@ ctk_versions:
   '13.2': { stds: [17, 20], alias: ['nvhpc-prev']}
   '13.3': { stds: [17, 20, 23], alias: ['nvhpc']}
   '13.4': { stds: [17, 20, 23], alias: ['13.X'] }
+  '13.5': { stds: [17, 20, 23] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -843,6 +853,10 @@ jobs:
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
 
+  # Tile source checks do not require the separately supplied provider SDK.
+  test_py_coop_tile_host: { name: "Test cuda.coop.tile (host)", gpu: false, invoke: { prefix: 'test', args: '-stage host'} }
+  test_py_coop_tile_frontend: { name: "Compile Tile C++ declarations", gpu: false, invoke: { prefix: 'test', args: '-stage frontend'} }
+
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
   run_gpu: { gpu: true  }
@@ -925,6 +939,8 @@ projects:
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_compute_minimal']
+  cuda_coop_tile:
+    name: "Tile (Python and C++)"
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

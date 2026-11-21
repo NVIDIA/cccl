@@ -63,6 +63,21 @@ reviews:
     custom_checks: []
 
   path_instructions:
+    - path: "tile/**/*"
+      instructions: |
+        Read tile/AGENTS.md. Review compiler-owned participation and scratch, native ownership,
+        declaration identity, CUB semantics, and cross-language contracts.
+
+    - path: "python/cuda_coop_tile/**/*"
+      instructions: |
+        Read tile/AGENTS.md. Review Tile value semantics, preserved inputs, output validity,
+        Python typing, native artifact ownership, and executable examples.
+
+    - path: "docs/tile/**/*"
+      instructions: |
+        Read tile/AGENTS.md. Check shared concepts against both frontends, documented prerequisites,
+        executable examples, and language-specific result shapes and types.
+
     - path: "libcudacxx/**/*"
       instructions: |
         Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
@@ -124,6 +139,7 @@ knowledge_base:
   code_guidelines:
     filePatterns:
       - "AGENTS.md"
+      - "tile/AGENTS.md"
       - ".agent/skills/cccl-review/SKILL.md"
       - ".agent/skills/cccl-style/SKILL.md"
       - ".agent/skills/cccl-test/SKILL.md"

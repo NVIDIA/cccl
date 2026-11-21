@@ -55,9 +55,10 @@ infrastructure change rebuilds everything, because the extent of its impact
 cannot be easily evaluated.
 
 Files that should never trigger CI are filtered first, before project matching,
-via the top-level ``ignore_regexes`` list. Readmes, ``docs/``, config files,
-non-CI ``.github/workflows/``, and their unholy ilk should be catalogued here
-lest they anger the gods.
+via the top-level ``ignore_regexes`` list. Readmes, documentation outside
+``docs/tile/``, config files, non-CI ``.github/workflows/``, and their unholy ilk
+should be catalogued here lest they anger the gods. Tile documentation changes
+select ``cuda_coop_tile`` so its API and example checks run.
 
 The public/internal split
 -------------------------

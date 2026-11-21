@@ -1,0 +1,12 @@
+{#
+SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+#}
+{% extends "!page.html" %}
+
+{% block body %}
+{{ super() }}
+{% if pagename.startswith("tile/") and show_source and has_source and sourcename %}
+<p><a href="{{ pathto('_sources/' + sourcename, true) | e }}">View this page's reStructuredText source</a></p>
+{% endif %}
+{% endblock %}
