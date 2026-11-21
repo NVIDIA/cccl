@@ -14,13 +14,18 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  include <cuda/experimental/mgmn/__algorithm/sort/multiway/kernels.h>
+#endif
 #include <cub/device/device_merge.cuh>
 #include <cub/device/device_merge_sort.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__memory_resource/allocation_alignment.h>
 #include <cuda/__stream/stream.h>
+#include <cuda/launch>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/operations.h>
@@ -118,6 +123,69 @@ struct __run
   ::cuda::std::int64_t __offset_, __count_;
 };
 
+// Limit both total work and average fragment size: a low-fan-in merge
+// reaches the measured crossover sooner than a full-warp merge.
+[[nodiscard]] _CCCL_HOST_API constexpr bool
+__small_tiled_merge_size_supported(::cuda::std::size_t __runs, ::cuda::std::int64_t __size) noexcept
+{
+  constexpr ::cuda::std::int64_t __max_keys         = 64 * 1024 * 1024 / sizeof(int);
+  constexpr ::cuda::std::int64_t __max_keys_per_run = 8 * 1024 * 1024 / sizeof(int);
+  return __runs >= 3 && __runs <= 32 && __size > 0 && __size <= __max_keys
+      && __size <= static_cast<::cuda::std::int64_t>(__runs) * __max_keys_per_run;
+}
+
+#if _CCCL_CUDA_COMPILER(NVCC)
+template <class _Compare, class _Env>
+_CCCL_HOST_API _CCCL_NOINLINE void __merge_small_tiled(
+  int* __received,
+  ::cuda::std::int64_t __size,
+  const ::std::vector<__run>& __runs,
+  int* __keys,
+  _Compare __cmp,
+  const _Env& __env,
+  int __cc)
+{
+  using __policy     = ::cuda::experimental::mgmn::__detail::__sort::__multiway::static_mway_policy<512, 17>;
+  using __count_type = ::cuda::std::int64_t;
+  using __agent =
+    ::cuda::experimental::mgmn::__detail::__sort::__multiway::agent_mway_merge_t<__policy, int, __count_type, _Compare>;
+  const auto __stream = ::cuda::get_stream(__env);
+  const __scratch_allocator<_Env> __allocate{__env, __stream};
+  ::cuda::experimental::mgmn::__detail::__sort::__multiway::mway_input<int, __count_type> __input{};
+  __input.k = int(__runs.size());
+  for (::cuda::std::size_t __i = 0; __i < __runs.size(); ++__i)
+  {
+    __input.ptrs[__i]   = __received + __runs[__i].__offset_;
+    __input.counts[__i] = __runs[__i].__count_;
+  }
+  const __count_type __tile      = __agent::items_per_tile;
+  const __count_type __tiles     = (__size + __tile - 1) / __tile;
+  const __count_type __diagonals = __tiles + 1;
+  auto __boundaries              = __allocate.template operator()<__count_type>(__diagonals * 32);
+  ::cuda::launch(
+    __stream,
+    ::cuda::make_config(::cuda::block_dims<256>(), ::cuda::grid_dims((__diagonals + 7) / 8)),
+    ::cuda::experimental::mgmn::__detail::__sort::__multiway::mway_partition_kernel<int, __count_type, _Compare>,
+    __input,
+    __tile,
+    __diagonals,
+    __size,
+    __boundaries.data(),
+    __cmp);
+  const auto __shared = __agent::temp_storage_bytes(__cc);
+  ::cuda::launch(
+    __stream,
+    ::cuda::make_config(::cuda::block_dims<512>(),
+                        ::cuda::grid_dims(__tiles),
+                        ::cuda::dynamic_shared_memory<char[]>(__shared, ::cuda::non_portable)),
+    ::cuda::experimental::mgmn::__detail::__sort::__multiway::mway_merge_kernel<__agent, int, __count_type, _Compare>,
+    __input,
+    __keys,
+    __cmp,
+    __boundaries.data());
+}
+#endif
+
 template <class _Key, class _Compare, class _Env>
 _CCCL_HOST_API void __merge_received(
   _Key* __received,
@@ -136,6 +204,31 @@ _CCCL_HOST_API void __merge_received(
     }
     return;
   }
+#if _CCCL_CUDA_COMPILER(NVCC)
+  if constexpr (::cuda::std::is_same_v<_Key, int>
+                && (::cuda::std::is_same_v<_Compare, ::cuda::std::less<>>
+                    || ::cuda::std::is_same_v<_Compare, ::cuda::std::less<int>>
+                    || ::cuda::std::is_same_v<_Compare, ::cuda::std::greater<>>
+                    || ::cuda::std::is_same_v<_Compare, ::cuda::std::greater<int>>)
+                && !::cuda::std::execution::__queryable_with<_Env, ::cuda::execution::__get_tuning_t>)
+  {
+    if (::cuda::experimental::mgmn::__detail::__sort::__small_tiled_merge_size_supported(__runs.size(), __size))
+    {
+      const auto __device = ::cuda::__driver::__deviceGet(__stream.device().get());
+      const int __major =
+        ::cuda::__driver::__deviceGetAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, __device);
+      const int __minor =
+        ::cuda::__driver::__deviceGetAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, __device);
+      if (__major == 10 && __minor == 0)
+      {
+        ::cuda::experimental::mgmn::__detail::__sort::__merge_small_tiled(
+          __received, __size, __runs, __keys, __cmp, __env, __major * 100 + __minor * 10);
+        return;
+      }
+    }
+  }
+#endif
+
   if (__runs.size() == 2)
   {
     const auto __a = __runs[0], __b = __runs[1];
