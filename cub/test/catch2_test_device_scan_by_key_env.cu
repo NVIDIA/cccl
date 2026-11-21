@@ -574,9 +574,9 @@ CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned with user provided memory",
     stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
 
   run_two_phase(
-    [&](void* storage, size_t& bytes, const auto& env) {
+    [&](void* storage, size_t& bytes, const auto& run_env) {
       return cub::DeviceScan::ExclusiveSumByKey(
-        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, env);
+        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, run_env);
     },
     env,
     stream.get());
@@ -602,7 +602,7 @@ CUB_TEST("DeviceScan::ExclusiveScanByKey can be tuned with user provided memory"
     stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
 
   run_two_phase(
-    [&](void* storage, size_t& bytes, const auto& env) {
+    [&](void* storage, size_t& bytes, const auto& run_env) {
       return cub::DeviceScan::ExclusiveScanByKey(
         storage,
         bytes,
@@ -613,7 +613,7 @@ CUB_TEST("DeviceScan::ExclusiveScanByKey can be tuned with user provided memory"
         0,
         7,
         cuda::std::equal_to<>{},
-        env);
+        run_env);
     },
     env,
     stream.get());
@@ -639,9 +639,9 @@ CUB_TEST("DeviceScan::InclusiveSumByKey can be tuned with user provided memory",
     stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
 
   run_two_phase(
-    [&](void* storage, size_t& bytes, const auto& env) {
+    [&](void* storage, size_t& bytes, const auto& run_env) {
       return cub::DeviceScan::InclusiveSumByKey(
-        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, env);
+        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, run_env);
     },
     env,
     stream.get());
@@ -667,9 +667,17 @@ CUB_TEST("DeviceScan::InclusiveScanByKey can be tuned with user provided memory"
     stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
 
   run_two_phase(
-    [&](void* storage, size_t& bytes, const auto& env) {
+    [&](void* storage, size_t& bytes, const auto& run_env) {
       return cub::DeviceScan::InclusiveScanByKey(
-        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), block_size_check, 7, cuda::std::equal_to<>{}, env);
+        storage,
+        bytes,
+        d_keys.begin(),
+        d_in.begin(),
+        d_out.begin(),
+        block_size_check,
+        7,
+        cuda::std::equal_to<>{},
+        run_env);
     },
     env,
     stream.get());

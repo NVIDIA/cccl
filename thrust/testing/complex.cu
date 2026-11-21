@@ -10,6 +10,9 @@
 #include <unittest/unittest.h>
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
+// These tests exercise implicit float -> double promotion on purpose.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdouble-promotion")
+_CCCL_DIAG_SUPPRESS_GCC("-Wdouble-promotion")
 
 /*
    The following tests do not check for the numerical accuracy of the operations.

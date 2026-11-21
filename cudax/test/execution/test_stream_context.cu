@@ -150,11 +150,11 @@ void bulk_on_stream_scheduler()
         return data;
       })
     // enqueue a bulk kernel on the GPU
-    | ex::bulk(ex::par_unseq, 10, [] __host__ __device__(int i, cuda::std::span<int> data) -> void {
+    | ex::bulk(ex::par_unseq, 10, [] __host__ __device__(int i, cuda::std::span<int> span) -> void {
         printf("Hello from bulk kernel on device! i = %d\n", i);
         CHECK(_is_on_device());
-        CHECK(static_cast<::cuda::std::size_t>(i) < data.size());
-        data[i] += 2;
+        CHECK(static_cast<::cuda::std::size_t>(i) < span.size());
+        span[i] += 2;
       });
 
   auto expected = cuda::make_buffer<int>(sctx, mr2, 10, 42, env); // a device buffer of 10 integers, initialized

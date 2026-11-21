@@ -315,7 +315,7 @@ struct CommandLineArgs
           deviceProp.multiProcessorCount,
           (unsigned long long) device_free_physmem / 1024 / 1024,
           (unsigned long long) device_total_physmem / 1024 / 1024,
-          device_giga_bandwidth,
+          static_cast<double>(device_giga_bandwidth),
           memoryClockRate,
           (deviceProp.ECCEnabled) ? "on" : "off");
         fflush(stdout);
@@ -1115,7 +1115,7 @@ int CompareResults(
       const float difference = std::abs(computed[i] - reference[i]);
       const float fraction   = difference / std::abs(reference[i]);
 
-      if (fraction > 0.00015)
+      if (fraction > 0.00015f)
       {
         if (verbose)
         {

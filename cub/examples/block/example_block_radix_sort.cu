@@ -230,8 +230,8 @@ void Test()
 
   printf("\tAverage BlockRadixSort::SortBlocked clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockRadixSort::SortBlocked clocks per item: %.3f\n", avg_clocks_per_item);
-  printf("\tAverage kernel millis: %.4f\n", avg_millis);
-  printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
+  printf("\tAverage kernel millis: %.4f\n", static_cast<double>(avg_millis));
+  printf("\tAverage million items / sec: %.4f\n", static_cast<double>(avg_items_per_sec));
   fflush(stdout);
 
   // Cleanup

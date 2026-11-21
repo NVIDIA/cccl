@@ -126,8 +126,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce data with given entropy", "[gen]", f
     bit_entropy::_1_000};
 
   std::vector<double> entropy(num_entropy_levels);
-  std::transform(entropy_levels.cbegin(), entropy_levels.cend(), entropy.begin(), [](bit_entropy entropy) {
-    const thrust::device_vector<TestType> data = generate(1 << 24, entropy);
+  std::transform(entropy_levels.cbegin(), entropy_levels.cend(), entropy.begin(), [](bit_entropy level) {
+    const thrust::device_vector<TestType> data = generate(1 << 24, level);
     return compute_actual_entropy(data);
   });
 

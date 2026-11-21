@@ -290,5 +290,7 @@ int main(int argc, char** argv)
   const double FLOP_COUNT =
     21.0 * (1.0 * static_cast<double>(BODY_CNT)) * (1.0 * static_cast<double>(BODY_CNT)) * static_cast<double>(NITER);
 
-  printf("NBODY: elapsed %f ms, %f GFLOPS\n", elapsed, FLOP_COUNT / elapsed / 1000000.0);
+  printf("NBODY: elapsed %f ms, %f GFLOPS\n",
+         static_cast<double>(elapsed),
+         FLOP_COUNT / static_cast<double>(elapsed) / 1000000.0);
 }

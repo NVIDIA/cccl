@@ -94,7 +94,7 @@ void test_reduce_mixed_types()
   REQUIRE(thrust::reduce(float_input.begin(), float_input.end(), (int) 0) == 10);
 
   // int -> float should use using plus<float> operator by default
-  REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5);
+  REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5f);
 }
 TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
 {

@@ -195,10 +195,10 @@ void Test()
   const float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
   const float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
-  printf("\tAverage BlockReduce::Sum clocks: %.3f\n", avg_clocks);
-  printf("\tAverage BlockReduce::Sum clocks per item: %.3f\n", avg_clocks_per_item);
-  printf("\tAverage kernel millis: %.4f\n", avg_millis);
-  printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
+  printf("\tAverage BlockReduce::Sum clocks: %.3f\n", static_cast<double>(avg_clocks));
+  printf("\tAverage BlockReduce::Sum clocks per item: %.3f\n", static_cast<double>(avg_clocks_per_item));
+  printf("\tAverage kernel millis: %.4f\n", static_cast<double>(avg_millis));
+  printf("\tAverage million items / sec: %.4f\n", static_cast<double>(avg_items_per_sec));
 
   // Cleanup
   delete[] h_in;

@@ -169,14 +169,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     switch (selector)
     {
       case worker::block: {
-        constexpr int workers_per_block = 1;
-        const auto max_segments         = active_policy.block.max_segments;
-        const auto threads_per_block    = active_policy.block.threads_per_block;
+        constexpr int block_workers  = 1;
+        const auto max_segments      = active_policy.block.max_segments;
+        const auto threads_per_block = active_policy.block.threads_per_block;
         _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
         _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, threads_per_block, (::cuda::std::min) (num_segments_per_worker, max_segments)};
+        return {block_workers, threads_per_block, (::cuda::std::min) (num_segments_per_worker, max_segments)};
       }
       default:
         _CCCL_UNREACHABLE();
