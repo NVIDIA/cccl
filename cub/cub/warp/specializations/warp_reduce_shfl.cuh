@@ -241,6 +241,24 @@ struct WarpReduceShfl
     });
   }
 
+  // TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
+  // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
+  template <int Step, typename ReductionOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduceRecursive(T& input, ReductionOp reduction_op, const int last_lane)
+  {
+    if constexpr (Step < steps)
+    {
+      input = ReduceStep(input, reduction_op, last_lane, 1u << Step);
+      ShuffleReduceRecursive<Step + 1>(input, reduction_op, last_lane);
+    }
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ShuffleReduce(T& input, SwizzleScanOp<recursive_lookback_scan_op> reduction_op, const int last_lane)
+  {
+    ShuffleReduceRecursive<0>(input, reduction_op, last_lane);
+  }
+
   // Unrolls the reduction steps when all lanes are valid: no range check, only lane 0 holds the result
   template <typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void FullShuffleReduce(T& input, ReductionOp reduction_op)
