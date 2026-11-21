@@ -149,24 +149,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_FREXPL(...) __builtin_frexpl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_frexp)
 
-#if _CCCL_HAS_FLOAT128()
-#  if _CCCL_CHECK_BUILTIN(builtin_frexpf128)
-#    define _CCCL_BUILTIN_FREXPF128(...) __builtin_frexpf128(__VA_ARGS__)
-#  endif // _CCCL_CHECK_BUILTIN(builtin_frexpf128)
-#endif // _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_frexpf128)
+#  define _CCCL_BUILTIN_FREXPF128(...) __builtin_frexpf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_frexpf128)
 
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "frexp"
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_FREXPF
 #  undef _CCCL_BUILTIN_FREXP
 #  undef _CCCL_BUILTIN_FREXPL
-#  undef _CCCL_BUILTIN_FREXPF128
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-// nvcc doesn't implement __builtin_frexpf128 on device
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+// clang-cuda can not call the host builtin on device, and nvcc doesn't implement __builtin_frexpf128 on device
+#if (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_CUDA_COMPILER(NVCC)) && _CCCL_DEVICE_COMPILATION()
 #  undef _CCCL_BUILTIN_FREXPF128
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#endif // (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_CUDA_COMPILER(NVCC)) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_HAS_FLOAT128()
 // Portable frexp of __float128, used when neither a host builtin nor a device intrinsic is available
