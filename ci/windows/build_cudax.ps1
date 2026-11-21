@@ -27,8 +27,10 @@ Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CU
 $PRESET = "cudax"
 $LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
-configure_and_build_preset "CUDA Experimental" $PRESET $LOCAL_CMAKE_OPTIONS
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    configure_and_build_preset "CUDA Experimental" $PRESET $LOCAL_CMAKE_OPTIONS
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }

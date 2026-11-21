@@ -32,9 +32,11 @@ if ($env:GITHUB_SHA) {
     $LOCAL_CMAKE_OPTIONS = '"-DCCCL_EXAMPLE_CPM_TAG={0}"' -f $env:GITHUB_SHA
 }
 
-configure_preset "Packaging" $PRESET $LOCAL_CMAKE_OPTIONS
-test_preset "Packaging" $PRESET
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    configure_preset "Packaging" $PRESET $LOCAL_CMAKE_OPTIONS
+    test_preset "Packaging" $PRESET
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
