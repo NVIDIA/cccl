@@ -25,6 +25,10 @@ EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
 FILE_PATTERNS          = *.cuh *.h
 EXTENSION_MAPPING      = cuh=C++ cu=C++
 
+# Source files containing compiled documentation snippets.
+EXAMPLE_PATH           = ../../cub/test
+EXAMPLE_PATTERNS       = *.cu
+
 # Documentation extraction settings
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
