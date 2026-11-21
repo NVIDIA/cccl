@@ -101,8 +101,8 @@ workflows:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ]}
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
     - {jobs: ['build_nolid'],               project: 'cub',                   std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
-    # CTK12.0/GCC7 CUB host-launch builds are memory-heavy with benchmarks enabled; half the cores keeps this
-    # shard within the linux-amd64-cpu32 runner's memory.
+    # CTK12.0/GCC7 CUB host-launch builds are memory-heavy with benchmarks enabled; keep this shard below
+    # the 123 GiB linux-amd64-cpu32 runner limit.
     - {jobs: ['build_lid0'],                project: 'cub',                   std: 'minmax', ctk: '12.0', cxx: 'gcc7', environment: ['PARALLEL_LEVEL=16']}
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ]}
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ]}
