@@ -262,7 +262,8 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
   {
-    return ((static_unit_count(0) == _StaticUnitCounts) && ...);
+    constexpr auto __first = static_unit_count(0);
+    return ((__first == _StaticUnitCounts) && ...);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
@@ -281,11 +282,20 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
   {
     _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
 
-    // Use fold expression rather than constexpr array to keep runtime queries in registers.
-    ::cuda::std::size_t __index  = 0;
-    ::cuda::std::size_t __result = 0;
-    ((__result = (__i == __index++) ? _StaticUnitCounts : __result), ...);
-    return __result;
+    // During constant evaluation, indexing into the array is faster to evaluate, however at runtime, the fold keeps
+    // runtime-indexed counts in registers.
+    _CCCL_IF_CONSTEVAL
+    {
+      constexpr ::cuda::std::size_t __counts[]{_StaticUnitCounts...};
+      return __counts[__i];
+    }
+    else
+    {
+      ::cuda::std::size_t __index  = 0;
+      ::cuda::std::size_t __result = 0;
+      ((__result = (__i == __index++) ? _StaticUnitCounts : __result), ...);
+      return __result;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
