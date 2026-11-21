@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
 

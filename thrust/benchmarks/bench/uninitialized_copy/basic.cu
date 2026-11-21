@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/uninitialized_copy.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
 

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <thrust/count.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/remove.h>
 
-#include <cuda/memory_pool>
-#include <cuda/std/complex>
-#include <cuda/stream>
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

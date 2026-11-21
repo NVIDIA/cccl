@@ -3,7 +3,9 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
-#include <thrust/execution_policy.h>
+
+#include <algorithm>
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 
