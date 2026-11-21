@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -51,12 +51,12 @@ public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_right::mapping template argument must be a specialization of extents.");
 
-  using extents_type = _Extents;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using layout_type  = layout_right;
-  using __base       = __mdspan_ebco<_Extents>;
+  using extents_type         = _Extents;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using layout_type          = layout_right;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
 
   template <class, class, class, class>
   friend class mdspan;

@@ -73,7 +73,7 @@ void test_reduce_cuda_streams(ExecutionPolicy policy)
   v[2] = 3;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
@@ -83,7 +83,7 @@ void test_reduce_cuda_streams(ExecutionPolicy policy)
   // with initializer
   REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end(), 10) == 12);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestReduceCudaStreamsSync", "[reduce]")
@@ -96,7 +96,7 @@ TEST_CASE("TestReduceCudaStreamsNoSync", "[reduce]")
   test_reduce_cuda_streams(thrust::cuda::par_nosync);
 }
 
-#if defined(THRUST_RDC_ENABLED)
+#ifdef THRUST_RDC_ENABLED
 TEST_CASE("TestReduceLargeInput", "[reduce]")
 {
   using T                 = unsigned long long;

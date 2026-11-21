@@ -724,7 +724,7 @@ _CCCL_HOST void test_iset_dynamic_cast()
     (void) bad;
     assert(false && "should have thrown");
   }
-  catch (cuda::__bad_any_cast const&)
+  catch (std::bad_any_cast const&)
   {
     // expected
   }
@@ -737,7 +737,7 @@ _CCCL_HOST void test_iset_dynamic_cast()
     (void) bad;
     assert(false && "should have thrown");
   }
-  catch (cuda::__bad_any_cast const&)
+  catch (std::bad_any_cast const&)
   {
     // expected
   }

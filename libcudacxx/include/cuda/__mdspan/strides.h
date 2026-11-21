@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -81,7 +81,7 @@ private:
     ::cuda::std::is_convertible_v<const _OtherIndexType&, offset_type>
     && ::cuda::std::is_nothrow_constructible_v<offset_type, const _OtherIndexType&>;
 
-  using _Values =
+  using _Values _CCCL_NODEBUG =
     ::cuda::std::__mdspan_detail::__maybe_static_array<_OffsetType, ::cuda::std::ptrdiff_t, dynamic_stride, _Strides...>;
 
 public:

@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/optional>
 #include <cuda/stream>
 #include <cuda/type_traits>
 

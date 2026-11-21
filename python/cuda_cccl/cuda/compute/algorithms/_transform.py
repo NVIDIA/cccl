@@ -24,7 +24,6 @@ class _UnaryTransform(Serializable):
         "d_out_cccl",
         "op_cccl",
         "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -74,7 +73,7 @@ class _UnaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -85,7 +84,7 @@ class _UnaryTransform(Serializable):
         self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.loaded_build_result.compute(
+        loaded_build_result.compute(
             self.d_in_cccl,
             self.d_out_cccl,
             num_items,
@@ -103,7 +102,6 @@ class _BinaryTransform(Serializable):
         "d_out_cccl",
         "op_cccl",
         "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -160,7 +158,7 @@ class _BinaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -172,7 +170,7 @@ class _BinaryTransform(Serializable):
         self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.loaded_build_result.compute(
+        loaded_build_result.compute(
             self.d_in1_cccl,
             self.d_in2_cccl,
             self.d_out_cccl,

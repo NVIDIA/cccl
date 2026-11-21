@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -88,6 +88,9 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
 };
 
+// The default-pool cache now uses __simple_vector instead of unique_ptr.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 struct __default_device_memory_pool
 {
   _CCCL_HOST_API __default_device_memory_pool() noexcept
@@ -149,6 +152,8 @@ __make_default_device_memory_pools()
   return __pools_.data()[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
 }
 
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
 //!
@@ -189,7 +194,7 @@ struct device_memory_pool : device_memory_pool_ref
           ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {}
 
-  ~device_memory_pool() noexcept
+  _CCCL_HOST_API ~device_memory_pool() noexcept
   {
     if (__pool_ != nullptr)
     {
@@ -223,7 +228,7 @@ struct device_memory_pool : device_memory_pool_ref
   device_memory_pool& operator=(const device_memory_pool&) = delete;
 
 private:
-  device_memory_pool(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API device_memory_pool(::cudaMemPool_t __pool) noexcept
       : device_memory_pool_ref(__pool)
   {}
 };

@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,9 +21,11 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/unit_word.cuh>
-#include <cub/util_debug.cuh>
+#include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cccl_config>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,7 +40,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename UnsignedBits, int ByteLen>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<ByteLen> /*byte_len*/)
 {
   unsigned int bits;
@@ -51,7 +53,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<8> /*byte_len*/)
 {
   const unsigned long long MASK = (1ull << num_bits) - 1;
@@ -64,7 +66,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<16> /*byte_len*/)
 {
   const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
@@ -80,10 +82,10 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API
 _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
-  return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
+  return _CUB::BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -91,7 +93,7 @@ _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, 
 /**
  * Warp synchronous shfl_up
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
   asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
@@ -103,7 +105,7 @@ SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_m
 /**
  * Warp synchronous shfl_down
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
   asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
@@ -117,7 +119,7 @@ SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member
 /**
  * \brief Terminates the calling thread
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadExit()
 {
   asm volatile("exit;");
 }
@@ -125,39 +127,46 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 /**
  * \brief Returns the row-major linear thread identifier for a multidimensional thread block
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
   return static_cast<int>(((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
                           + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x);
 }
 
 /**
- * @brief Returns the warp mask for a warp of @p LogicalWarpThreads threads
+ * @brief Returns the warp mask for a logical warp of @p LogicalWarpThreads threads
  *
  * @par
- * If the number of threads assigned to the virtual warp is not a power of two,
- * it's assumed that only one virtual warp exists.
+ * If the number of threads assigned to the logical warp is not a power of two, it's assumed that only one logical warp
+ * exists within the hardware warp.
  *
- * @tparam LogicalWarpThreads <b>[optional]</b> The number of threads per
- *                              "logical" warp (may be less than the number of
- *                              hardware warp threads).
- * @param warp_id Id of virtual warp within architectural warp
+ * @pre @p LogicalWarpThreads must be in the range [1, 32].
+ * @pre @p warp_id must be less than `32 / LogicalWarpThreads`.
+ * @pre If @p LogicalWarpThreads is not a power of two, @p warp_id must be zero.
+ *
+ * @tparam LogicalWarpThreads The number of threads per logical warp
+ *                            (may be less than the number of hardware warp threads).
+ * @param warp_id Index of the logical warp within the hardware warp.
  */
 template <int LogicalWarpThreads>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE unsigned WarpMask([[maybe_unused]] unsigned warp_id)
 {
-  constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
-  constexpr bool is_arch_warp  = LogicalWarpThreads == detail::warp_threads;
+  static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>, "invalid logical warp size");
+  _CCCL_ASSERT(warp_id < detail::warp_threads / LogicalWarpThreads, "invalid logical warp id");
 
-  // NOLINTNEXTLINE(misc-const-correctness)
-  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LogicalWarpThreads);
+  constexpr bool is_pow_of_two   = ::cuda::is_power_of_two(LogicalWarpThreads);
+  constexpr bool is_arch_warp    = LogicalWarpThreads == detail::warp_threads;
+  constexpr unsigned member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LogicalWarpThreads);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
-    member_mask <<= warp_id * LogicalWarpThreads;
+    return member_mask << (warp_id * LogicalWarpThreads);
   }
-
-  return member_mask;
+  else
+  {
+    _CCCL_ASSERT(warp_id == 0, "non-power-of-two or full-warp sizes require warp_id to be zero");
+    return member_mask;
+  }
 }
 
 /**
@@ -210,7 +219,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsig
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
@@ -226,13 +235,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
+  shuffle_word    = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word       = SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
+    shuffle_word = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
     output_alias[WORD] = shuffle_word;
   }
 
@@ -290,7 +299,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
@@ -306,13 +315,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
+  shuffle_word    = _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word = SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
+    shuffle_word =
+      _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
     output_alias[WORD] = shuffle_word;
   }
 
@@ -369,7 +379,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -413,7 +423,7 @@ namespace detail
 template <int LabelBits, int WarpActiveThreads>
 struct warp_matcher_t
 {
-  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
+  _CCCL_DEVICE_API static unsigned int match_any(unsigned int label)
   {
     return warp_matcher_t<LabelBits, 32>::match_any(label) & ~(~0 << WarpActiveThreads);
   }
@@ -424,7 +434,7 @@ struct warp_matcher_t<LabelBits, warp_threads>
 {
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
-  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
+  _CCCL_DEVICE_API static unsigned int match_any(unsigned int label)
   {
     unsigned int retval;
 
@@ -456,7 +466,7 @@ struct warp_matcher_t<LabelBits, warp_threads>
  * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -467,7 +477,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t nu
  * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -481,7 +491,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
  * LabelBits of \p label as the calling thread.
  */
 template <int LabelBits, int WarpActiveThreads = detail::warp_threads>
-inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
+_CCCL_DEVICE_API inline unsigned int MatchAny(unsigned int label)
 {
   return detail::warp_matcher_t<LabelBits, WarpActiveThreads>::match_any(label);
 }

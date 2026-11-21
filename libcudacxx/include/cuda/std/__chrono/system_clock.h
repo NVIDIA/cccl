@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@ public:
   using time_point                = ::cuda::std::chrono::time_point<system_clock>;
   static constexpr bool is_steady = false;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_point now() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point now() noexcept
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
@@ -56,12 +56,12 @@ public:
       (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_t to_time_t(const time_point& __t) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_t to_time_t(const time_point& __t) noexcept
   {
     return time_t(::cuda::std::chrono::duration_cast<seconds>(__t.time_since_epoch()).count());
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_point from_time_t(time_t __t) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point from_time_t(time_t __t) noexcept
   {
     return time_point(::cuda::std::chrono::seconds(__t));
   }

@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -265,7 +265,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") Dispatc
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel, ActivePolicyT policy = {})
   {
-    return __invoke_single_tile(single_tile_kernel, detail::radix_sort::convert_policy(policy).single_tile);
+    return __invoke_single_tile(single_tile_kernel, _CUB::detail::radix_sort::convert_policy(policy).single_tile);
   }
 
 private:
@@ -316,7 +316,7 @@ private:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -348,7 +348,7 @@ public:
     int& current_bit,
     PassConfigT& pass_config)
   {
-    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
+    const int pass_bits = (::cuda::std::min) (pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
     _CUB_LOG_KERNEL_LAUNCH(
@@ -389,7 +389,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -411,7 +411,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -453,7 +453,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -499,8 +499,8 @@ public:
       // FIXME(bgruber): we should actually convert upsweep_policy, scan_policy, and downsweep_policy, since they could
       // be different from those inside policy. But this is already so far out of any supported scenario that I am
       // willing to cut this corner.
-      const auto p = detail::radix_sort::convert_policy(policy);
-      __init_pass_config(
+      const auto p = _CUB::detail::radix_sort::convert_policy(policy);
+      return __init_pass_config(
         upsweep_kernel,
         scan_kernel,
         downsweep_kernel,
@@ -511,7 +511,6 @@ public:
         p.scan,
         p.downsweep,
         launcher_factory);
-      return __init_pass_config(p);
     }
 
     CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init_pass_config(
@@ -550,7 +549,7 @@ public:
       max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
 
       even_share.DispatchInit(
-        num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
+        num_items, max_downsweep_grid_size, (::cuda::std::max) (downsweep_config.tile_size, upsweep_config.tile_size));
 
       return cudaSuccess;
     }
@@ -560,7 +559,7 @@ public:
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep(ActivePolicyT policy = {})
   {
-    return __invoke_onesweep(detail::radix_sort::convert_policy(policy));
+    return __invoke_onesweep(_CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
@@ -582,7 +581,7 @@ private:
     int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
     OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
     PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
-      static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+      static_cast<int>((::cuda::std::min) (num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : kernel_source.ValueSize();
     size_t allocation_sizes[] = {
@@ -599,8 +598,8 @@ private:
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    if (const auto error =
-          detail::alias_temporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    if (const auto error = _CUB::detail::alias_temporaries<NUM_ALLOCATIONS>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
     {
       return error;
     }
@@ -682,7 +681,7 @@ private:
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
     {
       constexpr int init_startup_threads = 256;
-      const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
+      const size_t num_init_items        = (::cuda::std::max) (num_counter_items, num_bin_items);
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
@@ -711,7 +710,7 @@ private:
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -727,11 +726,11 @@ private:
 
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
-      int num_bits = ::cuda::std::min(end_bit - current_bit, RADIX_BITS);
+      int num_bits = (::cuda::std::min) (end_bit - current_bit, RADIX_BITS);
       for (OffsetT portion = 0; portion < num_portions; ++portion)
       {
         PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-          ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+          (::cuda::std::min) (num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
         PortionOffsetT num_blocks       = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
         const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
@@ -796,7 +795,7 @@ private:
           return error;
         }
 
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -865,7 +864,7 @@ public:
       scan_kernel,
       downsweep_kernel,
       alt_downsweep_kernel,
-      detail::radix_sort::convert_policy(policy));
+      _CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
@@ -893,7 +892,8 @@ private:
     }
 
     // Init regular and alternate-digit kernel configurations
-    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> alt_pass_config;
     if (const auto error = pass_config.__init_pass_config(
           upsweep_kernel,
           scan_kernel,
@@ -926,7 +926,7 @@ private:
 
     // Get maximum spine length
     const int max_grid_size =
-      ::cuda::std::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+      (::cuda::std::max) (pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
     const int spine_length = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
     // Temporary storage allocation requirements
@@ -939,12 +939,12 @@ private:
       (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * kernel_source.ValueSize(),
+      (is_overwrite_okay || KEYS_ONLY) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -961,22 +961,22 @@ private:
     int num_passes               = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
     const bool is_num_passes_odd = num_passes & 1;
     const int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-    const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+    const int alt_end_bit = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
     // Alias the temporary storage allocations
     OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
 
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[1])
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? static_cast<KeyT*>(allocations[1])
+                          : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[2])
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? static_cast<ValueT*>(allocations[2])
+                          : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
     int current_bit = begin_bit;
@@ -1042,7 +1042,7 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-    detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
@@ -1050,7 +1050,7 @@ public:
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1062,7 +1062,8 @@ public:
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-      detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
@@ -1070,7 +1071,7 @@ public:
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1089,7 +1090,7 @@ public:
     {
       _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
-        return detail::radix_sort::convert_policy<ActivePolicyT>();
+        return _CUB::detail::radix_sort::convert_policy<ActivePolicyT>();
       }
     };
     return __invoke(policy_getter{});
@@ -1114,7 +1115,7 @@ public:
     if (begin_bit == end_bit)
     {
       bool has_uva = false;
-      if (const auto error = detail::HasUVA(has_uva))
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
       {
         return error;
       }
@@ -1305,7 +1306,7 @@ struct pass_config
       (downsweep_config.sm_occupancy * static_cast<int>(device_descr.__max_sm_count())) * detail::subscription_factor;
 
     even_share.DispatchInit(
-      num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
+      num_items, max_downsweep_grid_size, (::cuda::std::max) (downsweep_config.tile_size, upsweep_config.tile_size));
 
     return cudaSuccess;
   }
@@ -1383,7 +1384,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1409,7 +1410,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-    detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
@@ -1417,7 +1418,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1429,7 +1430,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-      detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
@@ -1437,7 +1439,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1458,7 +1460,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     int& current_bit,
     PassConfigT& pass_config)
   {
-    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
+    const int pass_bits = (::cuda::std::min) (pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
     _CUB_LOG_KERNEL_LAUNCH(
@@ -1499,7 +1501,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1521,7 +1523,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1563,7 +1565,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1584,7 +1586,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     const RadixSortPolicy& policy)
   {
     // Init regular and alternate-digit kernel configurations
-    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> alt_pc;
     if (const auto error = pc.init(
           upsweep_kernel,
           scan_kernel,
@@ -1618,7 +1621,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Get maximum spine length
-    const int max_grid_size = ::cuda::std::max(pc.max_downsweep_grid_size, alt_pc.max_downsweep_grid_size);
+    const int max_grid_size = (::cuda::std::max) (pc.max_downsweep_grid_size, alt_pc.max_downsweep_grid_size);
     const int spine_length  = (max_grid_size * pc.radix_digits) + pc.scan_config.tile_size;
 
     // Temporary storage allocation requirements
@@ -1631,12 +1634,12 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       (can_overwrite_source_buffer) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (can_overwrite_source_buffer || (keys_only)) ? 0 : num_items * kernel_source.ValueSize(),
+      (can_overwrite_source_buffer || keys_only) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -1653,7 +1656,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     int num_passes               = ::cuda::ceil_div(num_bits, pc.radix_bits);
     const bool is_num_passes_odd = num_passes & 1;
     const int max_alt_passes     = (num_passes * pc.radix_bits) - num_bits;
-    const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pc.radix_bits));
+    const int alt_end_bit        = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_pc.radix_bits));
 
     // Alias the temporary storage allocations
     OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -1661,13 +1664,13 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
       (can_overwrite_source_buffer) ? d_keys.Current()
-      : (is_num_passes_odd)         ? static_cast<KeyT*>(allocations[1])
+      : is_num_passes_odd           ? static_cast<KeyT*>(allocations[1])
                                     : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
       (can_overwrite_source_buffer) ? d_values.Current()
-      : (is_num_passes_odd)         ? static_cast<ValueT*>(allocations[2])
+      : is_num_passes_odd           ? static_cast<ValueT*>(allocations[2])
                                     : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
@@ -1736,7 +1739,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     const int num_passes                = ::cuda::ceil_div(end_bit - begin_bit, radix_bits);
     OffsetT num_portions                = static_cast<OffsetT>(::cuda::ceil_div(num_items, portion_size));
     const PortionOffsetT max_num_blocks = ::cuda::ceil_div(
-      static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(portion_size))), onesweep_tile_items);
+      static_cast<int>((::cuda::std::min) (num_items, static_cast<OffsetT>(portion_size))), onesweep_tile_items);
 
     const size_t value_size         = keys_only ? 0 : kernel_source.ValueSize();
     const size_t allocation_sizes[] = {
@@ -1753,8 +1756,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     };
     constexpr int num_allocations      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[num_allocations] = {};
-    if (const auto error =
-          detail::alias_temporaries<num_allocations>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    if (const auto error = _CUB::detail::alias_temporaries<num_allocations>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
     {
       return error;
     }
@@ -1820,7 +1823,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
     {
       constexpr int init_startup_threads = 256;
-      const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
+      const size_t num_init_items        = (::cuda::std::max) (num_counter_items, num_bin_items);
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
@@ -1849,7 +1852,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1865,11 +1868,11 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += radix_bits, ++pass)
     {
-      const int num_bits = ::cuda::std::min(end_bit - current_bit, radix_bits);
+      const int num_bits = (::cuda::std::min) (end_bit - current_bit, radix_bits);
       for (OffsetT portion = 0; portion < num_portions; ++portion)
       {
         const PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-          ::cuda::std::min(num_items - portion * portion_size, static_cast<OffsetT>(portion_size)));
+          (::cuda::std::min) (num_items - portion * portion_size, static_cast<OffsetT>(portion_size)));
 
         const PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, onesweep_tile_items);
         const size_t num_lookback_items = static_cast<size_t>(num_blocks) * radix_digits;
@@ -1934,7 +1937,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
           return error;
         }
 
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -1974,7 +1977,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     if (begin_bit == end_bit)
     {
       bool has_uva = false;
-      if (const auto error = detail::HasUVA(has_uva))
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
       {
         return error;
       }
@@ -2046,7 +2049,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto cc = description.__compute_capability();
 
-  detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
+  _CUB::detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,
@@ -2063,7 +2066,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     launcher_factory,
     description};
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);
   });
 }

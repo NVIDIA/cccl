@@ -5,27 +5,22 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -36,14 +31,14 @@ struct rebind_pointer;
 template <typename T, typename U>
 struct rebind_pointer<T*, U>
 {
-  using type = U*;
+  using type _CCCL_NODEBUG = U*;
 };
 
 // Rebind generic fancy pointers.
 template <template <typename, typename...> class Ptr, typename OldT, typename... Tail, typename T>
 struct rebind_pointer<Ptr<OldT, Tail...>, T>
 {
-  using type = Ptr<T, Tail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tail...>;
 };
 
 // Rebind `thrust::pointer`-like things with `thrust::reference`-like references.
@@ -57,7 +52,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "0");
-  using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with `thrust::reference`-like references
@@ -73,7 +68,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
-  using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types.
@@ -85,7 +80,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, PtrTail...>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
-  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types and templated
@@ -99,7 +94,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "3");
-  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
 template <typename FromPtr, typename ToPtr>
@@ -108,12 +103,15 @@ inline constexpr bool is_pointer_system_convertible_v =
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_pointer_convertible_v =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_convertible_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type*,
+                                // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 false positive.
                                 typename ::cuda::std::pointer_traits<ToPtr>::element_type*>
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_void_pointer_system_convertible_v =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_void_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type> //
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
@@ -142,22 +140,26 @@ using enable_if_void_pointer_is_system_convertible_t =
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ptr_can_compare_equal =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ptr_can_compare_less_than =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
 
 // tagged references can only compare if they have a matching system and comparable value type
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ref_can_compare_equal =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ref_can_compare_less_than =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
 } // namespace detail
 THRUST_NAMESPACE_END

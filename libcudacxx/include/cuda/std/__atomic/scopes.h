@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -59,31 +59,31 @@ Until then: */
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_thread>
 {
-  using __tag = __thread_scope_block_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_block_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_block>
 {
-  using __tag = __thread_scope_block_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_block_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_cluster>
 {
-  using __tag = __thread_scope_cluster_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_cluster_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_device>
 {
-  using __tag = __thread_scope_device_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_device_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_system>
 {
-  using __tag = __thread_scope_system_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_system_tag;
 };
 
 template <int _Scope>
-using __scope_to_tag = typename __scope_enum_to_tag<_Scope>::__tag;
+using __scope_to_tag _CCCL_NODEBUG = typename __scope_enum_to_tag<_Scope>::__tag;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,9 +22,9 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__memcpy_async/elect_one.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
+#include <cuda/__memcpy_async/elect_one.h> // IWYU pragma: keep
+#include <cuda/__memory/align_down.h> // IWYU pragma: keep
+#include <cuda/__memory/align_up.h> // IWYU pragma: keep
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__host_stdlib/ostream>
 
@@ -52,7 +52,7 @@ enum class LoadPrefetch : int
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
 {
   switch (prefetch)
   {

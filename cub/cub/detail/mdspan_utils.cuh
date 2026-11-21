@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,11 +16,12 @@
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 
 #include <cuda/__cmath/fast_modulo_division.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -48,7 +49,7 @@ _CCCL_DIAG_POP // MSVC(4702)
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::make_unsigned_t<IndexType>
   size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
-  return cub::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
+  return _CUB::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
 }
 
 template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
@@ -57,7 +58,7 @@ template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
   using fast_mod_div_t = ::cuda::fast_mod_div<::cuda::std::make_unsigned_t<implicit_prom_t<IndexType>>>;
   constexpr auto start = IsLayoutRight ? Position + 1 : 0;
   constexpr auto end   = IsLayoutRight ? sizeof...(E) : Position;
-  return fast_mod_div_t(cub::detail::size_range(ext, start, end));
+  return fast_mod_div_t(_CUB::detail::size_range(ext, start, end));
 }
 
 // precompute modulo/division for each submdspan size (by rank)
@@ -67,7 +68,7 @@ sub_sizes_fast_mod_div(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda:
 {
   using fast_mod_div_t = ::cuda::fast_mod_div<::cuda::std::make_unsigned_t<implicit_prom_t<IndexType>>>;
   using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
-  return array_t{cub::detail::sub_size_fast_mod_div_impl<IsLayoutRight, Positions>(ext)...};
+  return array_t{_CUB::detail::sub_size_fast_mod_div_impl<IsLayoutRight, Positions>(ext)...};
 }
 
 // precompute modulo/division for each mdspan extent

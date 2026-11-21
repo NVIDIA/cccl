@@ -15,6 +15,7 @@
 
 template <typename ValueType, typename DifferenceType>
 inline constexpr bool diff_type_is =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_same_v<typename thrust::counting_iterator<ValueType>::difference_type, DifferenceType>;
 
 static_assert(diff_type_is<int8_t, int>);
@@ -53,7 +54,7 @@ TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, signed int>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

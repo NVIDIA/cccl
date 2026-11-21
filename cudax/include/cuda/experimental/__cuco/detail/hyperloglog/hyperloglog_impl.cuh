@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,6 +26,7 @@
 #include <cuda/__device/attributes.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__memory/is_aligned.h>
@@ -34,24 +35,33 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/in_range.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 
 #include <cooperative_groups.h>
+#include <cuda.h>
 
 #include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
@@ -596,8 +606,7 @@ private:
   //! @param __value New value
   _CCCL_DEVICE_API constexpr void __update_max(int __i, __register_type __value) noexcept
   {
-    ::cuda::atomic_ref<__register_type, _Scope> __register_ref(__sketch[__i]);
-    __register_ref.fetch_max(__value, ::cuda::memory_order_relaxed);
+    (void) detail::__atomic_fetch_max<_Scope>(&__sketch[__i], __value);
   }
 
   //! @brief Try expanding the shmem partition for a given kernel beyond 48KB if necessary.

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__memory/addressof.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 struct __atomic_locked_storage // NOLINT(cppcoreguidelines-pro-type-member-init)
 {
-  using __underlying_t                = _Tp;
+  using __underlying_t _CCCL_NODEBUG  = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_locked_tag;
 
   _Tp __a_value;
@@ -80,14 +81,14 @@ struct __atomic_locked_storage // NOLINT(cppcoreguidelines-pro-type-member-init)
 template <typename _Sto, typename _Up, __atomic_storage_is_locked<_Sto> = 0>
 _CCCL_HOST_DEVICE_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 {
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, __val);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), __val);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
 _CCCL_HOST_DEVICE_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order, _Sco = {})
 {
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, __val);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), __val);
   __a->__unlock(_Sco{});
 }
 
@@ -98,7 +99,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order,
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -110,8 +111,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, me
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, __value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), __value);
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -123,11 +124,11 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __temp;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__temp, __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__temp), __a->__a_value);
   bool __ret = __temp == *__expected;
   if (__ret)
   {
-    ::cuda::std::__atomic_assign_volatile(&__a->__a_value, __value);
+    ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), __value);
   }
   else
   {
@@ -144,11 +145,11 @@ __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __value,
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __temp;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__temp, __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__temp), __a->__a_value);
   bool __ret = __temp == *__expected;
   if (__ret)
   {
-    ::cuda::std::__atomic_assign_volatile(&__a->__a_value, __value);
+    ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), __value);
   }
   else
   {
@@ -165,8 +166,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, m
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, _Tp(__old + __delta));
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), _Tp(__old + __delta));
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -178,8 +179,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, m
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, _Tp(__old - __delta));
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), _Tp(__old - __delta));
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -191,8 +192,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern,
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, _Tp(__old & __pattern));
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), _Tp(__old & __pattern));
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -204,8 +205,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, 
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, _Tp(__old | __pattern));
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), _Tp(__old | __pattern));
   __a->__unlock(_Sco{});
   return __old;
 }
@@ -217,8 +218,8 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern,
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
   __a->__lock(_Sco{});
-  ::cuda::std::__atomic_assign_volatile(&__old, __a->__a_value);
-  ::cuda::std::__atomic_assign_volatile(&__a->__a_value, _Tp(__old ^ __pattern));
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), __a->__a_value);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__a->__a_value), _Tp(__old ^ __pattern));
   __a->__unlock(_Sco{});
   return __old;
 }

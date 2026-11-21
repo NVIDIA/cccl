@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,42 +16,45 @@
 
 THRUST_NAMESPACE_BEGIN
 
+// NOLINTBEGIN(readability-redundant-declaration)
 template <typename System, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy(const thrust::detail::execution_policy_base<System>& system,
+_CCCL_HOST_DEVICE_API OutputIterator
+copy(const thrust::detail::execution_policy_base<System>& exec,
      InputIterator first,
      InputIterator last,
      OutputIterator result);
 
 template <typename System, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy_n(const thrust::detail::execution_policy_base<System>& system, InputIterator first, Size n, OutputIterator result);
+_CCCL_HOST_DEVICE_API OutputIterator
+copy_n(const thrust::detail::execution_policy_base<System>& exec, InputIterator first, Size n, OutputIterator result);
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
 
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
+_CCCL_HOST_API OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
 
 namespace detail
 {
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy(
-  const thrust::execution_policy<FromSystem>& from_system,
-  const thrust::execution_policy<ToSystem>& two_system,
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy(
+  const thrust::execution_policy<FromSystem>& system1,
+  const thrust::execution_policy<ToSystem>& system2,
   InputIterator first,
   InputIterator last,
   OutputIterator result);
 
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
-  const thrust::execution_policy<FromSystem>& from_system,
-  const thrust::execution_policy<ToSystem>& two_system,
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy_n(
+  const thrust::execution_policy<FromSystem>& system1,
+  const thrust::execution_policy<ToSystem>& system2,
   InputIterator first,
   Size n,
   OutputIterator result);
 } // namespace detail
 
+// NOLINTEND(readability-redundant-declaration)
+
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy.inl>
+#include <thrust/detail/copy.inl> // IWYU pragma: export

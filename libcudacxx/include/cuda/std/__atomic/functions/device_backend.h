@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,9 +34,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CTK_AT_LEAST(13, 5) && _CCCL_HAS_NV_ATOMIC_BUILTINS()
-using __cuda_atomic_device_backend = __cuda_atomic_nvvm_backend;
+using __cuda_atomic_device_backend _CCCL_NODEBUG = __cuda_atomic_nvvm_backend;
 #else
-using __cuda_atomic_device_backend = __cuda_atomic_ptx_backend;
+using __cuda_atomic_device_backend _CCCL_NODEBUG = __cuda_atomic_ptx_backend;
 #endif
 
 _CCCL_END_NAMESPACE_CUDA_STD

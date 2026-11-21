@@ -11,7 +11,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,9 +29,9 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 
 // Legacy include; this functionality used to be defined in here.
-#include <cub/detail/detect_cuda_runtime.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -136,7 +136,7 @@ struct RegBoundScaling
 {
 private:
   static constexpr auto result =
-    scale_reg_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
+    _CUB::detail::scale_reg_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
@@ -160,7 +160,7 @@ struct MemBoundScaling
 {
 private:
   static constexpr auto result =
-    scale_mem_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
+    _CUB::detail::scale_mem_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
@@ -205,7 +205,7 @@ template <class PolicySelector>
 template <class PolicySelector>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto current_policy()
 {
-  return select_policy<PolicySelector>(current_tuning_cc());
+  return _CUB::detail::select_policy<PolicySelector>(_CUB::detail::current_tuning_cc());
 }
 } // namespace detail
 #endif // Do not document

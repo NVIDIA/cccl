@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,13 +16,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h> // IWYU pragma: keep
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -85,7 +85,7 @@ struct MergeSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
   {
     return os
         << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -107,21 +107,21 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(11),
+                              _CUB::Nominal4BItemsToItems<KeyT>(11),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   // NVBug 3384810
-#if defined(_NVHPC_CUDA)
+#ifdef _NVHPC_CUDA
   using Policy520 = Policy500;
 #else
   struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<512,
-                              Nominal4BItemsToItems<KeyT>(15),
+                              _CUB::Nominal4BItemsToItems<KeyT>(15),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -132,7 +132,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(17),
+                              _CUB::Nominal4BItemsToItems<KeyT>(17),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_DEFAULT,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -155,7 +155,7 @@ struct policy_selector
     // from SM60
     return MergeSortPolicy{
       256,
-      detail::nominal_4B_items_to_items(17, key_size),
+      _CUB::detail::nominal_4B_items_to_items(17, key_size),
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       BLOCK_STORE_WARP_TRANSPOSE};

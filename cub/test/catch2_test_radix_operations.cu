@@ -504,8 +504,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   std::bitset<sizeof(T2) * CHAR_BIT> bs_2;
 
   // 10000(0)
-  bs_1.set(sizeof(T1) * CHAR_BIT - 1);
-  bs_2.set(sizeof(T2) * CHAR_BIT - 1);
+  bs_1.set((sizeof(T1) * CHAR_BIT) - 1);
+  bs_2.set((sizeof(T2) * CHAR_BIT) - 1);
 
   UT1 ul_1 = static_cast<UT1>(bs_1.to_ullong());
   UT2 ul_2 = static_cast<UT2>(bs_2.to_ullong());
@@ -536,8 +536,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   bs_1 = ul_1;
   bs_2 = ul_2;
 
-  REQUIRE_FALSE(bs_1[sizeof(T1) * CHAR_BIT - 1]);
-  REQUIRE_FALSE(bs_2[sizeof(T2) * CHAR_BIT - 1]);
+  REQUIRE_FALSE(bs_1[(sizeof(T1) * CHAR_BIT) - 1]);
+  REQUIRE_FALSE(bs_2[(sizeof(T2) * CHAR_BIT) - 1]);
 
   {
     const tpl_t unordered_val = tpl_t{l_1, l_2};
@@ -582,7 +582,7 @@ struct flipped_fp_aggregate_decomposer_t
 CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
-  using conversion_policy = typename traits::bit_ordered_conversion_policy;
+  using conversion_policy = traits::bit_ordered_conversion_policy;
   using decomposer_t      = fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 
@@ -611,7 +611,7 @@ CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations
 CUB_TEST_CASE("Radix operations allow fields permutation", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
-  using conversion_policy = typename traits::bit_ordered_conversion_policy;
+  using conversion_policy = traits::bit_ordered_conversion_policy;
   using decomposer_t      = flipped_fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 

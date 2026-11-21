@@ -4,7 +4,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,9 +16,10 @@
 //! \brief Execution policies for Thrust's TBB system.
 
 // get the execution policies definitions first
-#include <thrust/system/tbb/detail/execution_policy.h>
+#include <thrust/system/tbb/detail/execution_policy.h> // IWYU pragma: export
 
 // now get all the algorithm definitions
+// IWYU pragma: begin_exports
 #include <thrust/system/tbb/detail/adjacent_difference.h>
 #include <thrust/system/tbb/detail/assign_value.h>
 #include <thrust/system/tbb/detail/binary_search.h>
@@ -60,3 +61,4 @@
 #include <thrust/system/tbb/detail/uninitialized_fill.h>
 #include <thrust/system/tbb/detail/unique.h>
 #include <thrust/system/tbb/detail/unique_by_key.h>
+// IWYU pragma: end_exports

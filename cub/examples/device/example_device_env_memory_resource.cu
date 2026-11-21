@@ -50,7 +50,7 @@ struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_
                        [[maybe_unused]] size_t bytes,
                        [[maybe_unused]] size_t alignment = cuda::mr::default_cuda_malloc_alignment) noexcept
   {
-    cudaFree(ptr);
+    static_cast<void>(cudaFree(ptr));
   }
 
   friend constexpr void get_property(synchronous_memory_resource const&, cuda::mr::device_accessible) noexcept {}

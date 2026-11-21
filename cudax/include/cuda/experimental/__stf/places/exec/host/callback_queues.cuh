@@ -17,7 +17,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,10 +25,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
+#include <cstring>
+#include <deque>
 #include <stack>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // do not document

@@ -119,7 +119,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
-  ::cudaGetLastError(); // Clear CUDA error state
+  static_cast<void>(::cudaGetLastError()); // Clear CUDA error state
 
   // If no export was defined we need to query cudaErrorInvalidValue
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
@@ -692,7 +692,7 @@ C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
-    if (peers.size() > 0)
+    if (!peers.empty())
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
       CHECK(pool.is_accessible_from(cuda::devices[0]));

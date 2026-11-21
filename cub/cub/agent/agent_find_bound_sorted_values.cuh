@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,10 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__algorithm/is_sorted.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
@@ -125,11 +127,11 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      const auto d_range_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < haystack_count)
         {
           storage.haystack[idx] = d_range_cm[idx];
@@ -138,11 +140,11 @@ struct agent_t
     }
 
     {
-      auto d_values_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      auto d_values_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < needles_count)
         {
           storage.needles[idx] = d_values_cm[idx];
@@ -153,14 +155,22 @@ struct agent_t
     __syncthreads();
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
+    // The algorithm only requires comp(haystack, needle) and comp(needle, haystack), so we can only check the
+    // sortedness of the needles if the comparator also accepts two needles. Note that is_invocable cannot see into the
+    // body of an unconstrained templated operator(), so such a comparator on heterogeneous types fails to compile here
+    // and needs to constrain its overloads.
+    if constexpr (::cuda::std::is_invocable_v<CompareOp&, const needles_type&, const needles_type&>)
     {
-      const int idx = ThreadsPerBlock * item + threadIdx.x;
-      if (idx < needles_count && (values_beg + idx) > 0)
+      if (threadIdx.x == 0)
       {
-        const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
-        _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+        const needles_type* const needles_begin = storage.needles;
+        _CCCL_ASSERT(::cuda::std::is_sorted(needles_begin, needles_begin + needles_count, compare_op),
+                     "d_values must be sorted consistently with comp");
+        if (values_beg > 0 && needles_count > 0)
+        {
+          const needles_type prev = d_values[values_beg - 1];
+          _CCCL_ASSERT(!compare_op(storage.needles[0], prev), "d_values must be sorted consistently with comp");
+        }
       }
     }
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
@@ -170,11 +180,11 @@ struct agent_t
     int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (!IsFullTile)
     {
-      d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
+      d0_thread = (::cuda::std::min) (d0_thread, total_in_tile);
     }
 
     const int i0 =
-      cub::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
+      _CUB::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
     const int j0 = d0_thread - i0;
 
     int i                  = i0;
@@ -182,7 +192,7 @@ struct agent_t
     int haystack_remaining = haystack_count - i0;
     int needles_remaining  = needles_count - j0;
 
-    const int steps = IsFullTile ? ItemsPerThread : ::cuda::std::min(total_in_tile - d0_thread, ItemsPerThread);
+    const int steps = IsFullTile ? ItemsPerThread : (::cuda::std::min) (total_in_tile - d0_thread, ItemsPerThread);
     _CCCL_PRAGMA_UNROLL(ItemsPerThread)
     for (int step = 0; step < steps; ++step)
     {
@@ -213,7 +223,7 @@ struct agent_t
     // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
     // but avoid overflow of the offset type
     const int total_in_tile =
-      static_cast<int>(::cuda::std::min(static_cast<Offset>(tile_size), range_count + values_count - diag0));
+      static_cast<int>((::cuda::std::min) (static_cast<Offset>(tile_size), range_count + values_count - diag0));
 
     if (total_in_tile == tile_size)
     {

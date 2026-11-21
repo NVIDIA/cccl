@@ -16,6 +16,8 @@
 #include <cuda/std/string_view>
 #include <cuda/tma>
 
+#include <stdexcept>
+
 #include <cuda_runtime_api.h>
 
 #include "test_macros.h"
@@ -94,8 +96,8 @@ bool test_sizes()
 {
   float* data = nullptr;
   assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
-  constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 32};
-  constexpr int64_t strides_storage[2] = {int64_t{1} << 32, 1};
+  constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 31};
+  constexpr int64_t strides_storage[2] = {int64_t{1} << 31, 1};
 
   DLTensor tensor{};
   tensor.data             = data;
@@ -142,6 +144,48 @@ bool test_strides()
   assert(cudaFree(data) == cudaSuccess);
   return true;
 }
+
+#if TEST_HAS_EXCEPTIONS()
+
+template <int Rank>
+auto get_strides(int64_t (&shape)[Rank], int64_t* strides)
+{
+  DLTensor tensor{};
+  tensor.ndim              = Rank;
+  tensor.shape             = shape;
+  tensor.strides           = strides;
+  constexpr auto data_type = CU_TENSOR_MAP_DATA_TYPE_UINT8;
+  auto tensor_sizes        = cuda::__get_tensor_sizes(tensor, Rank, data_type);
+  return cuda::__get_tensor_strides(tensor, Rank, data_type, tensor_sizes, no_interleave);
+}
+
+template <int Rank>
+void test_stride_rejected(int64_t (&shape)[Rank], int64_t* strides)
+{
+  try
+  {
+    unused(get_strides(shape, strides));
+  }
+  catch (const std::invalid_argument&)
+  {
+    return;
+  }
+  assert(false);
+}
+
+bool test_stride_overflow()
+{
+  int64_t shape[]   = {1, int64_t{1} << 30, 16};
+  int64_t strides[] = {16, int64_t{1} << 34, 1};
+  test_stride_rejected(shape, strides);
+#  if _CCCL_DLPACK_BELOW(1, 2)
+  int64_t compact_shape[] = {1, int64_t{1} << 31, int64_t{1} << 16, int64_t{1} << 17};
+  test_stride_rejected(compact_shape, nullptr);
+#  endif // _CCCL_DLPACK_BELOW(1, 2)
+  return true;
+}
+
+#endif // TEST_HAS_EXCEPTIONS()
 
 bool test_box_sizes()
 {
@@ -359,5 +403,8 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (assert(test_strides());));
   NV_IF_TARGET(NV_IS_HOST, (assert(test_box_sizes());));
   NV_IF_TARGET(NV_IS_HOST, (assert(test_elem_strides());));
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_stride_overflow());));
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

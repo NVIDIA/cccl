@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/device_reference.h>
+#include <thrust/detail/raw_reference_cast.h>
 
-#include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__type_traits/is_bitwise_comparable.h> // IWYU pragma: keep
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>

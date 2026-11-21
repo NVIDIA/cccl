@@ -5,9 +5,9 @@
 
 #include <cub/config.cuh>
 
-#include <cub/util_debug.cuh>
+#include <cub/util_debug.cuh> // IWYU pragma: keep
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,10 +15,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/cstdarg>
-#include <cuda/std/__host_stdlib/cstdio>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/sstream> // IWYU pragma: keep
 #include <cuda/std/cstdlib>
+
+#include <nv/target>
 
 #ifdef _CCCL_DOXYGEN_INVOKED
 //! When defined, disables all logging code in CCCL
@@ -70,7 +73,7 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
+                 if (_CUB::detail::logging_enabled())
                  {
                    ::std::va_list args;
                    va_start(args, fmt);
@@ -99,15 +102,16 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                }))
 #elif _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
+                 if (_CUB::detail::logging_enabled())
                  {
                    ::std::stringstream ss;
                    ss << active_policy;
-                   log_always("Dispatching %s on compute capability %d.%d with tuning: %s\n",
-                              device_alg,
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
+                   _CUB::detail::log_always(
+                     "Dispatching %s on compute capability %d.%d with tuning: %s\n",
+                     device_alg,
+                     cc.major_cap(),
+                     cc.minor_cap(),
+                     ss.str().c_str());
                  }
                }))
 #endif // !CUB_DEBUG_LOG && _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
@@ -129,7 +133,7 @@ CUB_NAMESPACE_END
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
 #  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
     kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
-    CUB_NS_QUALIFIER::detail::log(                                                            \
+    _CUB::detail::log(                                                                        \
       "Invoking " kernel_name "<<<{%u, %u, %u}, %u, %zu, %lld>>>()" fmt "\n",                 \
       static_cast<unsigned int>(grid_dim_x),                                                  \
       static_cast<unsigned int>(grid_dim_y),                                                  \

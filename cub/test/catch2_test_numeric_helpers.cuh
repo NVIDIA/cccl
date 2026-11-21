@@ -63,11 +63,16 @@ inline __half* unwrap_it(half_t* it)
   return reinterpret_cast<__half*>(it);
 }
 
+inline const __half* unwrap_it(const half_t* it)
+{
+  return reinterpret_cast<const __half*>(it);
+}
+
 template <class OffsetT>
 cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
 {
-  half_t wrapped_val = *it;
-  __half val         = wrapped_val.operator __half();
+  const half_t wrapped_val = *it;
+  const __half val         = wrapped_val.operator __half();
   return cuda::constant_iterator<__half, OffsetT>(val);
 }
 #endif // TEST_HALF_T()
@@ -78,11 +83,16 @@ inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
   return reinterpret_cast<__nv_bfloat16*>(it);
 }
 
+inline const __nv_bfloat16* unwrap_it(const bfloat16_t* it)
+{
+  return reinterpret_cast<const __nv_bfloat16*>(it);
+}
+
 template <class OffsetT>
 cuda::constant_iterator<__nv_bfloat16, OffsetT> unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
 {
-  bfloat16_t wrapped_val = *it;
-  __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
+  const bfloat16_t wrapped_val = *it;
+  const __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
   return cuda::constant_iterator<__nv_bfloat16, OffsetT>(val);
 }
 #endif // TEST_BF_T()
@@ -98,13 +108,13 @@ std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   return {};
 }
 
-inline constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
+constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }
 
 template <bool V, class OpT>
-inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
+constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
 {
   return op;
 }

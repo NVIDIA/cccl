@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,18 +20,22 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__functional/operations.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -76,7 +80,7 @@ struct BlockReduceWarpReductions
   static constexpr int warps = ::cuda::ceil_div(threads_per_block, warp_threads);
 
   /// The logical warp size for warp reductions
-  static constexpr int logical_warp_size = ::cuda::std::min(threads_per_block, warp_threads);
+  static constexpr int logical_warp_size = (::cuda::std::min) (threads_per_block, warp_threads);
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
@@ -106,9 +110,9 @@ struct BlockReduceWarpReductions
   int warp_id;
   int lane_id;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
       , lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
   {}
@@ -126,11 +130,12 @@ struct BlockReduceWarpReductions
   //! @param[in] warp_aggregate
   //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+  ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
   {
     if (linear_tid == 0)
     {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
     }
 
     __syncthreads();
@@ -160,12 +165,12 @@ struct BlockReduceWarpReductions
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
     // Share lane aggregates
     if (lane_id == 0)
     {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();
@@ -200,7 +205,7 @@ struct BlockReduceWarpReductions
       if (warp_id == 0)
       {
         const int num_warps =
-          FullTile ? warps : ::cuda::std::min(::cuda::ceil_div(num_valid, logical_warp_size), +warps);
+          FullTile ? warps : (::cuda::std::min) (::cuda::ceil_div(num_valid, logical_warp_size), +warps);
 
         const T val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
 
@@ -230,7 +235,7 @@ struct BlockReduceWarpReductions
   //! @param[in] num_valid
   //!   Number of valid elements (may be less than threads_per_block)
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     return Reduce<FullTile>(input, num_valid, ::cuda::std::plus<>{});
   }
@@ -256,7 +261,7 @@ struct BlockReduceWarpReductions
   //! @param[in] reduction_op
   //!   Binary reduction operator
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
     const int warp_offset = warp_id * logical_warp_size;
     const int warp_num_valid =

@@ -103,7 +103,7 @@ int main(int, char**)
     test_result_of_imp<PMD(FD volatile), char&&>();
     test_result_of_imp<PMD(FD const volatile), char&&>();
 
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of_imp<PMD(cuda::std::unique_ptr<F>), char&>();
     test_result_of_imp<PMD(cuda::std::unique_ptr<F const>), const char&>();
     test_result_of_imp<PMD(cuda::std::unique_ptr<FD>), char&>();

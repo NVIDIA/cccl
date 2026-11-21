@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #  pragma nv_diag_suppress 20011
 #endif
 
@@ -71,9 +71,9 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
                 "capacity_v must be a compile-time constant for static extents");
 
-  __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
+  __shared__ ::cuda::__uninitialized<ref_t::value_type[ref_t::capacity_v]> smem;
 
-  const auto idx    = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const auto idx    = (static_cast<int>(blockIdx.x) * blockDim.x) + threadIdx.x;
   smem[threadIdx.x] = (idx < num_keys) ? pairs[idx] : ref_t::value_type{};
   __syncthreads();
   if (idx < num_keys)
@@ -123,7 +123,7 @@ __global__ void shmem_map_lifecycle_kernel(int* thread_ok)
                 "capacity_v must be a compile-time constant for static extents");
 
   // Alignment to sizeof(value_type) enables packed CAS when value_type has a packable representation
-  __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v, sizeof(ref_t::value_type)> smem;
+  __shared__ ::cuda::__uninitialized<ref_t::value_type[ref_t::capacity_v], sizeof(ref_t::value_type)> smem;
 
   const auto block = ::cooperative_groups::this_thread_block();
   ref_t ref{cudax::cuco::empty_key{empty_key},
@@ -151,7 +151,7 @@ __global__ void shmem_map_lifecycle_kernel(int* thread_ok)
   ref.initialize(block);
   ok = ok && !ref.contains(rank);
 
-  thread_ok[static_cast<int>(blockIdx.x) * static_cast<int>(blockDim.x) + rank] = ok ? 1 : 0;
+  thread_ok[(static_cast<int>(blockIdx.x) * static_cast<int>(blockDim.x)) + rank] = ok ? 1 : 0;
 }
 
 C2H_TEST("fixed_capacity_map_ref device initialize — map fully in shared memory", "[shmem][initialize]")
@@ -169,7 +169,7 @@ C2H_TEST("fixed_capacity_map_ref device initialize — map fully in shared memor
                thread_ok.data());
 
   REQUIRE(::thrust::all_of(
-    ::thrust::cuda::par.on(stream.get()), thread_ok.data(), thread_ok.data() + num_blocks * block_size, is_nonzero{}));
+    ::thrust::cuda::par.on(stream.get()), thread_ok.data(), thread_ok.data() + (num_blocks * block_size), is_nonzero{}));
 }
 
 // Each block copies the global map into shared memory and probes the copy.
@@ -183,7 +183,7 @@ make_copy_shmem_kernel(GlobalRef global_ref, int num_keys, int* keys_exist, int*
   using value_type  = typename ref_t::value_type;
 
   // Alignment to sizeof(value_type) enables packed CAS when value_type has a packable representation
-  __shared__ ::cuda::__uninitialized_array<value_type, ref_t::capacity_v, sizeof(value_type)> smem;
+  __shared__ ::cuda::__uninitialized<value_type[ref_t::capacity_v], sizeof(value_type)> smem;
 
   const auto block = ::cooperative_groups::this_thread_block();
   // Exercise destruction and reinitialization of make_copy's shared barrier.
@@ -280,11 +280,14 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
       copy_mutable.data());
 
     REQUIRE(::thrust::all_of(
-      ::thrust::cuda::par.on(stream.get()), keys_exist.data(), keys_exist.data() + num_blocks * num_keys, is_nonzero{}));
+      ::thrust::cuda::par.on(stream.get()),
+      keys_exist.data(),
+      keys_exist.data() + (num_blocks * num_keys),
+      is_nonzero{}));
     REQUIRE(::thrust::all_of(
       ::thrust::cuda::par.on(stream.get()),
       pairs_correct.data(),
-      pairs_correct.data() + num_blocks * num_keys,
+      pairs_correct.data() + (num_blocks * num_keys),
       is_nonzero{}));
     REQUIRE(::thrust::all_of(
       ::thrust::cuda::par.on(stream.get()), copy_mutable.data(), copy_mutable.data() + num_blocks, is_nonzero{}));
@@ -303,7 +306,10 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
       copy_mutable.data());
 
     REQUIRE(!::thrust::any_of(
-      ::thrust::cuda::par.on(stream.get()), keys_exist.data(), keys_exist.data() + num_blocks * num_keys, is_nonzero{}));
+      ::thrust::cuda::par.on(stream.get()),
+      keys_exist.data(),
+      keys_exist.data() + (num_blocks * num_keys),
+      is_nonzero{}));
     REQUIRE(::thrust::all_of(
       ::thrust::cuda::par.on(stream.get()), copy_mutable.data(), copy_mutable.data() + num_blocks, is_nonzero{}));
   }

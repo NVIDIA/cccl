@@ -10,10 +10,12 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 
 #include "catch2_radix_sort_helper.cuh"
@@ -131,7 +133,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+#ifdef SINGLE_TEST_CASE_INSTANTIATION
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data",
          "[keys][segmented][radix][sort][device]",
@@ -263,7 +265,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+#ifdef SINGLE_TEST_CASE_INSTANTIATION
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments",
          "[keys][segmented][radix][sort][device]",
@@ -503,7 +505,7 @@ catch (...)
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
-#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#  ifdef CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_LARGE,
@@ -551,3 +553,47 @@ catch (...)
 }
 #  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
+
+#if TEST_KEY_BITS == 32 && TEST_LAUNCH == 0
+// More radix digits (2^7) than threads per block (64), so each thread tracks multiple bins. This exercises the reversal
+// of the bin offsets of descending sorts.
+struct multiple_bins_per_thread_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedRadixSortPolicy
+  {
+    return cub::SegmentedRadixSortPolicy{
+      cub::RadixSortDownsweepPolicy{
+        64, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 7},
+      cub::RadixSortDownsweepPolicy{
+        64, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6}};
+  }
+};
+
+CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending works with multiple radix bins per thread",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
+{
+  constexpr int num_items = 4096;
+  c2h::device_vector<int> keys_in(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(2), keys_in);
+  c2h::device_vector<int> keys_out(num_items, thrust::no_init);
+  const c2h::device_vector<int> offsets{0, num_items};
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      cuda::std::int64_t{num_items},
+      cuda::std::int64_t{1},
+      thrust::raw_pointer_cast(offsets.data()),
+      thrust::raw_pointer_cast(offsets.data()) + 1,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      cuda::execution::tune(multiple_bins_per_thread_tuning{})));
+
+  c2h::host_vector<int> expected(keys_in);
+  std::sort(expected.begin(), expected.end(), std::greater<>{});
+  REQUIRE(c2h::host_vector<int>(keys_out) == expected);
+}
+#endif // TEST_KEY_BITS == 32 && TEST_LAUNCH == 0

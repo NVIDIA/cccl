@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,11 +19,9 @@
 #include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/guarantee.h>
-#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -72,8 +70,8 @@ public:
       const auto traits = ::cuda::arch_traits_for(__compute_capability());
 
       blocks_per_sm =
-        ::cuda::std::min(traits.max_blocks_per_multiprocessor,
-                         traits.max_warps_per_multiprocessor / ::cuda::ceil_div(threads_per_block, traits.warp_size));
+        (::cuda::std::min) (traits.max_blocks_per_multiprocessor,
+                            traits.max_warps_per_multiprocessor / ::cuda::ceil_div(threads_per_block, traits.warp_size));
 
       return ::cudaSuccess;
     }

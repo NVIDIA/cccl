@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,7 +38,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
 class legacy_managed_memory_resource : public memory_resource_base<legacy_managed_memory_resource>
 {
-private:
   // cudaMemAttach values are macros, so we cannot :: them.
   unsigned int __flags_ = cudaMemAttachGlobal;
 

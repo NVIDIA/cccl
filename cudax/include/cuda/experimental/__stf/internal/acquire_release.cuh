@@ -18,7 +18,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,14 +26,31 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/new>
+#include <cuda/std/cassert>
 
+#include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/dot.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf
@@ -376,11 +393,11 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs) no
   // -> factorize, which in the graph backend adds an empty node through cuda_try; the stream
   // backend's factorize is pure computation, so this arm only fires for graph contexts.
   //
-  // catch_exactly for bad_alloc on purpose: std::bad_array_new_length derives from it but means
+  // if_monomorphic for bad_alloc on purpose: std::bad_array_new_length derives from it but means
   // a size computation went wrong, not that memory ran out, and should not be quietly treated
   // as memory pressure. Anything else we did not anticipate escapes into terminate rather than
   // being silently absorbed here.
-  ON_THROW(catch_exactly<::std::bad_alloc>(abort) | catch_only<cuda_exception>(abort))
+  ON_THROW(if_monomorphic<::std::bad_alloc>(abort) | if_isa<cuda_exception>(abort))
   {
     // We copy the list of prereqs into the task
     merge_event_list(done_prereqs);

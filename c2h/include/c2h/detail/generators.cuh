@@ -115,4 +115,11 @@ struct random_to_item_t<cuda::std::complex<T>, false>
     return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
+
+template <typename Policy, typename T>
+void gen_values_between_impl(const Policy& policy, seed_t seed, ::cuda::std::span<T> data, T min, T max)
+{
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  gen_values_op(policy, data, op);
+}
 } // namespace c2h::detail

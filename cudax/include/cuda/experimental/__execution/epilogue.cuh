@@ -10,7 +10,7 @@
 
 // IMPORTANT: This file intentionally lacks a header guard.
 
-#if !defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
+#ifndef _CUDAX_ASYNC_PROLOGUE_INCLUDED
 #  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 

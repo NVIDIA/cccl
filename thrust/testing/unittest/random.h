@@ -11,7 +11,7 @@ namespace unittest
 {
 namespace detail
 {
-inline unsigned int hash(unsigned int a)
+_CCCL_HOST_API inline unsigned int hash(unsigned int a)
 {
   a = (a + 0x7ed55d16) + (a << 12);
   a = (a ^ 0xc761c23c) ^ (a >> 19);
@@ -26,7 +26,7 @@ inline unsigned int hash(unsigned int a)
 template <typename T>
 struct generate_random_integer
 {
-  T operator()(unsigned int i) const
+  _CCCL_HOST_API T operator()(unsigned int i) const
   {
     THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     if constexpr (::cuda::std::is_same_v<T, bool>)
@@ -58,7 +58,7 @@ struct generate_random_integer
 template <typename T>
 struct generate_random_sample
 {
-  T operator()(unsigned int i) const
+  _CCCL_HOST_API T operator()(unsigned int i) const
   {
     THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
     THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 20);
@@ -68,7 +68,7 @@ struct generate_random_sample
 };
 
 template <typename T>
-THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
+_CCCL_HOST_API THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(
@@ -81,13 +81,13 @@ THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
 }
 
 template <typename T>
-T random_integer()
+_CCCL_HOST_API T random_integer()
 {
   return generate_random_integer<T>()(0);
 }
 
 template <typename T>
-THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
+_CCCL_HOST_API THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(

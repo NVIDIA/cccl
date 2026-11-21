@@ -40,7 +40,7 @@ private:
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -48,7 +48,7 @@ private:
 #  pragma system_header
 #endif // no system header
 
-#if !defined(CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER)
+#ifndef CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER
 _CCCL_WARNING("The <cuda/stream_ref> header is deprecated and will be removed in the next major release. The \
 contents were moved to <cuda/stream>. To ignore this message, define CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER.")
 #endif // !CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER

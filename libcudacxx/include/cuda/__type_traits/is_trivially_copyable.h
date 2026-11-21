@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -85,7 +85,7 @@ inline constexpr bool __is_trivially_copyable_v<::cuda::std::complex<_Tp>> = tru
 
 // if all the previous conditions fail, check if the type is an aggregate and all its members are trivially copyable
 template <typename _Tp>
-using __is_trivially_copyable_callable = ::cuda::std::bool_constant<__is_trivially_copyable_v<_Tp>>;
+using __is_trivially_copyable_callable _CCCL_NODEBUG = ::cuda::std::bool_constant<__is_trivially_copyable_v<_Tp>>;
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL bool __is_trivially_copyable_impl() noexcept

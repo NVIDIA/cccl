@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,30 +19,30 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic::scalar
 {
 template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp);
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
 template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp);
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<RandomAccessIterator, RandomAccessIterator>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<RandomAccessIterator, RandomAccessIterator>
 equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
 template <typename RandomAccessIterator, typename T, typename Compare>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& value, Compare comp);
 } // namespace system::detail::generic::scalar
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/scalar/binary_search.inl>
+#include <thrust/system/detail/generic/scalar/binary_search.inl> // IWYU pragma: export

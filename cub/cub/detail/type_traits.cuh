@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,10 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__fwd/span.h>
@@ -31,7 +31,7 @@
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

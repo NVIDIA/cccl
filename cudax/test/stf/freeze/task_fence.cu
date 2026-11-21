@@ -22,12 +22,12 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void print(slice<int> s)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < s.size(); i += nthreads)
@@ -81,7 +81,7 @@ int main()
     print<<<8, 4, 0, stream2>>>(dX);
 
     // We synchronize so there is nothing to depend on anymore
-    cudaStreamSynchronize(stream2);
+    cuda_safe_call(cudaStreamSynchronize(stream2));
     fx.unfreeze(event_list());
   }
 
@@ -93,6 +93,6 @@ int main()
 
   for (int i = 0; i < N; i++)
   {
-    EXPECT(X[i] == 2 * X0(i) + 1);
+    EXPECT(X[i] == (2 * X0(i)) + 1);
   }
 }

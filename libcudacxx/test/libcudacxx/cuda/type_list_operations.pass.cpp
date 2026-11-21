@@ -134,7 +134,7 @@ static_assert(::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<Ty
                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            int,
                                            Int<42>>::value);
-#if !defined(SKIP_SFINAE_TESTS)
+#ifndef SKIP_SFINAE_TESTS
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<TypeIndex>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             int>::value);
@@ -146,7 +146,7 @@ using TypeAt = ::cuda::std::__type_at_c<Ip::value, List>;
 static_assert(::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<TypeAt>,
                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            ::cuda::std::__type_list<int, Int<42>>>::value);
-#if !defined(SKIP_SFINAE_TESTS)
+#ifndef SKIP_SFINAE_TESTS
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<TypeAt>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             ::cuda::std::__type_list<int>>::value);
@@ -249,7 +249,7 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__
                                    ::cuda::std::__type_list<>>::value);
 static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__type_list<int, char const>, AddPointer>,
                                    ::cuda::std::__type_list<int*, char const*>>::value);
-#if !defined(SKIP_SFINAE_TESTS)
+#ifndef SKIP_SFINAE_TESTS
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<::cuda::std::__type_transform>,
                                             ::cuda::std::__type_list<int, char const, int&>,
                                             AddPointer>::value);

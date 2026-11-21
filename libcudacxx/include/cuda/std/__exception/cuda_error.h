@@ -15,7 +15,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,7 +44,7 @@ template <int _Error>
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
 
 [[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
-  const int __error,
+  int __error,
   const char* __msg,
   const char* __api                         = nullptr,
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
@@ -52,9 +52,9 @@ template <int _Error>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CTK()
-using __cuda_error_t = ::cudaError_t;
+using __cuda_error_t _CCCL_NODEBUG = ::cudaError_t;
 #else
-using __cuda_error_t = int;
+using __cuda_error_t _CCCL_NODEBUG = int;
 #endif
 
 #if _CCCL_HOSTED()

@@ -26,6 +26,8 @@ struct stream_registry_factory_t;
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceTopK::MaxKeys, device_topk_max_keys);
+
 // %PARAM% TEST_LAUNCH lid 0:2
 
 #include "cub_test_macros.h"
@@ -48,6 +50,18 @@ struct topk_tuning
     -> cub::detail::topk::topk_policy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS, 8};
+  }
+};
+
+template <unsigned int ThreadsPerBlock>
+struct topk_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(cuda::compute_capability /*cc*/, cub::detail::topk::topk_policy policy) const
+    -> cub::detail::topk::topk_policy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
   }
 };
 
@@ -82,6 +96,33 @@ CUB_TEST("DeviceTopK::MaxKeys can be tuned", "[topk][device]", CUB_SMALL, block_
       /* elements */ 1024,
       d_keys_out.size(),
       env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+template <typename Env>
+void max_keys_observing_block_size(Env env, c2h::device_vector<unsigned int>& d_block_size)
+{
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  c2h::device_vector<int> d_keys_out(3, thrust::no_init);
+
+  device_topk_max_keys(input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env);
+}
+
+CUB_TEST("DeviceTopK::MaxKeys tuning can be modified", "[topk][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<unsigned int> d_block_size{0};
+
+  // the default tuning must not already use the target block size, otherwise the test passes vacuously
+  {
+    max_keys_observing_block_size(stdexec::env{topk_requirements()}, d_block_size);
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  max_keys_observing_block_size(
+    stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning_transform<target_block_size>{})}, d_block_size);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -128,7 +128,6 @@ public:
   _CCCL_API friend constexpr void swap(unexpected& __lhs, unexpected& __rhs) noexcept(is_nothrow_swappable_v<_Err2>)
   {
     __lhs.swap(__rhs);
-    return;
   }
 
   // [expected.un.eq]

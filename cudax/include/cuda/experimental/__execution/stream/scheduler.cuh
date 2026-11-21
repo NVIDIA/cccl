@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,10 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__utility/immovable.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
@@ -33,6 +36,8 @@
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
+
+#include <nv/target>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

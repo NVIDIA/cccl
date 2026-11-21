@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,7 +43,7 @@ template <class _Tp>
 struct __type_to_vector;
 
 template <class _Tp>
-using __type_to_vector_t = typename __type_to_vector<_Tp>::__type;
+using __type_to_vector_t _CCCL_NODEBUG = typename __type_to_vector<_Tp>::__type;
 
 template <class _Tp, class = void>
 inline constexpr bool __has_vector_type_v = false;

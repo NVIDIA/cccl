@@ -128,7 +128,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(const int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
     // CCCLRT_REQUIRE(*pi == N);

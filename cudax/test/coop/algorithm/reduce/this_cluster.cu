@@ -12,7 +12,10 @@
 #include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/algorithm>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 

@@ -50,7 +50,7 @@ struct estimate_pi
       const float y = u01(rng);
 
       // measure distance from the origin
-      const float dist = sqrtf(x * x + y * y);
+      const float dist = sqrtf((x * x) + (y * y));
 
       // add 1.0f if (u0,u1) is inside the quarter circle
       if (dist <= 1.0f)

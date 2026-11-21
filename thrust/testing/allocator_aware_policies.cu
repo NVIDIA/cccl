@@ -39,7 +39,7 @@ struct policy_info
   template <template <typename, template <typename> class> class Template, typename Argument>
   struct apply_base_second
   {
-    using type = Template<Argument, CRTPBase>;
+    using type _CCCL_NODEBUG = Template<Argument, CRTPBase>;
   };
 };
 

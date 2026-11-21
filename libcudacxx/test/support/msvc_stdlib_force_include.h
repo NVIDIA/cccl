@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <vcruntime.h>
 
-#if defined(_CUDA_STD_VERSION)
+#ifdef _CUDA_STD_VERSION
 #  error This header may not be used when targeting libc++
 #endif
 
@@ -45,7 +45,7 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 #endif // _LIBCXX_IN_DEVCRT
 
 // MSVC frontend only configurations
-#if !defined(__clang__)
+#ifndef __clang__
 // Simulate feature-test macros.
 #  define _CCCL_HAS_FEATURE(X)                _MSVC_HAS_FEATURE_##X
 #  define _MSVC_HAS_FEATURE_cxx_exceptions    1

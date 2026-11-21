@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
@@ -41,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 struct __atomic_storage
 {
-  using __underlying_t                = _Tp;
+  using __underlying_t _CCCL_NODEBUG  = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if _CCCL_COMPILER(GCC, <, 10) // older gcc fails to handle volatile in is_trivially_copyable
@@ -62,19 +63,19 @@ struct __atomic_storage
 
   _CCCL_HOST_DEVICE_API auto get() noexcept -> __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() const noexcept -> const __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() volatile noexcept -> volatile __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() const volatile noexcept -> const volatile __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
 };
 

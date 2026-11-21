@@ -12,7 +12,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,6 +25,8 @@
  * @brief View type identifying a locality domain of a CUDA device, and the
  * SM split methods available when building an execution place for one
  */
+
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
