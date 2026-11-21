@@ -5,22 +5,22 @@
 Tile for Python
 ===============
 
-``cuda.coop.tile`` provides cooperative primitives inside cuTile Python kernels.
-Start with :doc:`installation`, then use the :doc:`programming` to compile,
-launch, and check a complete kernel. See :doc:`/tile/programming_model`
-for the shared logical Tile model and :doc:`api` for operation contracts.
+Use ``cuda.coop.tile`` inside a cuTile Python kernel. Here each block loads
+256 counts and turns them into starting offsets with an exclusive sum.
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop_tile/examples/block_scan.py
+   :language: python
+   :start-at: import cuda.tile as ct
+   :end-before: def launch_block_exclusive_sum
 
-   values = ct.load(input_array, index=(ct.bid(0),), shape=(256,))
-   prefixes = coop.exclusive_sum(values)
-   ct.store(output_array, index=(ct.bid(0),), tile=prefixes)
-
-Here ``ct`` names ``cuda.tile`` and ``coop`` names ``cuda.coop.tile``.
+The :doc:`programming` runs this kernel on two blocks and checks where each
+prefix starts. See :doc:`installation` for the compiler and Python packages,
+or use the :doc:`api` to look up a primitive by the result you need.
 
 .. toctree::
    :maxdepth: 2
 
-   installation
    programming
+   installation
    api
+   advanced

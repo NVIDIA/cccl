@@ -11,6 +11,12 @@ Scan computes a prefix at each position. An exclusive prefix omits the current
 input; an inclusive prefix includes it. For ``[2, 1, 3, 2]``, addition produces
 ``[0, 2, 3, 6]`` exclusively and ``[2, 3, 6, 8]`` inclusively.
 
+.. figure:: /tile/visualizations/scan.svg
+   :alt: Exclusive and inclusive prefixes with seed values and different operations.
+
+   The inclusive sum includes the value under the current position. The
+   exclusive sum stops one position earlier.
+
 Interface and examples
 ----------------------
 
@@ -93,18 +99,10 @@ starting offset of that count in a packed sequence.
    expected = counts.cumsum(0, dtype=torch.int32) - counts
    assert torch.equal(offsets, expected)
 
-
 Behavior
 --------
-
 
 With a prefix of 10, the exclusive example becomes ``[10, 12, 13, 16]`` and the
 inclusive example becomes ``[12, 13, 16, 18]``. For multiplication, use an
 exclusive seed of 1 to obtain the usual product prefix. Choose seeds in the
 input dtype; the provider does not widen accumulation.
-
-.. figure:: /tile/visualizations/scan.svg
-   :alt: Exclusive and inclusive prefixes with seed values and different operations.
-
-   Prefix boundaries, seeds, multiplication, and maximum for the same input.
-   This small array illustrates the operation; it is not a supported launch shape.

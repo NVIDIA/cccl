@@ -1669,8 +1669,9 @@ def radix_rank_keys(
         Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``
         (the default).
     smem_config : str or int
-        Compile-time shared-memory bank width: ``"four_byte"`` or ``4``
-        (default), or ``"eight_byte"`` or ``8``.
+        Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
+        configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
+        ``"default"`` (four-byte banks).
     methods : collections.abc.Mapping or tuple
         Must be omitted or empty.
 

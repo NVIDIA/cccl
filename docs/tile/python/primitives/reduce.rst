@@ -10,7 +10,13 @@ Reduction
 Reduction combines values along selected Tile axes. Python ``sum`` and
 ``reduce`` return one aggregate for each combination of retained indices.
 For example, summing an ``(8, 128)`` Tile along axis one returns eight sums.
-Both operations use CUB and reduce within a tile, not across a launch.
+Each logical block computes its own aggregates.
+
+.. figure:: /tile/visualizations/reduce.svg
+   :alt: Broadcast reduction repeats the aggregate across the output Tile.
+
+   The four inputs add to 8. Python returns one aggregate by default and
+   repeats it at all four positions with ``broadcast=True``.
 
 .. py:function:: sum(value, /, axis=None, keepdims=False, *, algorithm=None, methods=None, broadcast=False)
    :no-contents-entry:
@@ -23,8 +29,12 @@ Both operations use CUB and reduce within a tile, not across a launch.
    Reduce ``value`` along the selected axes using ``binary_op``.
 
 ``value``
-   A supported numeric Tile. Accumulation and output keep the input dtype;
-   addition of boolean values promotes to ``int32``.
+   A supported tile of numeric or, for addition, boolean values. For a valid
+   cuTile shape, each aggregate must combine 1, 2, 4, 8, 16, or a positive
+   multiple of 32 elements. Count the product of the reduced-axis extents.
+   For example, reducing an ``(8, 128)`` tile over axis 0 combines eight
+   elements per result. Accumulation and output keep the input dtype,
+   except that boolean addition promotes to ``int32``.
 ``axis``
    ``None`` reduces all elements. A compile-time integer selects one axis;
    a tuple selects several axes. Negative indices count from the last axis.
@@ -57,7 +67,7 @@ For an already loaded ``matrix`` of shape ``(8, 128)`` and ``values`` of shape
    import cuda.coop.tile as coop
 
    rows = coop.sum(matrix, axis=1)                 # (8,)
-   gradient = coop.sum(matrix, axis=-1, keepdims=True)  # (8, 1)
+   row_totals = coop.sum(matrix, axis=-1, keepdims=True)  # (8, 1)
    total = coop.sum(values)                        # ()
    total_1d = coop.sum(values, keepdims=True)       # (1,)
    repeated = coop.sum(values, broadcast=True)     # (128,)
@@ -94,7 +104,6 @@ example checks all 256 output positions against an independent reference:
    ct.launch(torch.cuda.current_stream(), (1, 1, 1), shift_kernel, (source, destination))
    assert torch.equal(destination, source - source.min())
 
-
 Numerical behavior and native Tile comparison
 ---------------------------------------------
 
@@ -105,9 +114,8 @@ flush-to-zero controls. Floating-point accumulation keeps the input type,
 including ``float16`` and ``bfloat16``. It does not widen to improve accuracy.
 Integer overflow is not detected.
 
-Native and cooperative results can both feed subsequent Tile expressions:
-
-For an already loaded one-dimensional ``values`` Tile:
+A kernel can use both native and cooperative results in an expression. With a
+loaded one-dimensional ``values`` tile:
 
 .. code-block:: python
 
@@ -118,7 +126,6 @@ For an already loaded one-dimensional ``values`` Tile:
    total_1d = ct.sum(values, keepdims=True)  # shape (1,)
    repeated = coop.sum(values, broadcast=True)  # input shape
    shifted = values - ct.max(values)
-
 
 Floating-point sums and products can differ from native Tile or a serial CPU
 reference because the reduction order differs. Compare values with tolerances
@@ -135,9 +142,3 @@ lanes do not supply artificial minimum or maximum values.
 Benchmark the complete consumer kernel when choosing between cooperative and
 native reductions; neither promises to be faster for every shape or worker
 count. See the :ref:`native-versus-cooperative FAQ <coop-tile-native-or-cooperative>`.
-
-.. figure:: /tile/visualizations/reduce.svg
-   :alt: Broadcast reduction repeats the aggregate across the output Tile.
-
-   Python ``broadcast=True`` and C++ calls without an axis repeat the aggregate across
-   the input extent. Python's default result contains only the aggregates.

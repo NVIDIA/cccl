@@ -11,11 +11,16 @@ values alone or decoded values followed by relative offsets within each run.
 The output capacity is a compile-time choice independent of the number of runs.
 Both extents must be powers of two, at least 32, and admit a common worker count.
 
+For run values ``[7, 4, 9]`` and lengths ``[3, 1, 2]``, the expanded sequence is
+``[7, 7, 7, 4, 9, 9]``. The first six outputs of a window starting at offset 2 are:
+
+.. code-block:: text
+
+   decoded values:    [7, 4, 9, 9, 0, 0]
+   relative offsets:  [2, 0, 0, 1, MAX, MAX]
+
 Interface and examples
 ----------------------
-
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
 
 .. rubric:: Calls and return types
 
@@ -91,23 +96,13 @@ this kernel with the Tile provider.
      offsets_view.store(relative, 0);
    }
 
-For a concrete host input, put ``7, 4, 9`` in the first three value slots and
-``3, 1, 2`` in the corresponding length slots; fill the other 125 lengths
-with zero. With ``offset = 2``, the first six output positions match the
-window below, and the remaining 250 positions are padded. This input uses the
-kernel's actual 128-run and 256-output shapes.
-
+To run the example above, put ``7, 4, 9`` in the first three value slots
+and ``3, 1, 2`` in their length slots. Fill the remaining 125 lengths with
+zero and pass ``offset = 2``. The 256-element output starts with the six
+values shown above and has 250 more positions of padding.
 
 Window boundaries and padding
 -----------------------------
-
-For run values ``[7, 4, 9]`` and lengths ``[3, 1, 2]``, the expanded sequence is
-``[7, 7, 7, 4, 9, 9]``. A window starting at offset 2 with capacity 6 returns:
-
-.. code-block:: text
-
-   decoded values:    [7, 4, 9, 9, 0, 0]
-   relative offsets:  [2, 0, 0, 1, MAX, MAX]
 
 ``MAX`` is the maximum value of the unsigned length type. It marks output
 positions beyond the expanded sequence. The corresponding value is zero.
@@ -132,3 +127,5 @@ result. Python shapes are compile-time powers of two; both extents must admit
 a common provider worker count. ``uint32`` and ``uint64`` lengths are supported.
 All-zero lengths produce a fully padded window. Interior zero runs violate the
 underlying CUB contract.
+
+:ref:`Run-length decode declarations and overloads <tile-cpp-run-length-decode-declarations>`.

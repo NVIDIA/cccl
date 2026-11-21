@@ -11,6 +11,12 @@ Adjacent difference subtracts neighboring values. Discontinuity marks the
 start or end of each run of equal values. A run boundary is local to the input
 Tile, even when an adjacent Tile contains the same value.
 
+.. figure:: /tile/visualizations/adjacent-discontinuity.svg
+   :alt: Neighbor subtraction, head and tail masks, and composed run IDs.
+
+   At the start of each run the head flag is one. Its inclusive sum gives
+   every position in that run the same one-based run number.
+
 Interface and examples
 ----------------------
 
@@ -69,10 +75,8 @@ An inclusive sum of the head mask gives one-based run IDs. This example has
    ct.launch(torch.cuda.current_stream(), (1, 1, 1), run_ids_kernel, (source, destination))
    assert torch.equal(destination, source + 1)
 
-
 Behavior
 --------
-
 
 Subtraction and inequality are fixed operations. These functions do not accept
 custom operators, predecessor values, or successor values. Signed and unsigned
@@ -91,8 +95,3 @@ For input ``[2, 2, 5, 5, 5, 1, 1, 4]``:
 
 The preserved end values in adjacent difference differ from padding a missing
 neighbor with the same value, which would produce zero at that boundary.
-
-.. figure:: /tile/visualizations/adjacent-discontinuity.svg
-   :alt: Neighbor subtraction, head and tail masks, and composed run IDs.
-
-   Neighbor subtraction, head and tail masks, and composed run IDs.

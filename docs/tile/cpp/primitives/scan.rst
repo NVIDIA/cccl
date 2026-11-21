@@ -12,15 +12,23 @@ input; an inclusive prefix includes it. For ``[2, 1, 3, 2]``, addition produces
 Interface and examples
 ----------------------
 
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
+For an integer Tile named ``input``, these calls compute an exclusive sum,
+a product with initial value one, a running maximum, and an inclusive sum.
+
+.. code-block:: cpp
+
+   namespace coop = cuda::coop::tile;
+   auto offsets = coop::exclusive_sum(input);
+   auto products = coop::exclusive_scan(input, cuda::std::multiplies<>{}, 1);
+   auto maxima = coop::inclusive_scan(input, cuda::maximum<>{});
+   auto inclusive = coop::scan<coop::scan_mode::inclusive>(input);
 
 The input and result are ``cuda::tiles::tile<T, cuda::tiles::shape<N>>``
 with the same numeric element type and extent ``N``, which must be a positive
 multiple of 32. Accumulation stays in ``T``. Bitwise operations require an
 integer type. Exclusive addition defaults to a zero seed; other exclusive
 operations require a seed appropriate to the
-operation. Physical participation is selected for the logical extent.
+operation.
 
 ``exclusive_sum``, ``inclusive_sum``, ``exclusive_scan``, and ``inclusive_scan``
 accept an optional ``scan_policy<Algorithm>``. Its default algorithm is
@@ -40,20 +48,9 @@ initial value or an inclusive prefix according to ``Mode``; omitting the
 operation selects addition. For the supported commutative operations, the
 exclusive initial-value form computes the same mathematical prefix as
 Python's ``prefix_value``. Floating-point association can differ.
-For an already loaded ``input`` Tile:
-
-.. code-block:: cpp
-
-   namespace coop = cuda::coop::tile;
-   auto offsets = coop::exclusive_sum(input);
-   auto products = coop::exclusive_scan(input, cuda::std::multiplies<>{}, 1);
-   auto maxima = coop::inclusive_scan(input, cuda::maximum<>{});
-   auto inclusive = coop::scan<coop::scan_mode::inclusive>(input);
-
 
 Behavior
 --------
-
 
 With a prefix of 10, the exclusive example becomes ``[10, 12, 13, 16]`` and the
 inclusive example becomes ``[12, 13, 16, 18]``. For multiplication, use an
@@ -65,3 +62,5 @@ input dtype; the provider does not widen accumulation.
 
    Prefix boundaries, seeds, multiplication, and maximum for the same input.
    This small array illustrates the operation; it is not a supported launch shape.
+
+:ref:`Scan declarations and overloads <tile-cpp-scan-declarations>`.

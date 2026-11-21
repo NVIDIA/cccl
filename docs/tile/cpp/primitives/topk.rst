@@ -7,29 +7,13 @@ TopK selection
 
 TopK selects the largest or smallest ``k`` keys from a Tile, optionally carrying
 payloads. The result has the original capacity, and only its first
-``min(k, valid_items)`` positions are defined. Selected keys are not guaranteed
-to be sorted.
+``min(k, valid_items)`` positions are defined. The order within the selected prefix is unspecified.
 
 Interface and examples
 ----------------------
 
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
-
-Keys and optional payloads are numeric Tiles with matching positive extent
-``N``; their element types may differ. The results retain capacity ``N`` and
-the respective input types. Require ``0 <= k <= N`` and
-``0 <= valid_items <= N``; omitting ``valid_items`` selects the whole input. Keys and payloads beyond that input
-prefix are excluded. Bit bounds default to the whole key and must satisfy
-``0 <= begin_bit < end_bit <= key_bits``. They select the radix ordering
-representation described in :doc:`/tile/cpp/primitives/radix_sort_rank`. Physical participation
-is selected for the logical extent.
-
-The four functions have the same names in ``cuda::coop::tile``. They take
-``k`` after the data arguments and optionally ``valid_items``, bit bounds, and a
-final empty ``topk_policy<>``. The numerical controls are
-integer scalars; shape-one Tile controls are unsupported. Pair results use a
-structured binding, with keys first and values second.
+The first call selects the 16 smallest keys. The second selects the 16
+largest of the first 193 keys and moves the corresponding values with them.
 
 .. code-block:: cpp
 
@@ -39,10 +23,22 @@ structured binding, with keys first and values second.
      keys, values, 16, 193, 0, 32);
    // Only positions [0, 16) of each result are defined.
 
+Keys and optional payloads are numeric Tiles with matching positive extent
+``N``; their element types may differ. The results retain capacity ``N`` and
+the respective input types. Require ``0 <= k <= N`` and
+``0 <= valid_items <= N``; omitting ``valid_items`` selects the whole input. Keys and payloads beyond that input
+prefix are excluded. Bit bounds default to the whole key and must satisfy
+``0 <= begin_bit < end_bit <= key_bits``. They select the radix ordering
+representation described in :doc:`/tile/cpp/primitives/radix_sort_rank`.
+
+The four functions have the same names in ``cuda::coop::tile``. They take
+``k`` after the data arguments and optionally ``valid_items``, bit bounds, and a
+final empty ``topk_policy<>``. The numerical controls are
+integer scalars; shape-one Tile controls are unsupported. Pair results use a
+structured binding, with keys first and values second.
 
 Behavior
 --------
-
 
 Only the first ``min(k, valid_items)`` output slots may be consumed. The remaining
 slots are unspecified; they are not zero padding. Pair association is
@@ -60,3 +56,5 @@ Use full-width bounds for ordinary numeric TopK.
    :alt: Maximum and minimum selection define only a leading prefix of the output.
 
    Maximum and minimum selection define only a leading prefix of the output.
+
+:ref:`Top-k declarations and overloads <tile-cpp-topk-declarations>`.

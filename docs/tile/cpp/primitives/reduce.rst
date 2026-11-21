@@ -9,6 +9,16 @@ Reduction combines values within a Tile using CUB. Axis overloads produce
 one aggregate for each combination of retained indices; overloads without
 an axis repeat the aggregate across a one-dimensional Tile.
 
+A one-dimensional reduction can feed a Tile expression directly. Here every
+element subtracts the same minimum.
+
+.. code-block:: cpp
+
+   namespace coop = cuda::coop::tile;
+   auto total = coop::sum(input);
+   auto minimum = coop::reduce(input, cuda::minimum<>{});
+   auto shifted = input - minimum;
+
 ``sum<Axis>(input, policy)`` and ``reduce<Axis>(input, operation, policy)``
 reduce one compile-time axis of a multidimensional Tile. They preserve
 its rank, replacing the reduced extent with one, as native C++ Tile does.
@@ -28,19 +38,11 @@ For valid C++ Tile shapes, the number of elements reduced per result must
 be 1, 2, 4, 8, 16 or a positive multiple of 32. This is ``N`` for calls
 without an axis, or the reduced-axis extent for axis overloads.
 
-.. code-block:: cpp
-
-   namespace coop = cuda::coop::tile;
-   auto total = coop::sum(input);
-   auto minimum = coop::reduce(input, cuda::minimum<>{});
-   auto shifted = input - minimum;
-
 ``reduce_policy<Algorithm>`` defaults to ``reduce_algorithm::warp_reductions``;
 ``raking`` and ``raking_commutative_only`` are also supported. See the
 :doc:`C++ API reference </tile/cpp/api>` for overloads. Both forms use the
 batched provider and support a 128-element input with four, eight, or
 sixteen kernel worker warps.
-
 
 Numerical behavior and native Tile comparison
 ---------------------------------------------
@@ -64,7 +66,6 @@ Native and cooperative results can both feed subsequent Tile expressions:
 The native calls retain axis zero with extent one, returning shape
 ``ct::shape<1>``. The cooperative sum repeats the total across the input.
 
-
 Floating-point sums and products can differ from native Tile or a serial CPU
 reference because the reduction order differs. Compare values with tolerances
 suited to the dtype and input range. Sums propagate NaN and combine positive
@@ -86,3 +87,5 @@ count. See the :ref:`native-versus-cooperative FAQ <coop-tile-native-or-cooperat
 
    Python ``broadcast=True`` and C++ calls without an axis repeat the aggregate across
    the input extent. Python's default result contains only the aggregates.
+
+:ref:`Reduction declarations and overloads <tile-cpp-reduce-declarations>`.

@@ -5,197 +5,173 @@
 Programming model
 =================
 
-A Tile value describes elements, their dtype, and a compile-time shape.
-An exclusive sum consumes that value and returns its prefix sums. Applications express the operation on the logical elements.
-The compiler selects a SIMT implementation and supplies its temporary
-shared memory.
+A cooperative call takes a Tile with a known element type and shape and
+returns a new Tile or a pair of Tiles. To write a kernel, choose which
+partition each block loads, what the call computes within that partition,
+and which result positions to store.
 
-Logical blocks and physical threads
------------------------------------
-
-.. rubric:: Python
-
-The grid in ``ct.launch(stream, grid, kernel, args)`` counts logical
-blocks. ``ct.bid(0)`` selects the current block's partition.
-``@ct.kernel(num_worker_warps=8)`` requests eight physical worker
-warps for each logical block.
-
-
-.. rubric:: C++
-
-``kernel<<<logical_blocks, 1>>>(...)`` uses ``1`` as the Tile launch
-sentinel. ``ct::bid().x`` identifies the logical block.
-The kernel attribute
-``[[cutile::hint(0, num_worker_warps_per_cta=8)]]`` requests eight
-physical worker warps for the whole kernel. Ordinary primitive
-calls keep their logical shapes and operations unchanged.
-
-
-The compiler determines the physical CUDA threads that execute each block.
-
-A 256-element tile can therefore use several values per physical thread.
-Its extent does not specify a launch block size. The linkage provider
-advertises candidate implementations with concrete thread counts, layouts,
-resource requirements, and preference scores. Discovery does not know the
-final worker count of the enclosing kernel. The compiler selects from these
-candidates, and the provider validates the resolved worker count before
-compiling the selected implementation.
-
-With TileIR 13.5, cuTile Python accepts 1, 2, 4, 8, 16, or 32 worker warps.
-All foreign calls in the same kernel must admit a compatible
-physical execution. See the :doc:`programming guide </tile/python/programming>` for
-explicit worker settings.
-Ordinary calls do not expose ``BlockThreads`` or ``ItemsPerThread``.
-A kernel worker hint controls the CTA's workers. A collective may use a
-subset; the provider derives each call's items per thread from its logical
-extent and participating workers.
-Exchange retains an explicit width because that width changes its result.
+.. _tile-array-partitions:
 
 Shapes and array partitions
 ---------------------------
 
-Python reductions select dimensions with ``axis``; C++ reductions use an
-``Axis`` template argument. Both accept multidimensional tiles. Other
-cooperative operations accept one-dimensional tiles; extract
-or reshape the intended row before passing it to those primitives. Keys and
-values in a pair operation must have compatible extents. Their dtypes may
-differ where the operation supports both types.
+The :doc:`Python scan example </tile/python/programming>` partitions an array
+of 512 counts into two tiles of 256. The load and store take a *tile
+coordinate*. In C++, a partition view uses the same convention.
 
-Load/store coordinates belong to the Tile language:
+.. list-table:: Two blocks scanning one array
+   :header-rows: 1
 
-.. rubric:: Python
+   * - Logical block
+     - Array positions
+     - Exclusive sum at the start of the partition
+   * - 0
+     - 0 through 255
+     - ``output[0] = 0``, ``output[1] = input[0]``
+   * - 1
+     - 256 through 511
+     - ``output[256] = 0``, ``output[257] = input[256]``
 
-``ct.load(array, index=(block,), shape=(256,))`` selects the block's
-256-element partition. Block 1 starts at element 256. Multiplying the
-block index by 256 again would skip partitions. The
-:doc:`programming guide </tile/python/programming>` checks two distinct partitions.
+Block 1 passes coordinate ``1`` to the load. The load accounts for the
+256-element partition width. A scan over the entire array would also need
+the sum of the preceding partitions. Each cooperative call sees only the
+values its block supplies.
 
+Logical blocks and physical threads
+-----------------------------------
 
-.. rubric:: C++
+In Python the grid passed to ``ct.launch`` counts logical blocks, and
+``ct.bid(0)`` selects a partition. In C++, launch with
+``kernel<<<logical_blocks, 1>>>(...)`` and select the partition with
+``ct::bid().x``. The trailing ``1`` is the C++ Tile launch sentinel.
 
-A ``ct::partition_view`` over a tensor span with shape ``ct::shape<256>``
-selects 256-element partitions. Calling ``view.load(ct::bid().x)`` loads
-the current logical block's partition; the view's store uses the same
-partition coordinate.
-
-
-Shape is a compile-time property. A runtime TopK ``k`` or a partial-sort
-``valid_items`` changes which results are meaningful, but does not resize
-the returned Tile value.
+The compiler assigns the logical values to physical workers. For example,
+a 256-element tile can put several elements in each thread. A kernel worker
+hint constrains this choice for all calls in the kernel. A collective can
+use a subset of the kernel's workers. See :doc:`the advanced Python guide
+</tile/python/advanced>` for an example where the worker count matters.
 
 Inputs and results
 ------------------
 
-.. list-table:: Result shapes
+A scan produces one prefix per input position. A reduction can produce
+many fewer values. For a one-dimensional input of 128 values, choose a
+result shape that fits the next operation:
+
+.. list-table::
    :header-rows: 1
-   :widths: 35 65
 
-   * - Primitive
-     - Result
-   * - Scan, Exchange, Shuffle, Adjacent Difference, keys-only sorting
-     - A tile with the input extent and element dtype.
-   * - Sum and Reduce
-     - Python removes reduced axes by default; ``keepdims=True`` retains
-       them with extent one. C++ ``sum<Axis>`` and ``reduce<Axis>`` retain the
-       reduced dimension with extent one. Python ``broadcast=True`` and C++
-       calls without an axis repeat each aggregate across the input shape.
-       Python addition promotes boolean inputs to ``int32``; C++ boolean
-       inputs are unsupported. Other supported input dtypes are preserved.
-   * - Pair sorting and pair TopK
-     - Two tiles preserving key/value association.
-   * - Histogram
-     - An integer counter tile with one element per requested bin.
-   * - Discontinuity
-     - Integer flag tiles; the combined operation returns both head and
-       tail flags.
-   * - TopK
-     - Tiles with the input capacity. Only the first ``min(k, valid_items)``
-       positions contain selected results; selection does not promise sorted output.
-   * - Run Length Decode
-     - A tile with the requested decoded extent, optionally paired with
-       relative offsets. Run-input extent and decoded extent are independent.
+   * - Result
+     - Python
+     - C++
+   * - One aggregate
+     - ``coop.sum(x)`` has shape ``()``. Pass ``keepdims=True`` for shape ``(1,)``.
+     - ``coop::sum<0>(x)`` retains axis zero with extent one.
+   * - A tile of 128 copies of the aggregate
+     - ``coop.sum(x, broadcast=True)``
+     - ``coop::sum(x)``
 
-Each logical block processes its own input tile. A two-block launch performs
-two independent scans or reductions. Similarly, sorting each block does not
-sort the entire array. Compose a separate cross-block algorithm when the
-result must cover the whole launch.
+.. figure:: visualizations/reduction-shapes.svg
+   :width: 456px
+   :alt: Two rows sum to 10 and 26. The result can be a vector of two sums, a two-row column, or a matrix repeating each sum across its row.
 
-Read the :doc:`API reference </tile/python/api>` for dtype restrictions and boundary
-results. In particular, Shuffle endpoints, partial-tile controls, and decoded
-positions beyond the expanded runs each have operation-specific contracts.
+   In Python, ``coop.sum(matrix, axis=1)`` gives the vector. Pass
+   ``keepdims=True`` for the column, or ``broadcast=True`` for the matrix.
+   C++'s ``coop::sum<1>(matrix)`` gives the column.
+
+To subtract each row's sum from its inputs, retain the reduced axis so
+the column lines up with the rows during subtraction. The reduction
+references cover accepted axes, dtype promotion, and floating-point
+behavior in :doc:`Python </tile/python/primitives/reduce>` and
+:doc:`C++ </tile/cpp/primitives/reduce>`.
+
+Other operations take one-dimensional inputs. Pair sorting returns keys and
+payloads in corresponding positions. Histogram returns one counter per bin.
+Run Length Decode returns the requested number of decoded positions. Its
+input run count and output capacity can differ. The
+:doc:`data-flow diagrams </tile/visualizations/index>` illustrate each result.
 
 Compile-time choices and runtime controls
 -----------------------------------------
 
-Dtypes, shapes, algorithm names, and operation names determine compiled
-specializations. Supported numerical controls can be runtime values, such
-as a scan prefix, a sort bit range, or TopK's ``k`` and ``valid_items``.
-
-Use named keyword arguments in Python and the corresponding typed policies
-or overloads in C++. Supported scalar-Tile forms depend on the control:
-Python TopK accepts scalar or rank-zero Tile controls and rejects a
-shape-one Tile. C++ overloads accept the documented shape-one controls.
-Consult the specific signature before replacing a scalar with a Tile value.
-
-Scan and Reduce accept a finite set of built-in operations: addition,
-multiplication, minimum, maximum, and integer bitwise operations. Python
-selects them with an operation name; C++ uses the supported operation
-objects. Arbitrary callbacks and functors are outside these interfaces.
+Shape and dtype are fixed when the kernel compiles. The same TopK kernel
+can take a different ``k`` at each launch. It returns a tile with the input
+capacity, and only the first ``min(k, valid_items)`` positions hold selected
+values. Their order is unspecified. The :doc:`Python
+</tile/python/primitives/topk>` and :doc:`C++ </tile/cpp/primitives/topk>`
+references give the accepted scalar and Tile forms.
 
 Partial tiles
 -------------
 
-Choose padding and valid-prefix controls for the operation being performed.
-Zero padding preserves a sum, but a padded zero still contributes to a
-Histogram bin and can change a minimum or a TopK result. A load mask alone
-does not describe which values a later cooperative call should consume.
+Suppose the last input partition holds 200 samples in a tile of 256.
+Loading 56 zeros into the remaining positions preserves a sum. Passing
+that same tile to Histogram adds 56 counts to bin zero. Where the
+operation accepts ``valid_items``, pass the number of meaningful elements.
 
-The programming guides use complete tiles. Before extending them to a tail, check
-the primitive's valid-prefix interface and initialize every input element it
-will inspect. A caller must also keep writes within its output allocation.
+In Python, pass ``padding_mode=ct.PaddingMode.ZERO`` to ``ct.load`` for
+zero padding. Keep the default bounds checks on ``ct.store`` so it writes
+only the part of the last tile that overlaps the output array. Launch one
+block per nonempty partition. The :ref:`MMA and TopK example
+<tile-python-mma-topk>` combines a padded load with a valid candidate count.
+
+In C++, build the partition view over the actual array extent. For the
+partial partition, ``view.load_masked(index)`` pads out-of-range elements
+with zero by default. ``view.store_masked(result, index)`` writes only
+the positions inside the view.
 
 Exchange topology defines the permutation
 -----------------------------------------
 
-Exchange requires a compile-time ``block_threads`` in Python and an explicit
-``exchange_policy<BlockThreads>`` in C++. For extent ``N``, thread count
-``B`` defines ``I = N / B`` values per thread. The two operations compute:
+Exchange is an operation for which the number of participating threads
+changes the values you get back. Python takes a compile-time
+``block_threads``. C++ takes an ``exchange_policy<BlockThreads>``.
+For a 256-element input ``x``, follow the first few elements as you
+change the width of a striped-to-blocked exchange:
+
+.. tab-set::
+
+   .. tab-item:: 128 threads
+
+      Each thread owns two items. Thread 0 gathers input positions 0 and
+      128. Thread 1 gathers positions 1 and 129. The output starts with
+      ``[x[0], x[128], x[1], x[129]]``.
+
+   .. tab-item:: 256 threads
+
+      Each thread owns one item. Thread 0 takes position 0, thread 1
+      takes position 1, and so on. The output starts with
+      ``[x[0], x[1], x[2], x[3]]``.
+
+In general, for extent ``N`` and thread count ``B``, each thread owns
+``I = N / B`` items. The permutation and its inverse are
 
 .. code-block:: text
 
    striped_to_blocked: y[t * I + i] = x[i * B + t]
    blocked_to_striped: y[i * B + t] = x[t * I + i]
 
-For ``N = 256`` and ``B = 128``, the first operation gives ``y[1] = x[128]``.
-With ``B = 256``, each thread has one value and the permutation is the
-identity. Thread count is therefore part of Exchange's meaning. Use the
-same count for an Exchange and its inverse.
-
-The count must be a multiple of 32 in ``[32, 1024]`` and divide the extent.
-It also constrains the physical execution of other foreign calls in the
-kernel. The compiler cannot substitute a different width while preserving
-the requested permutation.
+Use the same width for the inverse. The :doc:`Python
+</tile/python/primitives/exchange_shuffle>` and
+:doc:`C++ </tile/cpp/primitives/exchange_shuffle>` references give the
+allowed widths and show the element mapping.
 
 Temporary storage and composition
 ---------------------------------
 
-The provider reports scratch requirements for the concrete CUB
-specialization. The compiler allocates the scratch and connects the call
-to the surrounding Tile computation. Application code passes no scratch
-descriptor and inserts no SIMT reuse barrier around the primitive.
-
-Multiple calls can remain in one kernel, including calls with different
-logical extents. Compilation still requires a compatible implementation
-for each call and enough resources for the composition. A kernel that
-works with each call separately needs its own validation after the calls
-are combined. See :doc:`/tile/interop` for compositions involving other libraries.
+A cooperative result can feed another Tile operation in the same kernel.
+The provider reports the scratch required by each CUB specialization.
+The compiler allocates it, and the collective handles its own internal
+synchronization. A composition needs a compatible worker configuration for
+every call and enough resources for the whole kernel. See
+:ref:`the two-stage TopK example <tile-python-mma-topk>` for a composition
+and :doc:`/tile/interop` for provider traces.
 
 .. _tile-radix-capacity:
 
 .. rubric:: Radix scratch capacity
 
-Radix Sort and Rank include scratch storage that grows exponentially with
-``radix_bits`` (``RadixBits`` in C++). Usable configurations depend on the
-physical worker count and target GPU resources. A value within the documented
-policy range can still exceed those resources and fail compilation. Reducing
-the radix capacity reduces this part of the storage requirement.
+Radix Sort and Rank use scratch space that grows exponentially with
+``radix_bits`` (``RadixBits`` in C++). A supported bit count can exceed
+the available memory for a particular worker count or GPU. Reducing the
+bit count reduces this storage requirement.

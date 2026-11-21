@@ -11,6 +11,12 @@ Radix sort orders keys by a selected interval of key bits. Radix rank computes
 where each input item belongs for a single radix digit, without returning a
 reordered key Tile. Pair sorting carries values alongside their keys.
 
+.. figure:: /tile/visualizations/radix-sort-rank.svg
+   :alt: Stable radix sort and per-input digit ranks with corresponding payloads.
+
+   The two input keys equal to 3 keep their relative order. Sorting returns
+   the reordered keys and payloads. Rank records a destination for each input.
+
 Interface and examples
 ----------------------
 
@@ -51,9 +57,9 @@ Interface and examples
 ``inner_scan_algorithm``
    ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"`` (default).
 ``smem_config``
-   ``"four_byte"`` (default) or ``"eight_byte"``. ``"default"`` selects
-   four-byte banks; integer 4/8 and string ``"4"``/``"8"`` are accepted
-   aliases. This is an implementation setting, not an element-type conversion.
+   Sort and rank both accept a compile-time shared-memory bank width.
+   ``None``, ``"default"``, ``"four_byte"``, ``4``, and ``"4"`` select
+   four-byte banks. ``"eight_byte"``, ``8``, and ``"8"`` select eight-byte banks.
 ``methods``
    Accepts the seven option names above: bit bounds, descending order,
    radix bits, memoization, inner scan algorithm, and shared-memory configuration.
@@ -72,8 +78,8 @@ capacity in ``[1, 16]``. ``end_bit`` defaults to
 single-element Tiles, but must satisfy
 ``0 <= begin_bit < end_bit <= key_bits`` and
 ``end_bit - begin_bit <= radix_bits``. ``descending`` is a compile-time boolean
-with a default of ``False``. ``memoize_outer_scan``, ``inner_scan_algorithm``,
-and ``smem_config`` have the same defaults and accepted values as radix sort.
+with a default of ``False``. ``memoize_outer_scan`` and ``inner_scan_algorithm``
+have the same defaults and accepted values as radix sort.
 ``methods`` must be omitted or empty.
 
 See :ref:`Radix scratch capacity <tile-radix-capacity>` for resource limits
@@ -109,10 +115,8 @@ bits correspond directly to their integer digits.
    expected_ranks[permutation] = torch.arange(128, device="cuda", dtype=torch.int32)
    assert torch.equal(ranks, expected_ranks)
 
-
 Behavior
 --------
-
 
 Signed integers and floating-point keys use CUB's radix ordering transform
 before the bit interval is selected. A partial interval therefore refers to
@@ -129,9 +133,3 @@ bit flipped before digit extraction, matching CUB's radix sort ordering.
 An interval containing the sign bit
 therefore places negative keys before nonnegative keys in ascending order.
 Unsigned keys use their original bits.
-
-.. figure:: /tile/visualizations/radix-sort-rank.svg
-   :alt: Stable radix sort and per-input digit ranks with corresponding payloads.
-
-   A rank is associated with an original input position. Sorted output is
-   in selected-digit order and preserves equal-digit input order.

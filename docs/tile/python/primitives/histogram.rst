@@ -10,6 +10,12 @@ Histogram
 Histogram counts each input byte in a bin with the same integer index. A call
 starts its own zeroed histogram and returns counts for that Tile only.
 
+.. figure:: /tile/visualizations/histogram.svg
+   :alt: A 256-sample byte Tile produces 256 counts with 64 occupied bins.
+
+   Four occurrences of each byte from 0 to 63 give a count of four in
+   those bins. Bins 64 through 255 have a count of zero.
+
 Interface and examples
 ----------------------
 
@@ -21,7 +27,7 @@ Interface and examples
 .. py:function:: histogram_256(samples, /, *, methods=None)
    :no-contents-entry:
 
-   Count samples into all 256 possible byte-value bins.
+   Equivalent to ``histogram(samples, bins=256)``.
 
 .. rubric:: Parameters and results
 
@@ -29,14 +35,10 @@ Interface and examples
    A ``uint8`` Tile of shape ``(N,)``. Each sample must satisfy
    ``0 <= sample < bins``. Out-of-range samples are not clamped or ignored.
 ``bins``
-   A compile-time choice of 32, 64, 128, or 256 (default). The result
-   extent must be a power of two. This does not by itself guarantee a
-   supported topology. The
-   selected block width must divide both ``N`` and ``bins``. The native
-   provider uses widths that are multiples of 32, and the compiler must
-   support the selected width. A 128-thread implementation requires 128
-   or 256 bins and an input extent divisible by 128. A 256-thread
-   implementation requires 256 bins and an input extent divisible by 256.
+   The result is an ``int32`` tile of shape ``(bins,)``. Choose 32, 64, 128,
+   or 256 bins (the default) at compile time. The selected worker count must
+   divide both the input extent and the bin count. For example, a 128-worker
+   implementation can produce 128 or 256 bins.
 ``methods``
    Must be omitted or empty. The current API does not expose a histogram
    algorithm selector.
@@ -63,19 +65,9 @@ Each value in ``[0, 63]`` occurs four times; the remaining bins are zero.
    expected = torch.bincount(source.to(torch.int64), minlength=256).to(torch.int32)
    assert torch.equal(counts, expected)
 
-
 Behavior
 --------
 
-
-The result is an ``int32`` Tile of shape ``(bins,)``. Bin ``b`` contains the
-number of input elements equal to ``b``. Counts start at zero for each call;
-there is no accumulation into a preexisting histogram. Their sum equals ``N``
-for valid input. ``histogram_256(samples)`` is equivalent to
-``histogram(samples, bins=256)``.
-
-.. figure:: /tile/visualizations/histogram.svg
-   :alt: A 256-sample byte Tile produces 256 counts with 64 occupied bins.
-
-   The 256 input samples occupy 64 bins. All 256 output bins are present,
-   including zero counts for values that do not occur.
+For valid inputs the bin counts sum to the number of samples. To combine
+histograms from several tiles, add the count tiles explicitly. Any zero
+padding in the input increments bin zero.

@@ -10,95 +10,67 @@ FAQs and troubleshooting
 When should I use ct.x() instead of coop.x()?
 ---------------------------------------------
 
-Choose by the operation's input, result shape, and semantics. Here ``ct``
-names ``cuda.tile`` and ``coop`` names ``cuda.coop.tile``; in C++, the
-corresponding namespaces are ``cuda::tiles`` and ``cuda::coop::tile``.
-Similar names do not guarantee interchangeable calls.
+Choose the result shape and numerical behavior your next operation needs.
+For example, both Python sums return a scalar Tile when reducing all
+elements. Cooperative sum also accepts ``broadcast=True`` to repeat the
+aggregate across the input shape. For a row minimum, retaining the reduced
+axis lets you subtract the minimum from every element in that row.
 
-Python ``ct.sum(values)`` and ``coop.sum(values)`` both return a scalar Tile
-when reducing all elements. Both support integer and tuple axes, negative
-axes, and ``keepdims=True``. Cooperative reductions also offer
-``broadcast=True`` to repeat an aggregate across its input shape. C++
-axis overloads retain the reduced dimension with extent one, while calls
-without an axis repeat the result across a one-dimensional input. See
-:doc:`/tile/python/primitives/reduce` for numerical differences, supported operators, and
-examples of both result forms.
-
-A reduced result can participate in subsequent elementwise expressions
-through normal Tile broadcasting. Retain the reduced axes when needed to
-align the result with its input, for example when subtracting a row minimum.
-
-For other overlaps, compare the full contracts: scan axes, inclusive or
-exclusive mode, initial and prefix values, supported dtypes, histogram
-bin bounds, and treatment of padded or out-of-range inputs. Use the
-cooperative operation when its documented behavior or algorithm controls
-fit the computation. When both choices fit, benchmark the complete
-consumer kernel on the target GPU, distinguishing default settings from
-tuned configurations. Neither namespace promises to be faster for every
-operation or shape.
+The :doc:`Python </tile/python/primitives/reduce>` and
+:doc:`C++ </tile/cpp/primitives/reduce>` references compare cooperative
+and native reductions, including precision and NaN handling.
+When either operation meets those requirements, time the complete
+kernel on the target GPU.
 
 Why does import succeed but the first primitive fails?
 ------------------------------------------------------
 
-The Tile package loads its Python compiler integration lazily. Importing
-``cuda.coop.tile`` or locating C++ build inputs does not prove that the
-Python Tile compiler is available. Accessing a primitive needs the matching
-``cuda-tile`` and ``cuda-tile-preview`` interfaces; compiling it also needs
-the compatible TileLib and compiler toolchain.
-
-Use the package/path check in :doc:`/tile/python/installation`, then run the first
-kernel in the :doc:`programming guide </tile/python/programming>`. Check for an
-editable installation or ``PYTHONPATH`` that selects a different checkout.
+Importing ``cuda.coop.tile`` loads the host helpers. Accessing a primitive
+loads the cuTile integration. Compiling the kernel also requires the
+matching frontend packages, compiler, and TileLib. Check the package paths
+in :doc:`/tile/python/installation`, then run the :doc:`first Python kernel
+</tile/python/programming>` in that environment.
 
 Which compiler and frontend packages do I need?
 -----------------------------------------------
 
-Use CUDA 13.5 and compatible ``cuda-tile`` and ``cuda-tile-preview`` packages
-with the foreign-call interface. Building the provider also requires the
-separately supplied interoperation SDK. See the :doc:`Python installation
-guide </tile/python/installation>` and :doc:`native build
-</tile/cpp/installation>` for the required inputs.
+Use CUDA 13.5. Python needs the matching ``cuda-tile`` and
+``cuda-tile-preview`` versions in :doc:`/tile/python/installation`.
+Building the native provider also requires the separate Tile/SIMT SDK
+inputs listed in :doc:`/tile/cpp/installation`.
 
 Does a 256-element tile need 256 physical threads?
 --------------------------------------------------
 
-The compiler chooses physical threads and the values handled by each
-thread. The 256-element extent describes the logical input. Explicit
-kernel worker hints constrain implementation selection; ordinary operation
-policies do not expose thread counts or items per thread. Exchange retains
-its width because it defines a permutation.
-
-In C++, the trailing ``1`` in ``kernel<<<logical_blocks, 1>>>(...)`` is
-the Tile launch sentinel. It does not request one physical CUDA thread.
-See :doc:`/tile/programming_model` for both launch forms.
+A worker can process several elements. The extent counts logical values.
+The compiler selects workers for the kernel, taking any explicit worker
+hint into account. The :doc:`programming model </tile/programming_model>`
+shows how the grid and partition coordinates fit together.
 
 Does Histogram keep counts between calls?
 -----------------------------------------
 
-Each call computes counts for its input tile. Accumulate returned counter
-tiles explicitly when combining several batches. Padded input values
-still count as samples. The :doc:`Histogram reference
-</tile/python/primitives/histogram>` describes the supported input dtype and bin bounds.
+Each call returns counts for one input tile. Add the counter tiles to
+combine batches. Padding contributes samples too. See the
+:doc:`Histogram example </tile/python/primitives/histogram>`.
 
 Why do Exchange calls require ``block_threads``?
 ------------------------------------------------
 
-The thread count determines the index permutation. For 256 values,
-striped-to-blocked with 128 threads maps output position 1 to input
-position 128; with 256 threads it is the identity. Use the same count for
-an Exchange and its inverse. This explicit count also constrains other
-foreign calls in the kernel. See :doc:`/tile/programming_model` for the formulas.
+Changing the width changes which element lands at each position.
+For 256 values and 128 threads, striped-to-blocked sends input 128 to
+output 1. With 256 threads, input 1 stays at output 1.
+See :doc:`the permutation and its inverse </tile/programming_model>`.
 
 Does TopK return sorted results or resize the output?
 -----------------------------------------------------
 
-TopK defines the first ``min(k, valid_items)`` positions as its selected
-candidates without promising their order. Its returned tiles retain the input capacity.
-Consume only the selected prefix. If the application needs ordered
-candidates, sort that prefix using a supported tile extent and the sort's
-valid-prefix or padding contract. Do not include the undefined output
-tail as candidate data. Pair operations preserve each key's associated
-value.
+The result keeps its input capacity. Read the first
+``min(k, valid_items)`` positions and treat them as an unordered selection.
+If the consumer needs ordered values, sort only that prefix or use a
+sort with a suitable padding key. See the
+:doc:`Python </tile/python/primitives/topk>` and
+:doc:`C++ </tile/cpp/primitives/topk>` references.
 
 Why does Python TopK reject a one-element Tile control?
 -------------------------------------------------------
@@ -112,58 +84,31 @@ Can Run Length Decode be called from Python?
 --------------------------------------------
 
 Use ``coop.run_length_decode(run_values, run_lengths, decoded_items=256)``
-for values, or ``coop.run_length_decode_with_offsets`` for values and offsets
-within each run. The compile-time ``decoded_items`` extent corresponds to
-C++'s ``DecodedN`` template argument and is independent of the run count.
-Both interfaces accept a runtime ``decoded_window_offset`` and use zero
-values plus maximum-length-type offset sentinels for padding.
-See the :doc:`Python </tile/python/primitives/run_length_decode>` and
-:doc:`C++ </tile/cpp/primitives/run_length_decode>` references for examples.
+to return 256 decoded positions. For each value's offset within its run,
+use ``coop.run_length_decode_with_offsets``. The references illustrate a
+window that starts partway through a run in
+:doc:`Python </tile/python/primitives/run_length_decode>` and
+:doc:`C++ </tile/cpp/primitives/run_length_decode>`.
 
 How do Tile calls compare with CUB block primitives?
 ----------------------------------------------------
 
-Tile calls use CUB block primitives and preserve their mathematical contracts
-on supported inputs. For example, ``radix_rank_keys`` uses CUB's ordered
-representation of signed integers; TopK defines the first
-``min(k, valid_items)`` outputs, with unspecified tie order. Scan defaults to
-``raking`` and reduction to ``warp_reductions`` in both Tile languages.
-
-A Tile describes the complete logical input, so its operations infer input
-extent and return new Tiles. CUB block APIs operate on per-thread items and
-expose the block configuration and temporary storage. The Tile compiler and
-provider select that configuration and supply the storage. For Run Length
-Decode, Python's
-``decoded_items`` and C++'s ``DecodedN`` specify the whole output capacity.
-Neither Tile interface requires thread groups or user-managed scratch storage.
-
-Python compile-time keyword controls correspond to C++ policy/template choices;
-runtime scalar controls remain runtime values in both. Python tuples correspond
-to C++ structured-binding results. Python can convert a one-element control
-Tile to the required dtype; C++ one-element Tile overloads require that exact
-dtype. Scalar conversions follow the destination dtype in both languages.
-
-Tile exposes a subset of CUB's controls. Its scans and reductions use named
-built-in operations, and its histogram accepts byte samples with 32-bit counts.
-The primitive references state these limits.
-Python Tile reductions return reduced shapes by default, with an explicit
-``broadcast=True`` option. C++ calls without an axis repeat their result;
-axis overloads retain the reduced dimension with extent one.
+A CUB block primitive operates on items owned by each thread. In Tile
+you supply the logical input value. The compiler and provider supply
+the physical implementation and scratch space. For example, Run Length
+Decode takes the *whole* decoded output capacity in Python's
+``decoded_items`` or C++'s ``DecodedN``. See the
+:doc:`programming model </tile/programming_model>` for result shapes and
+the :doc:`developer guide </tile/development>` for a CUB call's compiler path.
 
 Why does the resolver reject my development TileLib?
 ----------------------------------------------------
 
-``CUDA_COOP_TILE_LIBRARY_PATH`` must name an existing file. Python preview
-calls also require its identity. With an adjacent
-``provider-manifest.json``, the resolver checks the distribution, version,
-filename, and hash. Without a manifest, supply a nonempty
-``CUDA_COOP_TILE_LIBRARY_VERSION`` and change it when the library or its
-dependencies change.
-
-A manifest mismatch means the selected file does not match the packaged
-identity. Rebuild/reinstall the matching artifacts or select a coherent
-development artifact; do not reuse an old version token to make a changed
-library appear unchanged. See :doc:`/tile/interop`.
+Check that ``CUDA_COOP_TILE_LIBRARY_PATH`` names the intended file. If
+``provider-manifest.json`` accompanies it, the distribution, version,
+filename, and hash must agree. An unpackaged build needs a new
+``CUDA_COOP_TILE_LIBRARY_VERSION`` token when its contents change. See
+:doc:`/tile/interop` for the identity and cache rules.
 
 Why does CMake find the package but use the wrong compiler?
 -----------------------------------------------------------
@@ -189,9 +134,7 @@ Use the provider trace in :doc:`/tile/interop` to inspect the resolved choices.
 How is provider selection qualified on CUDA 13.5?
 -------------------------------------------------
 
-CUDA 13.5 does not invoke ``filter_and_rank``. Filtering and preference
-scoring happen in ``provide_impls``, before the enclosing kernel's final
-worker count is known. Qualification checks the advertised scores and the
-implementation selected for compilation, together with numerical results.
-A successful kernel does not establish support for every worker width or
-logical extent. See :doc:`/tile/development` for the validation steps.
+On CUDA 13.5 the provider scores candidates in ``provide_impls``, before
+the compiler chooses the kernel's worker count. The :doc:`developer guide
+</tile/development>` describes how to check those scores against the
+implementation the compiler chose and the result the kernel produced.

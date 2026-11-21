@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 from ...support.paths import PACKAGE_ROOT, REPO_ROOT
+from ._tile_examples import code_blocks
 
 DOCS_ROOT = REPO_ROOT / "docs"
 TILE_DOCS = DOCS_ROOT / "tile"
@@ -77,9 +78,12 @@ def _resolve(page: Path, target: str) -> Path:
 def _literal_sources():
     for page in TILE_DOCS.rglob("*.rst"):
         for target, body in _directives(page, "literalinclude"):
-            options = dict(
-                re.findall(r"^\s+:([\w-]+): ?(.*)$", body, re.MULTILINE)
-            )
+            options = {
+                key: value.strip()
+                for key, value in re.findall(
+                    r"^ *:([\w-]+):([^\n]*)$", body, re.MULTILINE
+                )
+            }
             yield page, _resolve(page, target.strip()), options
 
 
@@ -110,12 +114,13 @@ def test_tile_sphinx_literal_examples_select_valid_source():
         for option in ("start-at", "start-after", "end-at", "end-before"):
             if option not in options:
                 continue
+            # Sphinx skips the first remaining line for end-before.
             matching = [
                 index
                 for index, line in enumerate(lines)
-                if options[option] in line
+                if options[option] in line and (option != "end-before" or index)
             ]
-            assert matching, (page, path, option, options[option])
+            assert len(matching) == 1, (page, path, option, options[option])
             index = matching[0]
             if option == "start-at":
                 lines = lines[index:]
@@ -132,3 +137,9 @@ def test_tile_sphinx_literal_examples_select_valid_source():
                 line[dedent:] if line.strip() else line for line in lines
             )
             ast.parse(snippet, filename=f"{page}:{path}")
+
+
+def test_tile_sphinx_inline_python_examples_parse():
+    for page in TILE_DOCS.rglob("*.rst"):
+        for block in code_blocks(page, "python"):
+            ast.parse(block["code"], filename=f"{page}:{block['line']}")

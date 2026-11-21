@@ -12,8 +12,16 @@ input prefix while retaining the Tile's compile-time capacity.
 Interface and examples
 ----------------------
 
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
+Sort the keys, carry their values in descending key order, or sort the
+first 193 keys of a 256-element integer Tile.
+
+.. code-block:: cpp
+
+   namespace coop = cuda::coop::tile;
+   auto ascending = coop::merge_sort_keys(keys);
+   auto [ordered_keys, ordered_values] = coop::merge_sort_pairs(
+     keys, values, cuda::std::greater<>{});
+   auto partial = coop::merge_sort_keys(keys, 193, 2147483647);
 
 Keys and optional payloads are numeric Tiles with the same positive extent
 ``N``; key and payload types may differ. Outputs retain their respective input
@@ -22,7 +30,6 @@ provide both ``valid_items`` in ``[0, N]`` and ``oob_default``. Every input key
 after the valid prefix is replaced by that padding key before sorting. Select
 a strict high sentinel for ascending order or a strict low sentinel for
 descending order when the first ``valid_items`` outputs must be the valid data.
-Physical participation is selected for the logical extent.
 
 ``merge_sort_keys`` and ``merge_sort_pairs`` accept optional
 ``cuda::std::less`` or ``cuda::std::greater`` comparison functors and a
@@ -33,18 +40,8 @@ count accepts an integer scalar or a shape-one ``int`` Tile. The padding key
 accepts a scalar convertible to the key type or a shape-one Tile of exactly
 the key type.
 
-.. code-block:: cpp
-
-   namespace coop = cuda::coop::tile;
-   auto ascending = coop::merge_sort_keys(keys);
-   auto [ordered_keys, ordered_values] = coop::merge_sort_pairs(
-     keys, values, cuda::std::greater<>{});
-   auto partial = coop::merge_sort_keys(keys, 193, 2147483647);
-
-
 Behavior
 --------
-
 
 The pair form zeroes padded payloads before sorting. Read the first
 ``valid_items`` results only after choosing a sentinel that sorts after the
@@ -57,15 +54,14 @@ The output capacity remains ``N`` even when ``valid_items`` is zero.
 Merge sort does not guarantee stable ordering of equal keys. Numeric comparison
 is used directly; do not assume a total ordering for NaNs. Use inputs with a
 well-defined comparison order when comparing against a sorted reference.
-The provider selects a power-of-two worker count dividing ``N``. The special
-warp implementation is limited to exactly 32 input items and 32 workers;
-those properties are derived from the logical extent, not a per-call policy.
-A compiler/frontend supporting that worker count is still required. The
-block examples use 256 items with 128 workers, including
-full and partial keys and pairs. These implementation constraints do not
-expose an items-per-thread option.
+The compiler selects a power-of-two worker count that divides ``N``. The
+warp implementation requires 32 elements and 32 workers. Callers pass a
+Tile and the sorting controls. See :doc:`/tile/cpp/advanced` for kernel
+worker hints.
 
 .. figure:: /tile/visualizations/merge-sort.svg
    :alt: Sorted keys retain payload association, including a partial valid prefix.
 
    Sorted keys retain payload association, including a partial valid prefix.
+
+:ref:`Merge sort declarations and overloads <tile-cpp-merge-sort-declarations>`.
