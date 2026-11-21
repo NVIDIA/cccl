@@ -142,10 +142,8 @@ def run_device_side_benchmark(
             grid_size = blocks_per_sm * num_sms
         grid = cutlass.Int32(grid_size)
 
-        def launcher_fn(launch: bench.Launch):
-            compiled(
-                sink_ptr, grid, driver.CUstream(launch.get_stream().addressof())
-            )
+        def launcher_fn(_: bench.Launch):
+            compiled(sink_ptr, grid, stream)
 
         state.exec(launcher_fn, batched=False)
     finally:

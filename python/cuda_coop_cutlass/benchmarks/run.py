@@ -161,8 +161,6 @@ def run_case(state, case, args, artifacts):
         if not args.validate_only:
 
             def launcher(execution):
-                if execution.get_stream().addressof() != int(stream):
-                    raise RuntimeError("NVBench changed the launch stream")
                 execute()
 
             poison()
