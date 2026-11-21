@@ -142,6 +142,15 @@ _CCCL_HOST_API inline void __throw_if_failed(
   return ::cuda::__driver::__getVersion() < ::cuda::__driver::__make_version(__major, __minor);
 }
 
+// Kernel occupancy
+
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __occupancyMaxActiveBlocksPerMultiprocessorNoThrow(
+  int& __blocks, ::CUfunction __kernel, int __threads, ::cuda::std::size_t __dynamic_shared_bytes) noexcept
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuOccupancyMaxActiveBlocksPerMultiprocessor);
+  return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__blocks, __kernel, __threads, __dynamic_shared_bytes);
+}
+
 // Device management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevice __deviceGet(int __ordinal)
