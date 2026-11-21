@@ -116,7 +116,7 @@ Current defaults for all tags are defined in the ``tags`` section of ``ci/matrix
 Computed internally, not user-specified:
 
 - ``needs`` — defined in the ``jobs`` section. A ``test`` entry auto-generates its ``build`` producer.
-- ``gpu`` requirement, ``cuda_ext``, ``name``, and ``invoke`` script details - also taken from the ``jobs`` section.
+- ``gpu`` requirement, CPU runner ``cores``, ``cuda_ext``, ``name``, and ``invoke`` script details - also taken from the ``jobs`` section.
 - ``force_producer_ctk`` — set in the ``jobs`` section to pin a producer build's CTK independent
   of the consumer's ``ctk`` tag. Used mainly for python packaging special cases.
 

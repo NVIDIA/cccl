@@ -293,7 +293,7 @@ def get_runner_label_config():
     """Return the runner label templates from matrix.yaml, with defaults."""
     runner_labels = matrix_yaml.get("runner_labels", {})
     return {
-        "cpu": runner_labels.get("cpu", "{os}-{cpu}-cpu16"),
+        "cpu": runner_labels.get("cpu", "{os}-{cpu}-cpu{cores}"),
         "gpu": runner_labels.get(
             "gpu", "{os}-{cpu}-gpu-{gpu_runner}-{gpu_count}{gpu_testing}"
         ),
@@ -344,6 +344,8 @@ def get_job_type_info(job):
         result["name"] = job.capitalize()
     if "gpu" not in result:
         result["gpu"] = False
+    if "cores" not in result:
+        result["cores"] = 16
     if "force_producer_ctk" in result:
         result["force_producer_ctk"] = canonicalize_ctk_version(
             result["force_producer_ctk"]
@@ -527,7 +529,9 @@ def generate_dispatch_job_runner(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return runner_config["cpu"].format(os=runner_os, cpu=cpu)
+        return runner_config["cpu"].format(
+            os=runner_os, cpu=cpu, cores=job_info["cores"]
+        )
 
     gpu = get_gpu(matrix_job["gpu"])
     gpu_testing = "-testing" if gpu["testing"] else ""
