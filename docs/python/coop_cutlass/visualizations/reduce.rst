@@ -6,28 +6,28 @@
 Reduce
 ======
 
-:func:`cuda.coop.cutlass.reduce` combines a group's values into one aggregate.
-:func:`cuda.coop.cutlass.sum` is the sum specialization. Blocks and warps accept one
-scalar or several items per thread. Every input item contributes, and the
-scalar result is defined only at group rank zero.
+A reduction combines the values of a group's threads into one result, and
+the thread with rank 0 in the group receives it.
+:func:`~cuda.coop.cutlass.sum` adds the values, and
+:func:`~cuda.coop.cutlass.reduce` takes the operator as an argument.
 
-The explorer uses eight teaching threads. It shows four lanes per physical
-warp and two per logical warp; **physical CUDA warps have 32 lanes**.
+The explorer draws eight threads as one block, as two warps of four lanes,
+or as four groups of two lanes.
 
 .. coop-visualization:: reduce
 
    .. only:: html
 
       .. figure:: reduce.svg
-         :alt: Eight threads fold pairs of input values into partial sums,
-               then reduce to 136 at thread zero; other return values
-               are undefined.
+         :alt: Eight threads each add their own two input values, and the
+               group combines those sums into 136 in thread zero. The other
+               return values are undefined.
          :width: 100%
 
          Block sum with two items per thread.
 
-   Each thread first adds its own pair. The group combines those partials;
-   only thread zero has a defined return value in this example.
+   Each thread first adds its own two items. The group combines those sums,
+   and thread 0 receives the result.
 
    .. code-block:: text
 
@@ -39,31 +39,23 @@ warp and two per logical warp; **physical CUDA warps have 32 lanes**.
 Reading the stages
 ------------------
 
-The local fold produces one contribution per thread. The combine row shows
-partial aggregates within each selected group. The final row shows the
-aggregate at group rank zero. ``?`` marks return values that the program must
-not read.
+The local row holds one value per thread, combined from that thread's own
+items. The combine row shows partial results inside each group. The last row
+shows the result in the thread with rank 0 of each group. ``?`` marks a
+return value that the kernel must not read.
 
-All reductions use CUB. A block can select ``raking_commutative_only``,
-``raking``, or ``warp_reductions`` (the default). The first
-requires a commutative operator; the explorer's sum and maximum satisfy that
-requirement. Raking combines
-contributions through shared-memory segments. Warp reductions combine warp
-partials before producing the block result. These rows illustrate legal
-combinations; they do not show exact instruction schedules. Floating-point
-rounding can change when the combination order changes.
+For a block, the combine row changes with the algorithm. On a block of more
+than 32 threads, ``raking`` has every thread place its value in shared
+memory, where one warp combines them. ``raking_commutative_only`` is a form
+of ``raking`` for commutative operators. ``warp_reductions`` reduces inside
+each warp and then combines the warps' results. The row is drawn for eight
+threads and shows one valid grouping for each algorithm.
 
-``valid_items`` counts contributing group members, starting at rank zero.
-It is available for scalar block, physical-warp, and logical-warp reductions.
-The count must be uniform within the group and
-between one and the group size, inclusive. Every group member still
-participates. The explorer offers this choice only for one item per thread.
-
-Built-in names include ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
-and the integer bitwise operators. Recognized operator and NumPy aliases
-select these same built-ins. The kernel API also accepts
-:ref:`compiled scalar device operators <coop-cutlass-device-operators>`;
-the explorer illustrates the built-ins above.
+With one item per thread, the explorer can limit each group to its first
+half with ``valid_items``. The other threads stay in the picture because
+they still make the call. The explorer's operators are sum and maximum.
+:ref:`Reduction <coop-cutlass-reduce>` in the API reference has the rules
+for each control.
 
 Using Reduce in a kernel
 ------------------------
@@ -83,28 +75,15 @@ least ``128 * items_per_thread`` input elements for each block.
    if thread_rank == 0:
        output[block_index] = total
 
-The input ``values`` is unchanged. A logical warp uses
-``coop.this_warp().group_by(8)``, yielding four groups of eight lanes inside
-each physical warp. Each group has a separate aggregate, consumed by its
-rank-zero lane. Logical widths may be powers of two from 1 through 32 or any
-width from 17 through 31. CUB supports only one non-power-of-two group per
-physical warp. For those widths, use ``group_by(width, exhaustive=False)`` and
-guard the reduction with ``group.is_member()`` so trailing lanes do not participate.
-This fragment writes one sum for each eight-lane logical warp:
+This fragment writes one sum for each group of eight lanes, sixteen for each
+block. The first lane of each group holds its group's sum:
 
 .. code-block:: python
 
    group = coop.this_warp().group_by(8)
-   total = coop.sum(group, source[thread_rank])
+   total = coop.sum(group, source[block_index * 128 + thread_rank])
    if group.rank() == 0:
-       output[thread_rank // 8] = total
+       output[block_index * 16 + thread_rank // 8] = total
 
-
-Block reductions accept ``temp_storage=coop.TempStorage(...)``. An explicit
-descriptor defaults to caller-managed synchronization; use
-``coop.TempStorage(auto_sync=True)`` for automatic synchronization before
-reuse. Omitting ``temp_storage`` uses compiler-managed scratch with automatic
-synchronization. Warp reductions always use compiler-managed scratch.
-
-Grid reduction is unsupported. See :func:`cuda.coop.cutlass.reduce` and
-:ref:`the Programming Guide <coop-cutlass-reduce>` for groups and controls.
+:ref:`Reduction <coop-cutlass-reduce>` in the API reference covers the
+operators, ``valid_items``, groups of 17 to 31 lanes and ``temp_storage``.

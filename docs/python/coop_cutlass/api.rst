@@ -12,46 +12,30 @@
    This is an experimental API and is subject to change.
 
 .. py:module:: cuda.coop.cutlass
-.. currentmodule:: cuda.coop.cutlass
 
-Use ``import cuda.coop.cutlass as coop`` inside programs compiled with CuTe.
-The installed ``.pyi`` files describe overload and result typing. The
-:doc:`Programming Guide <programming_guide>` explains payload ownership,
-participation, layouts, and operation-specific controls.
-
-Load always returns a fresh ``ThreadData``, including when
-``items_per_thread=1``. Global and shared tensors can be Load sources or
-Store destinations. CuTe register and immutable-vector adapters provide the
-conversion rules for operations accepting those forms.
-
-Reduce and Sum return CuTe scalars, even when a NumPy dtype selects the
-payload type; stubs report that NumPy type for static checks. Array operations
-return ``ThreadData`` unless their documented contract says otherwise. Warp
-Scan accepts one scalar per lane. Rank results and Discontinuity flags have
-signed ``Int32`` dtype. Bulk Run Length Decode returns a ``Uint32`` total to
-every block member.
-
-Recognized ``operator`` functions and NumPy ufuncs select built-in operators.
-For custom Reduce and Scan binary operators, prepare a :class:`DeviceOperator`
-with :func:`compile_operator` before tracing. See
-:ref:`coop-cutlass-device-operators` for the scalar signature and compiler
-requirements. Scan prefix callbacks and runtime callback state are unsupported.
-
-Compiled device operators
--------------------------
-
-.. autofunction:: compile_operator
-
-.. autoclass:: DeviceOperator
+.. automodule:: cuda.coop.cutlass
    :no-members:
    :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
+.. _coop-thread-groups:
+.. _coop-cutlass-hierarchy:
 
 Thread groups
 -------------
 
-.. autofunction:: this_thread
-.. autofunction:: this_warp
+.. automodule:: cuda.coop.cutlass._thread_group
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: this_block
+.. autofunction:: this_warp
+.. autofunction:: this_thread
 .. autofunction:: this_cluster
 .. autofunction:: this_grid
 
@@ -76,8 +60,19 @@ Thread groups
 
    Alias for :class:`ThreadHierarchy`.
 
-Per-thread payloads and CuTe conversion
----------------------------------------
+.. _coop-thread-data:
+.. _coop-cutlass-register-payloads:
+.. _coop-cutlass-dtype-inference:
+
+ThreadData: per-thread payloads and CuTe conversion
+---------------------------------------------------
+
+.. automodule:: cuda.coop.cutlass._thread_data
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autoclass:: ThreadData
    :no-members:
@@ -92,49 +87,78 @@ Per-thread payloads and CuTe conversion
 .. automethod:: ThreadData.to_tensor_ssa
 .. automethod:: ThreadData.to_register_tensor
 
-Producer protocols
-------------------
+.. _coop-temp-storage:
 
-.. autoclass:: ThreadDataLoadSource
+TempStorage: temporary storage
+------------------------------
+
+.. automodule:: cuda.coop.cutlass._temp_storage
    :no-members:
    :no-special-members:
+   :no-index:
 
-.. autoclass:: ThreadDataTensorMetadata
-   :no-members:
-   :no-special-members:
-
-.. autoclass:: ThreadDataSource
-   :no-members:
-   :no-special-members:
-
-See :ref:`producer interoperability <coop-cutlass-producer-interop>` for
-capability detection, copy ownership, and lifetime requirements.
-
-Temporary storage
------------------
+.. currentmodule:: cuda.coop.cutlass
 
 .. autoclass:: TempStorage
    :no-members:
    :no-special-members:
 
+.. automethod:: TempStorage.sync
 .. automethod:: TempStorage.reserve
 .. automethod:: TempStorage.release
 
-Memory operations
-^^^^^^^^^^^^^^^^^
+.. _memory-operations:
+
+Load & Store
+------------
+
+.. automodule:: cuda.coop.cutlass._group_load_store
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: load
 .. autofunction:: store
 
+.. _coop-cutlass-reduce:
+
 Reduction
-^^^^^^^^^
+---------
+
+.. automodule:: cuda.coop.cutlass._group_reduce
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: reduce
-.. autofunction:: reduce_batched
 .. autofunction:: sum
 
+.. _coop-cutlass-reduce-batched:
+
+.. automodule:: cuda.coop.cutlass._group_reduce_batched
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
+.. autofunction:: reduce_batched
+
+.. _coop-cutlass-scan:
+
 Scan
-^^^^
+----
+
+.. automodule:: cuda.coop.cutlass._group_scan
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -142,46 +166,137 @@ Scan
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+.. _coop-cutlass-exchange:
+
 Data rearrangement
-^^^^^^^^^^^^^^^^^^
+------------------
+
+.. automodule:: cuda.coop.cutlass._group_exchange
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: exchange
+
+.. _coop-cutlass-shuffle:
+
+.. automodule:: cuda.coop.cutlass._group_shuffle
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: shuffle
 
+.. _coop-cutlass-merge-sort:
+
 Comparison sorting
-^^^^^^^^^^^^^^^^^^
+------------------
+
+.. automodule:: cuda.coop.cutlass._group_merge_sort
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
 
+.. _coop-cutlass-radix:
+
 Radix sorting and ranking
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
+
+.. automodule:: cuda.coop.cutlass._group_radix_sort
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank_keys
 
+.. _coop-cutlass-topk:
+
 Top-k selection
-^^^^^^^^^^^^^^^
+---------------
+
+.. automodule:: cuda.coop.cutlass._group_topk
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
 
+.. _coop-cutlass-neighbors:
+
 Neighbor comparisons
-^^^^^^^^^^^^^^^^^^^^
+--------------------
+
+.. automodule:: cuda.coop.cutlass._group_neighbors
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
 
+.. _coop-cutlass-histogram:
+
 Histogram
-^^^^^^^^^
+---------
+
+.. automodule:: cuda.coop.cutlass._group_histogram
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: histogram
 
+.. _coop-cutlass-run-length:
+
 Run Length Decode
-^^^^^^^^^^^^^^^^^
+-----------------
+
+.. automodule:: cuda.coop.cutlass._group_run_length
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into
+
+.. _coop-cutlass-device-operators:
+
+Compiled device operators
+-------------------------
+
+.. automodule:: cuda.coop.cutlass._device_operator
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
+.. autofunction:: compile_operator
+
+.. autoclass:: DeviceOperator
+   :no-members:
+   :no-special-members:
