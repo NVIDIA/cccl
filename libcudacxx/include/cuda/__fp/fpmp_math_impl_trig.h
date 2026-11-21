@@ -2242,7 +2242,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_acos_from_one(
     + static_cast<__fpmp_fp128>(-0x1.f1976b7ed8fbcp-109);
   const __fpmp_fp128 __two = static_cast<__fpmp_fp128>(2);
   const __fpmp_fp128 __d   = static_cast<__fpmp_fp128>(1.0 - __a_hi) - static_cast<__fpmp_fp128>(__a_lo);
-  const __fpmp_fp128 __h   = __two * _CCCL_FPMP_ASINQ(_CCCL_FPMP_SQRTQ(__d / __two));
+  // sqrt(1/2) to 113 bits, as the sum of three doubles. sqrt(d) sqrt(1/2) rather than sqrt(d / 2):
+  // where the device has the binary128 type but computes these functions in double, d / 2 rounds
+  // to zero as a double for the smallest subnormal d.
+  const __fpmp_fp128 __sqrt_half =
+    static_cast<__fpmp_fp128>(0x1.6a09e667f3bcdp-1) + static_cast<__fpmp_fp128>(-0x1.bdd3413b26456p-55)
+    + static_cast<__fpmp_fp128>(0x1.57d3e3adec175p-109);
+  const __fpmp_fp128 __h = __two * _CCCL_FPMP_ASINQ(_CCCL_FPMP_SQRTQ(__d) * __sqrt_half);
   ::cuda::__fpmp2_from_quad((__form == 0) ? __h : ((__form == 1) ? __pi - __h : __pi / __two - __h), __res_hi, __res_lo);
 #  else
   constexpr double __pi = 0x1.921fb54442d18p+1;
