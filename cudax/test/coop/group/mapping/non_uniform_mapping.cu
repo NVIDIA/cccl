@@ -268,9 +268,9 @@ __device__ void test_group_by_after_binary_partition(Config config, Width width)
   if (lane < 24)
   {
     // Within each eight-lane span, even and odd lanes form separate groups of four.
-    const auto first = (lane / 8) * 8 + lane % 2;
+    const auto first = ((lane / 8) * 8) + (lane % 2);
     CHECK(result.group_count() == 6);
-    CHECK(result.group_rank() == (lane / 8) * 2 + lane % 2);
+    CHECK(result.group_rank() == ((lane / 8) * 2) + (lane % 2));
     CHECK(result.unit_count() == 4);
     CHECK(result.unit_rank() == (lane / 2) % 4);
     CHECK(result.lane_mask() == cuda::device::lane_mask{0x55u << first});
