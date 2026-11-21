@@ -143,7 +143,7 @@ def test_compiler_route_parameter_binding(tmp_path, route):
     )
     command = [
         sys.executable,
-        str(PACKAGE_ROOT / "benchmarks/run.py"),
+        str(PACKAGE_ROOT / "benchmarks" / "run.py"),
         "--provider",
         "cutlass",
         "--case",
