@@ -11,6 +11,12 @@ Exchange permutes logical Tile positions between striped and blocked order.
 Shuffle reads a neighboring position, with either a preserved boundary or a
 wraparound. Each call returns a new Tile and preserves the input Tile's value.
 
+.. figure:: /tile/visualizations/exchange-shuffle.svg
+   :alt: Striped-to-blocked permutation and neighbor shifts with preserved or wrapped boundaries.
+
+   With two values per worker, Exchange places input elements 0 and 128
+   next to one another. The inverse puts each element back in its original slot.
+
 Interface and examples
 ----------------------
 
@@ -91,10 +97,8 @@ For a 128-element Tile, ``coop.shuffle_rotate(values, distance=3)`` gives
 ``output[i] = values[(i + 3) % 128]``. Use four worker warps for that example.
 Unlike exchange, shuffle does not need a ``block_threads`` keyword.
 
-
 Behavior
 --------
-
 
 Exchange is precisely the following permutation, for ``0 <= t < B`` and
 ``0 <= j < I``:
@@ -115,9 +119,3 @@ extent must be 32, 64, 128, 256, 512, or 1024, and the kernel must admit that wo
 This is an implementation restriction; callers do not pass an items-per-thread
 option. For example, with ``[0, 1, 2, 3]`` and distance 1, offset gives ``[1, 2, 3, 3]`` and
 rotate gives ``[1, 2, 3, 0]``. Up gives ``[0, 0, 1, 2]``.
-
-.. figure:: /tile/visualizations/exchange-shuffle.svg
-   :alt: Striped-to-blocked permutation and neighbor shifts with preserved or wrapped boundaries.
-
-   Exchange shows 256 logical items with 128 block threads. Shuffle uses
-   128 items and 128 threads. Ellipses abbreviate each full Tile.

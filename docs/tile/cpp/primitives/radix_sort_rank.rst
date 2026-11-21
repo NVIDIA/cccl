@@ -12,8 +12,15 @@ reordered key Tile. Pair sorting carries values alongside their keys.
 Interface and examples
 ----------------------
 
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
+The first call sorts by the low eight bits. The last returns the position
+of each input key in a stable ordering by its low four bits.
+
+.. code-block:: cpp
+
+   namespace coop = cuda::coop::tile;
+   auto ordered = coop::radix_sort_keys(keys, 0, 8);
+   auto [ordered_keys, ordered_values] = coop::radix_sort_pairs(keys, values);
+   auto ranks = coop::radix_rank_keys(keys, 0, 4, coop::radix_rank_policy<4>{});
 
 Sort accepts numeric keys and optional numeric payloads of the same positive
 extent ``N <= 65535``; output shapes and types match their inputs. Its runtime
@@ -26,7 +33,6 @@ and returns an ``int`` Tile of extent ``N``. It computes a stable destination ra
 position. Require ``0 <= begin_bit < end_bit <= key_bits`` and
 ``end_bit - begin_bit <= RadixBits``. Without explicit bounds, rank begins at
 zero and ends at the smaller of ``RadixBits`` and the key width.
-Physical participation is selected for the logical extent.
 
 ``radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>``
 defaults to ``4, true, scan_algorithm::warp_scans,
@@ -44,17 +50,8 @@ but rank allows a radix capacity up to 16 bits.
 See :ref:`Radix scratch capacity <tile-radix-capacity>` for resource limits
 on these policies.
 
-.. code-block:: cpp
-
-   namespace coop = cuda::coop::tile;
-   auto ordered = coop::radix_sort_keys(keys, 0, 8);
-   auto [ordered_keys, ordered_values] = coop::radix_sort_pairs(keys, values);
-   auto ranks = coop::radix_rank_keys(keys, 0, 4, coop::radix_rank_policy<4>{});
-
-
 Behavior
 --------
-
 
 Signed integers and floating-point keys use CUB's radix ordering transform
 before the bit interval is selected. A partial interval therefore refers to
@@ -77,3 +74,5 @@ Unsigned keys use their original bits.
 
    A rank is associated with an original input position. Sorted output is
    in selected-digit order and preserves equal-digit input order.
+
+:ref:`Radix sort and rank declarations and overloads <tile-cpp-radix-sort-rank-declarations>`.

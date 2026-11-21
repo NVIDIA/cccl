@@ -169,3 +169,59 @@ def launch_mma_topk(
         merge_row_candidates_kernel,
         (partial_scores, partial_columns, top_scores_out, top_columns_out),
     )
+
+
+def main():
+    import torch
+
+    rows = M_TILE
+    columns = N_TILE * COLUMN_TILES
+    # Interleave the best scores across all four column tiles. A zero from
+    # the merge kernel's padding would beat every real score.
+    scores = -torch.arange(1, columns + 1, device="cuda", dtype=torch.float32)
+    scores = scores.reshape(N_TILE, COLUMN_TILES).T.flatten()
+    b_array = torch.zeros((K_TILE, columns), device="cuda", dtype=torch.float32)
+    b_array[0] = scores
+    b_array[1] = scores.flip((0,))
+    a_array = torch.zeros((rows, K_TILE), device="cuda", dtype=torch.float32)
+    a_array[::2, 0] = 1
+    a_array[1::2, 1] = 1
+
+    partial_scores = torch.empty(
+        (rows, CANDIDATES_PER_ROW), device="cuda", dtype=torch.float32
+    )
+    partial_columns = torch.empty(
+        (rows, CANDIDATES_PER_ROW), device="cuda", dtype=torch.int32
+    )
+    top_scores = torch.empty((rows, TOPK), device="cuda", dtype=torch.float32)
+    top_columns = torch.empty((rows, TOPK), device="cuda", dtype=torch.int32)
+
+    launch_mma_topk(
+        torch.cuda.current_stream(),
+        a_array,
+        b_array,
+        partial_scores,
+        partial_columns,
+        top_scores,
+        top_columns,
+    )
+    torch.cuda.synchronize()
+
+    expected_scores, expected_columns = torch.topk(
+        a_array @ b_array, TOPK, dim=1
+    )
+    actual_order = torch.argsort(top_columns, dim=1)
+    expected_order = torch.argsort(expected_columns, dim=1)
+    assert torch.equal(
+        torch.gather(top_columns, 1, actual_order),
+        torch.gather(expected_columns.to(torch.int32), 1, expected_order),
+    )
+    assert torch.equal(
+        torch.gather(top_scores, 1, actual_order),
+        torch.gather(expected_scores, 1, expected_order),
+    )
+    print(f"Checked {TOPK} scores and column indices for each of {rows} rows.")
+
+
+if __name__ == "__main__":
+    main()

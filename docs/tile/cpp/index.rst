@@ -5,23 +5,23 @@
 Tile for C++
 ============
 
-``cuda::coop::tile`` provides cooperative primitives inside CUDA C++ Tile kernels.
-Start with :doc:`installation`, then use the :doc:`programming` to compile,
-launch, and check a complete kernel. See :doc:`/tile/programming_model`
-for the shared logical Tile model and :doc:`api` for operation contracts.
+Use ``cuda::coop::tile`` inside a CUDA C++ Tile kernel. This kernel scans
+two partitions in place. Each partition gets its own running sum, starting
+at zero.
 
-.. code-block:: cpp
+.. literalinclude:: ../../../tile/cpp/examples/block_scan.cu
+   :language: cpp
+   :start-at: namespace ct
+   :end-before: bool check
 
-   auto values = input_view.load(ct::bid().x);
-   auto prefixes = coop::exclusive_sum(values);
-   output_view.store(prefixes, ct::bid().x);
-
-Here ``ct`` names ``cuda::tiles`` and ``coop`` names ``cuda::coop::tile``.
-The views each select a 256-element partition.
+Follow the :doc:`programming guide <programming>` to build this program
+and check the results. The :doc:`API reference <api>` lists operations by
+the result you need.
 
 .. toctree::
    :maxdepth: 2
 
-   installation
    programming
+   installation
    api
+   advanced

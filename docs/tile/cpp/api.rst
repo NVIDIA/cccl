@@ -5,16 +5,85 @@
 C++ API reference
 =================
 
-Include ``<cuda/coop/tile.cuh>`` and call these functions in a
-``__tile_global__`` kernel. ``ct`` below is the header's namespace alias for
-``cuda::tiles``; ``cte`` aliases ``cuda::tiles::experimental``.
-The :doc:`/tile/cpp/programming` guide covers compilation and launch.
+Include ``<cuda/coop/tile.cuh>`` to call these functions in a
+``__tile_global__`` kernel. The :doc:`programming guide <programming>`
+shows how to compile and launch one.
 
-Each entry shows a declaration from the public header and describes its
-other overloads. Execution annotations and ``inline`` are omitted; type
-requirements are stated beside the declarations. The :download:`header
-<../../../tile/cpp/include/cuda/coop/tile.cuh>` contains
-the complete overload set, including the operation-specific constraints.
+.. _operation-guides:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 54 46
+
+   * - What to compute
+     - Operation guide
+   * - Running results over the elements of a tile
+     - :doc:`primitives/scan`
+   * - An aggregate over a tile or along one axis
+     - :doc:`primitives/reduce`
+   * - A layout permutation or a shift
+     - :doc:`primitives/exchange_shuffle`
+   * - Differences or run boundaries between neighbors
+     - :doc:`primitives/adjacent_discontinuity`
+   * - A count for each integer bin
+     - :doc:`primitives/histogram`
+   * - A window of decoded runs, optionally with offsets
+     - :doc:`primitives/run_length_decode`
+   * - Keys or key/value pairs in comparison order
+     - :doc:`primitives/merge_sort`
+   * - Keys ordered by a bit range or ranked by one digit
+     - :doc:`primitives/radix_sort_rank`
+   * - The smallest or largest keys with optional payloads
+     - :doc:`primitives/topk`
+
+Using the operation examples
+----------------------------
+
+The examples work on Tiles returned by ``partition_view::load``. To try a
+call, start with :download:`block_scan.cu <../../../tile/cpp/examples/block_scan.cu>`
+and its :download:`CMakeLists.txt <../../../tile/cpp/examples/CMakeLists.txt>`.
+The :doc:`programming guide <programming>` gives the build and run commands.
+Inside the kernel, the loaded tile is named ``items``. The family examples
+use the following names for their inputs.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - Variable
+     - Contents in the example
+   * - ``input``
+     - 256 integers for scans, reductions, neighbor comparisons, and Exchange.
+   * - ``input128``
+     - 128 integers for the rotation in the shuffle example.
+   * - ``keys``, ``values``
+     - 256 integer keys and 256 associated integer values for sorting or selection.
+       The native reduction example uses ``values`` alone.
+   * - ``samples``
+     - 256 unsigned bytes for the histogram.
+
+To try the inclusive sum, change the call in the downloaded kernel to
+``coop::inclusive_sum(items)``. In the host loop, move ``expected += index``
+above the comparison with ``data[index]``. Rebuild and run. The first
+partition now starts with 0, 1, 3, 6 and the second with 256, 513, 771, 1030.
+
+For an operation with two inputs, load each from its own partition view.
+Store each result into a view matching its shape and element type, and
+compare the defined outputs with the corresponding host calculation.
+:download:`A complete scan and reduction program
+<../../../tile/cpp/test/support/tile_cpp_scan_reduce.cu>` shows three
+results stored and checked separately. The :doc:`run-length decode
+example <primitives/run_length_decode>` includes its own kernel with
+different input and output shapes.
+
+Reading the declarations
+------------------------
+
+In the declarations, ``ct`` names ``cuda::tiles`` and ``cte`` names
+``cuda::tiles::experimental``. Each entry shows a declaration from the
+public header, its type requirements, and the other available overloads.
+The :download:`header <../../../tile/cpp/include/cuda/coop/tile.cuh>`
+contains the complete overload set and its constraints.
 
 Data Tiles have positive extents and supported numeric
 C++ element types: signed and unsigned 8-, 16-, 32-, and 64-bit integers,
@@ -217,6 +286,11 @@ Except for Exchange, they contain no physical thread-count parameter.
 Scan and reduction
 ------------------
 
+.. _tile-cpp-scan-declarations:
+
+Scans
+~~~~~
+
 .. cpp:function:: template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking> ct::tile<T, ct::shape<N>> exclusive_sum(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> = {}) noexcept
    :no-typesetting:
 
@@ -304,6 +378,11 @@ policy = {})``. Prefixes accept a scalar convertible to ``T`` or a shape-one
 Tile with exactly the input dtype. A prefix combines with the first input;
 it is not an exclusive initial-value overload.
 
+.. _tile-cpp-reduce-declarations:
+
+Reductions
+~~~~~~~~~~
+
 .. cpp:function:: template <typename T, size_t N, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions> ct::tile<T, ct::shape<N>> sum(ct::tile<T, ct::shape<N>> input, reduce_policy<Algorithm> = {}) noexcept
    :no-typesetting:
 
@@ -385,6 +464,11 @@ See :doc:`/tile/cpp/primitives/scan` and :doc:`/tile/cpp/primitives/reduce` for 
 Movement and neighbors
 ----------------------
 
+.. _tile-cpp-exchange-shuffle-declarations:
+
+Exchange and shuffle
+~~~~~~~~~~~~~~~~~~~~
+
 .. cpp:function:: template <typename T, size_t N, size_t BlockThreads> ct::tile<T, ct::shape<N>> exchange_striped_to_blocked(ct::tile<T, ct::shape<N>> input, exchange_policy<BlockThreads> = {}) noexcept
    :no-typesetting:
 
@@ -464,6 +548,11 @@ Return ``input[(i + distance) % N]``. Require ``0 <= distance < N`` and one
 physical worker per logical item. Another overload accepts ``ct::tile<int,
 ct::shape<1>>`` for ``distance``.
 
+.. _tile-cpp-adjacent-discontinuity-declarations:
+
+Adjacent difference and discontinuity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. cpp:function:: template <typename T, size_t N> ct::tile<T, ct::shape<N>> adjacent_difference_subtract_left(ct::tile<T, ct::shape<N>> input, adjacent_difference_policy<> = {}) noexcept
    :no-typesetting:
 
@@ -536,6 +625,11 @@ See :doc:`/tile/cpp/primitives/exchange_shuffle` and
 Histogram and decoding
 ----------------------
 
+.. _tile-cpp-histogram-declarations:
+
+Histogram
+~~~~~~~~~
+
 .. cpp:function:: template <size_t Bins = 256, typename T, size_t N> ct::tile<int, ct::shape<Bins>> histogram(ct::tile<T, ct::shape<N>> input, histogram_policy<> = {}) noexcept
    :no-typesetting:
 
@@ -562,6 +656,11 @@ both ``N`` and ``Bins``. Counts start at zero for each call.
 
 Count unsigned-byte samples into all 256 bins. This is the fixed-bin counterpart of
 ``histogram<256>`` with the same input and result contract.
+
+.. _tile-cpp-run-length-decode-declarations:
+
+Run-length decode
+~~~~~~~~~~~~~~~~~
 
 .. cpp:function:: template <size_t DecodedN, typename ValueT, typename LengthT, size_t ValueRunN, size_t LengthRunN> ct::tile<ValueT, ct::shape<DecodedN>> run_length_decode( ct::tile<ValueT, ct::shape<ValueRunN>> run_values, ct::tile<LengthT, ct::shape<LengthRunN>> run_lengths, run_length_decode_policy<> = {}) noexcept
    :no-typesetting:
@@ -606,6 +705,11 @@ for complete dtype, extent, and padding contracts.
 Ordering and selection
 ----------------------
 
+.. _tile-cpp-merge-sort-declarations:
+
+Merge sort
+~~~~~~~~~~
+
 .. cpp:function:: template <typename T, size_t N> ct::tile<T, ct::shape<N>> merge_sort_keys(ct::tile<T, ct::shape<N>> keys, merge_sort_policy<> policy = {}) noexcept
    :no-typesetting:
 
@@ -636,6 +740,11 @@ Sort keys and associated payloads, returning keys first. The overload forms matc
 ``merge_sort_keys``, with ``values`` immediately after ``keys``. Key and value
 extents must match; dtypes may differ. Partial sorting zeroes padded payloads.
 Equal keys have no stability guarantee.
+
+.. _tile-cpp-radix-sort-rank-declarations:
+
+Radix sort and rank
+~~~~~~~~~~~~~~~~~~~
 
 .. cpp:function:: template <typename T, size_t N, size_t RadixBits = 4, bool MemoizeOuterScan = true, scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans, radix_smem_config SmemConfig = radix_smem_config::four_byte> ct::tile<T, ct::shape<N>> radix_sort_keys(ct::tile<T, ct::shape<N>> keys, radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
    :no-typesetting:
@@ -699,6 +808,11 @@ bounds may instead be shape-one ``int`` Tiles. The omitted end is ``min(key_bits
 begin_bit + RadixBits)``. Signed keys have their sign bit flipped before
 extraction, matching CUB's radix sort ordering.
 Unsigned keys use their original bits.
+
+.. _tile-cpp-topk-declarations:
+
+Top-k selection
+~~~~~~~~~~~~~~~
 
 .. cpp:function:: template <typename T, size_t N> ct::tile<T, ct::shape<N>> topk_max_keys( ct::tile<T, ct::shape<N>> keys, int k, topk_policy<> policy = {}) noexcept
    :no-typesetting:
@@ -868,10 +982,8 @@ Head flags, then tail flags.
 
 Decoded values, then relative offsets within their runs.
 
-Operation guides
-----------------
-
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    primitives/scan

@@ -49,14 +49,17 @@ The package exports ``cuda-coop-tile::tile`` and
 ``cuda_coop_tile_link(target)``. The helper supplies include paths and Tile
 compiler flags and tracks the TileLib as a compilation dependency.
 
-On Linux, the dynamic loader must be able to find the matching CUDA 13.5
-``libnvrtc`` library when the compiler loads the provider. A toolkit configured
-in the system library search path needs no extra environment setting. For a
-toolkit installed elsewhere, add its library directory before compiling:
+On Linux, select the CUDA 13.5 toolkit in the shell where you build the
+application. If ``CUDA_COOP_TILE_CUDA_ROOT``, ``CUDA_HOME``, ``CUDA_PATH``,
+or ``CUDA_TOOLKIT_PATH`` names a different toolkit, unset it in that shell.
+The compiler uses ``tileiras`` from the toolkit and loads its ``libnvrtc``
+library when compiling the Tile kernel.
 
 .. code-block:: bash
 
-   export LD_LIBRARY_PATH="/path/to/cuda-13.5/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+   export CUDA_ROOT=/usr/local/cuda-13.5
+   export PATH="$CUDA_ROOT/bin:$PATH"
+   export LD_LIBRARY_PATH="$CUDA_ROOT/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 .. _tile-windows-toolkit-setup:
 
@@ -84,11 +87,6 @@ This setup also applies before building the provider from source.
 In the compiler process, the native provider accepts a compiler-created
 toolkit mirror when it refers to the same CUDA include directories and loaded
 NVRTC file. Roots selecting different headers or runtime libraries are rejected.
-
-.. code-block:: cpp
-
-   #include <cuda/coop/tile.cuh>
-   namespace coop = ::cuda::coop::tile;
 
 The Python distribution also bundles the C++ headers, TileLib, and CMake
 package. Applications using that distribution can locate its CMake package

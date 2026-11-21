@@ -14,10 +14,44 @@ This guide follows a sum through those layers and describes the checks
 needed when changing them. The :doc:`Python </tile/python/programming>` and
 :doc:`C++ </tile/cpp/programming>` guides cover application kernels.
 
+Following a sum
+---------------
+
+Take an eight-row matrix with 128 columns. Each row sum reduces 128
+elements. The two frontends use the same provider operation to compute
+eight sums, then give those sums their language's result shape.
+
+.. figure:: visualizations/sum-lowering.svg
+   :width: 640px
+   :alt: Two frontend calls meet at the batched sum declaration. The provider offers candidates, the compiler chooses one, and the provider compiles its CUB wrapper.
+
+   On CUDA 13.5 the provider scores implementations during discovery.
+
+In Python, ``coop.sum(x, axis=1)`` returns shape ``(8,)``.
+``sum_impl`` normalizes the options and ``_reduce_impl`` arranges the
+input into batches. Here the reduction axis is already last, so the
+lowering flattens the matrix and passes 1,024 items and eight batches
+to ``cuda_coop_tile_sum_batched``. The preview call also carries an
+effect token used by the compiler. The public result contains the data.
+
+In C++, ``coop::sum<1>(x)`` returns shape ``<8, 1>``. The public
+header derives the same batch dimensions at compile time and calls the
+generated foreign declaration. The header reshapes the eight sums to
+retain axis one with extent one.
+
+The shared declaration describes the input and output sizes explicitly:
+
+.. literalinclude:: ../../tile/cpp/tilelib/interface/cuda_coop_tile.mlir
+   :language: text
+   :start-at: cuda_tile.preview$func extern @cuda_coop_tile_sum_batched<
+   :end-before: cuda_tile.preview$func extern @cuda_coop_tile_reduce_batched<
+   :dedent: 2
+
+``N`` counts all input elements. ``Batches`` counts output elements.
+The provider and compiler choose the implementation for this logical call.
+
 Source map
 ----------
-
-The source tree separates language interfaces from their shared provider.
 
 .. list-table::
    :header-rows: 1
@@ -44,39 +78,6 @@ The source tree separates language interfaces from their shared provider.
    * - ``python/cuda_coop_tile/`` and ``tile/cpp/cmake/``
      - Installed artifact resolution, Python packaging, and CMake
        consumption.
-
-Following a sum
----------------
-
-.. rubric:: Python
-
-Consider ``coop.sum(values)`` where ``values`` is a one-dimensional Tile.
-The public marker is the entry point recognized by cuTile. Accessing it
-loads the lowerings and registers them at the supported TileIR bytecode
-version.
-
-``sum_impl`` checks the input Tile type and normalizes its algorithm and
-method options through the block adapter. The lowering keeps the logical
-extent and signed dtype identity. The declaration carries no physical
-thread count or items per thread; the provider/compiler path selects them.
-
-``_emit_provider_foreign_call`` looks up the canonical declaration schema,
-checks operand and result types against its constant parameters, and
-constructs the preview call. Access annotations determine which operands
-are inputs, outputs, or in-place inputs/outputs. The preview operation
-carries a final effect token; only the data results become the public
-return value.
-
-
-.. rubric:: C++
-
-The ``coop::sum(values)`` overload performs its compile-time type and
-policy checks and calls the generated foreign declaration for the same
-operation. Its public header does not construct a Python object or import
-cuTile.
-
-
-The two paths meet at the declaration and native provider.
 
 Binding requests before selecting implementations
 -------------------------------------------------
@@ -125,7 +126,9 @@ Scratch, source generation, and compilation
 
 Each family emits a CUB wrapper for the validated specialization. Resource
 queries use the concrete generated wrapper to determine its scratch
-requirements. The compiler allocates the advertised temporary memory and
+requirements. During discovery, the provider uses NVRTC to compile size
+and alignment probes for candidates whose requirements are absent from
+its cache. The compiler allocates the advertised temporary memory and
 passes it to the selected implementation.
 
 Instantiation validates the full batch before probing resources or invoking
@@ -243,7 +246,8 @@ Run tests from ``python/cuda_coop_tile`` in the configured environment:
    python -m pytest tests/backends/tile_python/runtime/test_scan.py \
        tests/backends/tile_python/runtime/test_reduce.py
    python -m pytest tests/backends/tile_cpp/runtime/test_frontend_abi.py
-   python -m pytest tests/integration/examples/test_tile_examples.py
+   python -m pytest tests/integration/examples/test_tile_examples.py \
+       tests/backends/tile_python/runtime/test_topk.py::test_cuda_coop_tile_executes_mma_row_topk_pipeline
    python -m pytest tests/integration/packaging
    python -m pytest tests/integration/docs
 
@@ -263,9 +267,18 @@ From the repository root, build the documentation with its requirements installe
 
    ./docs/gen_docs.bash
 
-Inspect the rendered Tile navigation and both language sections. Run the
-examples extracted from their reference pages. Keep local compiler/GPU
-results distinct from CI and release qualification.
+The first kernels in the Python and C++ guides come from the downloadable
+examples. Edit those sources when a call changes. The primitive references
+also contain executable examples. The tests in
+``python/cuda_coop_tile/tests/integration/docs/`` check Python signatures
+against the frontend and its type stub, resolve source excerpts, and
+compile or run the examples with their language toolchains.
+
+When changing a result shape, update its language reference and the
+corresponding figure in ``docs/tile/visualizations/``. When changing how
+a sum reaches CUB, check the compiler diagram above against both frontends
+and the shared declaration. Inspect the built page to verify that its
+excerpts, downloads, and diagrams still show the relevant code.
 
 Implementation selection
 ------------------------

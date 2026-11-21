@@ -335,49 +335,6 @@ def worker_case(block):
     }
 
 
-def overview_case(block, setup):
-    data = [(i % 256) % 7 + 3 * (i // 256) - 2 for i in range(512)]
-    expected = [
-        value
-        for start in (0, 256)
-        for value in prefix(data[start : start + 256], lambda a, b: a + b, 0)
-    ]
-    code = (
-        HEADER
-        + marked(setup)
-        + """
-__tile_global__ void overview(const int* input_data, int* output_data) {
-  auto input_span = ct::tensor_span{input_data, ct::shape<512>{}};
-  auto output_span = ct::tensor_span{output_data, ct::shape<512>{}};
-  auto input_view = ct::partition_view{input_span, ct::shape<256>{}};
-  auto output_view = ct::partition_view{output_span, ct::shape<256>{}};
-"""
-        + marked(block)
-        + """
-}
-int main() { try {
-"""
-        + f"buffer<int> input(std::vector<int>{numbers(data)});\n"
-        + """
-  buffer<int> output(std::vector<int>(512, -7654321));
-  overview<<<2,1>>>(input.data, output.data);
-  checked(cudaGetLastError()); checked(cudaDeviceSynchronize());
-  output.print("prefixes");
-  return 0;
-} catch(const std::exception& e) { std::cerr << e.what() << '\\n'; return 1; } }
-"""
-    )
-    return {
-        "name": "overview_two_partitions",
-        "blocks": [setup, block],
-        "source": code,
-        "inputs": {"input": ("int", data)},
-        "expected": {"prefixes": expected},
-        "pairs": [],
-        "sets": [],
-    }
-
-
 def verify(case, stdout):
     if case.get("complete_program"):
         if "PASS:" not in stdout:
@@ -484,10 +441,12 @@ def documented_cases(
     assert len(cases) == len(primitive_names) + ("reduce" in primitive_names), (
         "every selected primitive and native-reduction snippet needs a case"
     )
-    guide = docs / "programming.rst"
+    advanced = docs / "advanced.rst"
     if include_guide:
-        found = blocks(guide)
-        assert len(found) == 4, "all guide C++ snippets must be covered"
+        found = blocks(advanced)
+        assert len(found) == 4, (
+            "all advanced guide C++ snippets must be covered"
+        )
         workers = [
             block
             for block in found
@@ -498,41 +457,23 @@ def documented_cases(
             guide_case([block for block in found if block not in workers])
         )
         cases.append(worker_case(workers[0]))
-        covered.add(guide.resolve())
-        # The guide includes sections of this exact downloaded program.
-        relative = "tile/cpp/test/support/tile_cpp_frontend_abi_sm120.cu"
-        assert relative in guide.read_text(), "guide executable mapping changed"
-        program = repo / relative
-        cases.append(
-            {
-                "name": "programming_complete",
-                "blocks": [
-                    {
-                        "path": str(program),
-                        "line": 1,
-                        "code": program.read_text(),
-                    }
-                ],
-                "source": program.read_text(),
-                "complete_program": True,
-            }
-        )
-    index = docs / "index.rst"
-    overview = blocks(index)
-    installation = docs / "installation.rst"
-    setup = blocks(installation)
-    assert len(overview) == 1, "overview must contain its C++ partition sketch"
-    assert (
-        len(setup) == 1 and "#include <cuda/coop/tile.cuh>" in setup[0]["code"]
+        covered.add(advanced.resolve())
+
+    # The overview and programming guide both include this complete program.
+    program = repo / "tile/cpp/examples/block_scan.cu"
+    cases.append(
+        {
+            "name": "block_scan_example",
+            "source": program.read_text(encoding="utf-8"),
+            "complete_program": True,
+        }
     )
-    cases.append(overview_case(overview[0], setup[0]))
-    covered.update((index.resolve(), installation.resolve()))
     excluded_pages = {
         (docs / "primitives" / f"{name}.rst").resolve()
         for name in set(FINAL_NAMES) - set(primitive_names)
     }
     if not include_guide:
-        excluded_pages.add(guide.resolve())
+        excluded_pages.add(advanced.resolve())
     reference = docs / "api.rst"
     if reference.is_file():
         exclusions.extend(

@@ -12,6 +12,12 @@ payloads. The result has the original capacity, and only its first
 ``min(k, valid_items)`` positions are defined. Selected keys are not guaranteed
 to be sorted.
 
+.. figure:: /tile/visualizations/topk.svg
+   :alt: Maximum and minimum selection define only a leading prefix of the output.
+
+   Only the first six input keys participate. The 99 and 100 after that
+   prefix cannot be selected, even for maximum TopK.
+
 Interface and examples
 ----------------------
 
@@ -62,8 +68,8 @@ Interface and examples
 
 .. rubric:: Example: select keys and source positions
 
-The kernel stores full-capacity results. The host consumes only the first
-16 entries and compares the selected set without relying on output order.
+The kernel extracts and stores the 16 selected key/index pairs. The host
+checks their values and source positions in any output order.
 
 .. code-block:: python
 
@@ -76,20 +82,19 @@ The kernel stores full-capacity results. The host consumes only the first
        k = ct.load(keys, (ct.bid(0),), shape=(256,))
        v = ct.load(ids, (ct.bid(0),), shape=(256,))
        best_k, best_v = coop.topk_max_pairs(k, v, k=16, valid_items=193)
-       ct.store(selected_keys, (ct.bid(0),), best_k)
-       ct.store(selected_ids, (ct.bid(0),), best_v)
+       ct.store(selected_keys, (ct.bid(0),), ct.extract(best_k, (0,), (16,)))
+       ct.store(selected_ids, (ct.bid(0),), ct.extract(best_v, (0,), (16,)))
 
    ids = torch.arange(256, device="cuda", dtype=torch.int32)
    keys = (ids * 73) % 256
-   selected_keys = torch.empty_like(keys)
-   selected_ids = torch.empty_like(ids)
+   selected_keys = torch.empty(16, device="cuda", dtype=keys.dtype)
+   selected_ids = torch.empty_like(selected_keys)
    ct.launch(torch.cuda.current_stream(), (1, 1, 1), topk_kernel,
              (keys, ids, selected_keys, selected_ids))
-   actual = selected_keys[:16]
    expected = keys[:193].topk(16).values
-   assert torch.equal(actual.sort().values, expected.sort().values)
-   assert torch.all(selected_ids[:16] < 193)
-   assert torch.equal(actual, keys[selected_ids[:16].to(torch.int64)])
+   assert torch.equal(selected_keys.sort().values, expected.sort().values)
+   assert torch.all((0 <= selected_ids) & (selected_ids < 193))
+   assert torch.equal(selected_keys, keys[selected_ids.to(torch.int64)])
 
 To sort selected keys afterward, preserve the valid-prefix contract: use a
 sorting primitive with an appropriate padding key or a consumer that operates
@@ -104,17 +109,11 @@ own eight best key/value pairs. A second TopK then selects eight of those
 TopK, so this avoids storing the full set of intermediate scores. Tied payload
 identity remains unspecified.
 
-The :doc:`MMA composition example </tile/python/programming>` uses this two-stage scheme.
-Its merge loads each 32-element candidate row into a 128-element Tile with
-zero padding and four worker warps. It passes
-``valid_items=partial_scores.shape[1]`` to TopK, using the runtime array width
-to exclude the 96 padded positions. The output still has capacity 128;
-the example extracts only the first eight results before storing them.
-
+See the :ref:`MMA and TopK example <tile-python-mma-topk>` for the
+two kernels, including the merge of a padded candidate row.
 
 Behavior
 --------
-
 
 Only the first ``min(k, valid_items)`` output slots may be consumed. The remaining
 slots are unspecified; they are not zero padding. Pair association is
@@ -127,8 +126,3 @@ defined. Counts outside ``[0, N]`` are invalid.
 Selecting a smaller bit interval compares only that transformed digit. It can
 change which values are selected even when their full numeric values differ.
 Use full-width bounds for ordinary numeric TopK.
-
-.. figure:: /tile/visualizations/topk.svg
-   :alt: Maximum and minimum selection define only a leading prefix of the output.
-
-   Maximum and minimum selection define only a leading prefix of the output.

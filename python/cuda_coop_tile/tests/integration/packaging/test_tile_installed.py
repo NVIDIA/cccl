@@ -134,6 +134,7 @@ assert torch.equal(source, torch.arange(128, device="cuda", dtype=torch.int32))
 def test_installed_cmake_executes_cpp_scan_and_reduce(tmp_path):
     root = _installed_root()
     source = REPO_ROOT / "tile/cpp/test/support/tile_cpp_scan_reduce.cu"
+    examples = REPO_ROOT / "tile/cpp/examples"
     project = tmp_path / "consumer"
     project.mkdir()
     (project / "CMakeLists.txt").write_text(
@@ -142,6 +143,7 @@ def test_installed_cmake_executes_cpp_scan_and_reduce(tmp_path):
         "find_package(cuda-coop-tile CONFIG REQUIRED)\n"
         f'add_executable(consumer "{source.as_posix()}")\n'
         "cuda_coop_tile_link(consumer)\n"
+        f'add_subdirectory("{examples.as_posix()}" examples)\n'
     )
     build = tmp_path / "build"
     _run(
@@ -163,3 +165,5 @@ def test_installed_cmake_executes_cpp_scan_and_reduce(tmp_path):
         [str(build / ("consumer.exe" if os.name == "nt" else "consumer"))],
         tmp_path,
     )
+    example = "block_scan.exe" if os.name == "nt" else "block_scan"
+    _run([str(build / "examples" / example)], tmp_path)

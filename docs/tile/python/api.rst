@@ -5,13 +5,40 @@
 ``cuda.coop.tile`` API Reference
 ================================
 
-``cuda.coop.tile`` provides 31 Python primitives inside ``cuda.tile`` kernels.
-Operations consume logical Tile values. Calls on different Tiles do not
-share prefixes, reductions, run boundaries, or sorting state.
-:doc:`/tile/python/host_api` covers Python helpers for locating installed build inputs.
+Use these operations on logical tile values inside a ``cuda.tile`` kernel.
+Each block computes its own result. Choose the family by the value you
+want to feed into the next operation or store to memory.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 55 45
+
+   * - Result
+     - Primitive family
+   * - A running total or a prefix per element
+     - :doc:`primitives/scan`
+   * - An aggregate for a whole tile or for each row
+     - :doc:`primitives/reduce`
+   * - A new element order, a shift, or a rotation
+     - :doc:`primitives/exchange_shuffle`
+   * - Differences between neighbors or flags at run boundaries
+     - :doc:`primitives/adjacent_discontinuity`
+   * - A count for each byte value
+     - :doc:`primitives/histogram`
+   * - A window of expanded runs, optionally with the position within each run
+     - :doc:`primitives/run_length_decode`
+   * - Keys or key/value pairs ordered by comparison
+     - :doc:`primitives/merge_sort`
+   * - Keys ordered by radix bits, or a destination rank per input
+     - :doc:`primitives/radix_sort_rank`
+   * - The largest or smallest keys, optionally with their payloads
+     - :doc:`primitives/topk`
+
+For Python helpers that locate the installed C++ headers, CMake package and
+TileLib, see :doc:`host_api`.
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
    primitives/scan
    primitives/reduce
@@ -33,25 +60,23 @@ require equal key and value shapes; their element types may differ. Outputs
 preserve the input element type and extent unless the family page states
 otherwise. Python reductions remove reduced axes by default; ``keepdims=True``
 retains them with extent one, and ``broadcast=True`` restores the input shape.
-TopK
-keeps capacity ``N`` while defining only the first ``min(k, valid_items)`` elements.
+TopK keeps capacity ``N`` while defining only the first ``min(k, valid_items)`` elements.
 
 The numeric element types are ``int8``, ``uint8``, ``int16``, ``uint16``,
 ``int32``, ``uint32``, ``int64``, ``uint64``, ``float16``, ``bfloat16``,
-``float32``, and ``float64``. Python sum also accepts boolean inputs and
-promotes them to ``int32``. Other boolean and structured element types are unsupported.
+``float32``, and ``float64``. Both ``sum`` and ``reduce`` with addition
+accept boolean inputs and promote them to ``int32``. Other reductions and scans
+use the listed numeric types.
 Histogram accepts only ``uint8`` samples; radix rank accepts only the eight
 integer types. Bitwise scan and reduction operations also require integers.
 
 .. rubric:: Topology
 
-Ordinary calls describe the logical extent and operation. The provider
-offers compatible physical implementations; the Python frontend currently
-requires that a width from 32, 64, 128, or 256 divides ``N`` for operations
-other than reductions. Reductions also accept rows smaller than a warp.
-Individual families add constraints, described on their pages. This shape check does
-not guarantee that each width is supported by a particular compiler build.
-The runnable examples state their logical extents and any worker hints.
+For a valid cuTile shape, one-dimensional primitives other than reductions
+require a positive multiple of 32 input elements. The :doc:`reduction
+reference <primitives/reduce>` gives the extent rule for each aggregate,
+including shorter rows. Each family can impose additional constraints on
+extent and worker count.
 An omitted hint leaves selection to the compiler, subject to each call's
 requirements. See the
 :doc:`/tile/python/installation` and :doc:`/tile/programming_model` for the compiler and launch contract.

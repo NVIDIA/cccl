@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-import importlib
+import runpy
 
 import pytest
 
@@ -372,56 +372,7 @@ def test_cuda_coop_tile_topk_empty_and_clamped_windows(monkeypatch, num_items):
 
 def test_cuda_coop_tile_executes_mma_row_topk_pipeline(monkeypatch):
     _configure_e2e_environment(monkeypatch)
-    torch, _, _ = _import_e2e_modules()
-    monkeypatch.syspath_prepend(str(PACKAGE_ROOT))
-    mma_topk = importlib.import_module("examples.mma_topk")
-
-    rows = mma_topk.M_TILE
-    inner = mma_topk.K_TILE
-    columns = mma_topk.N_TILE * mma_topk.COLUMN_TILES
-    bit_rows = torch.arange(inner, device="cuda", dtype=torch.int64).unsqueeze(
-        1
-    )
-    column_ids = torch.arange(columns, device="cuda", dtype=torch.int64)
-    b_array = ((column_ids.unsqueeze(0) >> bit_rows) & 1).to(torch.float32)
-    weights = torch.zeros(inner, device="cuda", dtype=torch.float32)
-    weights[:9] = 2.0 ** torch.arange(9, device="cuda", dtype=torch.float32)
-    a_array = weights.unsqueeze(0).repeat(rows, 1)
-
-    partial_scores = torch.empty(
-        (rows, mma_topk.CANDIDATES_PER_ROW), device="cuda", dtype=torch.float32
-    )
-    partial_columns = torch.empty(
-        (rows, mma_topk.CANDIDATES_PER_ROW), device="cuda", dtype=torch.int32
-    )
-    top_scores = torch.empty(
-        (rows, mma_topk.TOPK), device="cuda", dtype=torch.float32
-    )
-    top_columns = torch.empty(
-        (rows, mma_topk.TOPK), device="cuda", dtype=torch.int32
-    )
-
-    mma_topk.launch_mma_topk(
-        torch.cuda.current_stream(),
-        a_array,
-        b_array,
-        partial_scores,
-        partial_columns,
-        top_scores,
-        top_columns,
-    )
-    torch.cuda.synchronize()
-
-    expected_scores, expected_columns = torch.topk(
-        a_array @ b_array, mma_topk.TOPK, dim=1
-    )
-    actual_order = torch.argsort(top_columns, dim=1)
-    expected_order = torch.argsort(expected_columns, dim=1)
-    assert torch.equal(
-        torch.gather(top_columns, 1, actual_order),
-        torch.gather(expected_columns.to(torch.int32), 1, expected_order),
-    )
-    assert torch.equal(
-        torch.gather(top_scores, 1, actual_order),
-        torch.gather(expected_scores, 1, expected_order),
+    _load_e2e_modules()
+    runpy.run_path(
+        str(PACKAGE_ROOT / "examples/mma_topk.py"), run_name="__main__"
     )

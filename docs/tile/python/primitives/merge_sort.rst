@@ -11,6 +11,12 @@ Merge sort orders all keys in one Tile by numeric comparison. The pair form
 moves a payload with each key. A valid-item count can limit the meaningful
 input prefix while retaining the Tile's compile-time capacity.
 
+.. figure:: /tile/visualizations/merge-sort.svg
+   :alt: Sorted keys retain payload association, including a partial valid prefix.
+
+   The smallest key, 1, moves to the front in ascending order. Its payload
+   follows it, including when only a prefix of the input is valid.
+
 Interface and examples
 ----------------------
 
@@ -78,10 +84,8 @@ For a partial integer Tile, use for example
 valid key is strictly below that sentinel, then consume only the first 193
 results.
 
-
 Behavior
 --------
-
 
 The pair form zeroes padded payloads before sorting. Read the first
 ``valid_items`` results only after choosing a sentinel that sorts after the
@@ -94,15 +98,6 @@ The output capacity remains ``N`` even when ``valid_items`` is zero.
 Merge sort does not guarantee stable ordering of equal keys. Numeric comparison
 is used directly; do not assume a total ordering for NaNs. Use inputs with a
 well-defined comparison order when comparing against a sorted reference.
-The provider selects a power-of-two worker count dividing ``N``. The special
-warp implementation is limited to exactly 32 input items and 32 workers;
-those properties are derived from the logical extent, not a per-call policy.
-A compiler/frontend supporting that worker count is still required. The
-block examples use 256 items with 128 workers, including
-full and partial keys and pairs. These implementation constraints do not
-expose an items-per-thread option.
-
-.. figure:: /tile/visualizations/merge-sort.svg
-   :alt: Sorted keys retain payload association, including a partial valid prefix.
-
-   Sorted keys retain payload association, including a partial valid prefix.
+The provider selects a power-of-two worker count that divides ``N``. It
+can use the warp implementation when both the input extent and the number
+of participating workers are 32.

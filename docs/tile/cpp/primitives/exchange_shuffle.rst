@@ -12,8 +12,17 @@ wraparound. Each call returns a new Tile and preserves the input Tile's value.
 Interface and examples
 ----------------------
 
-See the :doc:`C++ API reference </tile/cpp/api>` for indexed declarations
-and overload forms.
+For a 256-element ``input``, the first two calls undo one another. The last
+call rotates a separate 128-element Tile by three positions.
+
+.. code-block:: cpp
+
+   namespace coop = cuda::coop::tile;
+   auto blocked = coop::exchange_striped_to_blocked(input, coop::exchange_policy<128>{});
+   auto original = coop::exchange_blocked_to_striped(blocked, coop::exchange_policy<128>{});
+   auto previous = coop::shuffle_up(input);
+   // A separate 128-element input is required for this rotation.
+   auto rotated = coop::shuffle_rotate(input128, 3);
 
 All six operations return a numeric Tile with the input's positive extent
 ``N`` and element type. Up and down preserve the first and last boundary,
@@ -28,19 +37,8 @@ participation is selected from the logical extent. Offset and rotate
 require an implementation with ``N`` workers and accept either an integer
 scalar or a shape-one ``int`` Tile as distance.
 
-.. code-block:: cpp
-
-   namespace coop = cuda::coop::tile;
-   auto blocked = coop::exchange_striped_to_blocked(input, coop::exchange_policy<128>{});
-   auto original = coop::exchange_blocked_to_striped(blocked, coop::exchange_policy<128>{});
-   auto previous = coop::shuffle_up(input);
-   // A separate 128-element input is required for this rotation.
-   auto rotated = coop::shuffle_rotate(input128, 3);
-
-
 Behavior
 --------
-
 
 Exchange is precisely the following permutation, for ``0 <= t < B`` and
 ``0 <= j < I``:
@@ -67,3 +65,5 @@ rotate gives ``[1, 2, 3, 0]``. Up gives ``[0, 0, 1, 2]``.
 
    Exchange shows 256 logical items with 128 block threads. Shuffle uses
    128 items and 128 threads. Ellipses abbreviate each full Tile.
+
+:ref:`Exchange and shuffle declarations and overloads <tile-cpp-exchange-shuffle-declarations>`.
