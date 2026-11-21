@@ -200,7 +200,7 @@ template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, c
     static_assert(::cuda::std::is_same_v<_Unit, thread_level> && ::cuda::std::is_same_v<_Level, warp_level>,
                   "group_by with multiple runtime-sized groups requires threads within a warp");
 
-    // Each lane knows only its own group's size. All parent lanes, including excluded lanes, must vote.
+    // Excluded threads must also participate in the parent-wide ballot.
     const auto __leaders = ::__ballot_sync(
       __parent.__mapping_result().lane_mask().value(), __result.is_valid() && __result.unit_rank() == 0);
     if (__result.is_valid())

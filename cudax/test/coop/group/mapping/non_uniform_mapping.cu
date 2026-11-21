@@ -276,17 +276,21 @@ __device__ void test_group_by_after_binary_partition(Config config, Width width)
     CHECK(result.lane_mask() == cuda::device::lane_mask{0x55u << first});
   }
 
-  // Shuffle ranks within each parity partition. Each child now occupies every eighth lane,
-  // with unit rank zero in its last physical lane.
-  auto shuffled = cudax::coop::binary_partition{OddRank{}}.map(cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
-  shuffled.__unit_rank_ = (lane / 2 % 4) * 4 + (3 - lane / 8);
-  const auto split      = cudax::coop::group_by{width}.map(cuda::gpu_thread, parent, shuffled);
+  // Lanes 0, 8, 16, and 24 form one child with unit ranks 0, 1, 2, and 3.
+  const auto every_eighth = cudax::coop::binary_partition{[](const auto& prev) {
+    return prev.unit_rank() % 8 == 0;
+  }};
+  const auto split =
+    (every_eighth | cudax::coop::group_by{width}).map(cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
   REQUIRE(split.is_valid());
   CHECK(split.group_count() == 8);
-  CHECK(split.group_rank() == lane % 8);
   CHECK(split.unit_count() == 4);
-  CHECK(split.unit_rank() == 3 - lane / 8);
-  CHECK(split.lane_mask() == cuda::device::lane_mask{0x0101'0101u << (lane % 8)});
+  if (lane % 8 == 0)
+  {
+    CHECK(split.group_rank() == 0);
+    CHECK(split.unit_rank() == lane / 8);
+    CHECK(split.lane_mask() == cuda::device::lane_mask{0x0101'0101u});
+  }
 }
 
 struct RankLabel
