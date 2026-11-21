@@ -286,12 +286,140 @@ TEST_FUNC void test_nearbyint(T val)
 }
 
 template <typename T>
+TEST_FUNC void test_nextafter_edge_cases(T val)
+{
+  // val is only known at run time, which keeps the calls from being evaluated by the compiler
+  const T one  = val / val;
+  const T zero = one - one;
+  const T min  = one * cuda::std::numeric_limits<T>::min();
+  const T max  = one * cuda::std::numeric_limits<T>::max();
+  const T dmin = one * cuda::std::numeric_limits<T>::denorm_min();
+  const T eps  = one * cuda::std::numeric_limits<T>::epsilon();
+  const T inf  = one * cuda::std::numeric_limits<T>::infinity();
+  const T nan  = one * cuda::std::numeric_limits<T>::quiet_NaN();
+
+  // The spacing below 1 is half the spacing above it.
+  assert(eq(cuda::std::nextafter(one, T(2)), one + eps));
+  assert(eq(cuda::std::nextafter(one + eps, zero), one));
+  assert(eq(cuda::std::nextafter(one, zero), one - eps / T(2)));
+  assert(eq(cuda::std::nextafter(-one, T(-2)), -one - eps));
+  assert(eq(cuda::std::nextafter(-one, zero), -one + eps / T(2)));
+
+  // Fast device math flushes float subnormals to zero
+  bool test_subnormals = true;
+  NV_IF_TARGET(NV_IS_DEVICE, (test_subnormals = !TEST_HAS_CUDA_FAST_MATH || !cuda::std::is_same_v<T, float>;))
+  if (test_subnormals)
+  {
+    // zero steps to the smallest subnormal with the sign of y, and a subnormal steps back to zero keeping its sign
+    assert(eq(cuda::std::nextafter(zero, one), dmin));
+    assert(eq(cuda::std::nextafter(zero, -one), -dmin));
+    assert(eq(cuda::std::nextafter(-zero, one), dmin));
+    assert(eq(cuda::std::nextafter(dmin, zero), zero));
+    assert(!cuda::std::signbit(cuda::std::nextafter(dmin, -one)));
+    assert(cuda::std::signbit(cuda::std::nextafter(-dmin, zero)));
+    assert(eq(cuda::std::nextafter(dmin, one), dmin * T(2)));
+
+    // the boundary between normal and subnormal values
+    assert(eq(cuda::std::nextafter(min, zero), min - dmin));
+    assert(eq(cuda::std::nextafter(min - dmin, one), min));
+    assert(eq(cuda::std::nextafter(-min, zero), -min + dmin));
+  }
+
+  // the largest finite value and infinity
+  assert(eq(cuda::std::nextafter(max, inf), inf));
+  assert(eq(cuda::std::nextafter(-max, -inf), -inf));
+  assert(eq(cuda::std::nextafter(inf, zero), max));
+  assert(eq(cuda::std::nextafter(-inf, zero), -max));
+  assert(eq(cuda::std::nextafter(inf, inf), inf));
+  assert(cuda::std::nextafter(max, zero) < max);
+  assert(eq(cuda::std::nextafter(cuda::std::nextafter(max, zero), inf), max));
+
+  // equal arguments return y, which gives the sign of zero
+  assert(eq(cuda::std::nextafter(one, one), one));
+  assert(cuda::std::signbit(cuda::std::nextafter(zero, -zero)));
+  assert(!cuda::std::signbit(cuda::std::nextafter(-zero, zero)));
+
+  // NaN in either argument returns NaN
+  assert(cuda::std::isnan(cuda::std::nextafter(nan, one)));
+  assert(cuda::std::isnan(cuda::std::nextafter(one, nan)));
+  assert(cuda::std::isnan(cuda::std::nextafter(nan, nan)));
+}
+
+#if _CCCL_HOSTED()
+// The device has no floating point exceptions
+template <typename T>
+TEST_FUNC void test_nextafter_fenv(T val)
+{
+  unused(val);
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 constexpr int exceptions = FE_INEXACT | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW;
+
+                 // volatile keeps the calls from being evaluated by the compiler
+                 volatile T one  = val / val;
+                 volatile T zero = T(0);
+                 volatile T min  = cuda::std::numeric_limits<T>::min();
+                 volatile T max  = cuda::std::numeric_limits<T>::max();
+                 volatile T dmin = cuda::std::numeric_limits<T>::denorm_min();
+                 volatile T inf  = cuda::std::numeric_limits<T>::infinity();
+                 volatile T nan  = cuda::std::numeric_limits<T>::quiet_NaN();
+                 volatile T res  = T(0);
+
+                 // steps between normal values, from infinity, and to equal or NaN arguments raise nothing
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(one), T(2));
+                 res = cuda::std::nextafter(T(min), T(one));
+                 res = cuda::std::nextafter(T(inf), T(zero));
+                 res = cuda::std::nextafter(T(one), T(one));
+                 res = cuda::std::nextafter(T(nan), T(one));
+                 assert(!fetestexcept(exceptions));
+
+                 // stepping from the largest finite value to infinity overflows
+                 res = cuda::std::nextafter(T(max), T(inf));
+                 assert(eq(T(res), T(inf)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_OVERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(-T(max), -T(inf));
+                 assert(eq(T(res), -T(inf)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_OVERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+
+                 // subnormal and zero results underflow
+                 res = cuda::std::nextafter(T(zero), T(one));
+                 assert(eq(T(res), T(dmin)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(min), T(zero));
+                 assert(eq(T(res), T(min) - T(dmin)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(dmin), T(zero));
+                 assert(eq(T(res), T(0)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+               }))
+}
+#endif // _CCCL_HOSTED()
+
+template <typename T>
 TEST_FUNC void test_nextafter(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, T{})), ret>);
 
-  unused(val);
+  assert(eq(cuda::std::nextafter(val, val), ret(val)));
+
+  // Half and bfloat16 step in float, then round back to their own type.
+  if constexpr (cuda::std::is_floating_point_v<T>
+#if _CCCL_HAS_FLOAT128()
+                || cuda::std::is_same_v<T, __float128>
+#endif // _CCCL_HAS_FLOAT128()
+  )
+  {
+    test_nextafter_edge_cases(val);
+#if _CCCL_HOSTED()
+    test_nextafter_fenv(val);
+#endif // _CCCL_HOSTED()
+  }
   if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nextafterf(cuda::std::nextafterf(val, T(10)), T(-10)), val));
@@ -309,16 +437,16 @@ template <typename T>
 TEST_FUNC void test_nexttoward(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::nexttoward(T{}, long double{})), ret>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nexttoward(T{}, 0.0L)), ret>);
 
-  assert(eq(cuda::std::nexttoward(cuda::std::nexttoward(val, long double(10.0)), long double(-10.0)), val));
+  assert(eq(cuda::std::nexttoward(cuda::std::nexttoward(val, 10.0L), -10.0L), val));
   if constexpr (cuda::std::is_same_v<T, float>)
   {
-    assert(eq(cuda::std::nexttowardf(cuda::std::nexttowardf(val, long double(10.0)), long double(-10.0)), val));
+    assert(eq(cuda::std::nexttowardf(cuda::std::nexttowardf(val, 10.0L), -10.0L), val));
   }
   else if constexpr (cuda::std::is_same_v<T, float>)
   {
-    assert(eq(cuda::std::nexttowardl(cuda::std::nexttowardl(val, long double(10.0)), long double(-10.0)), val));
+    assert(eq(cuda::std::nexttowardl(cuda::std::nexttowardl(val, 10.0L), -10.0L), val));
   }
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -600,7 +728,30 @@ TEST_FUNC void test_float128_lround_edge_cases()
   assert(cuda::std::lround(nan) == cuda::std::numeric_limits<long>::min());
 }
 
-// nextafter and nexttoward do not support __float128 yet, so the generic driver can not be used
+TEST_FUNC void test_float128_nextafter_mixed(float val)
+{
+  using T     = __float128;
+  const T one = T(val) / T(val);
+  const T eps = cuda::std::numeric_limits<T>::epsilon();
+
+  // mixed arguments are promoted to __float128 in either order
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, double{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(double{}, T{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, float{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(int{}, T{})), T>);
+  assert(eq(cuda::std::nextafter(one, 2.0), one + eps));
+  assert(eq(cuda::std::nextafter(1, one + one), one + eps));
+  assert(eq(cuda::std::nextafter(one + one, 1.0f), one + one - eps));
+
+  // the __float128 overload does not change how the other types resolve
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(double{}, float{})), double>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(int{}, int{})), double>);
+#  if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(__half{}, __nv_bfloat16{})), float>);
+#  endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+}
+
+// nexttoward does not support __float128 yet, so the generic driver can not be used
 TEST_FUNC void test_float128(const float val)
 {
   test_ceil<__float128>(val);
@@ -610,6 +761,7 @@ TEST_FUNC void test_float128(const float val)
   test_lrint<__float128>(val);
   test_lround<__float128>(val);
   test_nearbyint<__float128>(val);
+  test_nextafter<__float128>(val);
   test_rint<__float128>(val);
   test_round<__float128>(val);
   test_trunc<__float128>(val);
@@ -619,6 +771,7 @@ TEST_FUNC void test_float128(const float val)
   test_float128_nearbyint_inexact(val);
 #  endif // _CCCL_HOSTED()
   test_float128_lround_edge_cases();
+  test_float128_nextafter_mixed(val);
 }
 #endif // _CCCL_HAS_FLOAT128()
 
@@ -646,7 +799,7 @@ TEST_FUNC void test(const float val)
   test<float>(val);
   test<double>(val);
 #if _CCCL_HAS_LONG_DOUBLE()
-  test<long double>();
+  test<long double>(val);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if !_CCCL_TILE_COMPILATION()
