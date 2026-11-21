@@ -85,6 +85,7 @@ package_root="$repo_root/python/cuda_coop_cutlass"
 cd "$package_root/tests"
 case "$stage" in
   host | compile)
+    cuda-coop-aot --help > /dev/null
     python -I -m pytest -v -m 'not gpu' test_*.py packaging/ unit/
     if [[ "$stage" == compile ]]; then
       for route in 0 1; do

@@ -4,6 +4,7 @@
 
 """Cooperative CUDA primitives for the CUTLASS CuTe DSL."""
 
+from . import aot
 from ._compiler._runtime import validate_cutlass_runtime
 from ._device_operator import DeviceOperator, compile_operator
 from ._group_exchange import exchange
@@ -53,6 +54,7 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "aot",
     "DeviceOperator",
     "compile_operator",
     "reduce_batched",

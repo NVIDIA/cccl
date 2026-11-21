@@ -76,7 +76,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="20" y="1357.8000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">for deferred scratch.</text>
     <text x="20" y="1386.1000000000006" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Provider compilation result record</text>
     <text x="20" y="1408.5000000000007" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">BundleCompilation</text>
-    <text x="20" y="1430.9000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Bundle compilation or cache reuse</text>
+    <text x="20" y="1430.9000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">The pack, cache or JIT path</text>
     <text x="20" y="1453.3000000000009" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">returns this record.</text>
     <text x="20" y="1475.700000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">It holds the LTO-IR path and</text>
     <text x="20" y="1498.100000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">ScratchLayout map.</text>
