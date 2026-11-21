@@ -200,13 +200,13 @@ public:
 
   _CCCL_TEMPLATE(class _Unit2 = _Unit)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit2, typename _Group::unit_type>)
-  _CCCL_DEVICE_API group_view(const _Group& __group)
+  _CCCL_DEVICE_API group_view(const _Group& __group _CCCL_LIFETIMEBOUND)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
-  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
+  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group _CCCL_LIFETIMEBOUND)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
@@ -224,7 +224,7 @@ public:
   {}
 
   // Internal constructor for a view with a specialized mapping result.
-  _CCCL_DEVICE_API explicit group_view(const _Group& __group, const _MappingResult& __mapping_result)
+  _CCCL_DEVICE_API explicit group_view(const _Group& __group _CCCL_LIFETIMEBOUND, const _MappingResult& __mapping_result)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{__mapping_result}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
@@ -247,17 +247,17 @@ public:
     return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const
+  [[nodiscard]] _CCCL_DEVICE_API const _MappingResult& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }
