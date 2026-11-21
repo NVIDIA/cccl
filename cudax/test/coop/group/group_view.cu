@@ -392,6 +392,17 @@ __device__ void test_nonuniform_group_view(Config config)
 
   check(same_unit, cuda::block, 1);
 
+  // Changing units preserves the selected group rank even when the new unit count is dynamic.
+  group.with_static_unit_count([&](auto specialized) {
+    constexpr auto selected_rank = specialized.static_rank(cudax::coop::parent_group);
+    static_assert(selected_rank < 2);
+    const cudax::coop::group_view threads{cuda::gpu_thread, specialized};
+    static_assert(threads.static_rank(cudax::coop::parent_group) == selected_rank);
+    static_assert(cuda::gpu_thread.static_count(threads)
+                  == (Static ? Original::static_unit_count(selected_rank) * 128 : cuda::std::dynamic_extent));
+    check(threads, cuda::gpu_thread, 128);
+  });
+
   // With 128 threads per block, the groups contain four and twelve warps.
   // Static dimensions preserve those counts; runtime dimensions require dynamic counts.
   const cudax::coop::group_view warps{cuda::warp, group};
