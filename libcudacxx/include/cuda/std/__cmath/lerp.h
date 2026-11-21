@@ -67,6 +67,13 @@ template <typename _Fp>
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr __float128 lerp(__float128 __a, __float128 __b, __float128 __t) noexcept
+{
+  return ::cuda::std::__lerp(__a, __b, __t);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lerp(__half __a, __half __b, __half __t) noexcept
 {

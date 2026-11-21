@@ -7,11 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cmath>
 
 // constexpr float lerp(float a, float b, float t) noexcept;
 // constexpr double lerp(double a, double b, double t) noexcept;
 // constexpr long double lerp(long double a, long double b, long double t) noexcept;
+// constexpr __float128 lerp(__float128 a, __float128 b, __float128 t) noexcept; // extension
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -75,9 +79,15 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   static_assert(constexpr_test<float>());
   static_assert(constexpr_test<double>());
+#if _CCCL_HAS_FLOAT128()
+  static_assert(constexpr_test<__float128>());
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }
