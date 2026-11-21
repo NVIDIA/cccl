@@ -64,7 +64,7 @@ __group_by_fix_group_count_rank(const _Unit&, const _ParentGroup& __parent, cons
   using ::cuda::std::is_same_v;
   using ::cuda::std::uint32_t;
 
-  if constexpr (is_same_v<_Unit, thread_level> && is_same_v<typename _ParentGroup::level_type, warp_level>)
+  if constexpr (is_same_v<_Unit, thread_level> && is_same_v<typename _ParentGroup::scope_type, warp_level>)
   {
     // Excluded threads must also participate in the parent-wide ballot.
     const auto __group_leaders = ::__ballot_sync(__parent.__mapping_result().lane_mask().value(),
@@ -103,7 +103,7 @@ public:
     _CCCL_ASSERT(__unit_count == _StaticUnitCount, "__unit_count must match the static _StaticUnitCount");
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult, ::cuda::std::size_t... _Is>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult, ::cuda::std::size_t... _Is>
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __do_map(const _PrevMappingResult& __prev_mapping_result, const ::cuda::std::index_sequence<_Is...>&)
   {
@@ -158,11 +158,11 @@ public:
       static_cast<::cuda::std::uint32_t>(__group_rank_offsets[__prev_group_rank]) + __curr_group_rank,
       __unit_count,
       __rank,
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
         __prev_mapping_result.lane_mask(), __unit_count, __rank)};
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API static auto __do_map(const _PrevMappingResult& __prev_mapping_result)
   {
     constexpr auto __unit_count = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
@@ -225,7 +225,7 @@ public:
     const auto __n          = __unit_count;
     const auto __rank       = __prev_unit_rank % __n;
     const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
         __prev_mapping_result.lane_mask(), __n, __rank);
     return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
@@ -234,16 +234,16 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Scope = typename _ParentGroup::scope_type;
 
     if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
     {
-      return __do_map<true, _Unit, _Level>(
+      return __do_map<true, _Unit, _Scope>(
         __prev_mapping_result, ::cuda::std::make_index_sequence<_PrevMappingResult::static_group_count()>{});
     }
     else
     {
-      const auto __ret = __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+      const auto __ret = __do_map<true, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
       if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
       {
         return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
@@ -262,16 +262,16 @@ public:
       const _ParentGroup& __parent,
       const _PrevMappingResult& __prev_mapping_result) const
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Scope = typename _ParentGroup::scope_type;
 
     if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
     {
-      return __do_map<false, _Unit, _Level>(
+      return __do_map<false, _Unit, _Scope>(
         __prev_mapping_result, ::cuda::std::make_index_sequence<_PrevMappingResult::static_group_count()>{});
     }
     else
     {
-      const auto __ret = __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+      const auto __ret = __do_map<false, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
       if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
       {
         return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
@@ -296,7 +296,7 @@ public:
     _CCCL_ASSERT(__unit_count > 0, "__unit_count must be greater than 0");
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _PrevMappingResult& __prev_mapping_result) const
   {
     using _MappingResult =
@@ -352,7 +352,7 @@ public:
     const auto __n          = __unit_count_;
     const auto __rank       = __prev_unit_rank % __unit_count_;
     const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
         __prev_mapping_result.lane_mask(), __n, __rank);
     return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
@@ -361,7 +361,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
   {
-    const auto __ret = __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    const auto __ret = __do_map<true, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
     if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
     {
       return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
@@ -379,7 +379,7 @@ public:
       const _ParentGroup& __parent,
       const _PrevMappingResult& __prev_mapping_result) const
   {
-    const auto __ret = __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    const auto __ret = __do_map<false, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
     if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
     {
       return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);

@@ -50,7 +50,7 @@ public:
     _CCCL_ASSERT(__unit_count == _StaticUnitCount, "__unit_count must be same as _StaticUnitCount");
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API static auto __do_map(const _PrevMappingResult& __prev_mapping_result)
   {
     constexpr auto __static_prev_nunits        = _PrevMappingResult::static_unit_count();
@@ -112,7 +112,7 @@ public:
     const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
     const auto __unit_rank   = __prev_unit_rank;
     const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
         __prev_mapping_result.lane_mask(), __unit_count, __unit_rank);
     return _MappingResult{__group_count, __group_rank, __unit_count, __unit_rank, __lane_mask};
   }
@@ -121,14 +121,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    return __do_map<true, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    return __do_map<false, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
   }
 };
 
@@ -142,7 +142,7 @@ public:
       : __unit_count_{__unit_count}
   {}
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _PrevMappingResult& __prev_mapping_result) const
   {
     using _MappingResult = __mapping_result<
@@ -182,7 +182,7 @@ public:
     const auto __unit_count  = __unit_count_;
     const auto __unit_rank   = __prev_unit_rank;
     const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
         __prev_mapping_result.lane_mask(), __unit_count, __unit_rank);
     return _MappingResult{__group_count, __group_rank, __unit_count, __unit_rank, __lane_mask};
   }
@@ -191,14 +191,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    return __do_map<true, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
+    return __do_map<false, _Unit, typename _ParentGroup::scope_type>(__prev_mapping_result);
   }
 };
 

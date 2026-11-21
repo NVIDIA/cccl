@@ -158,7 +158,7 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 template <class Group>
 __device__ void test_cooperative_algorithm(Group group)
 {
-  using Level = typename Group::level_type;
+  using Scope = typename Group::scope_type;
 
   unsigned array[]{1, 2, 3};
   const auto result = sum(group, array);

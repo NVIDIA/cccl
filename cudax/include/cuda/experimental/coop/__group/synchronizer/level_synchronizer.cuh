@@ -49,7 +49,7 @@ public:
   template <class _Unit, class _ParentGroup, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto make_instance(const _Unit&, const _ParentGroup&, const _MappingResult&) const
   {
-    return __synchronizer_instance<typename _ParentGroup::level_type>{};
+    return __synchronizer_instance<typename _ParentGroup::scope_type>{};
   }
 };
 

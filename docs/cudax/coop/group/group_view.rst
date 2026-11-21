@@ -12,7 +12,7 @@
   {
   public:
     using unit_type       = Unit;
-    using level_type      = typename Group::level_type;
+    using scope_type      = typename Group::scope_type;
     using hierarchy_type  = typename Group::hierarchy_type;
 
     group_view() = delete;
@@ -86,21 +86,21 @@ Examples
 
   // The shuffle algorithm exchanges values among units within a given group.
 
-  // An overload for "this" groups (the unit type is the same as the level type) is basically useless,
+  // An overload for "this" groups (the unit type is the same as the scope type) is basically useless,
   // because there is just 1 unit within the group.
   template <typename Group>
-    requires cuda::std::same_as<typename Group::unit_type, typename Group::level_type>
+    requires cuda::std::same_as<typename Group::unit_type, typename Group::scope_type>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     assert(src_rank == 0);
     return value;
   }
 
-  // What we need is an overload that takes a group whose unit and level types are not the same.
+  // What we need is an overload that takes a group whose unit and scope types are not the same.
   // This overload implements shuffling values among threads within a warp.
   template <typename Group>
     requires cuda::std::same_as<typename Group::unit_type, cuda::thread_level>
-      && cuda::std::same_as<typename Group::level_type, cuda::warp_level>
+      && cuda::std::same_as<typename Group::scope_type, cuda::warp_level>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     // Because this overload takes the group as const&, we can't use it in a constant expression

@@ -51,7 +51,7 @@
 
 namespace cuda::experimental::coop
 {
-template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult, class _Range>
+template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult, class _Range>
 [[nodiscard]] _CCCL_DEVICE_API auto
 __group_as_map(const _PrevMappingResult& __prev_mapping_result, _Range& __unit_counts)
 {
@@ -112,7 +112,7 @@ __group_as_map(const _PrevMappingResult& __prev_mapping_result, _Range& __unit_c
       const auto __n          = __i_count;
       const auto __rank       = __prev_unit_rank - __sum;
       const auto __lane_mask =
-        ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+        ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Scope, _PrevMappingResult::is_always_contiguous()>(
           __prev_mapping_result.lane_mask(), __n, __rank);
       return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
     }
@@ -146,7 +146,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
   {
-    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::level_type>(
+    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::scope_type>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -155,7 +155,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
   {
-    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::level_type>(
+    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::scope_type>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -164,7 +164,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::level_type>(
+    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::scope_type>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -173,7 +173,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::level_type>(
+    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::scope_type>(
       __prev_mapping_result, __unit_counts_);
   }
 };
@@ -213,7 +213,7 @@ class group_as<::cuda::std::index_sequence<_Counts...>>
     return _Result{__result.group_rank(), __result.unit_rank(), __result.lane_mask()};
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _Scope, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _PrevMappingResult& __prev) const
   {
     // Check every statically known input size, including non-uniform previous groups.
@@ -239,7 +239,7 @@ class group_as<::cuda::std::index_sequence<_Counts...>>
     static_assert(__compatible, "group_as counts are incompatible with the previous static unit counts");
 
     constexpr ::cuda::std::uint32_t __counts[]{static_cast<::cuda::std::uint32_t>(_Counts)...};
-    const auto __result = ::cuda::experimental::coop::__group_as_map<_Exhaustive, _Unit, _Level>(__prev, __counts);
+    const auto __result = ::cuda::experimental::coop::__group_as_map<_Exhaustive, _Unit, _Scope>(__prev, __counts);
 
     if constexpr (_PrevMappingResult::static_group_count() != ::cuda::std::dynamic_extent)
     {
@@ -266,14 +266,14 @@ public:
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev);
+    return __do_map<true, _Unit, typename _ParentGroup::scope_type>(__prev);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev);
+    return __do_map<false, _Unit, typename _ParentGroup::scope_type>(__prev);
   }
 };
 

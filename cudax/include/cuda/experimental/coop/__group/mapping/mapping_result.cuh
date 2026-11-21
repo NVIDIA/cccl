@@ -438,7 +438,7 @@ __lane_mask_prefix(::cuda::std::uint32_t __mask, ::cuda::std::uint32_t __rank)
   return __prefix;
 }
 
-template <class _Unit, class _Level, bool _IsAlwaysContiguous>
+template <class _Unit, class _Scope, bool _IsAlwaysContiguous>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask __make_lane_mask_for_n(
   ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank)
 {
@@ -451,7 +451,7 @@ template <class _Unit, class _Level, bool _IsAlwaysContiguous>
       return lane_mask::this_lane();
     }
 
-    if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+    if constexpr (::cuda::std::is_same_v<_Scope, warp_level>)
     {
       if constexpr (_IsAlwaysContiguous)
       {

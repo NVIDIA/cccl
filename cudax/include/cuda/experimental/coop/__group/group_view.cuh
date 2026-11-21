@@ -182,7 +182,7 @@ class group_view
 
 public:
   using unit_type                    = _Unit;
-  using level_type                   = typename _Group::level_type;
+  using scope_type                   = typename _Group::scope_type;
   using hierarchy_type               = typename _Group::hierarchy_type;
   using __mapping_result_type        = _MappingResult;
   using __synchronizer_instance_type = _SynchronizerInstance;

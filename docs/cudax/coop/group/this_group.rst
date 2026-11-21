@@ -12,7 +12,7 @@
   {
   public:
     using unit_type       = Level;
-    using level_type      = Level;
+    using scope_type      = Level;
     using hierarchy_type  = Hierarchy;
 
     /*this-group*/() = delete;
