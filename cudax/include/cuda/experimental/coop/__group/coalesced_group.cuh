@@ -166,17 +166,17 @@ public:
     return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const
+  [[nodiscard]] _CCCL_DEVICE_API const _MappingResult& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }

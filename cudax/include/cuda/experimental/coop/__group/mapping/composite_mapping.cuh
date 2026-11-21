@@ -61,7 +61,7 @@ public:
       : __mappings_{__mappings...}
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const ::cuda::std::tuple<_Mappings...>& get() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const ::cuda::std::tuple<_Mappings...>& get() const _CCCL_LIFETIMEBOUND
   {
     return __mappings_;
   }

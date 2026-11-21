@@ -114,7 +114,7 @@ Where:
 #. The unit level type that defines what units are being grouped.
 #. The upper level bound type that defines the level within which the units are grouped.
 #. The hierarchy type within which the group is operating.
-#. Returns a ``const hierarchy_type&`` to the hierarchy stored by the group.
+#. Returns a reference to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.
 #. Same as ``sync()``, but all of the units are contextually aligned (execute the same statement).
 #. A property known at compile time that specifies whether each group occupies a contiguous range of physical units, numbered in ascending physical order from zero.

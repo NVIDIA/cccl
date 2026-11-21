@@ -143,7 +143,8 @@ public:
 
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
-  _CCCL_DEVICE_API explicit virtual_group(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping)
+  _CCCL_DEVICE_API explicit virtual_group(
+    const _Unit& __unit, const _ParentGroup& __parent _CCCL_LIFETIMEBOUND, _Mapping&& __mapping)
       : __hier_{__parent.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_mapping(
           __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
@@ -181,17 +182,17 @@ public:
     return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const
+  [[nodiscard]] _CCCL_DEVICE_API const _MappingResult& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }
