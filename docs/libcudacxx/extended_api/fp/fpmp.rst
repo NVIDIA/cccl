@@ -425,7 +425,7 @@ hardware where FP64 is rationed:
 - **Exponentials and logarithms** — ``exp``, ``exp2``, ``exp10``, ``expm1``, ``log``, ``log2``,
   ``log10``, ``log1p`` (``expm1`` and ``log1p`` evaluate a Taylor series below ``2^-7`` in
   ``fp32mp2_high``, which keeps them within ``2.4u²`` and ``1.8u²`` there, against ``4.4u²`` and
-  ``9.8u²`` at the other levels; the extra branch costs throughput on a GPU where a warp mixes
+  ``3.9u²`` at the other levels; the extra branch costs throughput on a GPU where a warp mixes
   arguments on both sides of ``2^-7``)
 - **Powers and roots** — ``pow``, ``cbrt``, ``rcbrt``, alongside the ``sqrt`` and ``rsqrt``
   already named above

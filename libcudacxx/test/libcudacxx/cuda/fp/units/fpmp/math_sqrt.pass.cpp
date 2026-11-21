@@ -1691,8 +1691,8 @@ TEST_HOST_DEVICE_FUNC void check_exact(const exact_case<F> (&cases)[N])
 template <class T, class F>
 TEST_HOST_DEVICE_FUNC void test_exact()
 {
-  const F maxn                = cuda::std::numeric_limits<F>::max();
-  const F minn                = cuda::std::numeric_limits<F>::min();
+  const F maxn                = (cuda::std::numeric_limits<F>::max)();
+  const F minn                = (cuda::std::numeric_limits<F>::min)();
   const F mind                = cuda::std::numeric_limits<F>::denorm_min();
   const F big                 = sizeof(F) == 4 ? F(0x1p123) : F(0x1p1019);
   const F tiny                = sizeof(F) == 4 ? 2 * mind : 4 * mind; // an even power of two
@@ -1761,8 +1761,8 @@ TEST_HOST_DEVICE_FUNC void test_special_values()
 {
   const F inf                 = cuda::std::numeric_limits<F>::infinity();
   const F nan                 = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn                = cuda::std::numeric_limits<F>::max();
-  const F minn                = cuda::std::numeric_limits<F>::min();
+  const F maxn                = (cuda::std::numeric_limits<F>::max)();
+  const F minn                = (cuda::std::numeric_limits<F>::min)();
   const F mind                = cuda::std::numeric_limits<F>::denorm_min();
   const exact_case<F> cases[] = {
     // sqrt and rsqrt take no branch: sqrt(0) is 0, and every other operand that is not

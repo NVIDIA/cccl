@@ -200,12 +200,14 @@
       log2 of a power of two is exact.  log1p forms r from x itself
       where 1 + x is in [0.701, 1.402), so that the result keeps the
       relative accuracy of x as x -> 0, and otherwise takes the
-      logarithm of the pair 1 + x.  fpmp2_accuracy::high: below 2^-7
-      in magnitude log1p is the Taylor series x + x^2 P(x) in pair
-      arithmetic instead, which avoids the cancellation in the buckets
-      next to zero (there 1.8u^2 against 9.8u^2).
-      Accuracy against MPFR: within 5u^2 for log, 6u^2 for log2 and
-      log10, 10u^2 for log1p (8u^2 at high).
+      logarithm of the pair 1 + x.  In the buckets next to zero, where
+      ln(c) and r cancel, the low limb of their sum is formed without
+      error.  fpmp2_accuracy::high: below 2^-7 in magnitude log1p is
+      the Taylor series x + x^2 P(x) in pair arithmetic instead (there
+      1.8u^2 against 3.9u^2), and the low limb is formed without error
+      over the whole domain.
+      Accuracy against MPFR: within 5u^2 for log, 6u^2 for log2, log10
+      and log1p (3u^2 for log1p at high).
       Special cases: NaN->NaN, +-0->-inf, x<0->NaN, +inf->+inf;
       subnormal x is scaled into the normal range; log1p(-1) = -inf,
       log1p(x < -1) = NaN, log1p(+-0) = +-0.
@@ -293,11 +295,11 @@
       is small (x near 0, or near 1 for acosh); where the result is
       above 0.69 the logarithm of the sum itself is as accurate.  For
       x - 1 < 2^-60 acosh is sqrt(2 (x - 1)).
-      Accuracy against MPFR: within 7u^2 (asinh), 10u^2 (acosh) and
-      9.3u^2 (atanh).
+      Accuracy against MPFR: within 5.5u^2 (asinh), 5u^2 (acosh) and
+      8.5u^2 (atanh).
       fpmp2_accuracy::high types get a second kernel for atanh, which
       splits the exact 2|x| off the argument of log1p and refines the
-      division of the rest: within 5.2u^2.  asinh and acosh have one
+      division of the rest: within 3u^2.  asinh and acosh have one
       kernel for every level.
       Special cases: asinh(+-0) = +-0, asinh(+-inf) = +-inf,
       acosh(1) = +0, acosh(+inf) = +inf, acosh(x < 1) = NaN,
@@ -646,12 +648,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  */
 
 /*
- * The argument of expm1, log1p, sinh, tanh, asinh and atanh. Their fp32mp2 kernels take the size
- * of the argument, and with it the tiny-argument result f(x) = x and the table entry, from the
- * high limb alone. A low-accuracy operation can leave a pair whose high limb does not carry it:
- * (2^24, 0.25) - 2^24 is (0, 0.25). At fpmp2_accuracy::low a pair with |lo| > 2^-20 |hi| is
- * therefore renormalized first. A normalized pair, a zero of either sign and a limb that is not
+ * The argument of expm1, log, log2, log10, log1p, sinh, tanh, asinh, acosh and atanh. Their
+ * fp32mp2 kernels take the size of the argument, and with it the domain test, the table entry
+ * and the tiny-argument result f(x) = x, from the high limb alone. A low-accuracy operation can
+ * leave a pair whose high limb does not carry it: (2^24, 0.25) - 2^24 is (0, 0.25), whose
+ * logarithm would be -inf. At fpmp2_accuracy::low a pair with |lo| > 2^-20 |hi| is therefore
+ * renormalized first. A normalized pair, a zero of either sign and a limb that is not
  * finite pass through unchanged; the other levels keep their operands normalized.
+ *
+ * exp, exp2, exp10 and cosh need no such step: their reduction takes its multiple from
+ * x_hi + x_lo and adds the limbs without assuming an order between them.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -681,24 +687,27 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp(const fpmp2
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log2(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log2(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log2(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log10(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log10(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log10(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -946,8 +955,9 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<float, _TypeAcc> icdf(uint64_t __x
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acosh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_acosh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_acosh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

@@ -78,7 +78,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  */
 
 // e^x = 2^n y for 0 <= x_hi <= 89.5: returns n, with y in [1, 2) as a pair.
-_CCCL_FPMP_CORE_API int
+[[nodiscard]] _CCCL_FPMP_CORE_API int
 __internal_fpmp2_exp_mantissa(const float __x_hi, const float __x_lo, float* __y_hi, float* __y_lo) noexcept
 {
   float __phi_hi, __phi_lo;
@@ -102,7 +102,7 @@ __internal_fpmp2_exp_mantissa(const float __x_hi, const float __x_lo, float* __y
  * error; A and -s B have the same sign for n = 0. cosh(phi) - 1 = phi^2/2 + phi^4/24 and
  * sinh(phi) = phi + phi^3 (1/6 + phi^2/120) are good to 2^-50 of phi.
  */
-_CCCL_FPMP_CORE_API int
+[[nodiscard]] _CCCL_FPMP_CORE_API int
 __internal_fpmp2_sinh_kernel(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
 {
   constexpr float __g_hi = 0x1.555556p-3f; // 1/6 = __g_hi + __g_lo
@@ -644,8 +644,8 @@ _CCCL_FPMP_MATH_DISPATCH_1A(high_tanh)
  * near 1 for acosh). Where the result is above 0.69 the logarithm of the sum itself is as
  * accurate, and asinh leaves out its division there. Past 2^25 the term dropped from
  * log(2|x|) is below 2^-52, and for d < 2^-60 acosh is sqrt(2 d). Against MPFR the results
- * are within 7u^2 (asinh), 10u^2 (acosh, for x within 2^-10 of 1; 7.1u^2 elsewhere) and
- * 9.3u^2 (atanh), u = 2^-24, with means of 0.4 to 0.8u^2.
+ * are within 5.5u^2 (asinh), 5u^2 (acosh) and 8.5u^2 (atanh), u = 2^-24, with means of 0.3 to
+ * 0.5u^2.
  *
  * Special values follow C99 Annex F and are answered on entry: asinh(+-0) = +-0,
  * asinh(+-inf) = +-inf, acosh(1) = +0, acosh(+inf) = +inf, acosh(x < 1) = NaN,
@@ -656,18 +656,29 @@ _CCCL_FPMP_MATH_DISPATCH_1A(high_tanh)
  *
  * atanh has a second kernel for fpmp2_accuracy::high (__internal_fpmp2_high_atanh, below),
  * which splits the exact 2 |x| off the argument of log1p and refines the division of the
- * rest: within 5.2u^2. asinh and acosh have one kernel for every level.
+ * rest: within 3u^2. asinh and acosh have one kernel for every level.
  * --------------------------------------------------------------------
  */
 
 // (hi, lo) + ln2 for a pair above 17: the logarithm of an argument past 2^25
 _CCCL_FPMP_CORE_API void __internal_fpmp2_add_ln2(float* __hi, float* __lo) noexcept
 {
-  constexpr float __ln2_hi = 0x1.62e43p-1f; // ln2 = __ln2_hi + __ln2_lo
-  constexpr float __ln2_lo = -0x1.05c61p-29f;
   float __e;
-  const float __s = ::cuda::__fpmp_fast_two_sum(*__hi, __ln2_hi, &__e);
-  *__hi = ::cuda::__fpmp_fast_two_sum(__s, ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_add_rn(*__lo, __ln2_lo)), __lo);
+  const float __s = ::cuda::__fpmp_fast_two_sum(*__hi, __fpmp2_ln2_hi, &__e);
+  *__hi =
+    ::cuda::__fpmp_fast_two_sum(__s, ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_add_rn(*__lo, __fpmp2_ln2_lo)), __lo);
+}
+
+// 2 atanh(1 - d) = ln2 - d/2 - ln(d), to d^2/4 < 2^-52, for d = -__a_lo in (0, 2^-25]: on entry
+// (*__r_hi, *__r_lo) is ln(d), below -17.
+_CCCL_FPMP_CORE_API void __internal_fpmp2_atanh_pole(const float __a_lo, float* __r_hi, float* __r_lo) noexcept
+{
+  float __e;
+  const float __s = ::cuda::__fpmp_fast_two_sum(-*__r_hi, __fpmp2_ln2_hi, &__e);
+  *__r_hi         = ::cuda::__fpmp_fast_two_sum(
+    __s,
+    ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __a_lo, ::cuda::__fpmp_sub_rn(__fpmp2_ln2_lo, *__r_lo))),
+    __r_lo);
 }
 
 /*
@@ -874,9 +885,6 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
 {
   using __ffloat = fp32mp2_low;
 
-  constexpr float __ln2_hi = 0x1.62e43p-1f; // ln2 = __ln2_hi + __ln2_lo
-  constexpr float __ln2_lo = -0x1.05c61p-29f;
-
   const float __a_hi = ::cuda::__fpmp_internal_fabs(__x_hi);
   if (__a_hi < 0.25f)
   {
@@ -904,8 +912,9 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
       __ffloat(4.0e-2f), // 1/25
     };
     const __ffloat __x(__x_hi, __x_lo);
-    const __ffloat __y      = __x * __x;
-    const __ffloat __q      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
+    const __ffloat __y = __x * __x;
+    // Fast2Sum Horner: |v x^2| <= 0.07 |c_k| here, bit-identical to the compensated form.
+    const __ffloat __q      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__y, __atanh_poly_c);
     const __ffloat __result = renormalize(__x + __x * (__y * __q));
     *__res_hi               = __result.hi();
     *__res_lo               = __result.lo();
@@ -944,13 +953,7 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
   ::cuda::__internal_fpmp2_high_log1p(__t_hi, __t_lo, &__r_hi, &__r_lo);
   if (__pole)
   {
-    // ln2 - d/2 - ln(d); -ln(d) is at least 17
-    float __e;
-    const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
-    __r_hi          = ::cuda::__fpmp_fast_two_sum(
-      __s,
-      ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __a_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
-      &__r_lo);
+    ::cuda::__internal_fpmp2_atanh_pole(__a_lo, &__r_hi, &__r_lo);
   }
   *__res_hi = __neg ? -0.5f * __r_hi : 0.5f * __r_hi;
   *__res_lo = __neg ? -0.5f * __r_lo : 0.5f * __r_lo;
@@ -1057,15 +1060,9 @@ __internal_fpmp2_high_atanh(const float __x_hi, const float __x_lo, float* __res
      * form, whose quotient is then in range. */
     if (__abs_lo >= -0x1p-25f)
     {
-      constexpr float __ln2_hi = 0x1.62e43p-1f; /* ln2 = __ln2_hi + __ln2_lo */
-      constexpr float __ln2_lo = -0x1.05c61p-29f;
-      float __r_hi, __r_lo, __e;
+      float __r_hi, __r_lo;
       ::cuda::__fpmp2_high_log1p<float>(-1.0f, -__abs_lo, &__r_hi, &__r_lo);
-      const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
-      __r_hi          = ::cuda::__fpmp_fast_two_sum(
-        __s,
-        ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __abs_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
-        &__r_lo);
+      ::cuda::__internal_fpmp2_atanh_pole(__abs_lo, &__r_hi, &__r_lo);
       *__res_hi = __is_neg ? -0.5f * __r_hi : 0.5f * __r_hi;
       *__res_lo = __is_neg ? -0.5f * __r_lo : 0.5f * __r_lo;
       return;

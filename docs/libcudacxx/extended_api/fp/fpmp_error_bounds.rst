@@ -393,9 +393,11 @@ Every bound assumes normalized operands. A ``low`` result is not normalized — 
 overlap — and feeding it to a further operation weakens that operation's bound by roughly
 the overlap: an input with ``|lo| ≤ k·u·|hi|`` instead of ``u·|hi|`` scales the ``u²``
 constants of the next operation by about ``k``. The ``fp32mp2_low`` functions ``expm1``,
-``log1p``, ``sinh``, ``tanh``, ``asinh`` and ``atanh`` renormalize an argument with
-``|lo| > 2^-20·|hi|`` themselves, because their kernels take the size of the argument from the
-high limb, which a cancellation can leave at zero: ``(2^24, 0.25) - 2^24`` is ``(0, 0.25)``.
+``log``, ``log2``, ``log10``, ``log1p``, ``sinh``, ``tanh``, ``asinh``, ``acosh`` and ``atanh``
+renormalize an argument with ``|lo| > 2^-20·|hi|`` themselves, because their kernels take the
+size of the argument, and with it the domain test, from the high limb, which a cancellation can
+leave at zero: ``(2^24, 0.25) - 2^24`` is ``(0, 0.25)``. ``exp``, ``exp2``, ``exp10`` and ``cosh``
+need no such step: their argument reduction reads both limbs.
 Over a long ``low`` chain the overlap grows
 with the chain, which is why ``renormalize()`` exists and why converting a ``low`` value to
 ``mid`` or ``high`` restores the invariant (:ref:`changing the accuracy level

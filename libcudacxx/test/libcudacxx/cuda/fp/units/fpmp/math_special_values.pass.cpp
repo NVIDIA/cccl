@@ -181,7 +181,7 @@ TEST_HOST_DEVICE_FUNC void test_rounding()
   assert(is_pos_inf(name(pinf)));              \
   assert(is_neg_inf(name(-pinf)));             \
   assert(is_nan(name(qnan)));                  \
-  assert(name(nl::max()) == nl::max());        \
+  assert(name((nl::max) ()) == (nl::max) ());  \
   assert(name(nl::lowest()) == nl::lowest());  \
   assert(is_pos_zero(name(MP2(0.0f))));        \
   assert(is_neg_zero(name(MP2(-0.0f))));       \
@@ -253,6 +253,7 @@ TEST_HOST_DEVICE_FUNC void test_boys_f0()
   assert(is_zero(boys_f0(pinf)));
   assert(is_nan(boys_f0(qnan)));
 
+  assert(is_finite(boys_f0(T(-80.0f))) && boys_f0(T(-80.0f)) > T(0.0f));
   assert(is_pos_inf(boys_f0(T(-100.0f))));
   assert(is_pos_inf(boys_f0(nl::lowest())));
   assert(is_pos_inf(boys_f0(-pinf)));
@@ -539,7 +540,7 @@ TEST_HOST_DEVICE_FUNC void test_erf_family()
   // 1 / (x sqrt(pi)) at the largest arguments is a subnormal number, which --use_fast_math
   // flushes to zero on the device (FTZ)
   assert(erfcx(T(0x1p127f)) > T(0x1p-128f) && erfcx(T(0x1p127f)) < T(0x1p-127f));
-  assert(erfcx(nl::max()) > T(0x1p-129f) && erfcx(nl::max()) < T(0x1p-128f));
+  assert(erfcx((nl::max) ()) > T(0x1p-129f) && erfcx((nl::max) ()) < T(0x1p-128f));
 #endif // !TEST_HAS_CUDA_FAST_MATH
   assert(normcdf(pinf) == T(1.0f) && is_zero(normcdf(-pinf)) && is_nan(normcdf(qnan)));
 
@@ -597,7 +598,8 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(is_pos_zero(fmax(T(0.0f), T(-0.0f))) && is_neg_zero(fmin(T(0.0f), T(-0.0f))));
 
   // expm1, log1p, sinh, tanh, asinh and atanh return a tiny argument unchanged, and read "tiny"
-  // off the high limb; a low-accuracy pair whose high limb does not carry the value is
+  // off the high limb; log, log2, log10 and acosh read the domain off it (the logarithm of a
+  // zero high limb is -inf). A low-accuracy pair whose high limb does not carry the value is
   // renormalized before it reaches them.
   const T loose[] = {T(0.0f, 0.25f), T(-0.0f, 0.25f), T(16777216.0f, 0.25f) - T(16777216.0f)};
   for (int i = 0; i < 3; ++i)
@@ -612,7 +614,18 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
     assert(approx_eq(static_cast<double>(expm1(-q)), -0.22119921692859512));
     assert(approx_eq(static_cast<double>(log1p(-q)), -0.2876820724517809));
     assert(approx_eq(static_cast<double>(tanh(-q)), -0.24491866240370913));
+    assert(approx_eq(static_cast<double>(log(q)), -1.3862943611198906));
+    assert(approx_eq(static_cast<double>(log2(q)), -2.0));
+    assert(approx_eq(static_cast<double>(log10(q)), -0.6020599913279624));
+    // exp, exp2, exp10 and cosh reduce such a pair like any other
+    assert(approx_eq(static_cast<double>(exp(q)), 1.2840254166877414));
+    assert(approx_eq(static_cast<double>(exp2(q)), 1.189207115002721));
+    assert(approx_eq(static_cast<double>(exp10(q)), 1.7782794100389228));
+    assert(approx_eq(static_cast<double>(cosh(q)), 1.0314130998795732));
   }
+  assert(approx_eq(static_cast<double>(exp(T(0.0f, 3.0f))), 20.085536923187668));
+  assert(approx_eq(static_cast<double>(exp10(T(1.0f, 0.5f))), 31.622776601683793));
+  assert(approx_eq(static_cast<double>(acosh(T(0.0f, 1.5f))), 0.9624236501192069));
   // a high limb far below the low limb, and limbs of like size
   assert(approx_eq(static_cast<double>(expm1(T(0x1p-60f, 0.25f))), 0.2840254166877415));
   assert(approx_eq(static_cast<double>(log1p(T(-0x1p-40f, 0x1p-9f))), 0.0019512201303540276));

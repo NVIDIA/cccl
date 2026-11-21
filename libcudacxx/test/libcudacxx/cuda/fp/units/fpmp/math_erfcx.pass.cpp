@@ -170,13 +170,13 @@ TEST_HOST_DEVICE_FUNC void test_normcdf_saturated()
 {
   // Exactly 0 below -14.5 at every level, and exactly 1 from 8.4 on.
   float inf  = cuda::std::numeric_limits<float>::infinity();
-  float lo[] = {-14.51f, -15.0f, -40.0f, -1e10f, -cuda::std::numeric_limits<float>::max(), -inf};
+  float lo[] = {-14.51f, -15.0f, -40.0f, -1e10f, -(cuda::std::numeric_limits<float>::max)(), -inf};
   for (float x : lo)
   {
     MP2 r = cuda::normcdf(MP2(x));
     assert(r.hi() == 0.0f && r.lo() == 0.0f);
   }
-  float hi[] = {8.4f, 9.0f, 40.0f, 1e10f, cuda::std::numeric_limits<float>::max(), inf};
+  float hi[] = {8.4f, 9.0f, 40.0f, 1e10f, (cuda::std::numeric_limits<float>::max)(), inf};
   for (float x : hi)
   {
     MP2 r = cuda::normcdf(MP2(x));
