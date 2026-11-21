@@ -201,12 +201,6 @@ __device__ void test_nonuniform(const Group& group, const Parent& parent, unsign
 
     constexpr auto group_rank = view.static_rank(cudax::coop::parent_group);
     static_assert(count == Original::static_unit_count(group_rank));
-    static_assert(
-      cuda::std::is_same_v<
-        Mapping,
-        cudax::coop::__mapping_result<cudax::coop::__per_group_count<Original::static_group_count(), group_rank, count>,
-                                      Original::is_always_exhaustive(),
-                                      Original::is_always_contiguous()>>);
     CHECK(group_rank == group.__mapping_result().group_rank());
     CHECK(view.rank(parent) == group_rank);
     CHECK(view.template rank_as<unsigned>(parent) == group_rank);
@@ -218,8 +212,9 @@ __device__ void test_nonuniform(const Group& group, const Parent& parent, unsign
     static_assert(cuda::std::is_same_v<decltype(view), cuda::std::remove_cv_t<decltype(copy)>>);
     static_assert(unit.static_count(copy) == count);
 
-    // Converting the specialized view to threads must scale its static count.
+    // Converting the specialized view to threads scales its static count and preserves its group rank.
     const cudax::coop::group_view threads{cuda::gpu_thread, view};
+    static_assert(threads.static_rank(cudax::coop::parent_group) == group_rank);
     constexpr auto thread_count = cuda::gpu_thread.static_count(threads);
     CHECK(cuda::gpu_thread.count(threads) == expected * 32 / units_per_warp);
     CHECK(thread_count == expected * 32 / units_per_warp);

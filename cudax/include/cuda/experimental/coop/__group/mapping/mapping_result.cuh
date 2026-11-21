@@ -47,35 +47,34 @@ struct __uniform_static_unit_count;
 template <::cuda::std::size_t... _StaticUnitCounts>
 struct __static_unit_counts;
 
-template <::cuda::std::size_t _StaticGroupCount,
-          ::cuda::std::size_t _StaticGroupRank,
-          ::cuda::std::size_t _StaticUnitCount>
-struct __per_group_count;
-
-template <class _CountsTag, bool _IsAlwaysExhaustive, bool _IsAlwaysContiguous>
+template <class _CountsTag,
+          bool _IsAlwaysExhaustive,
+          bool _IsAlwaysContiguous,
+          ::cuda::std::size_t _StaticGroupRank = ::cuda::std::dynamic_extent>
 struct __mapping_result;
 
 template <::cuda::std::size_t _StaticGroupCount,
           ::cuda::std::size_t _StaticUnitCount,
           bool _IsAlwaysExhaustive,
-          bool _IsAlwaysContiguous>
+          bool _IsAlwaysContiguous,
+          ::cuda::std::size_t _StaticGroupRank>
 struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUnitCount>,
                         _IsAlwaysExhaustive,
-                        _IsAlwaysContiguous>
+                        _IsAlwaysContiguous,
+                        _StaticGroupRank>
 {
-  ::cuda::std::uint32_t __group_count_;
-  ::cuda::std::uint32_t __group_rank_;
-  ::cuda::std::uint32_t __unit_count_;
-  ::cuda::std::uint32_t __unit_rank_;
+  static_assert(_StaticGroupRank == ::cuda::std::dynamic_extent || _StaticGroupRank < _StaticGroupCount,
+                "group rank out of range");
+
+  ::cuda::std::uint32_t __group_count_{};
+  ::cuda::std::uint32_t __group_rank_{};
+  ::cuda::std::uint32_t __unit_count_{};
+  ::cuda::std::uint32_t __unit_rank_{};
   ::cuda::device::lane_mask __lane_mask_;
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid()
   {
-    return {__invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            ::cuda::device::lane_mask::none()};
+    return {0, 0, 0, __invalid_count_or_rank, ::cuda::device::lane_mask::none()};
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
@@ -83,7 +82,7 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     return _StaticGroupCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_count() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -102,10 +101,10 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
   {
-    return _StaticGroupCount == 1 ? 0 : ::cuda::std::dynamic_extent;
+    return _StaticGroupCount == 1 ? 0 : _StaticGroupRank;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -141,7 +140,7 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     return _StaticUnitCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -158,7 +157,7 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -175,7 +174,7 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::device::lane_mask lane_mask() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -184,7 +183,7 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     return __lane_mask_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool is_valid() const
   {
     if constexpr (_IsAlwaysExhaustive)
     {
@@ -207,8 +206,14 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
   }
 };
 
-template <::cuda::std::size_t... _StaticUnitCounts, bool _IsAlwaysExhaustive, bool _IsAlwaysContiguous>
-struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExhaustive, _IsAlwaysContiguous>
+template <::cuda::std::size_t... _StaticUnitCounts,
+          bool _IsAlwaysExhaustive,
+          bool _IsAlwaysContiguous,
+          ::cuda::std::size_t _StaticGroupRank>
+struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>,
+                        _IsAlwaysExhaustive,
+                        _IsAlwaysContiguous,
+                        _StaticGroupRank>
 {
   static constexpr ::cuda::std::size_t _StaticGroupCount = sizeof...(_StaticUnitCounts);
 
@@ -241,7 +246,7 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
   {
-    return _StaticGroupCount == 1 ? 0 : ::cuda::std::dynamic_extent;
+    return _StaticGroupCount == 1 ? 0 : _StaticGroupRank;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
@@ -325,92 +330,6 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
     {
       return __unit_rank_ != __invalid_count_or_rank;
     }
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
-  {
-    return _IsAlwaysExhaustive;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
-  {
-    return _IsAlwaysContiguous;
-  }
-};
-
-// This mapping result is only ever used in group.with_static_unit_count(...) where it's constructed from the group's
-// mapping result. That means that the mapping result is always valid. We still keep the is_always_exhaustive() property
-// from the original mapping result.
-template <::cuda::std::size_t _StaticGroupCount,
-          ::cuda::std::size_t _StaticGroupRank,
-          ::cuda::std::size_t _StaticUnitCount,
-          bool _IsAlwaysExhaustive,
-          bool _IsAlwaysContiguous>
-struct __mapping_result<__per_group_count<_StaticGroupCount, _StaticGroupRank, _StaticUnitCount>,
-                        _IsAlwaysExhaustive,
-                        _IsAlwaysContiguous>
-{
-  static_assert(_StaticGroupCount != ::cuda::std::dynamic_extent, "group count must be statically known");
-  static_assert(_StaticGroupRank < _StaticGroupCount, "group rank out of range");
-  static_assert(_StaticUnitCount != ::cuda::std::dynamic_extent, "unit count must be statically known");
-
-  ::cuda::std::uint32_t __unit_rank_;
-  ::cuda::device::lane_mask __lane_mask_;
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
-  {
-    return _StaticGroupCount;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_count() const
-  {
-    return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
-  {
-    return _StaticGroupRank;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_rank() const
-  {
-    return static_cast<::cuda::std::uint32_t>(_StaticGroupRank);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
-  {
-    return true;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
-  {
-    return _StaticUnitCount;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
-  {
-    _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
-    return _StaticUnitCount;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const
-  {
-    return static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
-  {
-    return __unit_rank_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
-  {
-    return __lane_mask_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr bool is_valid() const
-  {
-    return true;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
