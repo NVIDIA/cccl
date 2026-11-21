@@ -285,11 +285,7 @@ def test_diffusion_timestep_nesting():
 
 
 def test_nested_graph_scopes():
-    """Two levels of graph_scope nesting (no repeat/while).
-
-    Each scope is also named with set_scope_symbol, which targets the current
-    (innermost) scope and only affects DOT output and diagnostics.
-    """
+    """Two levels of graph_scope nesting (no repeat/while)."""
     n = 512
     X_host = np.ones(n, dtype=np.float32)
 

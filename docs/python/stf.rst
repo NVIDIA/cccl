@@ -155,8 +155,8 @@ Interop adapters
 ----------------
 
 On top of the raw CUDA Array Interface, ``cuda.stf._experimental`` ships small,
-**opt-in** adapters for Numba and PyTorch under ``cuda.stf._experimental.interop``.
-Importing ``cuda.stf._experimental`` does **not** import Numba or PyTorch; the optional
+**opt-in** adapters for Numba, PyTorch and Warp under ``cuda.stf._experimental.interop``.
+Importing ``cuda.stf._experimental`` does **not** import Numba, PyTorch or Warp; the optional
 runtime is imported lazily inside each adapter, and a missing dependency raises a clear
 ``ImportError`` at first use. You import only the adapter you need.
 
@@ -173,6 +173,65 @@ complete program)::
 
 ``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
 task arguments to tensors if you manage the task block yourself.
+
+**Warp** (``cuda.stf._experimental.interop.warp``) -- Warp work enters a task graph as
+ordinary cuda.stf: tasks, scopes, and tokens or logical data for the order between
+tasks. ``warp_task(ctx, *deps)`` opens ``ctx.task(*deps)``, makes the task's CUDA stream
+the current Warp stream (``wp.ScopedStream``) for the block, and yields
+``(stream, arrays)`` where ``arrays`` are ``wp.array`` views of the logical-data
+arguments. ``scope(ctx, launchable=...)`` is ``ctx.graph_scope()`` /
+``ctx.launchable_graph_scope()``: a flat context for the code inside, one node for its
+parent, ordered by the ``reads`` / ``writes`` it is given. When Warp owns the arrays
+there is no logical data to declare and tokens carry the order: ``token(ctx)``, and
+``scope_token()``, a token of the current scope that is created the first time it is
+asked for and stays the same until the scope closes. Inside a scope every Warp launch
+belongs to a task: plain Warp code outside one is a **record-time error** (Warp's
+current stream is then a poison stream whose handle raises on work submission)::
+
+    from cuda.stf._experimental.interop.warp import scope, scope_token, warp_task
+
+    with scope(ctx, launchable=True) as graph:      # the code that records
+        s = scope_token()
+        with warp_task(s.rw(), symbol="collide"):
+            example.collide()
+        solver.step(state_in, state_out)            # records its own tasks, see below
+        for _ in range(frames):
+            graph.launch()
+
+    # inside the solver: the sequence of the step, and two tasks that may overlap
+    s = scope_token()
+    with warp_task(s.rw()): prepare()
+    with warp_task(s.read(), symbol="solve-a"): ...
+    with warp_task(s.read(), symbol="solve-b"): ...
+    with warp_task(s.rw()): update()                # waits for both
+
+The context argument is optional: a scope given a context makes it the current one
+while it is open, and ``warp_task``, ``scope``, ``token`` and ``scope_token`` called
+without one use it (``current_context()``), so a library takes no context argument.
+Called that way they do nothing when no scope is open (the code is not being recorded)
+and inside a task (the code runs as part of that task): the same library code runs
+unrecorded, or from a caller that wraps the whole call in one task. A library that
+records its own tasks is called from a scope; its caller gives it a scope of its own
+(``scope(writes=(s,))``) where the library's sequence must not be the caller's.
+
+When the task stream is capturing (graph scopes), the block runs under a Warp external
+capture so Warp's capture-aware paths (allocations, ``capture_if`` / ``capture_while``)
+see the right state; Warp's conditional captures need a capture-*origin* stream, which
+task streams of a graph scope are and streams forked inside a Warp-owned capture are
+not. While a scope is open, Warp's device allocator is routed
+(``wp.set_device_allocator``) to the scope's own allocator
+(``stackable_context.allocate``): an allocation made under capture is served outside
+the capture, on the scope's support stream, and released when the scope is popped, so no
+allocation node enters the graph (a CUDA child graph cannot hold one). This covers Warp's
+Python-level allocations (``wp.zeros``, ``wp.empty``, array temporaries). Warp's native
+capture-time temporaries (radix sort scratch, BVH and hash-grid buffers) bypass the
+device allocator hook in current Warp releases and still allocate on the capturing
+stream, so a scope nested inside another scope records only if its body does not sort or
+rebuild a BVH, until Warp routes those temporaries through the hook as well.
+``get_arg_warp(task, index)`` and ``warp_arguments(task)`` convert one or all task
+arguments if you manage the task block yourself, and ``wrap_stream`` returns a cached
+``wp.Stream`` for a raw task stream. See ``tests/stf/interop/test_warp_adapter.py`` for
+complete programs.
 
 **Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
 yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
