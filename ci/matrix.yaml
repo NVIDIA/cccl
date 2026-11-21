@@ -87,6 +87,15 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # TEMPORARY: cold-cache timing of representative build jobs on 32-core runners. Remove before merge.
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',    cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                             std: 'max',    cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'],          std: 'max',    cxx: ['gcc13', 'clang18']}
+    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                             std: 'max',    cxx: ['gcc13', 'clang18']}
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'],          std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
+    - {jobs: ['build_lid0'],                project: 'cub',                             std: 'minmax', ctk: '12.0', cxx: 'gcc7', environment: ['PARALLEL_LEVEL=16']}
+    - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: '20', cxx: 'gcc'}
+    - {jobs: ['build_nolid', 'build_lid0'], cpu: 'arm64', project: 'cub',                             std: '20', cxx: 'gcc'}
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
