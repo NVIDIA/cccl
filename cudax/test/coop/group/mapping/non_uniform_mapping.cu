@@ -13,6 +13,7 @@
 #include <cuda/launch>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/warp>
 
@@ -216,6 +217,34 @@ __device__ void test_group_by_counts(Config config)
   }
 }
 
+template <class Config, class Width>
+__device__ void test_group_by_after_group_as(Config config, Width width)
+{
+  const cudax::coop::this_warp parent{config};
+  const unsigned counts[]{5, 9, 11};
+  auto mapping      = cudax::coop::group_as{counts} | cudax::coop::group_by{width};
+  const auto result = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+
+  // group_as excludes lanes 25 through 31. group_by also drops the tail of each input group.
+  constexpr unsigned starts[]{0, 5, 9, 14, 18};
+  const auto lane = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+  for (unsigned group = 0; group < 5; ++group)
+  {
+    const auto first = starts[group];
+    if (first <= lane && lane < first + 4)
+    {
+      REQUIRE(result.is_valid());
+      CHECK(result.group_count() == 5);
+      CHECK(result.group_rank() == group);
+      CHECK(result.unit_count() == 4);
+      CHECK(result.unit_rank() == lane - first);
+      CHECK(result.lane_mask() == cuda::device::lane_mask{0xfu << first});
+      return;
+    }
+  }
+  CHECK(!result.is_valid());
+}
+
 struct OddRank
 {
   template <class Result>
@@ -224,6 +253,41 @@ struct OddRank
     return result.unit_rank() % 2 != 0;
   }
 };
+
+template <class Config, class Width>
+__device__ void test_group_by_after_binary_partition(Config config, Width width)
+{
+  const cudax::coop::this_warp parent{config};
+  auto mapping      = cudax::coop::take{cuda::std::cw<25>} | cudax::coop::binary_partition{OddRank{}}
+                    | cudax::coop::group_by{width};
+  const auto result = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+  const auto lane   = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+
+  // Lane 24 is the tail of the even partition. take already excluded lanes 25 through 31.
+  REQUIRE(result.is_valid() == (lane < 24));
+  if (lane < 24)
+  {
+    // Within each eight-lane span, even and odd lanes form separate groups of four.
+    const auto first = (lane / 8) * 8 + lane % 2;
+    CHECK(result.group_count() == 6);
+    CHECK(result.group_rank() == (lane / 8) * 2 + lane % 2);
+    CHECK(result.unit_count() == 4);
+    CHECK(result.unit_rank() == (lane / 2) % 4);
+    CHECK(result.lane_mask() == cuda::device::lane_mask{0x55u << first});
+  }
+
+  // Shuffle ranks within each parity partition. Each child now occupies every eighth lane,
+  // with unit rank zero in its last physical lane.
+  auto shuffled = cudax::coop::binary_partition{OddRank{}}.map(cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+  shuffled.__unit_rank_ = (lane / 2 % 4) * 4 + (3 - lane / 8);
+  const auto split      = cudax::coop::group_by{width}.map(cuda::gpu_thread, parent, shuffled);
+  REQUIRE(split.is_valid());
+  CHECK(split.group_count() == 8);
+  CHECK(split.group_rank() == lane % 8);
+  CHECK(split.unit_count() == 4);
+  CHECK(split.unit_rank() == 3 - lane / 8);
+  CHECK(split.lane_mask() == cuda::device::lane_mask{0x0101'0101u << (lane % 8)});
+}
 
 struct RankLabel
 {
@@ -341,6 +405,10 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     test_other_mappings(config);
+    test_group_by_after_group_as(config, cuda::std::cw<4>);
+    test_group_by_after_group_as(config, 4u);
+    test_group_by_after_binary_partition(config, cuda::std::cw<4>);
+    test_group_by_after_binary_partition(config, 4u);
 
     test_per_group_result<0, true, true>();
     test_per_group_result<1, true, false>();
