@@ -160,4 +160,4 @@ struct TestEachAtomicRefType
   }
 };
 
-#endif // ATOMIC_HELPER_H
+#endif // ATOMIC_HELPERS_H

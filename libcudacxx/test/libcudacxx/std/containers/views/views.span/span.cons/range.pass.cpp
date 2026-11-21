@@ -91,7 +91,7 @@ TEST_FUNC void checkCV()
   {
     [[maybe_unused]] cuda::std::span<const int> s1{v}; // a span<const int> pointing at int.
     [[maybe_unused]] cuda::std::span<volatile int> s2{v}; // a span<volatile int> pointing at int.
-    [[maybe_unused]] cuda::std::span<volatile int> s3{v}; // a span<volatile int> pointing at const int.
+    [[maybe_unused]] cuda::std::span<volatile int> s3{v}; // a span<volatile int> pointing at int.
     [[maybe_unused]] cuda::std::span<const volatile int> s4{v}; // a span<const volatile int> pointing at int.
   }
 

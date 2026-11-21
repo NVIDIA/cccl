@@ -300,7 +300,7 @@ TEST_FUNC bool tests()
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-  // Extended floating point type __half
+  // Extended floating point type __nv_bfloat16
   for (__nv_bfloat16 i :
        {__float2bfloat16(0.0f),
         __float2bfloat16(1.0f),

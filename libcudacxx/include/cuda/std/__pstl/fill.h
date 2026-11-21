@@ -80,7 +80,7 @@ fill([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIte
       return;
     }
 
-    // We do not want actually load anything, so pass a counting iterator instead
+    // We do not want to actually load anything, so dispatch to generate_n with a constant generator instead
     const auto __count = ::cuda::std::distance(__first, __last);
     (void) __dispatch(__policy, ::cuda::std::move(__first), __count, __fill_constant_value{__value});
   }

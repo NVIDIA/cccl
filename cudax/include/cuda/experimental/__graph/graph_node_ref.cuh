@@ -145,7 +145,7 @@ struct graph_node_ref
     return __node_ != nullptr;
   }
 
-  //! \brief Checks if the graph node reference is not null.
+  //! \brief Checks if the graph node reference is null.
   //! \return `true` if the internal node pointer is null, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_API constexpr auto operator!() const noexcept -> bool
   {

@@ -98,7 +98,7 @@ int main()
   stream_ctx ctx;
 
   std::vector<std::thread> threads;
-  // Launch 8 threads.
+  // Launch 10 threads.
   for (int i = 0; i < 10; ++i)
   {
     threads.emplace_back(mytask, ctx, i);

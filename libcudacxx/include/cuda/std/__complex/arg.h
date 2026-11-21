@@ -82,4 +82,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___COMPLEX_MATH_H
+#endif // _CUDA_STD___COMPLEX_ARG_H

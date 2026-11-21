@@ -31,7 +31,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::tuple<int&>>);
   }
 
-  { // single iterator, operator* is const
+  { // single iterator, operator[] is const
     const cuda::zip_iterator iter{a};
     assert(cuda::std::addressof(cuda::std::get<0>(iter[0])) == cuda::std::addressof(a[0]));
     static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::tuple<int&>>);

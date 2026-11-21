@@ -115,7 +115,7 @@ TEST_FUNC inline bool float_eq(__nv_fp8_e8m0 x, __nv_fp8_e8m0 y)
 {
   return x.__x == y.__x;
 }
-#endif // _CCCL_HAS_NVF8_E8M0()
+#endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP16()
 TEST_FUNC inline bool float_eq(__half x, __half y)

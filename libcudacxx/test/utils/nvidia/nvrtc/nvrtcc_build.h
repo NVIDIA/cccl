@@ -46,7 +46,7 @@ using ArgList = std::vector<std::string>;
 
 using GpuProg = std::vector<char>;
 
-// Takes arguments for building a file and returns the path to the output file
+// Takes arguments for building a file and returns the compiled CUBIN or PTX
 GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, const ArgList& argList)
 {
   // Assemble arguments

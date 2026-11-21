@@ -54,7 +54,7 @@ void test()
     test_kernel<<<1, 1>>>(ext, sizeof(extents));
   }
 
-  { // all dynamic
+  { // all static
     using extents = cuda::std::extents<size_t, 42, 1337, 7>;
     extents ext{};
     test(ext, sizeof(extents));

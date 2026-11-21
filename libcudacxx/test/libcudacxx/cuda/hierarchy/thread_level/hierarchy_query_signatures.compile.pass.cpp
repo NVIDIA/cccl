@@ -39,7 +39,7 @@ TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy&
   static_assert(cuda::std::is_same_v<unsigned, typename ExtentsResult::index_type>);
   static_assert(noexcept(cuda::thread_level::extents(level, hier)));
 
-  // 5. Test cuda::thread_level::static_count(x, hier) signature.
+  // 4. Test cuda::thread_level::static_count(x, hier) signature.
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::static_count(level, hier))>);
   static_assert(noexcept(cuda::thread_level::static_count(level, hier)));
 

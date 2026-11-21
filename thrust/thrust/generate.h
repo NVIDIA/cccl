@@ -122,7 +122,7 @@ _CCCL_HOST_API void generate(ForwardIterator first, ForwardIterator last, Genera
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam Size is an integral type (either signed or unsigned).
- *  \tparam Generator A nullary function with a return type convertible to \p ForwardIterator's \c value_type.
+ *  \tparam Generator A nullary function with a return type convertible to \p OutputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to fill a \c host_vector with random numbers,
  *  using the standard C library function \c rand using the \p thrust::host execution policy for parallelization:
@@ -161,7 +161,7 @@ _CCCL_HOST_DEVICE_API OutputIterator generate_n(
  *
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam Size is an integral type (either signed or unsigned).
- *  \tparam Generator A nullary function with a return type convertible to \p ForwardIterator's \c value_type.
+ *  \tparam Generator A nullary function with a return type convertible to \p OutputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to fill a \c host_vector with random numbers,
  *  using the standard C library function \c rand.

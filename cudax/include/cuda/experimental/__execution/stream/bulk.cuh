@@ -45,7 +45,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     // We permit this `set_value` function to be called multiple times, once for each
-    // thread in the block.
+    // thread in the grid.
     template <class... _Values>
     _CCCL_DEVICE_API void set_value(_Values&&... __values) noexcept
     {
@@ -119,7 +119,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t : __bulk_t::__rcvr_base_t<_Shape, _Fn, _Rcvr>
   {
     // We permit this `set_value` function to be called multiple times, once for each
-    // thread in the block.
+    // thread in the grid.
     template <class... _Values>
     _CCCL_DEVICE_API void set_value(_Values&&... __values) noexcept
     {

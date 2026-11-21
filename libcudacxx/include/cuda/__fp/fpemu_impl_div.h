@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-//! @file fpemu_ddiv_impl.hpp
+//! @file fpemu_impl_div.h
 //! @brief Implementation of double-precision division operations for FPEMU floating point emulation library
 //!
 //! This header provides the implementation of double-precision division operations for the FPEMU library.

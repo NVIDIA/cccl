@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isnormal) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ISNORMAL(...) __builtin_isnormal(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isnormal)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isnormal)
 
 // nvcc does not implement __builtin_isnormal
 #if _CCCL_CUDA_COMPILER(NVCC)

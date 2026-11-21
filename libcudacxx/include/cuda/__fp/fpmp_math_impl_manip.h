@@ -428,9 +428,9 @@ __fpmp2_frexp(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
  * fraction that needs both of its own limbs (x = 2^25 - 2^-39 leaves 1 - 2^-39), which
  * only the variant running a two_sum on them keeps.
  *
- * Non-finite input is left to fall through, as elsewhere in fpmp: an infinity comes back
- * as a NaN from the inf - inf, not as a plausible finite answer. What does need saying is
- * that an integral x cancels to +0 where C asks for a zero carrying the sign of x.
+ * Non-finite input is handled up front: modf(+-inf) is (+-0, +-inf) and a NaN is a NaN in
+ * both parts (C99 F.10.3.12). What also needs saying is that an integral x cancels to +0
+ * where C asks for a zero carrying the sign of x, so the zero result is given its sign last.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_modf(

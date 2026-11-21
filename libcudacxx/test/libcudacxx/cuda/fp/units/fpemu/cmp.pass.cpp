@@ -147,7 +147,7 @@ TEST_FUNC void test()
     }
   }
 
-  // Pseudo-random pairs. Every fourth pair compares a value against itself,
+  // Pseudo-random pairs. About one pair in four compares a value against itself,
   // which is the only cheap way to reach the equal branch with random inputs.
   cuda::std::minstd_rand rng(0xC0FFEEu);
   cuda::std::uniform_int_distribution<int> one_in_4(0, 3);

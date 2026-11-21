@@ -324,7 +324,7 @@ public:
   {
     return __lhs.__index() >= __rhs.__index();
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED

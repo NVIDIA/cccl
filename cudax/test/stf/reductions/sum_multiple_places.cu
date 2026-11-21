@@ -35,7 +35,7 @@ int main()
 
   auto redux_op = std::make_shared<slice_reduction_op_sum<int>>();
 
-  // We add i twice (total = N(N-1) + initial_value)
+  // We add i once per device and once on the host (total = (ndevs+1) * N(N-1)/2 + initial_value)
   for (int i = 0; i < N; i++)
   {
     // device

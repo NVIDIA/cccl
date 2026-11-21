@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! \file
-//! Managing memory associated with Thrust's TBB system.
+//! Managing memory associated with Thrust's Standard C++ system.
 
 #pragma once
 

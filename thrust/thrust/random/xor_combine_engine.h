@@ -117,7 +117,7 @@ public:
    *  \param urng1 A \p base1_type to use to initialize this \p xor_combine_engine's
    *         first adapted base engine.
    *  \param urng2 A \p base2_type to use to initialize this \p xor_combine_engine's
-   *         first adapted base engine.
+   *         second adapted base engine.
    */
   _CCCL_HOST_DEVICE_API xor_combine_engine(const base1_type& urng1, const base2_type& urng2);
 

@@ -119,7 +119,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_ASINHF(...) __builtin_asinhf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ASINH(...)  __builtin_asinh(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ASINHL(...) __builtin_asinhl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asinh)
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_ASINHF

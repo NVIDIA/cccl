@@ -62,7 +62,7 @@ void run()
     axpy<<<16, 128, 0, stream>>>(n, alpha, X.data_handle(), Y.data_handle());
   };
 
-  // Access Ask to use X, Y and Z on the host
+  // Access Ask to use X and Y on the host
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto X, auto Y) {
     for (size_t ind = 0; ind < n; ind++)
     {

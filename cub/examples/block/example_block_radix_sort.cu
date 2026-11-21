@@ -131,7 +131,7 @@ void Initialize(Key* h_in, Key* h_reference, int num_items, int tile_size)
 }
 
 /**
- * Test BlockScan
+ * Test BlockRadixSort
  */
 template <typename Key, int BlockThreads, int ItemsPerThread>
 void Test()

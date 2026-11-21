@@ -43,7 +43,7 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \p InputIterator's \c value_type is equality comparable to type \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
+ * href="https://en.cppreference.com/w/cpp/named_req/EqualityComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -89,7 +89,7 @@ find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \p InputIterator's \c value_type is equality comparable to type \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
+ * href="https://en.cppreference.com/w/cpp/named_req/EqualityComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>

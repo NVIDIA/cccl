@@ -261,7 +261,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_permutation_iterator_with_countin
     REQUIRE(output == ref);
   }
 
-  // test copy()
+  // test transform()
   {
     Vector output(4, 0);
 

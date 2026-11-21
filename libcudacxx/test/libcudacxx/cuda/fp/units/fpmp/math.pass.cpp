@@ -17,9 +17,10 @@
 //  The functions divide by what their *reference* needs rather than by anything
 //  fpmp2 lacks, since fpmp2 math is host and device alike:
 //
-//    - Where the reference is in ISO <cmath>, the check lives in main(), which
-//      force_include.h turns into a __host__ __device__ function that the
-//      harness runs on the host and then in a kernel. Those get both.
+//    - Where the reference is in ISO <cmath>, the check lives in
+//      test_host_device(), called from main(), which force_include.h turns
+//      into a __host__ __device__ function that the harness runs on the host
+//      and then in a kernel. Those get both.
 //    - The rest compare against CUDA-only math (rcbrt, the pi-scaled trig,
 //      normcdf, the inverse error functions, cyl_bessel_i*, the vector norms)
 //      or against names that exist in glibc and CUDA but not in ISO C++, namely

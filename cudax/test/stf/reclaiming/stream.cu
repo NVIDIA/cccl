@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     handles[i].set_symbol("D_" + std::to_string(i));
   }
 
-  // We only 2 buffers, we are forced to reuse the buffer from D0 for D2
+  // The allocator only has a single block, so each task is forced to reuse the buffer of the previous one
   for (int i = 0; i < nblocks; i++)
   {
     ctx.task(handles[i % nblocks].rw())->*[&](cudaStream_t s, auto buf) {

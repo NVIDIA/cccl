@@ -306,7 +306,7 @@ public:
     {
       return __x.__current_ <=> __y.__current_;
     }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>

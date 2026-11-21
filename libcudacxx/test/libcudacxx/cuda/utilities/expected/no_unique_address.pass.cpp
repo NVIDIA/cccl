@@ -71,7 +71,7 @@ void test()
     test_kernel<<<1, 1>>>(with_value, with_error, sizeof(expect));
   }
 
-  { // empty payload, non-empty error
+  { // empty payload, empty error
     using expect = cuda::std::expected<empty<42>, empty<1337>>;
     expect with_value{cuda::std::in_place, 42};
     expect with_error{cuda::std::unexpect, 1337};

@@ -24,7 +24,7 @@
 #include <cuda/std/ranges>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #include "../types.h"
 #include "test_iterators.h"
@@ -220,7 +220,7 @@ TEST_FUNC constexpr bool test()
     assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
     assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // TEST_HAS_SPACESHIP()
 
   {
     // Test an old-school iterator with no operator<=>; the transform iterator shouldn't have
@@ -231,7 +231,7 @@ TEST_FUNC constexpr bool test()
     static_assert(!cuda::std::three_way_comparable<It>);
     using R = cuda::std::ranges::zip_view<Subrange, Subrange>;
     static_assert(!cuda::std::three_way_comparable<cuda::std::ranges::iterator_t<R>>);
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // TEST_HAS_SPACESHIP()
 
     int a[] = {1, 2, 3, 4};
     int b[] = {5, 6, 7, 8, 9};

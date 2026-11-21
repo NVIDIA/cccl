@@ -54,4 +54,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDA___RUNTIME_TYPES_H
+#endif // _CUDA___RUNTIME_TYPES_H

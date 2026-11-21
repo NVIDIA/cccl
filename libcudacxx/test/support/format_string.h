@@ -87,4 +87,4 @@ std::string format_string(const char* fmt, Args const&... args)
   return format_string_detail::format_string_imp(fmt, format_string_detail::unwrap(const_cast<Args&>(args))...);
 }
 
-#endif // TEST_SUPPORT_FORMAT_STRING_HPP
+#endif // TEST_SUPPORT_FORMAT_STRING_H

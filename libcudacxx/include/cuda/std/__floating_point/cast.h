@@ -307,7 +307,7 @@ template <class _To, class _From>
     {
       return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
-#  endif // _CCCL_HAS_NVFP16()
+#  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
@@ -487,7 +487,7 @@ template <class _To, class _From>
     {
       return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<__half>(__v));
     }
-#  endif // _CCCL_HAS_NVFP8_E4M3()
+#  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_UE5M3()
     else if constexpr (is_same_v<_To, __nv_fp8_ue5m3>)
     {

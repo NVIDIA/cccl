@@ -51,9 +51,9 @@ _CCCL_DEVICE_API inline void __cuda_atomic_membar({0})
 
   // Argument ID Reference
   // 0 - Fence scope tag
-  // 1 - Fence scope
+  // 1 - Fence order
   // 2 - Fence order tag
-  // 3 - Fence order
+  // 3 - Fence scope
   constexpr auto intrinsic_fence = R"XXX(
 _CCCL_DEVICE_API inline void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";

@@ -85,7 +85,7 @@ _CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator> unique_co
   using namespace thrust::placeholders;
 
   return thrust::count_if(exec, stencil.begin(), stencil.end(), _1);
-} // end unique_copy()
+} // end unique_count()
 
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator>
@@ -93,6 +93,6 @@ unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator firs
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
   return thrust::unique_count(exec, first, last, ::cuda::std::equal_to<value_type>());
-} // end unique_copy()
+} // end unique_count()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
