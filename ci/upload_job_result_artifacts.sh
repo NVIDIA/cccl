@@ -44,23 +44,33 @@ if [[ "$exit_code" -eq 0 ]]; then
   touch "$job_artifacts/success"
 fi
 
-# Finds a matching file in the root and copies it to the artifact directory.
-find_and_copy_job_artifact_from() {
-  root="$1"
-  name="$2"
-  if find "$root"/ -maxdepth 4 -name "$name" -type f -printf '' -quit 2>/dev/null; then
-    find "$root"/ -maxdepth 4 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
-  else
-    echo "No file matching '$name' found in '$root'."
-    return 1
-  fi
-}
+# Read by the workflow-results action from the top of the job's directory:
+if [[ -d build ]]; then
+  find build/ -maxdepth 4 -type f -name "sccache_stats.json" \
+    -exec cp -v {} "$job_artifacts"/ \; || :
+fi
 
-find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
-find_and_copy_job_artifact_from build ".ninja_log"         || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
+# Archive the build diagnostics so that each file keeps its path and name.
+diagnostics=()
+mapfile -d '' -t diagnostics < <(
+  {
+    find build/ -maxdepth 4 -type f \
+      \( -name ".ninja_log" -o -name "build.ninja" -o -name "rules.ninja" -o -name "ctest.log" \) \
+      -print0 || :
+    find /tmp/ -maxdepth 4 -type f -name "sccache*.log" -print0 || :
+  } 2>/dev/null
+) || :
+
+if [[ "${#diagnostics[@]}" -gt 0 ]]; then
+  diagnostics_archive="$job_artifacts/diagnostics.tar.gz"
+  # -P and --transform store /tmp/... as tmp/... without a warning.
+  printf '%s\0' "${diagnostics[@]}" \
+    | tar --null -T - -P --transform 's,^/,,' -cf - \
+    | gzip > "$diagnostics_archive" || :
+  # Remove the archive if it is unreadable or empty:
+  if ! members="$(tar -tz 2>/dev/null < "$diagnostics_archive")" || [[ -z "$members" ]]; then
+    rm -f "$diagnostics_archive" || :
+  fi
+fi
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

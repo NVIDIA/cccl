@@ -95,6 +95,37 @@ Apart from build artifacts, every job records its own outcome. At exit it calls
 artifact containing a ``success`` file only when the exit code was zero. The ``ci:`` gate reads
 these records to compute the single pass/fail for the run — see :ref:`infra-ci-overview`.
 
+The same artifact carries the job's build diagnostics when they exist. The sccache statistics
+(``<job_id>/sccache_stats.json``) sit next to the ``success`` file, because the run summary reads
+them. Everything else is packed into ``<job_id>/diagnostics.tar.gz``. Inside the archive each
+file keeps its original path and name, because a job can produce several files of the same
+name:
+
+- ``build/<infix>/<preset>/`` — each build tree's ``build.ninja``, ``CMakeFiles/rules.ninja``,
+  and ``.ninja_log``. Windows build trees have no ``<infix>``, so the dependency sub-builds
+  under ``_deps/`` are within the search depth, and their ``build.ninja`` and ``.ninja_log`` are
+  included too.
+- ``build/<infix>/<test_preset>/ctest.log`` — the CTest log, on Linux only. Its directory is
+  named after the test preset, which can differ from the build tree's name (for example,
+  ``libcudacxx-lit`` tests the ``libcudacxx`` build tree).
+- ``tmp/sccache*.log`` — the sccache server logs, when the job has them.
+
+To look at them, download the job's artifact and unpack the archive. Unpack it into a separate
+directory: the archive's ``build/`` paths match a local build tree and would overwrite it.
+
+.. code-block:: bash
+
+    gh run download <run_id> -n zz_jobs-<job_id> -D diag
+    tar -xzf diag/<job_id>/diagnostics.tar.gz -C diag
+    ci/ninja_summary.py -C diag/build/<infix>/<preset>
+
+``<job_id>`` is the workflow's own ID for the job, not the number in the job's URL. The job log
+prints it: in the ``Mock with:`` line on Linux, and in the ``Artifact 'zz_jobs-<job_id>'
+registered`` line on Windows. Artifacts are kept for 7 days.
+
+A Linux job that fails uploads no artifacts, so its diagnostics are not available. Windows jobs
+upload them either way.
+
 Python wheels
 -------------
 
