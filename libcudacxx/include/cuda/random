@@ -22,6 +22,7 @@
 #endif // no system header
 
 // IWYU pragma: begin_exports
+#include <cuda/__random/mwc_engine.h>
 #include <cuda/__random/pcg_engine.h>
 #include <cuda/std/random>
 // IWYU pragma: end_exports
