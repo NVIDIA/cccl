@@ -27,7 +27,14 @@ set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
 
 # With own_main TRUE, NVBench's main() is compiled as one of the benchmark's own
 # sources instead of coming from nvbench::main.
-function(add_bench target_name bench_name bench_src config_device own_main)
+function(
+  add_bench
+  target_name
+  bench_name
+  bench_src
+  config_device
+  own_main
+)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
@@ -108,10 +115,19 @@ function(add_bench_dir bench_dir)
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
       # HPX Integration: Ensures HPX runtime is started
-      if (uses_hpx
-	      AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-	    # Wrap main so HPX's __wrap_main runs before nvbench main.
-	    target_link_libraries(${bench_name} PRIVATE HPX::hpx HPX::auto_wrap_main)
+      if (
+        uses_hpx
+        AND
+          (
+            CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+            OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+          )
+      )
+        # Wrap main so HPX's __wrap_main runs before nvbench main.
+        target_link_libraries(
+          ${bench_name}
+          PRIVATE HPX::hpx HPX::auto_wrap_main
+        )
       endif()
 
       if ("CUDA" STREQUAL "${config_device}")

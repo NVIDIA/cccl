@@ -756,7 +756,10 @@ function(thrust_set_HPX_target hpx_target)
   if (NOT TARGET Thrust::HPX)
     thrust_debug("Setting HPX target to ${hpx_target}" internal)
     # Workaround cmake issue #20670 https://gitlab.kitware.com/cmake/cmake/-/issues/20670
-    set(THRUST_HPX_VERSION ${HPX_VERSION} CACHE INTERNAL
+    set(
+      THRUST_HPX_VERSION
+      ${HPX_VERSION}
+      CACHE INTERNAL
       "HPX version used by Thrust"
       FORCE
     )
@@ -904,7 +907,7 @@ endmacro()
 # #20670 -- otherwise variables like HPX_VERSION, etc won't be in the caller's
 # scope
 macro(_thrust_find_HPX required)
-  if(NOT TARGET Thrust::HPX)
+  if (NOT TARGET Thrust::HPX)
     thrust_debug("Searching for HPX ${required}" internal)
 
     # Try to find the CMake package that newer versions of HPX install themselves:
