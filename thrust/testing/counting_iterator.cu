@@ -1,6 +1,14 @@
 #include <thrust/binary_search.h>
+#include <thrust/device_vector.h>
 #include <thrust/distance.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/algorithm>
@@ -8,9 +16,12 @@
 #include <cuda/std/type_traits>
 
 #include <complex>
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numeric>
 
+#include <catch2/generators/catch_generators.hpp>
 #include <unittest/unittest.h>
 
 template <typename ValueType, typename DifferenceType>

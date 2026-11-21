@@ -3,9 +3,18 @@
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

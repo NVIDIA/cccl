@@ -1,7 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/__cccl/execution_space.h>
+
+#include <cstddef>
 #include <limits>
 
 #include <unittest/unittest.h>

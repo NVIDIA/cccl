@@ -12,6 +12,8 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/std/__cccl/execution_space.h>
+
 #include <cstdint>
 
 #include <unittest/unittest.h>

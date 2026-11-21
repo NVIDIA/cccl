@@ -1,8 +1,15 @@
+#include <thrust/detail/config/device_system.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

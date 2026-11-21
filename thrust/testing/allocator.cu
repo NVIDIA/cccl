@@ -1,12 +1,17 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/device_malloc_allocator.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cpp/vector.h>
 
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/type_traits>
 
 #include <nv/target>
 
+#include <cstddef>
 #include <memory>
 
 #include <unittest/unittest.h>

@@ -1,7 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/host_vector.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

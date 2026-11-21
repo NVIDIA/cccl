@@ -1,7 +1,15 @@
+#include <thrust/detail/config/device_system.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/swap.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cpp/memory.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

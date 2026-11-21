@@ -1,4 +1,7 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -6,8 +9,15 @@
 #include <thrust/tabulate.h>
 #include <thrust/transform_scan.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <numeric>
+#include <ostream>
 
 #include <unittest/unittest.h>
 

@@ -13,11 +13,13 @@
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
 #include <thrust/count.h>
+#include <thrust/detail/pointer.h>
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
 #include <thrust/find.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
 #include <thrust/merge.h>

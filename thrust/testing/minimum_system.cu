@@ -1,3 +1,7 @@
+#include <thrust/detail/seq.h>
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/detail/minimum_system.h>
 
 #include <cuda/std/type_traits>

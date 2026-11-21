@@ -1,12 +1,23 @@
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/malloc_and_free.h>
+#include <thrust/detail/pointer.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/utility>
 
+#include <cstddef>
+#include <cstdlib>
 #include <iostream>
 
 #include <unittest/unittest.h>

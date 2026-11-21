@@ -4,6 +4,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__hierarchy/hierarchy_dimensions.h>
+#include <cuda/__hierarchy/level_dimensions.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>

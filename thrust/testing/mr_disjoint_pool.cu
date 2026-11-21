@@ -1,8 +1,18 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/disjoint_pool.h>
 #include <thrust/mr/disjoint_sync_pool.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/pool_options.h>
+#include <thrust/system/detail/bad_alloc.h>
+
+#include <cuda/std/__memory/pointer_traits.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <vector>
 
 #include <unittest/unittest.h>
 

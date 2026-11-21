@@ -1,7 +1,19 @@
+#include <thrust/detail/preprocessor.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/add_const.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 
 #include <unittest/unittest.h>

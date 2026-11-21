@@ -1,4 +1,6 @@
 #include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
@@ -6,9 +8,11 @@
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__tuple_dir/tuple.h>
 
 #include <iterator>
 #include <list>
+#include <vector>
 
 #include <unittest/unittest.h>
 

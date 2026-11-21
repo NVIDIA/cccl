@@ -1,9 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <thrust/detail/pointer.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/memory.h>
 
 #include <cuda/std/__algorithm/iter_swap.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <catch2/catch_test_macros.hpp>

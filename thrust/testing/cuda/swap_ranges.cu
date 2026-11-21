@@ -1,5 +1,7 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/swap.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <unittest/unittest.h>
 

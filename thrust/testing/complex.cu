@@ -1,5 +1,12 @@
 #include <thrust/complex.h>
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+
+#include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <complex>
 #include <iostream>

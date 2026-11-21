@@ -1,5 +1,7 @@
 #include <thrust/universal_vector.h>
 
+#include <cuda/std/__cccl/execution_space.h>
+
 #include <unittest/unittest.h>
 
 template <class VecInT, class VecOutT>

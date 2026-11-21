@@ -1,5 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
+
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

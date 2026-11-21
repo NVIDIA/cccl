@@ -1,11 +1,19 @@
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
 #include <cstdint>

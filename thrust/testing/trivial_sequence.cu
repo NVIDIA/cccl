@@ -1,4 +1,5 @@
 #include <thrust/detail/trivial_sequence.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 

@@ -1,20 +1,39 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/array>
 
+#include <cstddef>
+#include <functional>
+#include <iterator>
 #include <numeric>
+#include <ostream>
 
 #include <unittest/unittest.h>
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/util_device.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 template <class Vector>
 void test_scan_simple()

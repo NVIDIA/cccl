@@ -1,6 +1,9 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/logical.h>
+
+#include <cuda/std/__functional/identity.h>
 
 #include <unittest/unittest.h>
 

@@ -1,4 +1,6 @@
 #include <cuda/__functional/address_stability.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__functional/operations.h>
 
 #include <unittest/unittest.h>
 

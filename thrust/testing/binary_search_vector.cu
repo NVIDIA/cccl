@@ -1,9 +1,16 @@
 #include <thrust/binary_search.h>
 #include <thrust/detail/allocator/allocator_system.h>
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/__memory/allocator_traits.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

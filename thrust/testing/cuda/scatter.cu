@@ -1,9 +1,13 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/scatter.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <cuda/functional>
 
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

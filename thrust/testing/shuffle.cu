@@ -1,6 +1,14 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/random_bijection.h>
+#include <thrust/detail/temporary_array.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/execution_policy.h>
 #include <thrust/gather.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/shuffle_iterator.h>
 #include <thrust/random.h>
 #include <thrust/scatter.h>
@@ -8,10 +16,16 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
 #include <cuda/std/numbers>
 #include <cuda/std/random>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <map>
 

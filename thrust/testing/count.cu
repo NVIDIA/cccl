@@ -1,5 +1,14 @@
 #include <thrust/count.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
+
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__iterator/distance.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

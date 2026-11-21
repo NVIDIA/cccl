@@ -1,8 +1,21 @@
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/pointer.h>
+#include <thrust/detail/reference.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_comparable.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/iterator>
 
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
 
 #include <unittest/unittest.h>
