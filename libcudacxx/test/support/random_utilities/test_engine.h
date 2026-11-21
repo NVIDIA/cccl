@@ -97,6 +97,18 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_discard()
   e.discard(9999);
   assert(e() == value_10000);
 
+  // discard(z) is also equivalent to z calls to operator() from a state other than the initial one
+  Engine e3(42);
+  e3();
+  Engine e4 = e3;
+  for (int i = 0; i < 101; ++i)
+  {
+    e3();
+  }
+  e4.discard(101);
+  assert(e3 == e4);
+  assert(e3() == e4());
+
   static_assert(cuda::std::is_void_v<decltype(e.discard(10))>);
   static_assert(noexcept(e.discard(10)));
 
@@ -163,6 +175,29 @@ void test_save_restore()
   ss >> e1;
   e1.discard(10000);
   assert(e0() == e1());
+
+  // The state is written in decimal and read back whatever the format flags of the stream are, and the format flags
+  // and the fill character of the stream are unchanged
+  Engine e2(42);
+  e2.discard(10001);
+  std::stringstream expected;
+  expected << e2;
+
+  std::stringstream ss2;
+  ss2.flags(std::ios_base::hex | std::ios_base::showbase);
+  ss2.fill('*');
+  auto flags = ss2.flags();
+  ss2 << e2;
+  assert(ss2.str() == expected.str());
+  assert(ss2.flags() == flags);
+  assert(ss2.fill() == '*');
+
+  Engine e3;
+  ss2 >> e3;
+  assert(!ss2.fail());
+  assert(ss2.flags() == flags);
+  assert(e3 == e2);
+  assert(e3() == e2());
 }
 #endif // _CCCL_HOSTED()
 
