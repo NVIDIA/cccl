@@ -89,6 +89,24 @@ mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
+  # Build NVBench against this CCCL instead of the CUDA toolkit's copy, like the
+  # benchmarks linking it.
+  get_property(_cccl_nvbench_uses_cccl GLOBAL PROPERTY _CCCL_NVBENCH_USES_CCCL)
+  if (NOT _cccl_nvbench_uses_cccl)
+    set_property(GLOBAL PROPERTY _CCCL_NVBENCH_USES_CCCL TRUE)
+    foreach (_cccl_nvbench_target IN ITEMS nvbench nvbench.main)
+      if (TARGET ${_cccl_nvbench_target})
+        target_include_directories(
+          ${_cccl_nvbench_target}
+          BEFORE
+          PRIVATE
+            "${CCCL_SOURCE_DIR}/libcudacxx/include"
+            "${CCCL_SOURCE_DIR}/cub"
+            "${CCCL_SOURCE_DIR}/thrust"
+        )
+      endif()
+    endforeach()
+  endif()
 endmacro()
 
 # CCCL-specific NVBench utilities
