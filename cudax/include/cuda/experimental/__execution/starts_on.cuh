@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,14 +22,24 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/just.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
-#include <cuda/experimental/__execution/transform_sender.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

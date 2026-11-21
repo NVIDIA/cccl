@@ -18,7 +18,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/min.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,11 +26,26 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
+
+#include <unordered_map>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__type_traits/is_move_assignable.h>
+#  include <cuda/std/__type_traits/is_move_constructible.h>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

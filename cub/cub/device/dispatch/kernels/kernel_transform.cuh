@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -289,7 +289,7 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * VecSize : alignof(result_t);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-  ::cuda::__uninitialized_array<output_array_t, ItemsPerThread, output_array_alignment> output;
+  ::cuda::__uninitialized<output_array_t[ItemsPerThread], output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -337,9 +337,8 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                              ItemsPerThread,
-                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * VecSize>{}...);
+  provide_array(::cuda::__uninitialized<it_value_t<RandomAccessIteratorsIn>[ItemsPerThread],
+                                        sizeof(it_value_t<RandomAccessIteratorsIn>) * VecSize>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -613,7 +612,7 @@ _CCCL_DEVICE_API void transform_kernel_ldgsts(
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
   const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, static_cast<Offset>(tile_size)));
+  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -757,8 +756,8 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = _CUB::detail::transform::bulk_copy_alignment(_CUB::detail::current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
-  constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
-  constexpr int tile_padding  = ::cuda::std::max(bulk_copy_alignment, max_alignment);
+  constexpr int max_alignment = (::cuda::std::max) ({int{alignof(InTs)}...});
+  constexpr int tile_padding  = (::cuda::std::max) (bulk_copy_alignment, max_alignment);
 
   // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
   // fails for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR
@@ -1090,7 +1089,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
           // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
           // registers
           constexpr ::cuda::std::size_t in_vec_align = (::cuda::std::max) (alignof(T), alignof(int4));
-          ::cuda::__uninitialized_array<T, store_vec_size, in_vec_align> in_vec;
+          ::cuda::__uninitialized<T[store_vec_size], in_vec_align> in_vec;
           constexpr int in_vec_bytes = int{sizeof(T)} * store_vec_size;
           // since store_vec_size is pow2, sizeof(T) is pow2, in_vec_bytes must be pow2
           // if in_vec_bytes is a multiple of 16, we do vectorised load from smem into reg
@@ -1116,7 +1115,9 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         auto in_vecs = ::cuda::std::tuple{load_in_vec(aligned_ptrs)...};
 
         // must fully unroll to make sure register index is static
-        ::cuda::__uninitialized_array<output_t, store_vec_size, sizeof(output_t) * store_vec_size> res;
+        // spelling the array type directly as a template argument crashes nvcc 12.0 (cudafe++)
+        using res_array_t = output_t[store_vec_size];
+        ::cuda::__uninitialized<res_array_t, sizeof(output_t) * store_vec_size> res;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int k = 0; k < store_vec_size; ++k)
         {

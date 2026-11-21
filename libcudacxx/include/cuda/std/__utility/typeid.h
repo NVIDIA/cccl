@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -52,7 +52,7 @@
 #  include <cuda/std/__utility/integer_sequence.h>
 #endif // _CCCL_COMPILER(GCC, <, 9)
 
-#if !defined(_CCCL_NO_TYPEID)
+#ifndef _CCCL_NO_TYPEID
 #  include <typeinfo>
 #endif
 
@@ -278,7 +278,7 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
 // we use an alternate formulation of typeid that does not require such objects.
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
 
 struct __type_info;
 struct __type_info_ptr_;

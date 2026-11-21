@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -207,7 +207,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size) const noexcept
   {
@@ -345,7 +345,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
@@ -466,7 +466,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {

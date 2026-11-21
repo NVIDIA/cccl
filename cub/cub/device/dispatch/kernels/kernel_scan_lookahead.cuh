@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_ENABLE_IKET)
+#ifdef _CCCL_ENABLE_IKET
 #  include <cub/agent/agent_scan.cuh>
 #endif // defined(_CCCL_ENABLE_IKET)
 
@@ -102,7 +102,7 @@ struct ScanResources
   static constexpr ScanLookaheadPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookahead;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
-  struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
+  struct alignas((::cuda::std::max) ({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
     static_assert(policy.tile_size() % 16 == 0, "tile_size must be multiple of 16");
@@ -134,7 +134,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   constexpr auto policy = _CUB::detail::current_policy<PolicySelector>().lookahead;
 
   const int num_aggr_exclusive_cta_stages =
-    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, numStages + policy.lookahead_stages);
+    policy.lookahead_stages > 0 ? policy.lookahead_stages : (::cuda::std::max) (1, numStages + policy.lookahead_stages);
 
   ScanResourcesT res = {
     _CUB::detail::warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
@@ -729,7 +729,7 @@ struct lookahead_scan_closure
       static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
       for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
       {
-        const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
+        const int chunk_size = (::cuda::std::min) (valid_items - chunk_offset, elem_per_chunk);
         warpspeed::CpAsyncOobInfo storeInfo =
           _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
 
@@ -841,7 +841,7 @@ struct lookahead_scan_closure
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
-        static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
+        static_cast<int>((cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
       const warpspeed::CpAsyncOobInfo loadInfo =
         _CUB::detail::warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);

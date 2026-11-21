@@ -24,7 +24,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/min.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,15 +32,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/internal/execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace cuda::experimental::stf
 {

@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -365,7 +365,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
-    bytes = (std::max) (bytes, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
+    bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -476,7 +476,7 @@ public:
                                     std::size_t n,
                                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max) (n, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
+    n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,7 +37,7 @@
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
 
-#  include <memory>
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

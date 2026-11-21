@@ -23,7 +23,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,12 +32,21 @@
 #endif // no system header
 
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/cstdint>
 
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <functional>
+#include <string>
+
+#include <cuda.h>
 
 namespace cuda::experimental::places
 {

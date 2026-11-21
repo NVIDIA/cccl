@@ -15,7 +15,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 #endif
 #include <cuda/std/initializer_list>
@@ -66,20 +66,20 @@ int main(int, char**)
   test_container(v);
   test_const_container(v);
 #endif // !_CCCL_TILE_COMPILATION()
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   cuda::std::list<int> l;
   l.push_back(2);
 #endif
   cuda::std::array<int, 1> a;
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test_container(l);
 #endif
   test_container(a);
   test_container(il);
 
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test_const_container(l);
 #endif
   test_const_container(a);

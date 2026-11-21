@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,10 +16,12 @@
 #include <thrust/mr/allocator.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/per_device_resource.h>
 #include <thrust/system/detail/sequential/per_device_resource.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(per_device_resource.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(per_device_resource.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we actually include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)

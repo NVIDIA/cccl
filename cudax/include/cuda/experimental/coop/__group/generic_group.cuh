@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -55,6 +55,8 @@ class generic_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(group<_ParentGroup>);
+  static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
+                "the parent group must not be a group_view");
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
@@ -262,7 +264,7 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
   {
     return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }

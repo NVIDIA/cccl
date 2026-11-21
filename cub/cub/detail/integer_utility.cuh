@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,7 +94,7 @@ template <typename T>
   using signed_t = ::cuda::std::make_signed_t<::cuda::std::__fp_storage_of_t<T>>;
 
   const auto bits = static_cast<signed_t>(::cuda::std::__fp_get_storage(value));
-  return bits < 0 ? static_cast<signed_t>(bits ^ ::cuda::std::numeric_limits<signed_t>::max()) : bits;
+  return bits < 0 ? static_cast<signed_t>(bits ^ (::cuda::std::numeric_limits<signed_t>::max)()) : bits;
 }
 
 // Inverse mapping from (comparable) signed integers to floating-point values
@@ -105,7 +105,7 @@ template <typename T, typename Int>
   using storage_t = ::cuda::std::__fp_storage_of_t<T>;
   static_assert(::cuda::std::is_same_v<Int, ::cuda::std::make_signed_t<storage_t>>, "Int must match the storage of T");
 
-  const auto bits = value < 0 ? static_cast<Int>(value ^ ::cuda::std::numeric_limits<Int>::max()) : value;
+  const auto bits = value < 0 ? static_cast<Int>(value ^ (::cuda::std::numeric_limits<Int>::max)()) : value;
   return ::cuda::std::__fp_from_storage<T>(static_cast<storage_t>(bits));
 }
 

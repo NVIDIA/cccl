@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -386,7 +386,7 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
-#if defined(_CCCL_BUILTIN_HUGE_VALF)
+#ifdef _CCCL_BUILTIN_HUGE_VALF
     return _CCCL_BUILTIN_HUGE_VALF();
 #else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
     return ::cuda::std::bit_cast<type>(0x7f800000);
@@ -394,13 +394,13 @@ public:
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NANF)
+#ifdef _CCCL_BUILTIN_NANF
     return _CCCL_BUILTIN_NANF();
 #else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
     return ::cuda::std::bit_cast<type>(0x7fc00000);
 #endif // ^^^ !_CCCL_BUILTIN_NANF ^^^
   }
-#if defined(_CCCL_BUILTIN_NANSF)
+#ifdef _CCCL_BUILTIN_NANSF
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANSF();
@@ -413,7 +413,7 @@ public:
 #endif // !_CCCL_BUILTIN_NANSF
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#if defined(FLT_TRUE_MIN)
+#ifdef FLT_TRUE_MIN
     return FLT_TRUE_MIN;
 #else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
     return __FLT_DENORM_MIN__;
@@ -479,7 +479,7 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
-#if defined(_CCCL_BUILTIN_HUGE_VAL)
+#ifdef _CCCL_BUILTIN_HUGE_VAL
     return _CCCL_BUILTIN_HUGE_VAL();
 #else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
     return ::cuda::std::bit_cast<type>(0x7ff0000000000000);
@@ -487,13 +487,13 @@ public:
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NAN)
+#ifdef _CCCL_BUILTIN_NAN
     return _CCCL_BUILTIN_NAN();
 #else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
     return ::cuda::std::bit_cast<type>(0x7ff8000000000000);
 #endif // ^^^ !_CCCL_BUILTIN_NAN ^^^
   }
-#if defined(_CCCL_BUILTIN_NANS)
+#ifdef _CCCL_BUILTIN_NANS
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANS();
@@ -506,7 +506,7 @@ public:
 #endif // !_CCCL_BUILTIN_NANS
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#if defined(DBL_TRUE_MIN)
+#ifdef DBL_TRUE_MIN
     return DBL_TRUE_MIN;
 #else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
     return __DBL_DENORM_MIN__;
@@ -585,7 +585,7 @@ public:
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#  if defined(LDBL_TRUE_MIN)
+#  ifdef LDBL_TRUE_MIN
     return LDBL_TRUE_MIN;
 #  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
     return __LDBL_DENORM_MIN__;

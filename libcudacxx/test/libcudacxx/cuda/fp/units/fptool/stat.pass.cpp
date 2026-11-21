@@ -432,8 +432,11 @@ __global__ void event_kernel(float* sink)
   acc += (stat_t(1.375f) + stat_t(-1.375f)).hi();
   acc += (stat_t(1.375f) - stat_t(1.375f)).hi();
 
-  // partial cancellation: 24 of 46 significand bits go, and the result is not zero
+  // Exactly half of the 48 significand bits cancel, which must not count.
   acc += (stat_t(1.0f) - stat_t(0.99999994f)).hi();
+
+  // Partial cancellation: 25 of 48 significand bits go, and the result is not zero.
+  acc += (stat_t(1.0f) - stat_t(1.0f, -0x1p-25f)).hi();
 
   // a routine 1-bit drop, which must not count as cancellation
   acc += (stat_t(1.0f) - stat_t(0.6f)).hi();

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,10 +23,9 @@
 
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__type_traits/is_copy_constructible.h>
 
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

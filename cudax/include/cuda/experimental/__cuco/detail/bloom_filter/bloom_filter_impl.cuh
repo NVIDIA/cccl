@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,9 +25,11 @@
 
 #  include <cub/device/device_for.cuh>
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
 
 #  include <cuda/__cccl_config>
 #  include <cuda/__cmath/pow2.h>
+#  include <cuda/__hierarchy/level_dimensions.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__launch/launch.h>
 #  include <cuda/__memory/is_aligned.h>
@@ -38,22 +40,21 @@
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__memory/assume_aligned.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
 
+#  include <cuda/experimental/__cuco/bloom_filter_modes.cuh>
 #  include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_policy.cuh>
 #  include <cuda/experimental/__cuco/detail/bloom_filter/kernels.cuh>
 #  include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
-
-#  include <cooperative_groups.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

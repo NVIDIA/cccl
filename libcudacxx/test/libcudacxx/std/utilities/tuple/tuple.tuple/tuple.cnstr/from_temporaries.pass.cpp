@@ -84,24 +84,24 @@ TEST_FUNC void assert_mutref_constructible_single()
 TEST_FUNC void assert_normal_constructible()
 {
   assert_constref_constructible_single<true, cuda::std::tuple<const int&>, int>();
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   assert_constref_constructible_single<false, cuda::std::tuple<const int&>, long>();
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   assert_constref_constructible_single<true, cuda::std::tuple<const int&, const int&>, int, int>();
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   assert_constref_constructible_single<false, cuda::std::tuple<const int&, const int&>, long, int>();
   assert_constref_constructible_single<false, cuda::std::tuple<const int&, const int&>, long, long>();
   assert_constref_constructible_single<false, cuda::std::tuple<const int&, const int&>, int, long>();
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   assert_mutref_constructible_single<true, cuda::std::tuple<int&&>, int>();
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   assert_mutref_constructible_single<false, cuda::std::tuple<int&&>, long>();
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   assert_mutref_constructible_single<true, cuda::std::tuple<int&&, int&&>, int, int>();
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   assert_mutref_constructible_single<false, cuda::std::tuple<int&&, int&&>, long, int>();
   assert_mutref_constructible_single<false, cuda::std::tuple<int&&, int&&>, long, long>();
   assert_mutref_constructible_single<false, cuda::std::tuple<int&&, int&&>, int, long>();

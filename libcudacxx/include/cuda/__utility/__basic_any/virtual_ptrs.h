@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,7 +54,7 @@ struct __base_vptr
     return __vptr_;
   }
 
-#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
+#ifndef _CCCL_NO_THREE_WAY_COMPARISON
   _CCCL_HIDE_FROM_ABI bool operator==(__base_vptr const& __other) const noexcept = default;
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept

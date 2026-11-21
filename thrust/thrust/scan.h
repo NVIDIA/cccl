@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -1729,4 +1729,4 @@ _CCCL_HOST_API OutputIterator exclusive_scan_by_key(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/scan.inl>
+#include <thrust/detail/scan.inl> // IWYU pragma: export

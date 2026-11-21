@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -193,4 +193,4 @@ _CCCL_HOST_API OutputIterator generate_n(OutputIterator first, Size n, Generator
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/generate.inl>
+#include <thrust/detail/generate.inl> // IWYU pragma: export

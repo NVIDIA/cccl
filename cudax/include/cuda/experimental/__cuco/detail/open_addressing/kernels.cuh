@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,8 +22,10 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/util_namespace.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -36,7 +38,6 @@
 
 #include <cooperative_groups.h>
 
-#include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILATION()
@@ -285,7 +286,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
   auto __idx               = detail::__global_thread_id() / _CgSize;
 
   using __output_type = typename __find_buffer<_Ref>::type;
-  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
+  __shared__ ::cuda::__uninitialized<__output_type[_BlockSize / _CgSize]> __found_buffer;
   __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
 
   while ((__idx - __thread_idx / _CgSize) < __n)
@@ -448,7 +449,7 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
 
   // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
   // require initialization, which is not allowed for shared variables.
-  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
+  __shared__ ::cuda::__uninitialized<__value_type[_BlockSize]> __buffer;
   __shared__ ::cuda::std::uint32_t __buffer_size;
 
   constexpr auto __cg_size         = _ContainerRef::cg_size;

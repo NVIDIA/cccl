@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,25 +24,32 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__stream/invalid_stream.h>
 #include <cuda/__stream/launch_transform.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/path_builder.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
