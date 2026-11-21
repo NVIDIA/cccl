@@ -14,6 +14,7 @@ usage() {
 Usage: $0 <base-path> <test-path> \
   [--cpp-filter "<regex>"] \
   [--python-filter "<regex>"] \
+  [--python-project cuda_cccl|cuda_coop_cutlass] \
   [--arch "<arch>"] \
   [--nvbench-args "<args>"] \
   [--nvbench-compare-args "<args>"] \
@@ -26,7 +27,8 @@ C++ filters are regex patterns matched against CUB, Thrust, and libcu++ benchmar
 Ninja target names.
 Matching targets are built; only matching runnable binaries are launched.
 Python filters are regex patterns matched against benchmark script paths
-under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
+under the selected Python project's benchmarks/ directory
+(default: python/cuda_cccl/benchmarks/, e.g. compute/reduce/sum.py).
 
 Arguments:
   <base-path>  Path to baseline CCCL source tree.
@@ -35,6 +37,7 @@ Arguments:
 Options:
   --cpp-filter <regex>      C++ benchmark regex filter (repeatable).
   --python-filter <regex>   Python benchmark regex filter (repeatable).
+  --python-project <name>   cuda_cccl (default) or cuda_coop_cutlass.
   --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
   --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
   --nvbench-compare-args <args>  Extra args passed to nvbench-compare-robust.
@@ -359,7 +362,7 @@ list_all_python_benchmarks() {
     ! -name 'utils.py' \
     ! -name 'run_benchmarks.py' \
     ! -name 'device_side_benchmark.py' \
-    ! -name '__init__.py' \
+    ! -name '_*.py' \
     ! -path '*/__pycache__/*' \
     -printf '%P\n' \
     | sort -u
@@ -420,21 +423,28 @@ setup_python_venv() {
   local side="$3"
   local log_path="$4"
   local cuda_major="$5"
-  local cuda_cccl_dir="${src_path}/python/cuda_cccl"
+  local package_dir="${src_path}/python/${PYTHON_PROJECT}"
+  local package_extra="bench-cu${cuda_major}"
 
-  if [[ ! -d "${cuda_cccl_dir}" ]]; then
-    die "cuda_cccl source directory not found: ${cuda_cccl_dir}"
+  if [[ ! -d "${package_dir}" ]]; then
+    die "Python source directory not found: ${package_dir}"
+  fi
+  if [[ "${PYTHON_PROJECT}" == cuda_coop_cutlass ]]; then
+    [[ "${cuda_major}" == 13 ]] || die "cuda_coop_cutlass benchmarks require CUDA 13."
+    package_extra="bench"
   fi
 
   local -a setup_cmds
+  # Expand positional parameters in the child shell, not during array setup.
+  # shellcheck disable=SC2016
   setup_cmds=(
-    bash -c "
+    bash -c '
       set -euo pipefail
-      python3 -m venv '${venv_path}'
-      '${venv_path}/bin/pip' install --upgrade pip
-      '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
-    "
+      python3 -m venv "$1"
+      "$1/bin/pip" install --upgrade pip
+      "$1/bin/pip" install -e "$2[$3]"
+      "$1/bin/pip" install "cuda-bench[compare]>=0.3.0"
+    ' bash "${venv_path}" "${package_dir}" "${package_extra}"
   )
 
   run_grouped_logged_command \
@@ -1034,6 +1044,7 @@ write_summary() {
     echo "- CUB runnable targets selected: ${#selected_runnable_targets[@]}"
     echo "- CUB comparisons attempted: ${compares_attempted}"
     echo "- CUB comparisons succeeded: ${compares_succeeded}"
+    echo "- Python project: ${PYTHON_PROJECT}"
     echo "- Python targets selected: ${#selected_py_targets[@]}"
     echo "- Python comparisons attempted: ${py_compares_attempted}"
     echo "- Python comparisons succeeded: ${py_compares_succeeded}"
@@ -1150,6 +1161,7 @@ parse_cli_args() {
   TARGET_ARCH=""
   FILTERS=()
   PYTHON_FILTERS=()
+  PYTHON_PROJECT="cuda_cccl"
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --arch)
@@ -1185,6 +1197,14 @@ parse_cli_args() {
           die "Missing value for --cpp-filter"
         fi
         FILTERS+=("$2")
+        shift 2
+        ;;
+      --python-project)
+        [[ "$#" -ge 2 ]] || die "Missing value for --python-project"
+        case "$2" in
+          cuda_cccl | cuda_coop_cutlass) PYTHON_PROJECT="$2" ;;
+          *) die "Unsupported Python project: $2" ;;
+        esac
         shift 2
         ;;
       --python-filter)
@@ -1457,7 +1477,7 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   echo "=== Python Benchmark Pipeline ==="
   echo
 
-  py_benchmarks_subdir="python/cuda_cccl/benchmarks"
+  py_benchmarks_subdir="python/${PYTHON_PROJECT}/benchmarks"
   base_py_bench_dir="${BASE_PATH}/${py_benchmarks_subdir}"
   test_py_bench_dir="${TEST_PATH}/${py_benchmarks_subdir}"
 
@@ -1474,10 +1494,10 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   base_py_venv="${build_root}/py-base-${build_token}"
   test_py_venv="${build_root}/py-test-${build_token}"
 
+  select_python_targets "${base_py_bench_dir}" "${test_py_bench_dir}" selected_py_targets
+
   setup_python_venv "${base_py_venv}" "${BASE_PATH}" "base" "${artifact_dir}/logs/py.venv.base.log" "${cuda_major}"
   setup_python_venv "${test_py_venv}" "${TEST_PATH}" "test" "${artifact_dir}/logs/py.venv.test.log" "${cuda_major}"
-
-  select_python_targets "${base_py_bench_dir}" "${test_py_bench_dir}" selected_py_targets
 
   # Append Python targets to the selected targets metadata file.
   for py_target_path in "${selected_py_targets[@]}"; do
