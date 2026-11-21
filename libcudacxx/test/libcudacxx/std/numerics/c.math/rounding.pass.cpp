@@ -305,19 +305,25 @@ TEST_FUNC void test_nextafter_edge_cases(T val)
   assert(eq(cuda::std::nextafter(-one, T(-2)), -one - eps));
   assert(eq(cuda::std::nextafter(-one, zero), -one + eps / T(2)));
 
-  // zero steps to the smallest subnormal with the sign of y, and a subnormal steps back to zero keeping its sign
-  assert(eq(cuda::std::nextafter(zero, one), dmin));
-  assert(eq(cuda::std::nextafter(zero, -one), -dmin));
-  assert(eq(cuda::std::nextafter(-zero, one), dmin));
-  assert(eq(cuda::std::nextafter(dmin, zero), zero));
-  assert(!cuda::std::signbit(cuda::std::nextafter(dmin, -one)));
-  assert(cuda::std::signbit(cuda::std::nextafter(-dmin, zero)));
-  assert(eq(cuda::std::nextafter(dmin, one), dmin * T(2)));
+  // Fast device math flushes float subnormals to zero
+  bool test_subnormals = true;
+  NV_IF_TARGET(NV_IS_DEVICE, (test_subnormals = !TEST_HAS_CUDA_FAST_MATH || !cuda::std::is_same_v<T, float>;))
+  if (test_subnormals)
+  {
+    // zero steps to the smallest subnormal with the sign of y, and a subnormal steps back to zero keeping its sign
+    assert(eq(cuda::std::nextafter(zero, one), dmin));
+    assert(eq(cuda::std::nextafter(zero, -one), -dmin));
+    assert(eq(cuda::std::nextafter(-zero, one), dmin));
+    assert(eq(cuda::std::nextafter(dmin, zero), zero));
+    assert(!cuda::std::signbit(cuda::std::nextafter(dmin, -one)));
+    assert(cuda::std::signbit(cuda::std::nextafter(-dmin, zero)));
+    assert(eq(cuda::std::nextafter(dmin, one), dmin * T(2)));
 
-  // the boundary between normal and subnormal values
-  assert(eq(cuda::std::nextafter(min, zero), min - dmin));
-  assert(eq(cuda::std::nextafter(min - dmin, one), min));
-  assert(eq(cuda::std::nextafter(-min, zero), -min + dmin));
+    // the boundary between normal and subnormal values
+    assert(eq(cuda::std::nextafter(min, zero), min - dmin));
+    assert(eq(cuda::std::nextafter(min - dmin, one), min));
+    assert(eq(cuda::std::nextafter(-min, zero), -min + dmin));
+  }
 
   // the largest finite value and infinity
   assert(eq(cuda::std::nextafter(max, inf), inf));

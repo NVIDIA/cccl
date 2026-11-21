@@ -964,9 +964,8 @@ template <class _Tp, enable_if_t<is_same_v<_Tp, __float128>, int> = 0>
 #endif // _CCCL_HAS_FLOAT128()
 
 // Admitting __float128 promotes mixed calls like nextafter(__float128, double) to __float128, rather than converting
-// the
-// __float128 argument to double. Other extended floating point types are left out, so their mixed calls resolve as
-// before
+// the __float128 argument to double. Other extended floating point types are left out, so their mixed calls resolve
+// as before
 template <class _Tp>
 inline constexpr bool __is_nextafter_promotable_v =
   is_arithmetic_v<_Tp>
