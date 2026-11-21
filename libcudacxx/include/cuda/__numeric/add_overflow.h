@@ -371,7 +371,8 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
         return ::cuda::overflow_cast<_ActualResult>(static_cast<_Sp>(__sum));
       }
     }
-    return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
+    // lhs + rhs >= 0 and exact in _CommonAll, but it may still exceed the range of _ActualResult
+    return ::cuda::overflow_cast<_ActualResult>(__sum);
   }
 #endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_ADD_OVERFLOW || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
 }
