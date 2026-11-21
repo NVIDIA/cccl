@@ -143,29 +143,24 @@ template <typename KeyT,
           typename LargeSegmentTileOffsetT>
 struct policy_selector_from_types
 {
-  // TODO(bgruber): to let the baseline policy vary per CC, move this coverage check into operator() and evaluate it for
-  // the passed CC. Only the check is hard: it instantiates the agent for sizeof(TempStorage), so it needs the CC as a
-  // compile-time constant, whereas operator()'s `cc` is a runtime parameter (building the policy itself is just the
-  // value make_baseline_policy(cc)). Recover the compile-time CC by folding over
-  // ::cuda::__target_compute_capabilities() (as detail::dispatch_to_cc_list does) and evaluate baseline_can_cover_v for
-  // the matching CC. That also removes the invariant below, since coverage and the returned baseline would then derive
-  // from the same cc.
-
-  // note: the baseline policy passed to baseline_can_cover_v must be the same as returned from operator(cc) below
-  static constexpr baseline_topk_policy baseline_policy = _CUB::detail::batched_topk::make_baseline_policy();
-
-  struct policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
+  // Whether a one-worker-per-segment baseline policy fits the static max segment size in shared memory; feeds the
+  // backend decision below. Evaluated per distinct baseline policy (the check instantiates the agent, so it needs the
+  // policy as a compile-time constant); operator() picks the result matching the baseline it returns for `cc`.
+  // TODO(bgruber): this covers the baseline policies that are currently tuned per CC by naming each one. For a general
+  // per-CC baseline, recover the compile-time CC by folding over ::cuda::__target_compute_capabilities() (as
+  // detail::dispatch_to_cc_list does) and evaluate baseline_can_cover_v for the matching CC.
+  template <baseline_topk_policy (*MakeBaseline)()>
+  struct baseline_policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
   {
     [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()() const -> topk_policy
     {
-      return topk_policy{topk_algorithm::baseline, baseline_policy, {}};
+      return topk_policy{topk_algorithm::baseline, MakeBaseline(), {}};
     }
   };
 
-  // Whether a one-worker-per-segment (default baseline) policy fits the static max segment size in shared memory; feeds
-  // the backend decision below.
-  static constexpr bool baseline_can_cover = baseline_can_cover_v<
-    policy_getter_17,
+  template <baseline_topk_policy (*MakeBaseline)()>
+  static constexpr bool baseline_can_cover_for = baseline_can_cover_v<
+    baseline_policy_getter_17<MakeBaseline>,
     SegmentSizeParameterT,
     KeyInputItItT,
     KeyOutputItItT,
@@ -181,6 +176,14 @@ struct policy_selector_from_types
   {
     constexpr bool deterministic = (Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
                                 || (TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
+
+    // The SM 12.0 tunings (baseline and cluster) were measured on keys-only, non-deterministic requests only.
+    const bool has_sm120_keys_tuning =
+      !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && cc == ::cuda::compute_capability{12, 0};
+    const bool baseline_can_cover =
+      has_sm120_keys_tuning
+        ? baseline_can_cover_for<_CUB::detail::batched_topk::make_sm120_baseline_policy>
+        : baseline_can_cover_for<_CUB::detail::batched_topk::make_baseline_policy>;
 
     topk_algorithm backend = topk_algorithm::unsupported;
     if (deterministic || !baseline_can_cover)
@@ -217,13 +220,17 @@ struct policy_selector_from_types
     const bool has_sm103_keys_tuning = !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
                                     && cc == ::cuda::compute_capability{10, 3};
     const auto cluster =
-      has_sm100_pairs_tuning   ? _CUB::detail::batched_topk::make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+      has_sm120_keys_tuning    ? _CUB::detail::batched_topk::make_sm120_keys_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm100_pairs_tuning ? _CUB::detail::batched_topk::make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
       : has_sm100_keys_tuning  ? _CUB::detail::batched_topk::make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
       : has_sm103_pairs_tuning ? _CUB::detail::batched_topk::make_sm103_pairs_cluster_policy(StaticMaxSegSize, MaxK)
       : has_sm103_keys_tuning
         ? _CUB::detail::batched_topk::make_sm103_keys_cluster_policy(StaticMaxSegSize, MaxK)
         : _CUB::detail::batched_topk::make_cluster_policy();
-    return topk_policy{backend, baseline_policy, cluster};
+    return topk_policy{backend,
+                       has_sm120_keys_tuning ? _CUB::detail::batched_topk::make_sm120_baseline_policy()
+                                             : _CUB::detail::batched_topk::make_baseline_policy(),
+                       cluster};
   }
 };
 

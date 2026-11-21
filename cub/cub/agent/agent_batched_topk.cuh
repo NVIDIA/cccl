@@ -29,6 +29,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -135,6 +136,10 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Shared Memory Storage
   // -------------------------------------------------------------------------
+  // The epilogue only runs when large segments can be present; otherwise its storage would just limit occupancy.
+  template <typename StorageT>
+  using epilogue_storage_t = ::cuda::std::conditional_t<only_small_segments, cub::NullType, StorageT>;
+
   struct TempStorage_
   {
     union
@@ -144,9 +149,9 @@ struct agent_batched_topk_worker_per_segment
       typename block_topk_t::TempStorage topk;
       typename block_store_keys_t::TempStorage store_keys;
       typename block_store_vals_t::TempStorage store_vals;
-      typename block_load_epilogue_t::TempStorage load_epilogue;
-      typename block_scan_epilogue_t::TempStorage scan_epilogue;
-      typename block_store_epilogue_t::TempStorage store_epilogue;
+      epilogue_storage_t<typename block_load_epilogue_t::TempStorage> load_epilogue;
+      epilogue_storage_t<typename block_scan_epilogue_t::TempStorage> scan_epilogue;
+      epilogue_storage_t<typename block_store_epilogue_t::TempStorage> store_epilogue;
     };
   };
 
