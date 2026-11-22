@@ -1163,7 +1163,8 @@ public:
   }
 };
 
-// Adapt the internal backend to the same temporary-storage test launcher_factory.
+// Run the internal backend through the shared temporary-storage test launcher.
+template <cub::SortOrder Order>
 struct lrb_sort_launcher_t
 {
   template <typename KeyT>
@@ -1178,7 +1179,7 @@ struct lrb_sort_launcher_t
   {
     using key_type = unwrap_value_t<KeyT>;
     cub::detail::segmented_sort_lrb::partition_result result;
-    return cub::detail::segmented_sort_lrb::dispatch(
+    return cub::detail::segmented_sort_lrb::dispatch<Order>(
       storage,
       bytes,
       begins,
@@ -1229,9 +1230,9 @@ void call_cub_segmented_sort_api(
     }
     else
     {
-      if (descending || double_buffer)
+      if (double_buffer)
       {
-        SKIP("The internal LRB backend currently tests ascending pointer-based key sorting only.");
+        SKIP("The internal LRB backend currently supports pointer-based key sorting only.");
       }
       ::cuda::compute_capability cc{};
       REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
@@ -1260,12 +1261,22 @@ void call_cub_segmented_sort_api(
         }
       }
       INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
-      launch(lrb_sort_launcher_t{},
-             static_cast<const KeyT*>(input_keys),
-             output_keys,
-             static_cast<unsigned>(num_segments),
-             d_begin_offsets,
-             d_end_offsets);
+      const auto run = [&](auto launcher) {
+        launch(launcher,
+               static_cast<const KeyT*>(input_keys),
+               output_keys,
+               static_cast<unsigned>(num_segments),
+               d_begin_offsets,
+               d_end_offsets);
+      };
+      if (descending)
+      {
+        run(lrb_sort_launcher_t<cub::SortOrder::Descending>{});
+      }
+      else
+      {
+        run(lrb_sort_launcher_t<cub::SortOrder::Ascending>{});
+      }
       if (keys_selector)
       {
         *keys_selector = 0;
@@ -1353,7 +1364,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   C2H_TIME_SECTION("Allocate device memory");
 
   const bool stable_sort     = GENERATE(unstable, stable);
-  const bool sort_descending = test_lrb ? ascending : GENERATE(ascending, descending);
+  const bool sort_descending = GENERATE(ascending, descending);
   const bool sort_buffers    = test_lrb ? pointers : GENERATE(pointers, double_buffer);
 
   CAPTURE(c2h::type_name<KeyT>(),
@@ -1454,7 +1465,7 @@ void test_segments_random(
 
   C2H_TIME_SECTION("Allocate device memory");
 
-  const bool sort_descending = test_lrb ? ascending : GENERATE(ascending, descending);
+  const bool sort_descending = GENERATE(ascending, descending);
 
   generate_random_unsorted_inputs(seed, keys_input, values_input);
 

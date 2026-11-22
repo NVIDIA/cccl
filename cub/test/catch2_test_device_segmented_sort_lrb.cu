@@ -242,17 +242,21 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   // A different private aggregate must drive matching partition and sorting settings on both sides.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   const auto run_custom = [&](void* workspace) {
-    return capacity::
-      dispatch<key_type, long long*, long long*, cub::detail::TripleChevronFactory, test_policy_selector<key_type>>(
-        workspace,
-        bytes,
-        thrust::raw_pointer_cast(d_begins.data()),
-        thrust::raw_pointer_cast(d_ends.data()),
-        static_cast<unsigned>(lengths.size()),
-        thrust::raw_pointer_cast(d_in.data()),
-        thrust::raw_pointer_cast(d_out.data()),
-        result,
-        stream);
+    return capacity::dispatch<cub::SortOrder::Ascending,
+                              key_type,
+                              long long*,
+                              long long*,
+                              cub::detail::TripleChevronFactory,
+                              test_policy_selector<key_type>>(
+      workspace,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<unsigned>(lengths.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result,
+      stream);
   };
   REQUIRE(run_custom(nullptr) == cudaSuccess);
   storage.resize(bytes);

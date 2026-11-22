@@ -18,6 +18,7 @@
 #include <cub/agent/agent_segmented_sort_lrb.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_load.cuh>
@@ -122,7 +123,7 @@ _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsig
 
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
 // The kernel type carries the selector; launch bounds and the body select tuning for the compiled target.
-template <typename Kernel, typename Key, typename BeginIterator, typename EndIterator>
+template <typename Kernel, SortOrder Order, typename Key, typename BeginIterator, typename EndIterator>
 __launch_bounds__(current_policy<typename Kernel::policy_selector>().threads_per_block,
                   current_policy<typename Kernel::policy_selector>().min_resident_blocks_per_sm)
   _CCCL_KERNEL_ATTRIBUTES void sort_kernel(
@@ -133,7 +134,8 @@ __launch_bounds__(current_policy<typename Kernel::policy_selector>().threads_per
   using agent = agent_t<implementation_t>;
   __shared__ typename agent::TempStorage temp_storage;
   extern __shared__ __align__(256) unsigned char dynamic_smem[];
-  agent::process(partition, begins, ends, in, out, temp_storage, reinterpret_cast<Key*>(dynamic_smem));
+  agent::template process<Order == SortOrder::Descending>(
+    partition, begins, ends, in, out, temp_storage, reinterpret_cast<Key*>(dynamic_smem));
 }
 } // namespace detail::segmented_sort_lrb
 

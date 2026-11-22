@@ -19,6 +19,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
@@ -130,6 +131,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
 
 // Configure shared scratch, validate occupancy, and launch one sorting kernel with a policy-sized grid.
 template <typename Kernel,
+          SortOrder Order = SortOrder::Ascending,
           typename PolicyGetter,
           typename Key,
           typename BeginIterator,
@@ -146,7 +148,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   KernelLauncherFactory launcher_factory,
   PolicyGetter)
 {
-  constexpr auto kernel               = sort_kernel<Kernel, Key, BeginIterator, EndIterator>;
+  constexpr auto kernel               = sort_kernel<Kernel, Order, Key, BeginIterator, EndIterator>;
   using implementation_t              = typename Kernel::template implementation_t<PolicyGetter>;
   constexpr auto tuning               = implementation_t::policy;
   constexpr size_t dynamic_smem_bytes = implementation_t::template scratch_bytes<Key>();
@@ -184,6 +186,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
 // Launch each kernel in order, shifting its offset view while retaining the shared ID queue.
 // The index sequence enumerates kernel types at compile time.
 template <typename Kernels,
+          SortOrder Order,
           typename PolicyGetter,
           typename Key,
           typename BeginIterator,
@@ -209,7 +212,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
   cudaError_t error = cudaSuccess;
   ((error =
       error == cudaSuccess
-        ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>>(
+        ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>, Order>(
             {bins.bin_offsets + Kernels::template kernel_bin_begin_idx<PolicyGetter>(KernelIndices), bins.segment_ids},
             begins,
             ends,
@@ -224,10 +227,11 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
   return error;
 }
 
-// Host-launched internal bounded ascending keys-only backend; device-side API calls are not supported.
+// Host-launched internal bounded keys-only backend; device-side API calls are not supported.
 // Oversized segments are left unsorted in the overflow ID range; overflow sorting belongs to a later change.
 // Its kernel list and policies are fixed here, with no public API route.
-template <typename Key,
+template <SortOrder Order = SortOrder::Ascending,
+          typename Key,
           typename BeginIterator,
           typename EndIterator,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
@@ -280,7 +284,7 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      return launch_sort_kernel_list<kernels_t>(
+      return launch_sort_kernel_list<kernels_t, Order>(
         result,
         begins,
         ends,
