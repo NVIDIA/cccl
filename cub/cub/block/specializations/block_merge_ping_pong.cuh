@@ -15,6 +15,7 @@
 
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
@@ -51,8 +52,9 @@ private:
     CompareOp compare_op)
   {
     const int log_threads = layout_t::pair_thread_log(log_runs, round);
-    const int pair_id     = static_cast<int>(linear_tid) >> log_threads;
-    const int lane        = static_cast<int>(linear_tid) & ((1 << log_threads) - 1);
+    const int threads     = 1 << log_threads;
+    const int pair_id     = static_cast<int>(linear_tid) / threads;
+    const int lane        = static_cast<int>(linear_tid) % threads;
     const auto pair       = layout_t::pair_bounds(offsets, runs, pair_id, span);
     const auto window     = layout_t::pair_window(pair.end - pair.begin, log_threads, lane);
     const int count       = window.end - window.begin;
@@ -82,20 +84,13 @@ private:
 
   template <typename CompareOp>
   _CCCL_DEVICE_API void merge_thread(
-    const key_t* input,
-    key_t* output,
-    const int* offsets,
-    int runs,
-    int span,
-    int round,
-    window_t window,
-    CompareOp compare_op)
+    const key_t* input, key_t* output, const int* offsets, int runs, int span, window_t window, CompareOp compare_op)
   {
     int position = window.begin;
 
     while (position < window.end)
     {
-      const auto pair = layout_t::find_pair(position, offsets, runs, span, round);
+      const auto pair = layout_t::find_pair(position, offsets, runs, span);
       const int count = (::cuda::std::min) (window.end, pair.end) - position;
       cursor_t<CompareOp> cursor(input, pair, position - pair.begin, compare_op);
 
@@ -123,7 +118,7 @@ public:
   {
     const int total     = offsets[runs];
     const int effective = layout_t::effective_runs(runs);
-    const int log_runs  = 31 - ::__clz(static_cast<unsigned int>(effective));
+    const int log_runs  = ::cuda::ilog2(effective);
     const bool paired   = layout_t::use_pairs(effective);
     const auto window   = layout_t::thread_window(linear_tid, total);
     key_t* input        = keys;
@@ -141,7 +136,7 @@ public:
       }
       else
       {
-        this->merge_thread(input, output, offsets, runs, span, round, window, compare_op);
+        this->merge_thread(input, output, offsets, runs, span, window, compare_op);
       }
       // All reads from input and writes to output finish before exchanging them.
       ::__syncthreads();

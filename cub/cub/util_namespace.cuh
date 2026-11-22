@@ -114,6 +114,11 @@
 #  define CUB_NS_QUALIFIER ::cub
 #endif
 
+// Short internal qualifier that respects the configured namespace wrapper.
+#ifndef _CUB
+#  define _CUB CUB_NS_QUALIFIER
+#endif
+
 #if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
 #  if !defined(CUB_WRAPPED_NAMESPACE)
 #    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)

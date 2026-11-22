@@ -51,72 +51,78 @@ struct merge_path_case
 };
 
 template <typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void check_merge_paths(const merge_path_case<OffsetT>* cases, OffsetT* result, int count)
+_CCCL_KERNEL_ATTRIBUTES void check_merge_path(merge_path_case<OffsetT> test, OffsetT* result)
 {
-  const int tid = static_cast<int>(threadIdx.x);
+  *result = cub::detail::block_merge_path(
+    test.first, test.second, test.count1, test.count2, test.diagonal, merge_sequence_less{});
+}
 
-  if (tid < count)
-  {
-    const auto test = cases[tid];
-    result[tid]     = cub::detail::block_merge_path(
-      test.first, test.second, test.count1, test.count2, test.diagonal, merge_sequence_less{});
-  }
+template <typename OffsetT>
+void check_partition(merge_path_case<OffsetT> test, OffsetT expected)
+{
+  CAPTURE(test.count1, test.count2, test.diagonal);
+  c2h::device_vector<OffsetT> result(1);
+
+  check_merge_path<<<1, 1>>>(test, thrust::raw_pointer_cast(result.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(expected == result[0]);
 }
 
 using merge_path_offsets =
   c2h::type_list<std::uint8_t, std::uint16_t, std::int16_t, int, std::uint32_t, std::int64_t, std::uint64_t>;
+using merge_path_large_offsets =
+  c2h::type_list<std::uint16_t, std::int16_t, int, std::uint32_t, std::int64_t, std::uint64_t>;
+using merge_path_wide_offsets = c2h::type_list<std::int64_t, std::uint64_t>;
 
-CUB_TEST(
-  "BlockMerge partitioning supports integral offset widths", "[block][merge][offset]", CUB_SMALL, merge_path_offsets)
+CUB_TEST("BlockMerge partitions interleaved runs", "[block][merge][offset]", CUB_SMALL, merge_path_offsets)
+{
+  using offset_t      = c2h::get<0, TestType>;
+  const auto diagonal = static_cast<offset_t>(GENERATE(Catch::Generators::range(0, 19)));
+
+  check_partition<offset_t>({9, 9, diagonal, {0, 2}, {1, 2}}, (diagonal + 1) / 2);
+}
+
+CUB_TEST("BlockMerge partitions two empty runs", "[block][merge][offset]", CUB_SMALL, merge_path_offsets)
 {
   using offset_t = c2h::get<0, TestType>;
-  c2h::host_vector<merge_path_case<offset_t>> cases;
-  c2h::host_vector<offset_t> expected;
-  auto add =
-    [&](offset_t a,
-        offset_t b,
-        offset_t diagonal,
-        merge_sequence_iterator first,
-        merge_sequence_iterator second,
-        offset_t answer) {
-      cases.push_back({a, b, diagonal, first, second});
-      expected.push_back(answer);
-    };
-  // Interleaved even and odd sequences have a closed-form partition.
-  for (offset_t diagonal = 0; diagonal <= 18; ++diagonal)
-  {
-    add(9, 9, diagonal, {0, 2}, {1, 2}, (diagonal + 1) / 2);
-  }
-  add(0, 0, 0, {0, 0}, {0, 0}, 0);
-  add(0, 9, 7, {0, 0}, {0, 0}, 0);
-  add(9, 0, 7, {0, 0}, {0, 0}, 7);
-  // Equal keys consume the earlier run first. Exercise rounding near the
-  // maximum offset value, where a direct float-to-integer cast can overflow.
-  if constexpr ((std::numeric_limits<offset_t>::max)() >= 2048)
-  {
-    const offset_t maximum = (std::numeric_limits<offset_t>::max)();
 
-    for (offset_t diagonal : {offset_t{0}, offset_t{1024}, offset_t(maximum - 2048), offset_t(maximum - 512), maximum})
-    {
-      add(maximum - 1024, 1024, diagonal, {0, 0}, {0, 0}, (std::min) (diagonal, offset_t(maximum - 1024)));
-    }
-  }
-  if constexpr (sizeof(offset_t) >= 8)
-  {
-    // Each input run exceeds INT_MAX; no actual memory is read by the iterator.
-    const offset_t count = (offset_t{1} << 31) + 17;
+  check_partition<offset_t>({0, 0, 0, {0, 0}, {0, 0}}, 0);
+}
 
-    for (offset_t diagonal : {offset_t{0}, offset_t{1}, count - 1, count, count + 257, 2 * count})
-    {
-      add(count, count, diagonal, {0, 2}, {1, 2}, (diagonal + 1) / 2);
-    }
-  }
-  c2h::device_vector<merge_path_case<offset_t>> d_cases = cases;
-  c2h::device_vector<offset_t> result(cases.size());
+CUB_TEST("BlockMerge partitions an empty left run", "[block][merge][offset]", CUB_SMALL, merge_path_offsets)
+{
+  using offset_t = c2h::get<0, TestType>;
 
-  check_merge_paths<<<1, 64>>>(
-    thrust::raw_pointer_cast(d_cases.data()), thrust::raw_pointer_cast(result.data()), static_cast<int>(cases.size()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(expected == result);
+  check_partition<offset_t>({0, 9, 7, {0, 0}, {0, 0}}, 0);
+}
+
+CUB_TEST("BlockMerge partitions an empty right run", "[block][merge][offset]", CUB_SMALL, merge_path_offsets)
+{
+  using offset_t = c2h::get<0, TestType>;
+
+  check_partition<offset_t>({9, 0, 7, {0, 0}, {0, 0}}, 7);
+}
+
+CUB_TEST("BlockMerge partitions equivalent keys near the offset limit",
+         "[block][merge][offset]",
+         CUB_SMALL,
+         merge_path_large_offsets)
+{
+  using offset_t             = c2h::get<0, TestType>;
+  constexpr offset_t maximum = (std::numeric_limits<offset_t>::max)();
+  const offset_t diagonal =
+    GENERATE_COPY(offset_t{0}, offset_t{1024}, offset_t(maximum - 2048), offset_t(maximum - 512), maximum);
+  const offset_t count1 = maximum - 1024;
+
+  check_partition<offset_t>({count1, 1024, diagonal, {0, 0}, {0, 0}}, (std::min) (diagonal, count1));
+}
+
+CUB_TEST("BlockMerge partitions runs larger than INT_MAX", "[block][merge][offset]", CUB_SMALL, merge_path_wide_offsets)
+{
+  using offset_t           = c2h::get<0, TestType>;
+  constexpr offset_t count = static_cast<offset_t>((std::numeric_limits<int>::max)()) + 18;
+  const offset_t diagonal  = GENERATE_COPY(offset_t{0}, offset_t{1}, count - 1, count, count + 257, 2 * count);
+
+  check_partition<offset_t>({count, count, diagonal, {0, 2}, {1, 2}}, (diagonal + 1) / 2);
 }

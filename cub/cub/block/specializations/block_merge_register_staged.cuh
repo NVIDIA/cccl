@@ -15,6 +15,9 @@
 
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -37,28 +40,29 @@ class block_merge_register_staged
 
   [[nodiscard]] _CCCL_DEVICE_API int pair_fit_mask(const int* offsets, int runs, int effective, int log_runs)
   {
-    if (runs <= 1 || !layout_t::use_pairs(effective))
+    if (!layout_t::use_pairs(effective))
     {
       return 0;
     }
 
-    const int lane   = static_cast<int>(linear_tid) & 31;
+    const int lane   = static_cast<int>(::cuda::ptx::get_sreg_laneid());
     const int offset = offsets[(::cuda::std::min) (lane, runs)];
     int mask         = 0;
     // The final round always produces blocked register output instead.
     for (int round = 0; round < log_runs - 1; ++round)
     {
-      const int pairs        = effective >> (round + 1);
-      const int begin_lane   = lane << (round + 1);
-      const int end_lane     = (lane + 1) << (round + 1);
-      const int begin        = ::__shfl_sync(0xffffffffu, offset, begin_lane & 31);
-      const int shuffled_end = ::__shfl_sync(0xffffffffu, offset, end_lane & 31);
+      const int group_size   = 1 << (round + 1);
+      const int pairs        = effective / group_size;
+      const int begin_lane   = lane * group_size;
+      const int end_lane     = (lane + 1) * group_size;
+      const int begin        = ::cuda::device::warp_shuffle_idx(offset, begin_lane % 32, 0xFFFFFFFFu).data;
+      const int shuffled_end = ::cuda::device::warp_shuffle_idx(offset, end_lane % 32, 0xFFFFFFFFu).data;
       const int end          = end_lane >= 32 ? offsets[runs] : shuffled_end;
       int length             = lane < pairs ? end - begin : 0;
 
       for (int distance = 16; distance > 0; distance /= 2)
       {
-        length = (::cuda::std::max) (length, ::__shfl_xor_sync(0xffffffffu, length, distance));
+        length = (::cuda::std::max) (length, ::cuda::device::warp_shuffle_xor(length, distance, 0xFFFFFFFFu).data);
       }
 
       const int threads = 1 << layout_t::pair_thread_log(log_runs, round);
@@ -79,8 +83,9 @@ class block_merge_register_staged
     CompareOp compare_op)
   {
     const int log_threads = layout_t::pair_thread_log(log_runs, round);
-    const int pair_id     = static_cast<int>(linear_tid) >> log_threads;
-    const int lane        = static_cast<int>(linear_tid) & ((1 << log_threads) - 1);
+    const int threads     = 1 << log_threads;
+    const int pair_id     = static_cast<int>(linear_tid) / threads;
+    const int lane        = static_cast<int>(linear_tid) % threads;
     const auto pair       = layout_t::pair_bounds(offsets, runs, pair_id, span);
     const auto window     = layout_t::pair_window(pair.end - pair.begin, log_threads, lane);
     const int count       = window.end - window.begin;
@@ -107,7 +112,6 @@ class block_merge_register_staged
     const int* offsets,
     int runs,
     int span,
-    int round,
     window_t window,
     key_t (&out)[items_per_thread],
     CompareOp compare_op)
@@ -116,7 +120,7 @@ class block_merge_register_staged
 
     while (position < window.end)
     {
-      const auto pair = layout_t::find_pair(position, offsets, runs, span, round);
+      const auto pair = layout_t::find_pair(position, offsets, runs, span);
       const int stop  = (::cuda::std::min) (window.end, pair.end);
       cursor_t<CompareOp> cursor(keys, pair, position - pair.begin, compare_op);
 
@@ -158,7 +162,7 @@ public:
     }
 
     const int effective      = layout_t::effective_runs(runs);
-    const int log_runs       = 31 - ::__clz(static_cast<unsigned int>(effective));
+    const int log_runs       = ::cuda::ilog2(effective);
     const int fit            = this->pair_fit_mask(offsets, runs, effective, log_runs);
     const auto thread_window = layout_t::thread_window(linear_tid, total);
 
@@ -175,7 +179,7 @@ public:
       }
       else
       {
-        this->merge_thread(keys, offsets, runs, span, round, thread_window, out, compare_op);
+        this->merge_thread(keys, offsets, runs, span, thread_window, out, compare_op);
       }
       if (last)
       {

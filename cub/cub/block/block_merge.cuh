@@ -18,7 +18,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/specializations/block_merge_ping_pong.cuh>
 #include <cub/block/specializations/block_merge_register_staged.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_namespace.cuh>
@@ -33,7 +32,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_integer.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -43,27 +42,23 @@ enum class BlockMergeAlgorithm
   //! @rst
   //! Merge between the input tile and a second shared-memory tile. Each merge
   //! round uses one block barrier, and the final shared-memory result can be
-  //! consumed without an additional copy. Scratch storage contains one full tile
-  //! plus a readable slack key, in addition to the caller-owned input tile.
+  //! consumed without an additional copy.
   //!
-  //! This is the default strategy. Its lower barrier count can be useful when
-  //! enough shared memory is available. Shared-memory use can limit occupancy.
-  //! Each thread merges a fixed output window, so uneven run lengths do not
-  //! concentrate the output keys in a small number of warps.
+  //! This is the default strategy. It uses a second shared-memory tile instead
+  //! of staging intermediate results in registers. Its lower barrier count can
+  //! improve throughput when the extra shared memory does not reduce occupancy.
   //! @endrst
   PING_PONG,
 
   //! @rst
   //! Stage each merge round in per-thread registers before writing back into the
-  //! caller-owned input tile. Intermediate rounds use two block barriers to
+  //! single shared memory tile. Intermediate rounds use two block barriers to
   //! separate reads from writes. The final round can return register output
   //! directly; shared output requires a final write-back and synchronization.
   //! No second shared-memory tile is allocated; TempStorage has one unused key slot.
   //!
   //! This strategy is useful when shared memory limits occupancy or tile size.
   //! It uses additional registers and barriers, which can reduce throughput.
-  //! Each round uses balanced per-thread output windows. Choose between strategies
-  //! using measurements with the application's key type, tile size, and run lengths.
   //! @endrst
   REGISTER_STAGED
 };
@@ -158,7 +153,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
   const CounterT span = last - first;
 
   return static_cast<OffsetT>(
-    first + CUB_NS_QUALIFIER::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
+    first + _CUB::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
 }
 
 struct block_merge_window
@@ -184,7 +179,7 @@ struct block_merge_layout
 
   static constexpr unsigned tile_size = BlockThreads * ItemsPerThread;
   static constexpr unsigned warps     = BlockThreads / warp_threads;
-  static constexpr bool full_warps    = BlockThreads % warp_threads == 0 && warps > 0 && ::cuda::is_power_of_two(warps);
+  static constexpr bool full_warps    = BlockThreads % warp_threads == 0 && ::cuda::is_power_of_two(warps);
   static constexpr int log_warps      = ::cuda::ilog2(warps > 0 ? warps : 1);
 
   [[nodiscard]] _CCCL_DEVICE_API static block_merge_window thread_window(unsigned int tid, int total)
@@ -194,16 +189,13 @@ struct block_merge_layout
     _CCCL_ASSUME(tid < BlockThreads && total >= 0 && static_cast<unsigned>(total) <= tile_size);
 
     const int begin = static_cast<int>(tid * ItemsPerThread);
-    const int end   = (::cuda::std::min) (begin + static_cast<int>(ItemsPerThread), total);
+    const int end   = (::cuda::std::min) (begin + ItemsPerThread, total);
 
     return {begin, (::cuda::std::max) (begin, end)};
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static bool use_pairs(int runs)
   {
-    _CCCL_ASSERT(runs >= 1 && runs <= 32, "Run count must be between 1 and 32");
-    _CCCL_ASSUME(runs >= 1 && runs <= 32);
-
     return UseWarpPairs && full_warps && ::cuda::is_power_of_two(runs) && static_cast<unsigned int>(runs) <= 2 * warps;
   }
 
@@ -217,7 +209,7 @@ struct block_merge_layout
       return runs;
     }
 
-    const int padded = 1 << (32 - ::__clz(static_cast<unsigned int>(runs - 1)));
+    const int padded = ::cuda::next_power_of_two(runs);
     // A lone unmatched run does not benefit from padding.
     const bool pad = UseWarpPairs && full_warps && !::cuda::is_power_of_two(runs) && !::cuda::is_power_of_two(runs - 1)
                   && static_cast<unsigned int>(padded) <= 2 * warps;
@@ -238,10 +230,9 @@ struct block_merge_layout
             offsets[(::cuda::std::min) (begin + 2 * span, runs)]};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static block_merge_pair
-  find_pair(int position, const int* offsets, int runs, int span, int round)
+  [[nodiscard]] _CCCL_DEVICE_API static block_merge_pair find_pair(int position, const int* offsets, int runs, int span)
   {
-    const int live = (runs + span - 1) >> round;
+    const int live = (runs + span - 1) / span;
     int lo         = 0;
     int hi         = (live + 1) / 2;
 
@@ -273,7 +264,7 @@ struct block_merge_layout
     _CCCL_ASSERT(lane >= 0 && lane < (1 << log_threads), "Lane must be within the pair thread group");
     _CCCL_ASSUME(lane >= 0 && lane < (1 << log_threads));
 
-    constexpr int items = static_cast<int>(ItemsPerThread);
+    constexpr int items = ItemsPerThread;
     const int threads   = 1 << log_threads;
 
     if (count <= items * threads)
@@ -283,10 +274,10 @@ struct block_merge_layout
       return {begin, (::cuda::std::min) (begin + items, count)};
     }
 
-    const int stride    = count <= (items + 1) * threads ? items : ((count >> log_threads) - 1) | 1;
+    const int stride    = count <= (items + 1) * threads ? items : ((count / threads) - 1) | 1;
     const int remainder = count - stride * threads;
     const int pairs     = remainder / 2;
-    const int odd       = remainder & 1;
+    const int odd       = remainder % 2;
     const int begin     = stride * lane + 2 * (::cuda::std::min) (lane, pairs) + (lane > pairs ? odd : 0);
 
     return {begin, begin + stride + (lane < pairs ? 2 : (lane == pairs ? odd : 0))};
@@ -312,7 +303,7 @@ public:
       : keys(input)
       , index1(
           pair.begin
-          + CUB_NS_QUALIFIER::detail::block_merge_path(
+          + _CUB::detail::block_merge_path(
             input + pair.begin, input + pair.middle, pair.middle - pair.begin, pair.end - pair.middle, diagonal, compare))
       , index2(pair.middle + (diagonal - (index1 - pair.begin)))
       , end1(pair.middle)
@@ -344,44 +335,47 @@ public:
 template <typename KeyT, int BlockThreads, int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_policy
 {
-  using key_t _CCCL_NODEBUG = KeyT;
-  using layout_t _CCCL_NODEBUG =
-    CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
-  using window_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_window;
+  using key_t _CCCL_NODEBUG    = KeyT;
+  using layout_t _CCCL_NODEBUG = _CUB::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
+  using window_t _CCCL_NODEBUG = _CUB::detail::block_merge_window;
 
   static constexpr unsigned items_per_thread = ItemsPerThread;
 
   template <int Slots>
-  using storage_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_storage<KeyT, Slots>;
+  using storage_t _CCCL_NODEBUG = _CUB::detail::block_merge_storage<KeyT, Slots>;
 
   template <typename CompareOp>
-  using cursor_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_cursor<KeyT, CompareOp>;
+  using cursor_t _CCCL_NODEBUG = _CUB::detail::block_merge_cursor<KeyT, CompareOp>;
 
   template <int Items>
   _CCCL_DEVICE_API static void load(const KeyT* keys, unsigned int tid, int total, KeyT (&out)[Items])
   {
-    CUB_NS_QUALIFIER::LoadDirectBlocked(static_cast<int>(tid), keys, out, total, KeyT{});
+    _CUB::LoadDirectBlocked(static_cast<int>(tid), keys, out, total, KeyT{});
   }
 
   template <int Items>
   _CCCL_DEVICE_API static void store(KeyT* keys, block_merge_window window, KeyT (&items)[Items])
   {
-    CUB_NS_QUALIFIER::StoreDirectBlocked(0, keys + window.begin, items, window.end - window.begin);
+    _CUB::StoreDirectBlocked(0, keys + window.begin, items, window.end - window.begin);
   }
 };
 } // namespace detail
 
 //! @brief Cooperatively merges up to MaxRuns sorted runs already in shared memory.
 //!
-//! Runs occupy consecutive ranges [offsets[r], offsets[r + 1]) of keys, and empty runs are allowed.
+//! Precondition: keys[] must have an extra initialized key immediately after the valid input keys.
+//! Input runs are in consecutive ranges [offsets[r], offsets[r + 1]) of keys, similar to CSR
+//! format. For example, a two way merge of [0, 1, 4, 5] and [2, 3] is represented as
+//! keys = [0, 1, 4, 5, 2, 3, init] and offsets[0] = 0, offsets[1] = 4, and offsets[2] = 6,
+//! where init is an extra initialized key that is not part of the merged input.
 //! All threads must participate with identical pointers, offsets, run count, and comparator.
 //! The result is stable: equal keys from an earlier run precede equal keys from a later run.
 //!
 //! @rst
-//! The caller initializes the live prefix and one readable slack key, then synchronizes before calling.
+//! The caller initializes the valid input keys and ``keys[offsets[num_runs]]``, then synchronizes the block.
 //! The input buffer has ``BlockDimX * BlockDimY * BlockDimZ * ItemsPerThread + 1`` key slots.
-//! ``offsets`` has ``num_runs + 1`` nondecreasing entries, starts at zero, and ends at the live key count.
-//! The live count must fit in the tile and ``1 <= num_runs <= MaxRuns``. Input keys are overwritten.
+//! ``offsets`` has ``num_runs + 1`` nondecreasing entries, starts at zero, and ends at the valid key count.
+//! The valid key count must fit in the tile and ``1 <= num_runs <= MaxRuns``. Input keys are overwritten.
 //! Keys must be default-constructible, copyable, and comparable by a strict weak ordering.
 //! A block barrier is required before reusing the input or temporary storage after either output API.
 //!
@@ -409,22 +403,18 @@ class BlockMerge
 {
 private:
   static_assert(BlockDimX > 0 && BlockDimX <= 1024 && BlockDimY > 0 && BlockDimY <= 1024 && BlockDimZ > 0
-                  && BlockDimZ <= 64,
-                "Block dimensions must be positive and within CUDA limits");
+                && BlockDimZ <= 64);
   static constexpr unsigned block_threads = BlockDimX * BlockDimY * BlockDimZ;
-  static_assert(BlockDimX > 0 && BlockDimY > 0 && BlockDimZ > 0 && BlockDimX <= 1024 && BlockDimY <= 1024
-                  && BlockDimZ <= 64 && block_threads <= 1024,
-                "Block dimensions must specify 1 through 1024 threads");
+  static_assert(block_threads <= 1024);
   static_assert(ItemsPerThread > 0);
   static_assert(MaxRuns >= 1 && MaxRuns <= 32);
   static_assert(ItemsPerThread <= static_cast<unsigned int>((::cuda::std::numeric_limits<int>::max)())
                                     / (::cuda::std::max) (1u, block_threads),
                 "Tile size must fit in the int run offsets");
 
-  using merge_policy_t _CCCL_NODEBUG =
-    CUB_NS_QUALIFIER::detail::block_merge_policy<KeyT, block_threads, ItemsPerThread>;
-  using ping_pong_t _CCCL_NODEBUG       = CUB_NS_QUALIFIER::detail::block_merge_ping_pong<merge_policy_t>;
-  using register_staged_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_register_staged<merge_policy_t>;
+  using merge_policy_t _CCCL_NODEBUG    = _CUB::detail::block_merge_policy<KeyT, block_threads, ItemsPerThread>;
+  using ping_pong_t _CCCL_NODEBUG       = _CUB::detail::block_merge_ping_pong<merge_policy_t>;
+  using register_staged_t _CCCL_NODEBUG = _CUB::detail::block_merge_register_staged<merge_policy_t>;
 
   // Delegate type for the selected algorithm.
   using internal_block_merge_t _CCCL_NODEBUG =
@@ -437,13 +427,13 @@ private:
 
   [[nodiscard]] _CCCL_DEVICE_API static temp_storage_t& private_storage()
   {
-    __shared__ CUB_NS_QUALIFIER::Uninitialized<temp_storage_t> storage;
+    __shared__ _CUB::Uninitialized<temp_storage_t> storage;
     return storage.Alias();
   }
 
 public:
   //! @brief Opaque shared temporary storage; may be aliased with other block primitives after a barrier.
-  using TempStorage = CUB_NS_QUALIFIER::Uninitialized<temp_storage_t>;
+  using TempStorage = _CUB::Uninitialized<temp_storage_t>;
 
   //! @name Collective constructors
   //! @{
@@ -451,13 +441,13 @@ public:
   //! @brief Constructs the collective with internally allocated shared storage.
   _CCCL_DEVICE_API BlockMerge()
       : temp_storage(BlockMerge::private_storage())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Constructs the collective using caller-provided shared storage.
   _CCCL_DEVICE_API explicit BlockMerge(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
