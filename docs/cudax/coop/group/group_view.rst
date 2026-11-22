@@ -17,10 +17,10 @@
 
     group_view() = delete;
 
-    __device__ group_view(const Group& group)
+    __device__ group_view(const Group& group [[lifetimebound]])
       requires cuda::std::same_as<Unit, typename Group::unit_type>;
 
-    __device__ explicit group_view(const Unit& unit, const Group& group);
+    __device__ explicit group_view(const Unit& unit, const Group& group [[lifetimebound]]);
 
     template <typename OtherUnit, typename OtherMappingResult>
       requires /*unit-same-as-or-below*/<Unit, OtherUnit>

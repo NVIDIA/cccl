@@ -76,7 +76,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test());
 #endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 

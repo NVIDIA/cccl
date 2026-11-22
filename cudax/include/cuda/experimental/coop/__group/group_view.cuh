@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -138,20 +138,13 @@ _CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __g
   }
   else
   {
-    using _StaticMappingResult = ::cuda::experimental::coop::__mapping_result<
-      __uniform_static_unit_count<_MappingResult::static_group_count(), _MappingResult::static_unit_count(_First)>,
+    using _PerGroupMappingResult = ::cuda::experimental::coop::__mapping_result<
+      __per_group_count<_MappingResult::static_group_count(), _First, _MappingResult::static_unit_count(_First)>,
       _MappingResult::is_always_exhaustive(),
       _MappingResult::is_always_contiguous()>;
 
-    const _StaticMappingResult __static_mapping_result{
-      __mapping_result.group_count(),
-      __mapping_result.group_rank(),
-      __mapping_result.unit_count(),
-      __mapping_result.unit_rank(),
-      __mapping_result.lane_mask()};
-
-    return ::cuda::std::forward<_Fn>(__fn)(
-      group_view<_Unit, _Group, _StaticMappingResult>{__group, __static_mapping_result});
+    return ::cuda::std::forward<_Fn>(__fn)(group_view<_Unit, __viewed_group_t<_Group>, _PerGroupMappingResult>{
+      __group, _PerGroupMappingResult{__mapping_result.unit_rank(), __mapping_result.lane_mask()}});
   }
 }
 
@@ -175,6 +168,8 @@ class group_view
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(group<_Group>);
+  static_assert(::cuda::std::is_same_v<_Group, __viewed_group_t<_Group>>,
+                "a group_view must not view another group_view");
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
@@ -205,13 +200,13 @@ public:
 
   _CCCL_TEMPLATE(class _Unit2 = _Unit)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit2, typename _Group::unit_type>)
-  _CCCL_DEVICE_API group_view(const _Group& __group)
+  _CCCL_DEVICE_API group_view(const _Group& __group _CCCL_LIFETIMEBOUND)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
-  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
+  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group _CCCL_LIFETIMEBOUND)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
@@ -229,7 +224,16 @@ public:
   {}
 
   // Internal constructor for a view with a specialized mapping result.
-  _CCCL_DEVICE_API explicit group_view(const _Group& __group, const _MappingResult& __mapping_result)
+  _CCCL_DEVICE_API explicit group_view(const _Group& __group _CCCL_LIFETIMEBOUND, const _MappingResult& __mapping_result)
+      : __hier_{__group.hierarchy()}
+      , __mapping_result_{__mapping_result}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
+  {}
+
+  _CCCL_TEMPLATE(class _OtherUnit, class _OtherMappingResult)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit, _OtherUnit>)
+  _CCCL_DEVICE_API explicit group_view(const group_view<_OtherUnit, _Group, _OtherMappingResult>& __group,
+                                       const _MappingResult& __mapping_result)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{__mapping_result}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
@@ -243,17 +247,17 @@ public:
     return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const
+  [[nodiscard]] _CCCL_DEVICE_API const _MappingResult& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }
@@ -315,7 +319,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_rank(const _Arg& __arg)
     -> decltype(_Group::static_rank(__arg))
   {
-    return _Group::static_rank(__arg);
+    if constexpr (__is_hierarchy_level_v<_Arg>)
+    {
+      return _Group::static_rank(__arg);
+    }
+    else
+    {
+      return _MappingResult::static_group_rank();
+    }
   }
 
   template <class _Tp, class _QueryMappingResult, class _Arg>

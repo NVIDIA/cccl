@@ -16,7 +16,7 @@
 #include "test_macros.h"
 #include <experimental/any>
 
-#if !defined(TEST_HAS_NO_RTTI)
+#ifndef TEST_HAS_NO_RTTI
 #  define RTTI_ASSERT(X) assert(X)
 #else
 #  define RTTI_ASSERT(X)
@@ -34,7 +34,7 @@ struct IsSmallObject
 template <class Type>
 bool isSmallType()
 {
-#if defined(_CUDA_STD_VERSION)
+#ifdef _CUDA_STD_VERSION
   return std::experimental::__any_imp::_IsSmallObject<Type>::value;
 #else
   return IsSmallObject<Type>::value;

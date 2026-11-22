@@ -23,6 +23,8 @@
 
 #include <cuda/__numeric/narrow.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__ranges/access.h>
@@ -35,7 +37,6 @@
 #include <cuda/std/__utility/constant_wrapper.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -45,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -199,11 +200,10 @@ class group_as<::cuda::std::index_sequence<_Counts...>>
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __make_non_uniform_mapping_result(const _DynamicResult& __result, ::cuda::std::index_sequence<_Is...>)
   {
-    using _Result =
-      __mapping_result<__static_unit_counts<::cuda::std::array<::cuda::std::size_t, sizeof...(_Counts)>{
-                         _Counts...}[_Is % sizeof...(_Counts)]...>,
-                       _Exhaustive,
-                       _PrevMappingResult::is_always_contiguous()>;
+    constexpr ::cuda::std::size_t __counts[]{_Counts...};
+    using _Result = __mapping_result<__static_unit_counts<__counts[_Is % sizeof...(_Counts)]...>,
+                                     _Exhaustive,
+                                     _PrevMappingResult::is_always_contiguous()>;
     if (!__result.is_valid())
     {
       return _Result::__invalid();

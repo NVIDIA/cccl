@@ -29,11 +29,12 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__numeric/exclusive_scan.h>
+#  include <cuda/std/__type_traits/make_unsigned.h>
 #  include <cuda/std/array>
 
 #  include <cuda/experimental/__copy_bytes/types.cuh>
 
-#  include <vector>
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

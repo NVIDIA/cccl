@@ -22,18 +22,28 @@
 #endif // no system header
 
 #include <cuda/__type_traits/is_specialization_of.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__type_traits/type_set.h>
+#include <cuda/std/__utility/undefined.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/diagnostics.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
 // include this last:

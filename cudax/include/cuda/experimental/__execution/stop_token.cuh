@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__thread/yield.h>
 #include <cuda/std/__tuple_dir/ignore.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/thread.cuh>

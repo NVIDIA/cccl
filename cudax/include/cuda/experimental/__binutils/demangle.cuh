@@ -23,11 +23,9 @@
 
 #if _CCCL_HOSTED() && __has_include(<nv_decode.h>)
 
-#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/cstdlib>
 #  include <cuda/std/string_view>
 

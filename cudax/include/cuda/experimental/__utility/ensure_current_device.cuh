@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>

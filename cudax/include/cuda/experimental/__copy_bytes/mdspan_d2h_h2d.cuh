@@ -24,6 +24,7 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__mdspan/__copy/mdspan_to_raw_tensor.h>
 #  include <cuda/__mdspan/__copy/simplify_paired.h>
 #  include <cuda/__mdspan/__copy/tensor_query.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
@@ -31,7 +32,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
-#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__mdspan/default_accessor.h>
 #  include <cuda/std/__mdspan/mdspan.h>

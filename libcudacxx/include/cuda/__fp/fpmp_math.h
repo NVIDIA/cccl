@@ -584,7 +584,7 @@
 // headers below (see docs/libcudacxx/fp/fpmp_spec.rst, "Function Families").
 // In library mode (_CCCL_FPMP_USE_LIB) the kernels come from the compiled
 // library and only the declarations in the #else branch below are used.
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 #  include <cuda/__fp/fpmp_math_impl.h>
 #  include <cuda/__fp/fpmp_math_impl_classify.h>
 #  include <cuda/__fp/fpmp_math_impl_exp.h>

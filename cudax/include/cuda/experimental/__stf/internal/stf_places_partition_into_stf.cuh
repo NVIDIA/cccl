@@ -20,7 +20,7 @@
 #pragma once
 
 #include <cuda/experimental/__places/place_partition.cuh>
-#include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__places/places.cuh>
 
 namespace cuda::experimental::stf
 {
