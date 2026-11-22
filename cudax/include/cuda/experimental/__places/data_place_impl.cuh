@@ -269,11 +269,15 @@ public:
     const ::cuda::__ensure_current_context __ctx{::cuda::device_ref{device_id_}};
     // The device's default pool, resolved through libcu++'s policy site (which
     // also sets the release threshold): places do not manage pool properties.
-    const CUmemoryPool pool = ::cuda::__get_default_memory_pool(
-      CUmemLocation{CU_MEM_LOCATION_TYPE_DEVICE, device_id_}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-    CUdeviceptr ptr = 0;
+    // Filled member by member: the layout of CUmemLocation differs between
+    // toolkits (its id became a member of an anonymous union).
+    CUmemLocation location{};
+    location.type           = CU_MEM_LOCATION_TYPE_DEVICE;
+    location.id             = device_id_;
+    const CUmemoryPool pool = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    CUdeviceptr ptr         = 0;
     cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
-    return reinterpret_cast<void*>(ptr);
+    return reinterpret_cast<void*>(ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t stream) const override
