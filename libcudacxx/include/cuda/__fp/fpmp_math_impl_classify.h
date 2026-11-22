@@ -60,34 +60,17 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmax(
 {
   const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
   const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
-  if (__x_is_nan && !__y_is_nan)
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-    return;
-  }
-  if (__y_is_nan && !__x_is_nan)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   // Of two zeros, +0 is the larger one (IEEE 754-2019 maximumNumber). The low limbs are compared
   // first: a low-accuracy pair can carry a zero high limb over a nonzero low one.
   const bool __x_greater =
     (__x_hi > __y_hi)
     || (__x_hi == __y_hi
         && (__x_lo > __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__y_hi))));
-  if (__x_greater)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
-  else
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-  }
+  // x unless it is NaN, or y is a number and x is not the larger one, so two NaNs give y.
+  // One selection, no branch.
+  const bool __pick_x = !__x_is_nan && (__y_is_nan || __x_greater);
+  *__res_hi           = __pick_x ? __x_hi : __y_hi;
+  *__res_lo           = __pick_x ? __x_lo : __y_lo;
 }
 
 /*
@@ -113,33 +96,15 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmin(
 {
   const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
   const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
-  if (__x_is_nan && !__y_is_nan)
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-    return;
-  }
-  if (__y_is_nan && !__x_is_nan)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   // Of two zeros, -0 is the smaller one (IEEE 754-2019 minimumNumber); low limbs first, as in fmax.
   const bool __x_less =
     (__x_hi < __y_hi)
     || (__x_hi == __y_hi
         && (__x_lo < __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__x_hi))));
-  if (__x_less)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
-  else
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-  }
+  // As in fmax: one selection, no branch.
+  const bool __pick_x = !__x_is_nan && (__y_is_nan || __x_less);
+  *__res_hi           = __pick_x ? __x_hi : __y_hi;
+  *__res_lo           = __pick_x ? __x_lo : __y_lo;
 }
 
 /*
