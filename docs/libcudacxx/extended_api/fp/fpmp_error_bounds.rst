@@ -143,7 +143,7 @@ host against binary128 — whichever of the two is larger.
 
    * - ``fma(x, y, z)``
      - ``low``, ``mid``
-     - absolute ≤ ``15u²·(|x·y| + |z|)``; relative ≤ ``15u²`` when ``x·y`` and ``z`` have the same sign
+     - absolute ≤ ``9u²·(|x·y| + |z|)`` to first order; relative ≤ ``9u²`` when ``x·y`` and ``z`` have the same sign
      - derived
      - the absolute form always; the relative form only without cancellation
      - 5.0 [#same]_
