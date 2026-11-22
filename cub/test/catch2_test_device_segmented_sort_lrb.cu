@@ -305,6 +305,36 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
   REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
+
+  // Sort the same mix of bounded and overflow segments starting in buffer 1.
+  cub::DoubleBuffer<key_type> keys(thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_in.data()));
+  keys.selector          = 1;
+  size_t buffer_bytes    = 0;
+  const auto run_buffers = [&](void* workspace) {
+    return capacity::dispatch<order_t::value>(
+      workspace,
+      buffer_bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<unsigned>(lengths.size()),
+      static_cast<cuda::std::int64_t>(input.size()),
+      keys,
+      true,
+      result,
+      stream);
+  };
+  REQUIRE(run_buffers(nullptr) == cudaSuccess);
+  REQUIRE(keys.selector == 1);
+  REQUIRE(buffer_bytes < bytes);
+  c2h::device_vector<unsigned char> buffer_storage(buffer_bytes);
+  thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
+  for (int iteration = 0; iteration < 2; ++iteration)
+  {
+    REQUIRE(run_buffers(thrust::raw_pointer_cast(buffer_storage.data())) == cudaSuccess);
+    REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
+    REQUIRE(c2h::host_vector<key_type>(keys.selector ? d_in : d_out) == expected);
+  }
+
   num_segments = 0;
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
