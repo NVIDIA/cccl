@@ -11,9 +11,6 @@
 #ifndef _CUDA__CCCL_CONFIG
 #define _CUDA__CCCL_CONFIG
 
-// TEMPORARY: changes every translation unit so that CI builds miss the compiler cache. Remove before merge.
-struct __cccl_cold_cache_probe_1;
-
 #include <cuda/std/__cccl/assert.h> // IWYU pragma: export
 #include <cuda/std/__cccl/attributes.h> // IWYU pragma: export
 #include <cuda/std/__cccl/builtin.h> // IWYU pragma: export
