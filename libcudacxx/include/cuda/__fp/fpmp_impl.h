@@ -657,8 +657,9 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_rsqrt_rn(float __x) noexcep
                     }),
                     (return 1.0f / ::sqrtf(__x);))
 }
-// The seeds of the fpmp2 division kernels. The kernels correct them with a residual, so they
-// need about half the bits of a limb: for binary32 this is the approximate reciprocal above.
+// The seeds of the fpmp2 division and of the short square root kernels. The kernels correct
+// them with a residual, so they need about half the bits of a limb: for binary32 these are the
+// approximate instructions above.
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_div_seed(float __x) noexcept
 {
   return ::cuda::__fpmp_rcp_rn(__x);
@@ -667,7 +668,11 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_low_div_seed(float __x) noe
 {
   return ::cuda::__fpmp_rcp_rn(__x);
 }
-// The seed of the fpmp2 square root kernel: returns y ~ sqrt(a) and stores h ~ 1 / (2 sqrt(a)).
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_rsqrt_seed(float __x) noexcept
+{
+  return ::cuda::__fpmp_rsqrt_rn(__x);
+}
+// The seed of __fpmp2_high_sqrt: returns y ~ sqrt(a) and stores h ~ 1 / (2 sqrt(a)).
 // y is within an ulp of the root, which keeps the residual a - y^2 an exact single-limb
 // number; h only needs a few bits more than half of a limb. The host takes the correctly
 // rounded square root, the device a single-limb Newton step on its approximate reciprocal
@@ -885,6 +890,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_rsqrt_rn(double __x) noexc
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
 }
+// Whether x is +0 or -0. The binary64 overload tests the bits: on a device that rations FP64,
+// a binary64 comparison costs as much as an operation of the kernel that asks.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp_is_zero(float __x) noexcept
+{
+  return __x == 0.0f;
+}
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp_is_zero(double __x) noexcept
+{
+  return (::cuda::std::bit_cast<uint64_t>(__x) << 1) == 0;
+}
 // The binary64 seeds of the division kernels. On the device the correctly rounded reciprocal
 // costs about as much as the rest of a division, and the kernels do not need it: the default
 // division corrects its quotient with a residual, for which a relative error of 2^-27 is
@@ -929,15 +944,29 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_low_div_seed(double __x) n
                     }),
                     (return 1.0 / __x;))
 }
-// The double-precision seed of the fpmp2 square root kernel: as above, the device taking its
-// reciprocal square root as it is.
+// The binary64 seed of the short square root kernels: on the device the gross reciprocal
+// square root, good to 2^-20, which the kernels refine themselves; a subnormal operand is
+// flushed to zero. The host divides.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_rsqrt_seed(double __x) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      double __r;
+                      asm("rsqrt.approx.ftz.f64 %0,%1;" : "=d"(__r) : "d"(__x));
+                      return __r;
+                    }),
+                    (return 1.0 / ::cuda::std::sqrt(__x);))
+}
+// The double-precision seed of __fpmp2_high_sqrt: as the single-precision one, but the device
+// takes y = a r for its reciprocal square root r as it is, without a Newton step.
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_sqrt_seed(const double __a, double* __h) noexcept
 {
   double __y;
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (const double __r = (__a == 0.0) ? 0.0 : ::cuda::__fpmp_rsqrt_rn(__a); *__h = ::cuda::__fpmp_mul_rn(0.5, __r);
-     __y                                                                        = ::cuda::__fpmp_mul_rn(__a, __r);),
+    (const double __r = ::cuda::__fpmp_is_zero(__a) ? 0.0 : ::cuda::__fpmp_rsqrt_rn(__a);
+     *__h             = ::cuda::__fpmp_mul_rn(0.5, __r);
+     __y              = ::cuda::__fpmp_mul_rn(__a, __r);),
     (__y = ::cuda::std::sqrt(__a); *__h = (__a == 0.0) ? 0.0 : 0.5 / __y;))
   return __y;
 }

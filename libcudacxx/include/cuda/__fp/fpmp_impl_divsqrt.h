@@ -245,45 +245,72 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_div(
  * Square root & reciprocal square root operations
  * --------------------------------------------------------------------
  */
-/*
-iteration based on equation 4 from a paper by Alan Karp and Peter Markstein,
-High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4, December
-1997, pp. 561-589.
+/* Compute the reciprocal square root in two Newton steps from the seed r0.
+
+The first step is in single limbs and leaves r within about an ulp of 1 / sqrt(a_hi):
+r = r0 (1 + q), q = (1 - a_hi r0^2) / 2. On the binary64 device the seed is good to 2^-20
+only, and the step carries the terms up to s0^3 of (1 - s0)^(-1/2), s0 = 1 - a_hi r0^2.
+
+The second step is r + (r / 2) s, s = 1 - a r^2. With r this close, 1 - (a_hi r) r is exact,
+and the error of a_hi r, to which the low limb's a_lo r is added, enters s through one fma
+(Karp and Markstein, High Precision Division and Square Root, ACM TOMS 23(4), 1997,
+equation 4). The correction (r / 2) s is below an ulp of r and is rounded once.
+
+fp32mp2 scales s by the half seed r0 / 2, which is off by the seed's 2^-22: 14 operations
+with the seed, 5.9 u^2 on the device (u = 2^-24), against 17 operations and 13 u^2 for the
+one-step form. fp64mp2 cannot (2^-20 of the correction is far above u^2 = 2^-106): it
+corrects the half seed by q and adds the second-order term (3 / 4) s of the step, 19
+operations on the device and 4.9 u^2.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_rsqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  _FpType __z_hi, __z_lo;
-  _FpType __r, __s, __e;
-  _FpType __one  = static_cast<_FpType>(1.0);
-  _FpType __half = static_cast<_FpType>(0.5);
-  __r            = ::cuda::__fpmp_rsqrt_rn(__a_hi);
-  __e            = ::cuda::__fpmp_mul_rn(__a_hi, __r);
-  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __one);
-  __e            = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
-  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
-  __e            = ::cuda::__fpmp_mul_rn(__a_lo, __r);
-  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
-  __e            = ::cuda::__fpmp_mul_rn(__half, __r);
-  __z_hi         = ::cuda::__fpmp_mul_rn(__e, __s);
-  __z_lo         = ::cuda::__fpmp_fma_rn(__e, __s, -__z_hi);
-  __s            = ::cuda::__fpmp_add_rn(__r, __z_hi);
-  __r            = ::cuda::__fpmp_add_rn(__r, -__s);
-  __r            = ::cuda::__fpmp_add_rn(__r, __z_hi);
-  __r            = ::cuda::__fpmp_add_rn(__r, __z_lo);
-  __e            = ::cuda::__fpmp_add_rn(__s, __r);
-  __z_lo         = ::cuda::__fpmp_add_rn(__s - __e, __r);
-  __z_hi         = __e;
-
-  *__res_hi = __z_hi;
-  *__res_lo = __z_lo;
+  const _FpType __one  = static_cast<_FpType>(1.0);
+  const _FpType __half = static_cast<_FpType>(0.5);
+  const _FpType __r0   = ::cuda::__fpmp_rsqrt_seed(__a_hi);
+  const _FpType __h    = ::cuda::__fpmp_mul_rn(__half, __r0);
+  const _FpType __t    = ::cuda::__fpmp_mul_rn(__a_hi, __r0);
+  _FpType __q          = ::cuda::__fpmp_fma_rn(-__t, __h, __half);
+  if constexpr (sizeof(_FpType) == 8)
+  {
+    // q = s0 (1/2 + (3/8) s0 + (5/16) s0^2) with s0 = 2 q, for the gross seed of the device
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (const _FpType __p = ::cuda::__fpmp_fma_rn(
+                    __q, ::cuda::__fpmp_fma_rn(__q, static_cast<_FpType>(2.5), static_cast<_FpType>(1.5)), __one);
+                  __q = ::cuda::__fpmp_mul_rn(__q, __p);))
+  }
+  const _FpType __r = ::cuda::__fpmp_fma_rn(__r0, __q, __r0);
+  _FpType __e       = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+  _FpType __s       = ::cuda::__fpmp_fma_rn(-__e, __r, __one);
+  __e               = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
+  __e               = ::cuda::__fpmp_fma_rn(__a_lo, __r, __e);
+  __s               = ::cuda::__fpmp_fma_rn(-__e, __r, __s);
+  if constexpr (sizeof(_FpType) == 8)
+  {
+    // r / 2 = (r0 / 2) (1 + q), and the step's second-order term
+    __s = ::cuda::__fpmp_fma_rn(__s, ::cuda::__fpmp_fma_rn(static_cast<_FpType>(0.75), __s, __q), __s);
+  }
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__r, ::cuda::__fpmp_mul_rn(__h, __s), __res_lo);
 } // __fpmp2_rsqrt
 
-/* Compute high-accuracy square root. Newton-Raphson
-iteration based on equation 4 from a paper by Alan Karp and Peter Markstein,
-High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4, December
-1997, pp. 561-589.
+/* Compute the square root. Newton-Raphson iteration based on equation 4 from a paper by Alan
+Karp and Peter Markstein, High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4,
+December 1997, pp. 561-589.
+
+y0 = a_hi r is within a few ulps of sqrt(a_hi) for a seed r of the reciprocal square root
+(the approximate instruction on the fp32 device), s0 = a_hi - y0^2 is its residual and
+h = r / 2 the seed's half reciprocal root. a_lo joins the Newton step, so y is the rounded
+root of a_hi + a_lo, which halves the correction. The correction (a_hi - y^2 + a_lo) is then
+scaled by the half reciprocal root refined once, h (1 + d), and the pair is normalized.
+Against MPFR: 2.5 u^2 max, 0.23 u^2 mean, independent of the seed's accuracy. 13 operations
+after the seed.
+
+On the binary64 device the seed is the gross reciprocal square root, good to 2^-20 where the
+steps above need 2^-27: y takes one more Newton step before a_lo joins, and the half
+reciprocal root takes the second-order term of its refinement, h (1 + d + d^2). 16 operations
+after the seed, against 13 and the cost of a correctly rounded reciprocal square root, which
+is about as much again, and 2.6 u^2.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
@@ -291,58 +318,30 @@ __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpT
 {
   const _FpType __zero = static_cast<_FpType>(0.0);
   const _FpType __half = static_cast<_FpType>(0.5);
-  _FpType __r          = ::cuda::__fpmp_rsqrt_rn(__a_hi);
-  if (__a_hi == __zero)
+  _FpType __r          = ::cuda::__fpmp_rsqrt_seed(__a_hi);
+  if (::cuda::__fpmp_is_zero(__a_hi))
   {
     __r = __zero;
   }
-  /* y0 = a_hi * r is within a few ulps of sqrt(a_hi) (on the device the
-   * fp32 seed is the approximate rsqrt), s0 = a_hi - y0^2 its residual,
-   * h = r / 2 the seed's half reciprocal root. */
   _FpType __y       = ::cuda::__fpmp_mul_rn(__a_hi, __r);
   const _FpType __h = ::cuda::__fpmp_mul_rn(__half, __r);
   _FpType __s       = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
-  if constexpr (sizeof(_FpType) == 4)
+  if constexpr (sizeof(_FpType) == 8)
   {
-    /* fp32mp2: a_lo joins the Newton step (y ~ RN(sqrt(a_hi + a_lo)), which
-     * halves the correction), then the correction (a_hi - y^2 + a_lo) is
-     * scaled by the half reciprocal root refined once, h (1 + d), and the
-     * pair is normalized.  Host model against binary128: 2.5 u^2 max,
-     * 0.23 u^2 mean, independent of the seed's accuracy, against 5.7-52 u^2
-     * before.  12 operations. */
-    __y                = ::cuda::__fpmp_fma_rn(__h, __s + __a_lo, __y);
-    const _FpType __d  = ::cuda::__fpmp_fma_rn(-__y, __r, static_cast<_FpType>(1.0));
-    __s                = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
-    const _FpType __hr = ::cuda::__fpmp_fma_rn(__h, __d, __h);
-    const _FpType __e  = ::cuda::__fpmp_add_rn(__s, __a_lo);
-    const _FpType __t  = ::cuda::__fpmp_mul_rn(__hr, __e);
-    *__res_hi          = ::cuda::__fpmp_fast_two_sum(__y, __t, __res_lo);
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (__y = ::cuda::__fpmp_fma_rn(__h, __s, __y); __s = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);))
   }
-  else
+  __y         = ::cuda::__fpmp_fma_rn(__h, __s + __a_lo, __y);
+  _FpType __d = ::cuda::__fpmp_fma_rn(-__y, __r, static_cast<_FpType>(1.0));
+  __s         = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
+  if constexpr (sizeof(_FpType) == 8)
   {
-    /* fp64mp2: the original Nagai form, kept by choice.  The correction
-     * (a_hi - y0^2 + a_lo) / (2 sqrt a) is formed as an exact product with
-     * the residue of its sum, scaled by the seed's half reciprocal root,
-     * and added with error-free sums.  Its error is the seed's: the
-     * device's rsqrt() is close to correctly rounded and the form reads
-     * 1.0 u^2 on the test suite (2.9 u^2 over 80 binades), the host's
-     * two-rounding 1/sqrt(x) 5.8 u^2.  An exact-pair variant with a Newton
-     * step on y (26 operations) reaches the 0.5 u^2 floor on both sides,
-     * but costs 25 % of the throughput of an operation that is FP64-bound
-     * on most devices; see cccl-fpdev-internal notes/fp64mp2_math.
-     * 13 operations. */
-    const _FpType __e      = ::cuda::__fpmp_add_rn(__s, __a_lo);
-    const _FpType __tmp_lo = ::cuda::__fpmp_add_rn(__s - __e, __a_lo);
-    const _FpType __t_hi   = ::cuda::__fpmp_mul_rn(__h, __e);
-    _FpType __t_lo         = ::cuda::__fpmp_fma_rn(__h, __e, -__t_hi);
-    __t_lo                 = ::cuda::__fpmp_fma_rn(__h, __tmp_lo, __t_lo);
-    const _FpType __r1     = ::cuda::__fpmp_add_rn(__y, __t_hi);
-    _FpType __s2           = ::cuda::__fpmp_add_rn(__y - __r1, __t_hi);
-    __s2                   = ::cuda::__fpmp_add_rn(__s2, __t_lo);
-    const _FpType __hi     = ::cuda::__fpmp_add_rn(__r1, __s2);
-    *__res_lo              = ::cuda::__fpmp_add_rn(__r1 - __hi, __s2);
-    *__res_hi              = __hi;
+    NV_IF_TARGET(NV_IS_DEVICE, (__d = ::cuda::__fpmp_fma_rn(__d, __d, __d);))
   }
+  const _FpType __hr = ::cuda::__fpmp_fma_rn(__h, __d, __h);
+  const _FpType __e  = ::cuda::__fpmp_add_rn(__s, __a_lo);
+  const _FpType __t  = ::cuda::__fpmp_mul_rn(__hr, __e);
+  *__res_hi          = ::cuda::__fpmp_fast_two_sum(__y, __t, __res_lo);
 } // __fpmp2_sqrt
 
 /*
@@ -363,8 +362,8 @@ __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpT
 /* Compute high-accuracy reciprocal square root. With r the seed and s = 1 - a r^2,
 1/sqrt(a) = r (1 - s)^(-1/2) = r + (r/2) s + (3r/8) s^2 + O(s^3). a r is the single-limb
 product e and its error, to which the low limb's a_lo r is added before both enter s.
-Within 2.9 u^2 on the host and 4.2 u^2 on the device (fp32mp2, u = 2^-24), against 8 u^2
-and 13 u^2 for __fpmp2_rsqrt, at 19 against 17 operations.
+Within 2.9 u^2 on the host and 4.2 u^2 on the device (fp32mp2, u = 2^-24), against 4.7 u^2
+and 5.9 u^2 for __fpmp2_rsqrt, at 18 against 14 operations.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void

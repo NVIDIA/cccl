@@ -53,14 +53,16 @@ Conventions
 - The bounds are *first order*: terms in ``u³`` and beyond are dropped where the source
   does so, and shown where the source keeps them.
 - Host and device run the same operation sequences, and differ only in the seed that starts
-  the ``div`` and ``sqrt`` iterations: for ``fp32mp2`` the device uses the approximate
-  reciprocal and reciprocal-square-root instructions and the host an exact division; for
-  ``fp64mp2`` both reciprocals are correctly rounded, while the device's reciprocal square root
-  is close to correctly rounded and the host's ``1/sqrt(x)`` carries two roundings. One Newton
-  step leaves about ``(3/2)·ε²`` of a seed error ``ε``, which at double-word precision is
-  visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u². The ``fp32mp2`` ``sqrt``
-  corrects its seed once more before the low limb is formed and is the same on both sides; the
-  ``fp64mp2`` one is not, and where the sides differ, the tables quote the device.
+  the ``div``, ``sqrt`` and ``rsqrt`` iterations: the device uses the approximate reciprocal
+  and reciprocal-square-root instructions (good to ``2^-22`` for ``fp32mp2`` and to ``2^-20``
+  for ``fp64mp2``, which takes one or two more single-limb steps to make up for it) and the host
+  an exact division. One Newton step leaves about ``(3/2)·ε²`` of a seed error ``ε``, which at
+  double-word precision is visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u².
+  ``sqrt`` and ``rsqrt`` therefore correct their seed in single limbs before the low limb is
+  formed, and ``div`` corrects its quotient with a residual, so that the seed's accuracy does
+  not enter. The ``fp64mp2`` division seed falls back to the correctly rounded reciprocal where
+  the divisor or its reciprocal is not a normal number. Where the sides differ, the tables quote
+  the larger figure.
 
 The bounds
 ----------
@@ -179,7 +181,7 @@ host against binary128 — whichever of the two is larger.
      - measured
      - ``x > 0``
      - 2.8
-     - 2.9 [#seed]_
+     - 2.6 [#seed]_
 
    * - ``sqrt(x)``
      - ``high``
@@ -196,13 +198,12 @@ host against binary128 — whichever of the two is larger.
    relative error of these operations is unbounded (next section); their absolute error stays
    within the stated absolute bound — the largest observed is in the
    :ref:`regime table <libcudacxx-extended-api-fp-fpmp-error-bounds-regimes>` below.
-.. [#seed] Measured on the device against binary128 over 2\ :sup:`22` operands spanning 80
-   binades, with the host run on the same operands for comparison (5.8): the host's
-   two-rounding ``1/sqrt(x)`` seed costs it the difference, as the seed floor in *Conventions*
-   predicts. The ``fp32mp2`` ``sqrt`` takes its Newton step on the exact residual and refines
-   the reciprocal root once more before forming its low limb, so its seed no longer shows: 2.5
-   on both sides in the same run. The specification's own ``fp64mp2`` table reports a smaller
-   maximum for ``sqrt`` over its working range.
+.. [#seed] Measured against MPFR over 2\ :sup:`22` operands in each of three ranges, the widest
+   spanning 200 binades: 2.6 on the device and 2.5 on the host. Both types take their Newton
+   step on the exact residual and refine the reciprocal root once more before forming the low
+   limb, so the seed's accuracy does not show. ``rsqrt`` of the ``low`` and ``mid`` types stays
+   within 5.9 (``fp32mp2``) and 4.9 (``fp64mp2``) on the device, and within 4.7 and 4.6 on the
+   host. The specification's own tables predate these kernels.
 .. [#high] ``sqrt`` and ``rsqrt`` of a ``high`` type add the second-order term of their Newton
    step, which removes the seed floor described in *Conventions*. Like the short kernels they
    take no branch, and the same operands. The ``fp32mp2`` ``sqrt`` rounds its remainder and its

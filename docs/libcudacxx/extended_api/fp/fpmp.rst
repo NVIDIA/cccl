@@ -388,8 +388,8 @@ it: the result of ``sqrt`` is then scaled back by ``2^-k``, that of ``rsqrt`` by
 ``high`` types (``fp32mp2_high``, ``fp64mp2_high``) ``sqrt`` and ``rsqrt`` are a different kernel,
 which adds the second-order term of its Newton step:
 for ``fp32mp2`` within ``1.3u²`` and ``2.9u²``, ``4.2u²`` for ``rsqrt`` on the device, against
-``2.5u²`` and ``8u²``, ``13u²`` on the device. It takes the same arguments, returns the same
-values for the special ones, and costs about 12% (``sqrt``) and 5% (``rsqrt``) of the throughput
+``2.5u²`` and ``4.7u²``, ``5.9u²`` on the device. It takes the same arguments, returns the same
+values for the special ones, and costs about 12% (``sqrt``) and 15% (``rsqrt``) of the throughput
 of the short kernel on a GPU; a branch that returned the IEEE 754 values would cost another 10 to
 15%.
 The math functions below return the C99 Annex F
