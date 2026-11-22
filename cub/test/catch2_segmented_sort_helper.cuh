@@ -1167,15 +1167,16 @@ public:
 template <cub::SortOrder Order>
 struct lrb_sort_launcher_t
 {
-  template <typename KeyT>
+  template <typename KeyT, typename BeginIterator, typename EndIterator>
   cudaError_t operator()(
     std::uint8_t* storage,
     std::size_t& bytes,
     const KeyT* input,
     KeyT* output,
+    ::cuda::std::int64_t num_items,
     unsigned segments,
-    const int* begins,
-    const int* ends) const
+    BeginIterator begins,
+    EndIterator ends) const
   {
     using key_type = unwrap_value_t<KeyT>;
     cub::detail::segmented_sort_lrb::partition_result result;
@@ -1183,8 +1184,9 @@ struct lrb_sort_launcher_t
       storage,
       bytes,
       begins,
-      thrust::device_pointer_cast(ends),
+      ends,
       segments,
+      num_items,
       reinterpret_cast<const key_type*>(input),
       reinterpret_cast<key_type*>(output),
       result);
@@ -1240,34 +1242,15 @@ void call_cub_segmented_sort_api(
       {
         SKIP("The internal LRB backend requires a compiled SM90-or-newer target.");
       }
-      using kernels_t    = cub::detail::segmented_sort_lrb::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
-      using capacities_t = typename kernels_t::template capacities_t<
-        cub::detail::policy_getter<cub::detail::segmented_sort_lrb::policy_selector<unwrap_value_t<KeyT>>,
-                                   cuda::compute_capability{9, 0}.get()>>;
-      c2h::host_vector<int> begins(num_segments);
-      c2h::host_vector<int> ends(num_segments);
-      if (num_segments)
-      {
-        REQUIRE(cudaSuccess
-                == cudaMemcpy(begins.data(), d_begin_offsets, begins.size() * sizeof(int), cudaMemcpyDeviceToHost));
-        REQUIRE(
-          cudaSuccess == cudaMemcpy(ends.data(), d_end_offsets, ends.size() * sizeof(int), cudaMemcpyDeviceToHost));
-      }
-      for (int segment = 0; segment < num_segments; ++segment)
-      {
-        if (ends[segment] - begins[segment] > capacities_t::bounds.back())
-        {
-          SKIP("This input requires overflow sorting, which the internal LRB backend does not yet implement.");
-        }
-      }
       INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
       const auto run = [&](auto launcher) {
         launch(launcher,
                static_cast<const KeyT*>(input_keys),
                output_keys,
+               num_items,
                static_cast<unsigned>(num_segments),
                d_begin_offsets,
-               d_end_offsets);
+               thrust::device_pointer_cast(d_end_offsets));
       };
       if (descending)
       {

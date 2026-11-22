@@ -17,17 +17,26 @@
 
 #include <cub/agent/agent_segmented_sort_group_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/choose_offset.cuh>
+#include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -227,9 +236,66 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
   return error;
 }
 
-// Host-launched internal bounded keys-only backend; device-side API calls are not supported.
-// Oversized segments are left unsorted in the overflow ID range; overflow sorting belongs to a later change.
-// Its kernel list and policies are fixed here, with no public API route.
+// Sort the overflow ID range with the same per-segment radix kernel as DeviceSegmentedSort.
+template <SortOrder Order, typename Key, typename BeginIterator, typename EndIterator, typename KernelLauncherFactory>
+_CCCL_HOST_API cudaError_t launch_radix_overflow(
+  const unsigned* segment_ids,
+  const unsigned* offsets,
+  BeginIterator begins,
+  EndIterator ends,
+  const Key* in,
+  Key* out,
+  Key* intermediate,
+  ::cuda::compute_capability cc,
+  cudaStream_t stream,
+  KernelLauncherFactory launcher_factory)
+{
+  unsigned bounds[2];
+  if (const auto error =
+        CubDebug(launcher_factory.MemcpyAsync(bounds, offsets, sizeof(bounds), cudaMemcpyDeviceToHost, stream)))
+  {
+    return error;
+  }
+  if (const auto error = CubDebug(_CUB::SyncStream(stream)))
+  {
+    return error;
+  }
+  using selector_t      = segmented_sort::policy_selector_from_types<Key, NullType>;
+  using offset_t        = choose_signed_offset_t<common_iterator_value_t<BeginIterator, EndIterator>>;
+  constexpr auto kernel = segmented_sort::
+    DeviceSegmentedSortKernelLarge<Order, selector_t, Key, NullType, BeginIterator, EndIterator, offset_t>;
+  const auto policy = selector_t{}(cc).large_segment;
+  const int passes  = ::cuda::ceil_div(int{sizeof(Key) * 8}, policy.radix_bits);
+  // The first radix pass writes to current(). Choose it so the last pass writes to out.
+  const device_double_buffer<Key> radix_buffers(passes % 2 ? out : intermediate, passes % 2 ? intermediate : out);
+  for (unsigned i = bounds[0]; i < bounds[1];)
+  {
+    const unsigned grid_size = (::cuda::std::min) (bounds[1] - i, unsigned{(::cuda::std::numeric_limits<int>::max)()});
+    if (const auto error = CubDebug(
+          launcher_factory(grid_size, policy.threads_per_block, 0, stream)
+            .doit(kernel,
+                  segment_ids + i,
+                  in,
+                  out,
+                  radix_buffers,
+                  static_cast<const NullType*>(nullptr),
+                  static_cast<NullType*>(nullptr),
+                  device_double_buffer<NullType>(nullptr, nullptr),
+                  begins,
+                  ends)))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+    i += grid_size;
+  }
+  return CubDebug(DebugSyncStream(stream));
+}
+
+// Host-launched keys-only backend. GroupMerge handles bounded bins and radix handles overflow.
 template <SortOrder Order,
           typename Key,
           typename BeginIterator,
@@ -242,6 +308,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   BeginIterator begins,
   EndIterator ends,
   unsigned num_segments,
+  ::cuda::std::int64_t num_items,
   const Key* in,
   Key* out,
   partition_result& result,
@@ -267,22 +334,50 @@ _CCCL_HOST_API cudaError_t dispatch(
       using policy_getter_t = decltype(policy_getter);
       using kernels_t       = group_merge_sort_kernels_t<Key, PolicySelector>;
       using capacities_t    = typename kernels_t::template capacities_t<policy_getter_t>;
-      if (const auto error = dispatch_partition<capacities_t, partition_subpolicy_selector<PolicySelector>>(
-            temp_storage,
-            temp_storage_bytes,
-            begins,
-            ends,
-            num_segments,
-            result,
-            stream,
-            launcher_factory,
-            policy_getter().partition))
+      const auto partition  = [&](void* storage, size_t& bytes) {
+        return dispatch_partition<capacities_t, partition_subpolicy_selector<PolicySelector>>(
+          storage, bytes, begins, ends, num_segments, result, stream, launcher_factory, policy_getter().partition);
+      };
+      size_t partition_bytes = 0;
+      if (const auto error = partition(nullptr, partition_bytes))
       {
         return error;
       }
-      if (!temp_storage || !num_segments)
+      const bool may_have_overflow = num_segments && num_items > capacities_t::bounds.back();
+      const size_t sizes[] = {partition_bytes, may_have_overflow ? static_cast<size_t>(num_items) * sizeof(Key) : 0};
+      void* allocations[2]{};
+      if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
+      {
+        return error;
+      }
+      if (!temp_storage)
       {
         return cudaSuccess;
+      }
+      if (const auto error = partition(allocations[0], partition_bytes))
+      {
+        return error;
+      }
+      if (!num_segments)
+      {
+        return cudaSuccess;
+      }
+      if (may_have_overflow)
+      {
+        if (const auto error = launch_radix_overflow<Order>(
+              result.segment_ids,
+              result.bin_offsets + capacities_t::size,
+              begins,
+              ends,
+              in,
+              out,
+              static_cast<Key*>(allocations[1]),
+              cc,
+              stream,
+              launcher_factory))
+        {
+          return error;
+        }
       }
       return launch_sort_kernel_list<kernels_t, Order>(
         result,
