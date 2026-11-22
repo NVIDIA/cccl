@@ -19,9 +19,10 @@
 //  with the Payne-Hanek range, the hyperbolic functions, cbrt, rcbrt, hypot,
 //  rhypot, fdim, modf, the error and probability functions, boys_f0, the six
 //  rounding functions (fp32mp2 and fp64mp2, whose zero result carries the sign
-//  of the argument), the fp64mp2 division by a divisor next to the largest
-//  finite value, and the classification predicates on loose pairs. Values are
-//  compared against the double reference where one is in ISO <cmath>.
+//  of the argument), ldexp and frexp up to the ends of the exponent range, the
+//  fp64mp2 division by a divisor next to the largest finite value, and the
+//  classification predicates on loose pairs. Values are compared against the
+//  double reference where one is in ISO <cmath>.
 //
 //  Left out on purpose:
 //    - sqrt and rsqrt take no branch for special arguments and return NaN
@@ -789,6 +790,77 @@ TEST_HOST_DEVICE_FUNC void test_modf_and_classify()
   assert(llround(T(-0x1p63f, -1.0f)) == ::cuda::std::llround(-0x1p63));
 }
 
+// ---- ldexp and frexp ----------------------------------------------------------
+//
+// Both scale the limbs by a power of two, which is exact: one multiplication per limb where
+// 2^n is a normal number, the limb format's own ldexp otherwise. A result in the subnormal
+// range is rounded once, an overflowing one is an infinity with a zero low limb, and zeros,
+// infinities and NaN come back as they are.
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC void test_ldexp_frexp()
+{
+  using F               = decltype(MP2().hi());
+  using nl              = cuda::std::numeric_limits<F>;
+  constexpr int digits  = nl::digits;
+  constexpr int max_exp = nl::max_exponent; // 2^(max_exp - 1) is the largest power of two
+  constexpr int min_exp = nl::min_exponent; // 2^(min_exp - 1) is the smallest normal number
+
+  F lo   = cuda::std::ldexp(F(0.375), -digits);
+  MP2 x  = MP2(F(1.25), lo);
+  MP2 r1 = ldexp(x, 7);
+  assert(r1.hi() == F(160) && r1.lo() == cuda::std::ldexp(lo, 7));
+  MP2 r2 = ldexp(x, -9);
+  assert(r2.hi() == F(1.25) / F(512) && r2.lo() == cuda::std::ldexp(lo, -9));
+  assert(scalbn(x, 7) == r1 && scalbln(x, -9L) == r2);
+
+  // Next to the ends of the one-multiplication range, and beyond them
+  assert(ldexp(x, max_exp - 2).hi() == cuda::std::ldexp(F(1.25), max_exp - 2));
+  assert(ldexp(x, max_exp - 2).lo() == cuda::std::ldexp(lo, max_exp - 2));
+  assert(ldexp(MP2(F(0.25)), max_exp).hi() == cuda::std::ldexp(F(1), max_exp - 2));
+  // the smallest exponent that leaves the low limb a normal number
+  assert(ldexp(x, min_exp + digits + 2).hi() == cuda::std::ldexp(F(1.25), min_exp + digits + 2));
+  assert(ldexp(x, min_exp + digits + 2).lo() == cuda::std::ldexp(lo, min_exp + digits + 2));
+  assert(ldexp(ldexp(x, max_exp - 2), -(max_exp + 3)) == ldexp(x, -5));
+
+  // Overflow and underflow, at the first exponent that reaches them and far beyond it
+  assert(is_pos_inf(ldexp(x, max_exp)) && ldexp(x, max_exp).lo() == 0);
+  assert(is_neg_inf(ldexp(-x, max_exp)) && ldexp(-x, max_exp).lo() == 0);
+  assert(is_pos_inf(ldexp(x, INT_MAX)) && ldexp(x, INT_MAX).lo() == 0);
+  assert(is_zero(ldexp(x, INT_MIN)) && is_zero(ldexp(x, 2 * min_exp - 2 * digits)));
+
+  // Zeros keep their sign; infinities and NaN are returned
+  assert(is_pos_zero(ldexp(MP2(F(0)), 5)) && is_neg_zero(ldexp(MP2(-F(0)), -5)));
+  assert(is_neg_zero(ldexp(MP2(-F(0)), INT_MAX)) && is_pos_zero(ldexp(MP2(F(0)), INT_MIN)));
+  assert(is_pos_inf(ldexp(MP2(nl::infinity()), -3)) && is_neg_inf(ldexp(MP2(-nl::infinity()), INT_MIN)));
+  assert(is_nan(ldexp(MP2(nl::quiet_NaN()), 3)) && is_nan(ldexp(MP2(nl::quiet_NaN()), INT_MAX)));
+
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal results: flushed to zero on the device
+  // 3 * 2^(min_exp - digits) is a subnormal number: the scaling down and up again are exact,
+  // and a subnormal result is rounded once, to the nearest multiple of the smallest one
+  MP2 tiny = ldexp(MP2(F(1.5)), min_exp - digits + 1);
+  assert(tiny.hi() == 3 * nl::denorm_min() && tiny.lo() == 0);
+  assert(ldexp(tiny, digits - min_exp - 1) == MP2(F(1.5)));
+  assert(ldexp(MP2(F(1.25)), min_exp - digits).hi() == nl::denorm_min());
+  assert(ldexp(MP2(F(1.75)), min_exp - digits).hi() == 2 * nl::denorm_min());
+  assert(ldexp(ldexp(MP2(F(1.75)), max_exp - 1), min_exp - digits - max_exp + 1).hi() == 2 * nl::denorm_min());
+#endif // !TEST_HAS_CUDA_FAST_MATH
+
+  // frexp: the exponent is that of the pair, the mantissa the pair scaled by it, exactly
+  int e   = 0;
+  MP2 big = ldexp(x, max_exp - 1); // in the top binade
+  MP2 m   = frexp(big, &e);
+  assert(e == max_exp && m.hi() == F(0.625) && m.lo() == cuda::std::ldexp(lo, -1));
+  m = frexp(ldexp(x, min_exp + digits + 2), &e);
+  assert(e == min_exp + digits + 3 && m.hi() == F(0.625) && m.lo() == cuda::std::ldexp(lo, -1));
+  // just below a power of two: the mantissa is next to 1, not next to 1/2
+  m = frexp(MP2(F(4), -cuda::std::ldexp(F(1), -digits)), &e);
+  assert(e == 2 && m.hi() == F(1) && m.lo() == -cuda::std::ldexp(F(1), -digits - 2));
+  m = frexp(MP2(F(0)), &e);
+  assert(e == 0 && is_pos_zero(m));
+  m = frexp(MP2(nl::infinity()), &e);
+  assert(is_pos_inf(m));
+}
+
 // ---- fp64mp2 division next to the ends of the exponent range -------------------
 //
 // On the device the division starts from an approximate reciprocal, which flushes subnormal
@@ -853,6 +925,9 @@ int main(int, char**)
   test_loose_zero_high_limb();
   test_llrint_ends();
   test_modf_and_classify();
+  test_ldexp_frexp<cuda::fp32mp2>();
+  test_ldexp_frexp<cuda::fp32mp2_low>();
+  test_ldexp_frexp<cuda::fp64mp2>();
   test_division_ends_fp64mp2<cuda::fp64mp2>();
   test_division_ends_fp64mp2<cuda::fp64mp2_low>();
   test_division_ends_fp64mp2<cuda::fp64mp2_high>();
