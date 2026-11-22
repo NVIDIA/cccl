@@ -25,14 +25,11 @@
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
-#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integer.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -72,89 +69,6 @@ struct block_merge_storage
 {
   KeyT keys[NumKeys];
 };
-
-// Bracket the crossing near a proportional estimate, then reuse CUB's binary search.
-template <typename KeyIt1, typename KeyIt2, typename OffsetT = int, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE_API OffsetT
-block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, OffsetT diagonal, CompareOp compare_op)
-{
-  static_assert(::cuda::std::__cccl_is_integer_v<OffsetT>);
-  using CounterT _CCCL_NODEBUG = decltype(+OffsetT{});
-  const CounterT a_count       = count1;
-  const CounterT b_count       = count2;
-  const CounterT target        = diagonal;
-
-  _CCCL_ASSERT(a_count >= 0 && b_count >= 0 && target >= 0, "Merge counts and diagonal must be nonnegative");
-  _CCCL_ASSUME(a_count >= 0 && b_count >= 0 && target >= 0);
-  _CCCL_ASSERT(a_count <= (::cuda::std::numeric_limits<CounterT>::max)() - b_count,
-               "Combined merge count must fit in CounterT");
-  _CCCL_ASSUME(a_count <= (::cuda::std::numeric_limits<CounterT>::max)() - b_count);
-  _CCCL_ASSERT(target <= a_count + b_count, "Merge diagonal must not exceed the combined count");
-  _CCCL_ASSUME(target <= a_count + b_count);
-
-  CounterT first = target < b_count ? CounterT{0} : target - b_count;
-  CounterT last  = (::cuda::std::min) (target, a_count);
-
-  if (first < last)
-  {
-    const float total = static_cast<float>(a_count + b_count);
-    _CCCL_ASSERT(::cuda::std::isfinite(total), "Combined merge count must have a finite float representation");
-    // Divide first so even valid 64-bit counts cannot overflow the float product.
-    const float prediction = ::__fdividef(static_cast<float>(target), total) * static_cast<float>(a_count);
-    _CCCL_ASSERT(::cuda::std::isfinite(prediction) && prediction >= 0,
-                 "Merge prediction must be finite and nonnegative");
-    // A rounded prediction can exceed CounterT's range near its maximum value.
-    // Clamp its upper end before converting back to the integral offset type.
-    const CounterT estimate =
-      prediction >= static_cast<float>(last) ? last - CounterT{1} : static_cast<CounterT>(prediction);
-    const CounterT pivot = ::cuda::std::clamp(estimate, first, last - CounterT{1});
-    const auto left      = compare_op(keys2[target - CounterT{1} - pivot], keys1[pivot]);
-
-    if (left)
-    {
-      last = pivot;
-    }
-    else
-    {
-      first = pivot + CounterT{1};
-    }
-
-    constexpr int probes = 3;
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int probe = 0; probe < probes; ++probe)
-    {
-      const CounterT distance = CounterT{16} << (2 * probe);
-      // Check before subtracting/adding so unsigned offsets cannot wrap around.
-      if (left ? distance > pivot - first : distance >= last - pivot)
-      {
-        break;
-      }
-
-      const CounterT index = left ? pivot - distance : pivot + distance;
-      if (compare_op(keys2[target - CounterT{1} - index], keys1[index]))
-      {
-        last = index;
-        if (!left)
-        {
-          break;
-        }
-      }
-      else
-      {
-        first = index + CounterT{1};
-        if (left)
-        {
-          break;
-        }
-      }
-    }
-  }
-  const CounterT span = last - first;
-
-  return static_cast<OffsetT>(
-    first + _CUB::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
-}
 
 struct block_merge_window
 {
@@ -303,7 +217,7 @@ public:
       : keys(input)
       , index1(
           pair.begin
-          + _CUB::detail::block_merge_path(
+          + _CUB::MergePath(
             input + pair.begin, input + pair.middle, pair.middle - pair.begin, pair.end - pair.middle, diagonal, compare))
       , index2(pair.middle + (diagonal - (index1 - pair.begin)))
       , end1(pair.middle)
