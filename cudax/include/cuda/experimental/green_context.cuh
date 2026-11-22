@@ -11,6 +11,8 @@
 #ifndef __CUDAX_GREEN_CONTEXT__
 #define __CUDAX_GREEN_CONTEXT__
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__green_context/green_ctx.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_GREEN_CONTEXT__

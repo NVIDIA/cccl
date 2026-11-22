@@ -63,6 +63,7 @@ __device__ void test_invoke_one(const Group& group)
       update_invoke_count();
     };
 
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(cudax::coop::invoke_one(group, callable))>);
 
     cudax::coop::invoke_one(group, callable);

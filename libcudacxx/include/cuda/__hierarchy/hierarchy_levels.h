@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -102,6 +102,7 @@ inline constexpr bool __is_level_allowed<_QueryLevel, __allowed_levels<_Levels..
 
 template <class _L1, class _L2>
 inline constexpr bool __can_rhs_stack_on_lhs =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   __is_level_allowed<_L1, typename _L2::__allowed_below> || __is_level_allowed<_L2, typename _L1::__allowed_above>;
 
 template <class _Unit, class _Level>

@@ -114,7 +114,7 @@ Where:
 #. The unit level type that defines what units are being grouped.
 #. The upper level bound type that defines the level within which the units are grouped.
 #. The hierarchy type within which the group is operating.
-#. Returns a ``const hierarchy_type&`` to the hierarchy stored by the group.
+#. Returns a reference to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.
 #. Same as ``sync()``, but all of the units are contextually aligned (execute the same statement).
 #. A property known at compile time that specifies whether each group occupies a contiguous range of physical units, numbered in ascending physical order from zero.
@@ -219,13 +219,15 @@ The supported query kinds are:
 
   // Super-level queries.
   constexpr auto a = group.static_count(/*parent-group-or-qlevel*/); // (1), always constexpr
-  const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (2)
-  const auto c     = group.rank_as<T>(/*parent-group-or-qlevel*/);   // (3)
+  constexpr auto f = group.static_rank(/*parent-group-or-qlevel*/);  // (2), always constexpr
+  const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (3)
+  const auto c     = group.rank_as<T>(/*parent-group-or-qlevel*/);   // (4)
 
-  const auto d     = group.count(/*parent-group-or-qlevel*/);        // (4)
-  const auto e     = group.rank(/*parent-group-or-qlevel*/);         // (5)
+  const auto d     = group.count(/*parent-group-or-qlevel*/);        // (5)
+  const auto e     = group.rank(/*parent-group-or-qlevel*/);         // (6)
 
 #. Queries the statically known number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level. When equal to ``cuda::std::dynamic_extent``, the value is known only at runtime.
+#. Queries the current group's rank known at compile time, returned as ``cuda::std::size_t``. Returns ``0`` for a statically known single group and ``cuda::std::dynamic_extent`` when the rank is known only at runtime.
 #. Queries the number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level, returned as type ``T``.
 #. Queries the current ``group``'s rank within the ``group``'s parent group or the ``qlevel`` level. Returns a value in the range ``[0, group.count(/*parent-group-or-qlevel*/))`` as type ``T``.
 #. Equivalent to ``group.count_as</*default-T*/>(/*parent-group-or-qlevel*/)``.

@@ -17,7 +17,11 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
   )
   set(${target_name_var} ${target_name} PARENT_SCOPE)
 
-  add_executable(${target_name} "${source}")
+  add_executable(
+    ${target_name}
+    "${source}"
+    "${v1_test_dir}/support/crash_report.cpp"
+  )
   cccl_configure_target(${target_name} DIALECT 20)
 
   set_target_properties(${target_name} PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
@@ -31,6 +35,14 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
       CUDA::nvrtc
       cccl.c2h.main
   )
+
+  if (WIN32)
+    # crash_report.cpp symbolizes the faulting stack via dbghelp.
+    target_link_libraries(${target_name} PRIVATE dbghelp)
+    # Sources are already compiled with /Z7, but without /DEBUG the linker emits
+    # no PDB and a crash report can only show module+offset. ~19 MB per test.
+    target_link_options(${target_name} PRIVATE /DEBUG)
+  endif()
 
   target_include_directories(
     ${target_name}

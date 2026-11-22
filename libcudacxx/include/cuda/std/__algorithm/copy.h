@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__string/constexpr_c_functions.h> // _CCCL_BUILTIN_MEMMOVE
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -55,7 +56,7 @@ template <class _Tp, class _Up>
 _CCCL_API constexpr bool
 __dispatch_memmove([[maybe_unused]] _Up* __result, [[maybe_unused]] _Tp* __first, [[maybe_unused]] const size_t __n)
 {
-#if defined(_CCCL_BUILTIN_MEMMOVE)
+#ifdef _CCCL_BUILTIN_MEMMOVE
   _CCCL_BUILTIN_MEMMOVE(__result, __first, __n * sizeof(_Up));
   return true;
 #else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
@@ -94,16 +95,13 @@ _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [
   {
     return __first < __needle;
   }
-  else
-  {
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
-                      (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
+#ifdef _CCCL_BUILTIN_CONSTANT_P
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
+                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
 #else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
-    return __constexpr_tail_overlap_fallback(__first, __needle, __last);
+  return __constexpr_tail_overlap_fallback(__first, __needle, __last);
 #endif // !_CCCL_BUILTIN_CONSTANT_P
-  }
 }
 
 _CCCL_EXEC_CHECK_DISABLE

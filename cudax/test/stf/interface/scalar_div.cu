@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/memory>
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
@@ -112,7 +113,7 @@ void run()
   const scalar c = (-a) / b;
 
   ctx.host_launch(c.handle.read())->*[](auto x) {
-    EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001);
+    EXPECT(fabs(*x.data_handle() - ((-42.0) / 12.3)) < 0.001);
   };
 
   ctx.finalize();

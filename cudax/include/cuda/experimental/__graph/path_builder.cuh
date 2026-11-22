@@ -13,22 +13,27 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/__event/event_ref.h>
-#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/cassert>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
-#include <cuda/experimental/__graph/graph_builder.cuh>
+#include <cuda/experimental/__graph/graph_builder_ref.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <vector>
 
-#include <cuda_runtime.h>
+#include <cuda.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header

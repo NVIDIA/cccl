@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 #if _CCCL_HOSTED()
 #  include <cstddef> // IWYU pragma: export
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-#  if !defined(offsetof)
+#  ifndef offsetof
 #    if _CCCL_HAS_BUILTIN(__builtin_offsetof) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #      define offsetof(_TYPE, _MEMBER) __builtin_offsetof(_TYPE, _MEMBER)
 #    elif _CCCL_COMPILER(NVRTC, >=, 12, 3)

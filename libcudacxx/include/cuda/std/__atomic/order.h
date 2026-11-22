@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE_API constexpr int __atomic_failure_order_to_int(memory_order _
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
 }
 
-static_assert((is_same_v<underlying_type_t<memory_order>, __memory_order_underlying_t>),
+static_assert(is_same_v<underlying_type_t<memory_order>, __memory_order_underlying_t>,
               "unexpected underlying type for std::memory_order");
 
 _CCCL_END_NAMESPACE_CUDA_STD

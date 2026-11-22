@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -71,11 +71,8 @@ template <class _Tp>
     ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -88,11 +85,8 @@ template <class _Tp>
     ::new (__dst) _Tp(__src);
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

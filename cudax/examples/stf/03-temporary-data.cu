@@ -27,7 +27,7 @@ int main()
   for (size_t i = 0; i < n; i++)
   {
     X[i] = static_cast<int>(3 * i);
-    Y[i] = static_cast<int>(2 * i - 3);
+    Y[i] = static_cast<int>((2 * i) - 3);
   }
 
   context ctx;
@@ -63,7 +63,7 @@ int main()
   // We have exchanged an odd number of times, so they must be inverted
   for (size_t i = 0; i < n; i++)
   {
-    assert(X[i] == 2 * i - 3);
+    assert(X[i] == (2 * i) - 3);
     assert(Y[i] == 3 * i);
   }
 }

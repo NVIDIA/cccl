@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,13 +30,12 @@ THRUST_NAMESPACE_END
 #include <thrust/detail/allocator/no_throw_allocator.h>
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/contiguous_storage.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -44,7 +43,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_array : public contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>
 {
-private:
   using super_t = contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>;
 
   // to help out the constructor
@@ -53,34 +51,35 @@ private:
 public:
   using size_type = typename super_t::size_type;
 
-  _CCCL_HOST_DEVICE temporary_array(thrust::execution_policy<System>& system);
+  _CCCL_HOST_DEVICE_API temporary_array(thrust::execution_policy<System>& system);
 
-  _CCCL_HOST_DEVICE temporary_array(thrust::execution_policy<System>& system, size_type n);
+  _CCCL_HOST_DEVICE_API temporary_array(thrust::execution_policy<System>& system, size_type n);
 
   // provide a kill-switch to explicitly avoid initialization
-  _CCCL_HOST_DEVICE temporary_array(int uninit, thrust::execution_policy<System>& system, size_type n);
+  _CCCL_HOST_DEVICE_API temporary_array(int uninit, thrust::execution_policy<System>& system, size_type n);
 
   template <typename InputIterator>
-  _CCCL_HOST_DEVICE temporary_array(thrust::execution_policy<System>& system, InputIterator first, size_type n);
+  _CCCL_HOST_DEVICE_API temporary_array(thrust::execution_policy<System>& system, InputIterator first, size_type n);
 
   template <typename InputIterator, typename InputSystem>
-  _CCCL_HOST_DEVICE temporary_array(
+  _CCCL_HOST_DEVICE_API temporary_array(
     thrust::execution_policy<System>& system,
     thrust::execution_policy<InputSystem>& input_system,
     InputIterator first,
     size_type n);
 
   template <typename InputIterator>
-  _CCCL_HOST_DEVICE temporary_array(thrust::execution_policy<System>& system, InputIterator first, InputIterator last);
+  _CCCL_HOST_DEVICE_API
+  temporary_array(thrust::execution_policy<System>& system, InputIterator first, InputIterator last);
 
   template <typename InputSystem, typename InputIterator>
-  _CCCL_HOST_DEVICE temporary_array(
+  _CCCL_HOST_DEVICE_API temporary_array(
     thrust::execution_policy<System>& system,
     thrust::execution_policy<InputSystem>& input_system,
     InputIterator first,
     InputIterator last);
 
-  _CCCL_HOST_DEVICE ~temporary_array();
+  _CCCL_HOST_DEVICE_API ~temporary_array();
 }; // end temporary_array
 
 // XXX eliminate this when we do ranges for real
@@ -91,16 +90,16 @@ public:
   using iterator = thrust::detail::tagged_iterator<Iterator, System>;
 
   template <typename Ignored1, typename Ignored2>
-  tagged_iterator_range(const Ignored1&, const Ignored2&, Iterator first, Iterator last)
+  _CCCL_HOST_API tagged_iterator_range(const Ignored1&, const Ignored2&, Iterator first, Iterator last)
       : m_begin(first)
       , m_end(last)
   {}
 
-  iterator begin() const
+  _CCCL_HOST_API iterator begin() const
   {
     return m_begin;
   }
-  iterator end() const
+  _CCCL_HOST_API iterator end() const
   {
     return m_end;
   }
@@ -124,14 +123,15 @@ class move_to_system : public move_to_system_base<Iterator, FromSystem, ToSystem
   using super_t = move_to_system_base<Iterator, FromSystem, ToSystem>;
 
 public:
-  move_to_system(thrust::execution_policy<FromSystem>& from_system,
-                 thrust::execution_policy<ToSystem>& to_system,
-                 Iterator first,
-                 Iterator last)
+  _CCCL_HOST_API move_to_system(
+    thrust::execution_policy<FromSystem>& from_system,
+    thrust::execution_policy<ToSystem>& to_system,
+    Iterator first,
+    Iterator last)
       : super_t(to_system, from_system, first, last)
   {}
 };
 } // namespace detail
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/temporary_array.inl>
+#include <thrust/detail/temporary_array.inl> // IWYU pragma: export

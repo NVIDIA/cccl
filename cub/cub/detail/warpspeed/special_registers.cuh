@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,7 @@ struct SpecialRegisters
 {
   ::cuda::std::uint32_t clusterCtaRank = ::cuda::ptx::get_sreg_cluster_ctarank();
   ::cuda::std::uint32_t threadIdxX     = threadIdx.x;
-  ::cuda::std::uint32_t warpIdx        = makeWarpUniform(threadIdxX / 32);
+  ::cuda::std::uint32_t warpIdx        = _CUB::detail::warpspeed::makeWarpUniform(threadIdxX / 32);
   return {clusterCtaRank, blockIdx.x, threadIdxX, warpIdx, ::cuda::ptx::get_sreg_laneid()};
 }
 } // namespace detail::warpspeed

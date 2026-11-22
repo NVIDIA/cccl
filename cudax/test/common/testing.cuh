@@ -60,10 +60,7 @@ inline int count_driver_stack()
     cuda::__driver::__ctxPush(ctx);
     return result;
   }
-  else
-  {
-    return 0;
-  }
+  return 0;
 }
 
 inline void empty_driver_stack()

@@ -10,7 +10,7 @@
 
 // constexpr W operator*() const noexcept(is_nothrow_copy_constructible_v<W>);
 
-#if defined(__clang__)
+#ifdef __clang__
 #  pragma clang diagnostic ignored "-Wsign-compare"
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic ignored "-Wsign-compare"

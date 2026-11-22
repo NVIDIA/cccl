@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,6 +38,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 _CCCL_BEGIN_NAMESPACE_STD
+
+// NOLINTBEGIN(readability-redundant-declaration)
 
 template <size_t _Ip, class... _Tp>
 constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type& get(tuple<_Tp...>&) noexcept;
@@ -224,6 +226,8 @@ get(_TupleLike&& __t) noexcept(noexcept(::std::get<_Ip>(::cuda::std::forward<_Tu
   return ::std::get<_Ip>(::cuda::std::forward<_TupleLike>(__t));
 }
 #endif // _CCCL_HAS_HOST_STD_LIB()
+
+// NOLINTEND(readability-redundant-declaration)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

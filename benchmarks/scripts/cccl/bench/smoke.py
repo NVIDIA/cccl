@@ -69,16 +69,16 @@ SMOKE_WORKLOADS: dict[str, dict[str, list[str]]] = {
         "Elements{io}[pow2]": ["28"],
         "MaxSegSize[pow2]": ["4", "8"],
     },
-    "cub.bench.segmented_reduce.sum": {
+    "cub.bench.segmented_reduce.fixed_size_sum": {
         "T{ct}": ["I8", "I16", "I32", "I64", "C32"],
         "Elements{io}[pow2]": ["28"],
     },
-    "cub.bench.segmented_reduce.variable_sum": {
+    "cub.bench.segmented_reduce.variable_with_guarantee_sum": {
         "T{ct}": ["I32", "F64"],
         "OffsetT{ct}": ["I32"],
         "Elements{io}[pow2]": ["28"],
     },
-    "cub.bench.segmented_reduce.variable_argmax": {
+    "cub.bench.segmented_reduce.variable_with_guarantee_argmax": {
         "T{ct}": ["I32", "F64"],
         "OffsetT{ct}": ["I32"],
         "Elements{io}[pow2]": ["28"],
@@ -308,12 +308,12 @@ SMOKE_SUBBENCHES: dict[str, RuntimeBenchmarkInputs] = {
     "cub.bench.segmented_sort.keys": {
         "small": {"MaxSegmentSize[pow2]": ["8"]},
     },
-    "cub.bench.segmented_reduce.sum": {
+    "cub.bench.segmented_reduce.fixed_size_sum": {
         "small": {"SegmentSize[pow2]": ["4"]},
         "medium": {"SegmentSize[pow2]": ["8"]},
         "large": {"SegmentSize[pow2]": ["12"]},
     },
-    "cub.bench.segmented_reduce.variable_sum": {
+    "cub.bench.segmented_reduce.variable_with_guarantee_sum": {
         "variable_small_dynamic": {
             "MaxSegmentSize[pow2]": ["4"],
             "GuaranteedMaxSegSize[pow2]": ["4"],
@@ -327,7 +327,7 @@ SMOKE_SUBBENCHES: dict[str, RuntimeBenchmarkInputs] = {
             "GuaranteedMaxSegSize[pow2]": ["12"],
         },
     },
-    "cub.bench.segmented_reduce.variable_argmax": {
+    "cub.bench.segmented_reduce.variable_with_guarantee_argmax": {
         "variable_small_dynamic": {
             "MaxSegmentSize[pow2]": ["4"],
             "GuaranteedMaxSegSize[pow2]": ["4"],

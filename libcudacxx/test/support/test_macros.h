@@ -59,7 +59,7 @@
 // Use the CCCL spaceship detection
 #define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define TEST_IS_CONSTANT_EVALUATED() _CCCL_BUILTIN_IS_CONSTANT_EVALUATED()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -74,7 +74,7 @@
 // Attempt to deduce the GLIBC version
 #if __has_include(<features.h>) || defined(__linux__)
 #  include <features.h>
-#  if defined(__GLIBC_PREREQ)
+#  ifdef __GLIBC_PREREQ
 #    define TEST_HAS_GLIBC
 #    define TEST_GLIBC_PREREQ(major, minor) __GLIBC_PREREQ(major, minor)
 #  endif
@@ -83,12 +83,12 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__linux__)
+#ifdef __linux__
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
 // newlib, etc may all support these features but need to be configured.
-#  if defined(TEST_GLIBC_PREREQ)
+#  ifdef TEST_GLIBC_PREREQ
 #    if TEST_GLIBC_PREREQ(2, 17)
 #      define TEST_HAS_TIMESPEC_GET
 #      define TEST_HAS_C11_FEATURES

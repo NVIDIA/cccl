@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,8 +14,9 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
-#  include <thrust/detail/type_traits.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/iterator/transform_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/scan.h>
 
 #  include <cuda/std/__functional/invoke.h>
@@ -27,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_inclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -48,7 +49,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 }
 
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_inclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -70,7 +71,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 }
 
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_exclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_exclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,

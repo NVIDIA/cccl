@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -135,7 +135,7 @@ public:
     {
       _CCCL_THROW(::std::bad_array_new_length);
     }
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
     _CCCL_IF_CONSTEVAL
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
@@ -154,7 +154,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
     _CCCL_IF_CONSTEVAL
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);

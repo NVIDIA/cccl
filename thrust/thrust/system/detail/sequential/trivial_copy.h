@@ -9,15 +9,15 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/sequential/general_copy.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstring>
 
 #include <nv/target>
@@ -26,7 +26,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <typename T>
-_CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
+_CCCL_HOST_DEVICE_API T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
 {
   if (n == 0)
   {

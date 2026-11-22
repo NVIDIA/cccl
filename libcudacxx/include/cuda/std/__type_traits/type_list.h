@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,8 +37,8 @@
 //! For the purpose of this file, a "trait type" is a class type with a nested
 //! type alias named \c type.
 
-#if !defined(_CCCL_META_UNROLL_LIMIT)
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#ifndef _CCCL_META_UNROLL_LIMIT
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else
 #    define _CCCL_META_UNROLL_LIMIT 16
@@ -46,6 +46,15 @@
 #endif
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HAS_BUILTIN(__type_pack_element)
+#  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
+#endif // _CCCL_HAS_BUILTIN(__type_pack_element)
+
+// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
+#if _CCCL_CUDACC_BELOW(12, 2)
+#  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
+#endif // _CCCL_CUDACC_BELOW(12, 2)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -102,11 +111,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
   template <class _Fn, class... _Us>
   using __call _CCCL_NODEBUG = __type_call<_Fn, _Ts..., _Us...>;
 };
-
-// Before the addition of inline variables, it was necessary to
-// provide a definition for constexpr class static data members.
-template <class... _Ts>
-constexpr size_t const __type_list<_Ts...>::__size;
 
 //! \brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>

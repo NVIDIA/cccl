@@ -19,7 +19,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,8 +28,10 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -127,14 +129,14 @@ permutation_iterator : public detail::make_permutation_iterator_base<ElementIter
 
 public:
   //! Null constructor calls the null constructor of this \p permutation_iterator's element iterator.
-  permutation_iterator() = default;
+  _CCCL_HIDE_FROM_ABI permutation_iterator() = default;
 
   //! Constructor accepts an \c ElementIterator into a range of values and an \c IndexIterator into a range of indices
   //! defining the indexing scheme on the values.
   //!
   //! \param x An \c ElementIterator pointing this \p permutation_iterator's range of values.
   //! \param y An \c IndexIterator pointing to an indexing scheme to use on \p x.
-  _CCCL_HOST_DEVICE explicit permutation_iterator(ElementIterator x, IndexIterator y)
+  _CCCL_HOST_DEVICE_API explicit permutation_iterator(ElementIterator x, IndexIterator y)
       : super_t(y)
       , m_element_iterator(x)
   {}
@@ -145,7 +147,7 @@ public:
             typename OtherIndexIterator,
             detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
             detail::enable_if_convertible_t<OtherIndexIterator, IndexIterator, int>     = 0>
-  _CCCL_HOST_DEVICE permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)
+  _CCCL_HOST_DEVICE_API permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)
       : super_t(rhs.base())
       , m_element_iterator(rhs.m_element_iterator)
   {}
@@ -161,7 +163,7 @@ private:
 #endif // _CCCL_COMPILER(MSVC)
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return *(m_element_iterator + *this->base());
   }
@@ -183,7 +185,7 @@ private:
 //! \return A new \p permutation_iterator which permutes the range \p e by \p i.
 //! \see permutation_iterator
 template <typename ElementIterator, typename IndexIterator>
-_CCCL_HOST_DEVICE permutation_iterator<ElementIterator, IndexIterator>
+_CCCL_HOST_DEVICE_API permutation_iterator<ElementIterator, IndexIterator>
 make_permutation_iterator(ElementIterator e, IndexIterator i)
 {
   return permutation_iterator<ElementIterator, IndexIterator>(e, i);

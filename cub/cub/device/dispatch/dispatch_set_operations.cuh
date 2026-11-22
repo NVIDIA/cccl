@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -65,9 +65,9 @@ _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
     // The diagonal of the last partition reaches the combined input size, so the offset type must represent it.
     _CCCL_ASSERT(!::cuda::mul_overflow<Offset>(partition_idx, items_per_tile).overflow,
                  "cub::DeviceSetOps: partition_idx * items_per_tile overflows the offset type");
-    const Offset diag = ::cuda::std::min(partition_idx * items_per_tile, num_keys1 + num_keys2);
+    const Offset diag = (::cuda::std::min) (partition_idx * items_per_tile, num_keys1 + num_keys2);
     partitions[partition_idx] =
-      balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
+      _CUB::detail::set_ops::balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
   }
 }
 
@@ -82,7 +82,7 @@ template <typename PolicySelector,
           typename CompareOp,
           typename SetOp,
           typename NumSelectedIteratorT>
-__launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()>{}().threads_per_block)
+__launch_bounds__(device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>{}().threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_set_op_sweep_kernel(
     KeysIt1 keys1,
     KeysIt2 keys2,
@@ -100,7 +100,7 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
     vsmem_t global_temp_storage)
 {
   using agent_t =
-    agent_set_op<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    agent_set_op<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                  KeysIt1,
                  KeysIt2,
                  ValuesIt1,
@@ -183,7 +183,7 @@ template <typename KeysIt1,
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
+  return _CUB::detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     using agent_t =
       agent_set_op<decltype(policy_getter),
                    KeysIt1,
@@ -219,7 +219,7 @@ template <typename KeysIt1,
     void* allocations[3]             = {nullptr, nullptr, nullptr};
     const size_t allocation_sizes[3] = {tile_state_bytes, partitions_bytes, vsmem_bytes};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -239,7 +239,7 @@ template <typename KeysIt1,
     // Initialize the tile state and zero the output count.
     {
       const int init_grid_size =
-        ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
+        (::cuda::std::max) (1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
               .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,
@@ -249,7 +249,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -279,7 +279,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -319,7 +319,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }

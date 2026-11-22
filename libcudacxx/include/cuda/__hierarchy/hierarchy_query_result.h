@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,14 +46,11 @@ struct hierarchy_query_result
     {
       return x;
     }
-    else if (__i == 1)
+    if (__i == 1)
     {
       return y;
     }
-    else
-    {
-      return z;
-    }
+    return z;
   }
   [[nodiscard]] _CCCL_API constexpr const _Tp& operator[](::cuda::std::size_t __i) const noexcept
   {
@@ -61,14 +58,11 @@ struct hierarchy_query_result
     {
       return x;
     }
-    else if (__i == 1)
+    if (__i == 1)
     {
       return y;
     }
-    else
-    {
-      return z;
-    }
+    return z;
   }
 
   // Hide SFINAE conversion operators from Doxygen. The _CCCL_TEMPLATE/_CCCL_REQUIRES

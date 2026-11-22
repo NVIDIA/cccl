@@ -83,7 +83,7 @@ int main()
             d[k] = p(j).pos[k] - p(i).pos[k];
           }
 
-          const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+          const double dist     = (d[0] * d[0]) + (d[1] * d[1]) + (d[2] * d[2]) + kSofteningSquared;
           const double dist_inv = 1.0 / sqrt(dist);
 
           for (size_t k = 0; k < 3; k++)

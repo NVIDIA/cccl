@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -401,6 +401,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e5m2>
   using type _CCCL_NODEBUG = ::__nv_fp8_e5m2;
 };
 #  endif // _CCCL_HAS_NVFP8_E5M2()
+
+#  if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x2_ue5m3>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8_ue5m3;
+};
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_ue5m3>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8_ue5m3;
+};
+#  endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #  if _CCCL_HAS_NVFP8_E8M0()
 template <>

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -65,7 +65,7 @@ _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND ::cuda::std::is_integra
       const auto __res = __a1 / __b1;
       return static_cast<_Common>(__res + (__res * __b1 != __a1));
     }
-    else
+    else // NOLINT(readability-else-after-return)
     {
       // the ::min method is faster even if __b is a compile-time constant
       NV_IF_ELSE_TARGET(NV_IS_DEVICE,

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -31,14 +32,17 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__driver/driver_api.cuh>
+#include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
 // See: https://github.com/breathe-doc/breathe/issues/916
-#if defined(_CCCL_DOXYGEN_INVOKED)
+#ifdef _CCCL_DOXYGEN_INVOKED
 #  define _CUDAX_CONSTEXPR_FRIEND friend
 #else
 #  define _CUDAX_CONSTEXPR_FRIEND constexpr friend

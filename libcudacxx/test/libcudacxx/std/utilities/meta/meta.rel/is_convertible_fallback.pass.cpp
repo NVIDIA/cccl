@@ -18,7 +18,7 @@
 // `__is_convertible` with the same name when clang doesn't.
 // Because this test forces the use of the fallback even when clang provides
 // it causing a keyword incompatibility.
-#if defined(__clang__)
+#ifdef __clang__
 #  pragma clang diagnostic ignored "-Wkeyword-compat"
 #endif
 
