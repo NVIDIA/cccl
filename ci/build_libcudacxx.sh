@@ -9,6 +9,9 @@ source "${ci_dir}/build_common.sh"
 
 print_environment_details
 
+# TEMPORARY: CPU sampling for runner-size measurements. Remove before merge.
+"${ci_dir}/util/cpu_sampler.sh" $$ &
+
 PRESET="libcudacxx"
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
 
