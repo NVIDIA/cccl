@@ -193,6 +193,7 @@ class __fmt_output_buffer
   _CCCL_HOST_DEVICE_API constexpr void __prepare_write(size_t __code_units)
   {
     // Always have space for one additional code unit. This is a precondition of the push_back function.
+    // A zero request after a bulk write flushes a fixed-size buffer if its last chunk filled it.
     __code_units += 1;
     if (__available() < __code_units)
     {
@@ -247,7 +248,7 @@ public:
     // Profiling showed flushing after adding is more efficient than flushing when entering the function.
     if (__size_ == __capacity_)
     {
-      __prepare_write(0);
+      __prepare_write(0); // Leave a slot for the next push_back.
     }
   }
 
@@ -288,6 +289,12 @@ public:
       __first += __chunk;
       __n -= __chunk;
     } while (__n);
+
+    // The last chunk may have filled the buffer. Leave a slot for the next push_back.
+    if (__size_ == __capacity_)
+    {
+      __prepare_write(0);
+    }
   }
 
   /// A std::transform wrapper.
@@ -319,6 +326,12 @@ public:
       __first += __chunk;
       __n -= __chunk;
     } while (__n);
+
+    // The last chunk may have filled the buffer. Leave a slot for the next push_back.
+    if (__size_ == __capacity_)
+    {
+      __prepare_write(0);
+    }
   }
 
   /// A \c fill_n wrapper.
@@ -341,6 +354,12 @@ public:
       __size_ += __chunk;
       __n -= __chunk;
     } while (__n);
+
+    // The last chunk may have filled the buffer. Leave a slot for the next push_back.
+    if (__size_ == __capacity_)
+    {
+      __prepare_write(0);
+    }
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_t __capacity() const noexcept
