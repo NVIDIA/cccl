@@ -41,10 +41,11 @@ argument declared ``cutlass.Constexpr`` on both kernel and launcher. Use
 
 Inside ``@cute.kernel``, obtain ``block_index`` from
 ``cute.arch.block_idx()[0]`` and ``thread_rank`` from
-``cute.arch.thread_idx()[0]``. Pass a supported CuTe tensor or pointer-backed
-view to Load/Store. For scalar indexing, construct a tensor with the required
-layout. The :doc:`Programming Guide <../programming_guide>` and
-:doc:`examples <../examples>` provide complete launch and memory examples.
+``cute.arch.thread_idx()[0]``. The fragments use ``source`` for the input and
+``destination`` for the output. Both can be typed CuTe pointers or tensors
+with a layout supported by the operation. The
+:doc:`Programming Guide <../programming_guide>` and :doc:`examples <../examples>`
+provide complete launch and memory examples.
 
 The diagrams describe the supported contracts. They simplify thread counts
 and intermediate stages for teaching; they do not predict instruction timing,

@@ -92,7 +92,7 @@ own tile independently.
        block, source, items_per_thread=items_per_thread, offset=offset
    )
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
-   coop.store(block, output, prefixes, offset=offset)
+   coop.store(block, destination, prefixes, offset=offset)
 
 To compute an exclusive maximum with a prefix, replace the scan call with:
 

@@ -91,8 +91,9 @@ def histogram(
     algorithm : {"atomic", "sort"}, optional
         Compile-time algorithm. Both preserve the input samples.
     temp_storage : TempStorage, optional
-        Optional scratch for intermediate counters and CUB storage. Both
-        algorithms allocate counters in shared memory, including ``"atomic"``.
+        Both algorithms keep one counter per bin in shared memory. The
+        ``"sort"`` algorithm also uses scratch to radix-sort the samples,
+        then reuses that space to find the start and end of each bin's run.
         Omit the descriptor for automatic allocation. Requested alignment is
         a minimum. With ``auto_sync=False``, synchronize the
         block before reusing the descriptor.

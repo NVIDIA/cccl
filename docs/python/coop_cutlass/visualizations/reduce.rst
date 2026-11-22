@@ -81,7 +81,7 @@ least ``128 * items_per_thread`` input elements for each block.
    )
    total = coop.sum(block, values, algorithm="raking")
    if thread_rank == 0:
-       output[block_index] = total
+       destination[block_index] = total
 
 The input ``values`` is unchanged. A logical warp uses
 ``coop.this_warp().group_by(8)``, yielding four groups of eight lanes inside
@@ -90,15 +90,14 @@ rank-zero lane. Logical widths may be powers of two from 1 through 32 or any
 width from 17 through 31. CUB supports only one non-power-of-two group per
 physical warp. For those widths, use ``group_by(width, exhaustive=False)`` and
 guard the reduction with ``group.is_member()`` so trailing lanes do not participate.
-This fragment writes one sum for each eight-lane logical warp:
+In this fragment, each 128-thread block reads 128 input elements and writes
+16 sums. The first lane of each eight-lane group writes its group's sum.
 
-.. code-block:: python
-
-   group = coop.this_warp().group_by(8)
-   total = coop.sum(group, source[thread_rank])
-   if group.rank() == 0:
-       output[thread_rank // 8] = total
-
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_reduce_documentation.py
+   :language: python
+   :start-after: # cutlass-logical-warp-reduce-example-begin
+   :end-before: # cutlass-logical-warp-reduce-example-end
+   :dedent: 8
 
 Block reductions accept ``temp_storage=coop.TempStorage(...)``. An explicit
 descriptor defaults to caller-managed synchronization; use

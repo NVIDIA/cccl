@@ -24,18 +24,29 @@ is its namespace parent.
 Installation
 ------------
 
-The standalone package requires CUTLASS DSL 4.9.0.dev1 or later in the 4.x
-series and CUDA 13 on Linux. Install from a checkout containing this project:
+The standalone package requires CUDA 13 on Linux and CUTLASS CuTe DSL
+4.9.0.dev1 or later in the 4.x series. Use a GPU architecture supported by
+your CuTe compiler. The earliest target in 4.9.0.dev1 is compute capability
+8.0 (SM80). One tested combination is an NVIDIA L4, CUDA Toolkit 13.4 and
+CuTe DSL 4.9.0.dev1.
+
+Install from a checkout containing this project:
 
 .. code-block:: bash
 
    python -m pip install ./python/cuda_coop_cutlass
 
-Use a compatible CUDA driver and toolkit. NVRTC compiles the CUB providers,
-and the CuTe compiler must support external NVIDIA LTO-IR linking and
-trace-finalization hooks. The wheel includes the required CCCL headers and
-licenses. Package metadata selects the CuTe CUDA 13 libraries through the
-``nvidia-cutlass-dsl[cu13]`` dependency, including the 4.9.0.dev1 prerelease.
+Use a driver compatible with your toolkit. The toolkit's NVRTC compiles
+the CUB device code to LTO-IR. To link it into the kernel, CuTe needs
+an nvJitLink version at least as new as NVRTC in the same CUDA major
+series. For example, a CUDA 13.4 linker accepts CUDA 13.3 or 13.4 LTO-IR.
+CUDA 13.5 LTO-IR requires a CUDA 13.5 or later linker in the 13.x series. See
+`nvJitLink compatibility <https://docs.nvidia.com/cuda/nvjitlink/#compatibility>`__.
+
+The wheel includes the required CCCL headers and licenses. The
+``nvidia-cutlass-dsl[cu13]`` dependency selects CuTe's CUDA 13 libraries.
+The :ref:`compiler requirements <coop-cutlass-compiler-requirements>`
+describe the external LTO-IR linking and trace-finalization interfaces.
 
 Start with the :doc:`Programming Guide <programming_guide>` for a complete
 prefix-sum kernel and :doc:`concepts` for participation, layouts, ownership,
