@@ -43,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 __aligned_alloc_host([[maybe_unused]] size_t __align, [[maybe_unused]] size_t __nbytes) noexcept
 {
 #  if _CCCL_OS(WINDOWS)
-  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on WIndows");
+  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on Windows");
   return nullptr;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::aligned_alloc(__align, __nbytes); // NOLINT(cppcoreguidelines-no-malloc)
