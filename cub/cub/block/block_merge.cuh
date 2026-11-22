@@ -213,17 +213,17 @@ class block_merge_cursor
   CompareOp compare_op;
 
 public:
-  _CCCL_DEVICE_API block_merge_cursor(const KeyT* input, block_merge_pair pair, int diagonal, CompareOp compare)
-      : keys(input)
+  _CCCL_DEVICE_API block_merge_cursor(const KeyT* tile, block_merge_pair pair, int diagonal, CompareOp compare)
+      : keys(tile)
       , index1(
           pair.begin
           + _CUB::MergePath(
-            input + pair.begin, input + pair.middle, pair.middle - pair.begin, pair.end - pair.middle, diagonal, compare))
+            tile + pair.begin, tile + pair.middle, pair.middle - pair.begin, pair.end - pair.middle, diagonal, compare))
       , index2(pair.middle + (diagonal - (index1 - pair.begin)))
       , end1(pair.middle)
       , end2(pair.end)
-      , key1(input[index1])
-      , key2(input[index2])
+      , key1(tile[index1])
+      , key2(tile[index2])
       , compare_op(compare)
   {}
 
