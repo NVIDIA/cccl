@@ -74,8 +74,8 @@ More than one block
 This kernel runs the scan of the first program on a grid of blocks, where
 each block computes the running sum of its own :term:`tile`:
 
-`Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+:download:`Download the full example and test
+<../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python

@@ -31,8 +31,8 @@ order of the :doc:`API reference <api>`:
    * - File
      - Shows
      - Primitives
-   * - `prefix_sum.py
-       <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/prefix_sum.py>`__
+   * - :download:`prefix_sum.py
+       <../../../python/cuda_coop_cutlass/examples/prefix_sum.py>`
      - A running sum over one block
      - :func:`~cuda.coop.cutlass.load`,
        :func:`~cuda.coop.cutlass.inclusive_sum`,
@@ -138,8 +138,8 @@ This program computes the running sum of 512 integers with one block of 128
 threads. :ref:`A first program <coop-cutlass-load-store>` in the Programming
 Guide explains its parts.
 
-`View prefix_sum.py on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/prefix_sum.py>`_
+:download:`Download prefix_sum.py
+<../../../python/cuda_coop_cutlass/examples/prefix_sum.py>`
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
    :language: python

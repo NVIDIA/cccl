@@ -73,17 +73,16 @@ least ``128 * items_per_thread`` input elements for each block.
    )
    total = coop.sum(block, values, algorithm="raking")
    if thread_rank == 0:
-       output[block_index] = total
+       destination[block_index] = total
 
 This fragment writes one sum for each group of eight lanes, sixteen for each
 block. The first lane of each group holds its group's sum:
 
-.. code-block:: python
-
-   group = coop.this_warp().group_by(8)
-   total = coop.sum(group, source[block_index * 128 + thread_rank])
-   if group.rank() == 0:
-       output[block_index * 16 + thread_rank // 8] = total
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_reduce_documentation.py
+   :language: python
+   :start-after: # cutlass-logical-warp-reduce-example-begin
+   :end-before: # cutlass-logical-warp-reduce-example-end
+   :dedent: 8
 
 :ref:`Reduction <coop-cutlass-reduce>` in the API reference covers the
 operators, ``valid_items``, groups of 17 to 31 lanes and ``temp_storage``.

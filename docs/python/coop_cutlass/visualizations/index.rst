@@ -71,11 +71,10 @@ fragment of a kernel. A fragment goes into a kernel like this one:
   fragment is written for blocks of 128 threads.
 * ``items_per_thread`` is declared ``cutlass.Constexpr`` in the kernel and
   in the launcher, so its value is known when the kernel is compiled.
-* The Reduce and Scan fragments call the second pointer ``output``.
 * ``load`` and ``store`` take a pointer as it is, or a tensor in one of the
   forms listed for ``source`` of :func:`~cuda.coop.cutlass.load`.
 * The Shuffle and Reduce fragments index a pointer, as in
-  ``output[block_index] = total``. The tested kernels on the Shuffle and
+  ``destination[block_index] = total``. The tested kernels on the Shuffle and
   Scan pages index a tensor made from the pointer with
   ``cute.make_tensor(pointer, cute.make_layout(n))``, where ``n`` is the
   number of elements.

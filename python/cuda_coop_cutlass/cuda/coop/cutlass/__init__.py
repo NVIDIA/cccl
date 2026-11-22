@@ -11,7 +11,7 @@ Import the package and call its functions inside a kernel:
    import cuda.coop.cutlass as coop
 
 `Full example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/prefix_sum.py>`__
+<https://github.com/NVIDIA/cccl/blob/7bbb712bdd0b049ad027e9e30143d822cdcf9c11/python/cuda_coop_cutlass/examples/prefix_sum.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/examples/prefix_sum.py

@@ -15,7 +15,7 @@ region. Load and Store use no scratch with their default algorithm, so this
 kernel asks for ``algorithm="transpose"``.
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
@@ -65,7 +65,7 @@ are reused. This is the body of the same kernel with its barriers written by
 hand:
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
@@ -376,7 +376,7 @@ class TempStorage:
         hand each thread the value of the thread opposite it.
 
         `Full example and test on GitHub
-        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+        <https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
         .. literalinclude::
             ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py

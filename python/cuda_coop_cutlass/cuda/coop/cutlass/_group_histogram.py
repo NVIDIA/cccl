@@ -156,7 +156,9 @@ def histogram(
         the samples, and that ``"atomic"`` can slow down when many samples
         fall in the same bin. CUB's own default is ``"sort"``.
     temp_storage : TempStorage, optional
-        Both algorithms use scratch, which holds one counter for each bin.
+        Both algorithms keep one counter per bin in shared memory. The
+        ``"sort"`` algorithm also uses scratch to radix-sort the samples,
+        then reuses that space to find the start and end of each bin's run.
         Leave this out and the compiler provides the scratch and a barrier
         after the call. Pass a :ref:`TempStorage <coop-temp-storage>` to
         share the bytes with other calls. A barrier then follows the call

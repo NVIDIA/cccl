@@ -11,7 +11,7 @@ is one thread of a warp. This kernel sums the same values over each of the
 three:
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
@@ -105,7 +105,7 @@ tell a thread where it is. Here a block, a warp and a group of lanes answer
 them:
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py

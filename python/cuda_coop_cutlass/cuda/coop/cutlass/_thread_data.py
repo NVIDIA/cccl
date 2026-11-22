@@ -22,7 +22,7 @@ payload to memory. A kernel can also fill a payload with values it computes.
 This kernel squares the items it loaded and sums the squares over the block:
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
@@ -58,7 +58,7 @@ pass a ``cute.recast_tensor`` view of the memory.
 function of the index. It replaces the loop in the kernel above:
 
 `Full example and test on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
 .. literalinclude::
     ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
@@ -767,7 +767,7 @@ class ThreadData:
         Square each item of a loaded payload:
 
         `Full example and test on GitHub
-        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+        <https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
         .. literalinclude::
             ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
