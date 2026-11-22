@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -82,7 +82,6 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
-private:
 #if _CCCL_STD_VER > 2017
   static_assert(__has_bidirectional_traversal<_Iter> || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -106,7 +106,6 @@ _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator : public __move_iter_category_base<_Iter>
 {
-private:
   template <class _It2>
   friend class move_iterator;
 

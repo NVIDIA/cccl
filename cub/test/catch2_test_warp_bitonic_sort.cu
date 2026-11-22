@@ -34,7 +34,7 @@ constexpr int num_logical_warps()
   // architectural warp when the logical warp size divides it evenly.
   static_assert(logical_warps_per_warp * LogicalWarpThreads == warp_threads,
                 "the logical warp size must evenly divide the architectural warp size");
-  return (logical_warps_per_warp == 1) ? 2 : (2 * logical_warps_per_warp - 1);
+  return (logical_warps_per_warp == 1) ? 2 : ((2 * logical_warps_per_warp) - 1);
 }
 
 struct CustomLess
@@ -91,7 +91,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and logical warp index
-  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
+  const auto tid    = static_cast<int>(threadIdx.x + (blockDim.x * (threadIdx.y + (blockDim.y * threadIdx.z))));
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -113,7 +113,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   // Load data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       thread_data[i] = in[warp_offset + idx];
@@ -126,7 +126,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       out[warp_offset + idx] = thread_data[i];
@@ -146,7 +146,7 @@ __global__ void warp_bitonic_sort_kernel(
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and logical warp index
-  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
+  const auto tid    = static_cast<int>(threadIdx.x + (blockDim.x * (threadIdx.y + (blockDim.y * threadIdx.z))));
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -169,7 +169,7 @@ __global__ void warp_bitonic_sort_kernel(
   // Load data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       keys[i]   = keys_in[warp_offset + idx];
@@ -183,7 +183,7 @@ __global__ void warp_bitonic_sort_kernel(
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       keys_out[warp_offset + idx]   = keys[i];

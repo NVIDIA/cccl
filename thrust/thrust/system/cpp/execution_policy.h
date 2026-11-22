@@ -8,7 +8,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,7 @@
 #include <thrust/system/cpp/detail/execution_policy.h> // IWYU pragma: export
 
 // now get all the algorithm definitions
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <thrust/system/cpp/detail/adjacent_difference.h>
 #include <thrust/system/cpp/detail/assign_value.h>
 #include <thrust/system/cpp/detail/binary_search.h>
@@ -62,4 +62,4 @@
 #include <thrust/system/cpp/detail/uninitialized_fill.h>
 #include <thrust/system/cpp/detail/unique.h>
 #include <thrust/system/cpp/detail/unique_by_key.h>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports

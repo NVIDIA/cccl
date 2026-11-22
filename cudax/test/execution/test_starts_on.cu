@@ -253,9 +253,11 @@ C2H_TEST("starts_on has the right completion scheduler", "[adaptors][starts_on]"
 
   SECTION("thread scheduler with a sender that completes on another thread")
   {
-    ex::thread_context thread1, thread2;
-    auto sch1 = thread1.get_scheduler(), sch2 = thread2.get_scheduler();
-    auto snd = ex::starts_on(sch1, ex::starts_on(sch2, ex::just()));
+    ex::thread_context thread1;
+    ex::thread_context thread2;
+    auto sch1 = thread1.get_scheduler();
+    auto sch2 = thread2.get_scheduler();
+    auto snd  = ex::starts_on(sch1, ex::starts_on(sch2, ex::just()));
     CHECK(ex::get_completion_scheduler<ex::set_value_t>(ex::get_env(snd), ex::env{}) == sch2);
   }
 

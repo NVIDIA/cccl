@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,6 @@
 #include <cuda/std/__atomic/wait/notify_wait.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/wait/polling.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
@@ -48,7 +47,7 @@ struct __atomic_common
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -67,7 +66,7 @@ struct __atomic_arithmetic
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -89,7 +88,7 @@ struct __atomic_bitwise
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -114,7 +113,7 @@ struct __atomic_pointer
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -129,7 +128,7 @@ template <typename _Tp, thread_scope _Sco = thread_scope_system>
 using __atomic_impl _CCCL_NODEBUG = _If<
   is_pointer_v<_Tp>,
   __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-  _If<is_floating_point_v<_Tp>,
+  _If<__atomic_is_floating_point_v<_Tp>,
       __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
       _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 

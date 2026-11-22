@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/block/block_load.cuh>
@@ -16,7 +16,7 @@ static __device__ int get_output_idx(int item, bool full_tile)
 {
   if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
-    return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
+    return static_cast<int>(threadIdx.x) + (ThreadsInBlock * item);
   }
   else if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED)
   {
@@ -27,11 +27,11 @@ static __device__ int get_output_idx(int item, bool full_tile)
     const int items_per_vector = full_tile ? vec_size : 1;
     const int vector           = item / items_per_vector;
     const int element          = item % items_per_vector;
-    return (static_cast<int>(threadIdx.x) + ThreadsInBlock * vector) * items_per_vector + element;
+    return ((static_cast<int>(threadIdx.x) + (ThreadsInBlock * vector)) * items_per_vector) + element;
   }
   else
   {
-    return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+    return (static_cast<int>(threadIdx.x) * ItemsPerThread) + item;
   }
 }
 
@@ -319,6 +319,100 @@ CUB_TEST("Vectorized block load converts from iterators of a different value typ
   test_vectorized_full_tile_load<int, load_algorithm>(d_input, static_cast<volatile int*>(ptr));
 }
 
+template <int VecSize, int ItemsPerThread, typename T, typename InputIteratorT>
+__global__ void load_direct_blocked_vectorized_kernel(InputIteratorT input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::LoadDirectBlockedVectorized<cub::CacheLoadModifier::LOAD_DEFAULT, VecSize>(
+    static_cast<int>(threadIdx.x), input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[(threadIdx.x * ItemsPerThread) + i] = data[i];
+  }
+}
+
+template <int VecSize, int ItemsPerThread, int ThreadsInBlock, typename T, typename InputIteratorT>
+void test_load_direct_blocked_vectorized(const c2h::device_vector<T>& d_expected, InputIteratorT input)
+{
+  REQUIRE(d_expected.size() == ItemsPerThread * ThreadsInBlock);
+
+  c2h::device_vector<T> d_output(d_expected.size(), thrust::no_init);
+  load_direct_blocked_vectorized_kernel<VecSize, ItemsPerThread>
+    <<<1, ThreadsInBlock>>>(input, thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_expected == d_output);
+}
+
+template <int ItemsPerThread, typename T>
+__global__ void load_direct_blocked_vectorized_type_first_kernel(T* input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::LoadDirectBlockedVectorized<T, ItemsPerThread>(static_cast<int>(threadIdx.x), input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[(threadIdx.x * ItemsPerThread) + i] = data[i];
+  }
+}
+
+CUB_TEST("LoadDirectBlockedVectorized accepts an explicitly specified data type and items per thread",
+         "[load][block]",
+         CUB_SMALL,
+         types)
+{
+  using type                     = c2h::get<0, TestType>;
+  constexpr int items_per_thread = 4;
+  constexpr int threads_in_block = 64;
+
+  c2h::device_vector<type> d_input(items_per_thread * threads_in_block, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_input);
+  c2h::device_vector<type> d_output(d_input.size(), thrust::no_init);
+  load_direct_blocked_vectorized_type_first_kernel<items_per_thread>
+    <<<1, threads_in_block>>>(thrust::raw_pointer_cast(d_input.data()), thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_input == d_output);
+}
+
+// Offset 0 takes the vectorized loads. Offset 1 misaligns the vectors of multiple items, which use the scalar fallback.
+CUB_TEST("LoadDirectBlockedVectorized loads the items of a thread with vectors of VecSize items",
+         "[load][block]",
+         CUB_SMALL,
+         types)
+{
+  using type                     = c2h::get<0, TestType>;
+  constexpr int items_per_thread = 16;
+  constexpr int threads_in_block = 64;
+  constexpr int tile_size        = items_per_thread * threads_in_block;
+
+  const int offset = GENERATE(0, 1);
+  c2h::device_vector<type> d_expected(tile_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_expected);
+  c2h::device_vector<type> d_input(tile_size + offset, thrust::no_init);
+  thrust::copy_n(d_expected.begin(), tile_size, d_input.begin() + offset);
+  const type* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_blocked_vectorized<0, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<1, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<4, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<16, items_per_thread, threads_in_block>(d_expected, input);
+}
+
+CUB_TEST_CASE("LoadDirectBlockedVectorized converts the items to the destination type", "[load][block]", CUB_SMALL)
+{
+  constexpr int items_per_thread = 4;
+  constexpr int threads_in_block = 64;
+  constexpr int tile_size        = items_per_thread * threads_in_block;
+
+  const int offset = GENERATE(0, 1);
+  c2h::device_vector<int> d_input(tile_size + offset, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_input);
+  const c2h::device_vector<long long> d_expected(d_input.begin() + offset, d_input.end());
+  const int* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_blocked_vectorized<0, items_per_thread, threads_in_block>(d_expected, input);
+}
+
 template <int ThreadsInBlock, int VecSize, cub::CacheLoadModifier Modifier, int ItemsPerThread, typename InputT, typename T>
 __global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* output)
 {
@@ -326,7 +420,7 @@ __global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* ou
   cub::LoadDirectStripedVectorized<ThreadsInBlock, VecSize, Modifier>(static_cast<int>(threadIdx.x), input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[(threadIdx.x + ThreadsInBlock * (i / VecSize)) * VecSize + i % VecSize] = data[i];
+    output[((threadIdx.x + (ThreadsInBlock * (i / VecSize))) * VecSize) + (i % VecSize)] = data[i];
   }
 }
 

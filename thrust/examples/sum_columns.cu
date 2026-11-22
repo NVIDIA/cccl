@@ -47,7 +47,7 @@ int main()
     M.data_handle(), thrust::make_transform_iterator(cuda::counting_iterator(0), [=] __host__ __device__(int flat) {
       const int i = flat / cols;
       const int j = flat % cols;
-      return i + j * rows;
+      return i + (j * rows);
     }));
 
   // Sum each column, storing the result in a new vector.

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -68,7 +68,7 @@ struct SelectLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
   {
     return os
         << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -99,9 +99,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -126,7 +126,7 @@ struct SelectPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
   {
     return os << "SelectPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -153,9 +153,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -186,7 +186,7 @@ struct PartitionLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionLookbackPolicy& p)
   {
     return os
         << "PartitionLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -217,7 +217,7 @@ struct PartitionPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
   {
     return os << "PartitionPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -1628,28 +1628,28 @@ struct sm100_tuning<Input,
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-constexpr primitive is_primitive()
+_CCCL_HOST_API constexpr primitive is_primitive()
 {
   return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class FlagT>
-constexpr flagged is_flagged()
+_CCCL_HOST_API constexpr flagged is_flagged()
 {
   return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool KeepRejects>
-constexpr keep_rejects are_rejects_kept()
+_CCCL_HOST_API constexpr keep_rejects are_rejects_kept()
 {
   return KeepRejects ? keep_rejects::yes : keep_rejects::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-constexpr input_size classify_input_size()
+_CCCL_HOST_API constexpr input_size classify_input_size()
 {
   return sizeof(InputT) == 1 ? input_size::_1
        : sizeof(InputT) == 2 ? input_size::_2
@@ -1662,21 +1662,21 @@ constexpr input_size classify_input_size()
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class OffsetT>
-constexpr offset_size classify_offset_size()
+_CCCL_HOST_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool Alias>
-constexpr may_alias should_alias()
+_CCCL_HOST_API constexpr may_alias should_alias()
 {
   return Alias ? may_alias::yes : may_alias::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool DistinctPartitions>
-constexpr distinct_partitions is_distinct_partitions()
+_CCCL_HOST_API constexpr distinct_partitions is_distinct_partitions()
 {
   return DistinctPartitions ? distinct_partitions::yes : distinct_partitions::no;
 }
@@ -1727,11 +1727,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm80_tuning<InputT,
-                                               is_flagged<FlagT>(),
-                                               are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               is_primitive<InputT>(),
-                                               classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1746,11 +1746,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm90_tuning<InputT,
-                                               is_flagged<FlagT>(),
-                                               are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               is_primitive<InputT>(),
-                                               classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1759,7 +1759,7 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(int)
       -> agent_select_if_policy<Tuning::threads,
-                                Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
+                                _CUB::Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 BLOCK_SCAN_WARP_SCANS,
@@ -1768,14 +1768,15 @@ struct policy_hub
     static auto select_agent_policy100(long) -> typename Policy900::SelectIfPolicyT;
 
     using SelectIfPolicyT =
-      decltype(select_agent_policy100<sm100_tuning<InputT,
-                                                   is_flagged<FlagT>(),
-                                                   are_rejects_kept<keep_rejects>(),
-                                                   classify_offset_size<OffsetT>(),
-                                                   is_primitive<InputT>(),
-                                                   classify_input_size<InputT>(),
-                                                   should_alias<may_alias>(),
-                                                   is_distinct_partitions<DistinctPartitions>()>>(0));
+      decltype(select_agent_policy100<
+               sm100_tuning<InputT,
+                            _CUB::detail::select::is_flagged<FlagT>(),
+                            _CUB::detail::select::are_rejects_kept<keep_rejects>(),
+                            _CUB::detail::select::classify_offset_size<OffsetT>(),
+                            _CUB::detail::select::is_primitive<InputT>(),
+                            _CUB::detail::select::classify_input_size<InputT>(),
+                            _CUB::detail::select::should_alias<may_alias>(),
+                            _CUB::detail::select::is_distinct_partitions<DistinctPartitions>()>>(0));
   };
 
   using MaxPolicy = Policy1000;
@@ -1819,7 +1820,7 @@ private:
     CacheLoadModifier load_mod,
     LookbackDelayPolicy delay) const -> SelectLookbackPolicy
   {
-    const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
+    const int items_per_thread = _CUB::detail::nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
     return SelectLookbackPolicy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 

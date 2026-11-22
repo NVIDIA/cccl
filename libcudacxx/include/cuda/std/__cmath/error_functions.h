@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float erf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFF)
+#ifdef _CCCL_BUILTIN_ERFF
   return _CCCL_BUILTIN_ERFF(__x);
 #else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
   return ::erff(__x);
@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float erff(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFF)
+#ifdef _CCCL_BUILTIN_ERFF
   return _CCCL_BUILTIN_ERFF(__x);
 #else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
   return ::erff(__x);
@@ -64,7 +64,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double erf(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERF)
+#ifdef _CCCL_BUILTIN_ERF
   return _CCCL_BUILTIN_ERF(__x);
 #else // ^^^ _CCCL_BUILTIN_ERF ^^^ / vvv !_CCCL_BUILTIN_ERF vvv
   return ::erf(__x);
@@ -74,7 +74,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erf(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFL)
+#  ifdef _CCCL_BUILTIN_ERFL
   return _CCCL_BUILTIN_ERFL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
   return ::erfl(__x);
@@ -83,7 +83,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFL)
+#  ifdef _CCCL_BUILTIN_ERFL
   return _CCCL_BUILTIN_ERFL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
   return ::erfl(__x);
@@ -128,7 +128,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float erfc(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFCF)
+#ifdef _CCCL_BUILTIN_ERFCF
   return _CCCL_BUILTIN_ERFCF(__x);
 #else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
   return ::erfcf(__x);
@@ -137,7 +137,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float erfcf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFCF)
+#ifdef _CCCL_BUILTIN_ERFCF
   return _CCCL_BUILTIN_ERFCF(__x);
 #else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
   return ::erfcf(__x);
@@ -146,7 +146,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double erfc(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFC)
+#ifdef _CCCL_BUILTIN_ERFC
   return _CCCL_BUILTIN_ERFC(__x);
 #else // ^^^ _CCCL_BUILTIN_ERFC ^^^ / vvv !_CCCL_BUILTIN_ERFC vvv
   return ::erfc(__x);
@@ -156,7 +156,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfc(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFCL)
+#  ifdef _CCCL_BUILTIN_ERFCL
   return _CCCL_BUILTIN_ERFCL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
   return ::erfcl(__x);
@@ -165,7 +165,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfcl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFCL)
+#  ifdef _CCCL_BUILTIN_ERFCL
   return _CCCL_BUILTIN_ERFCL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
   return ::erfcl(__x);

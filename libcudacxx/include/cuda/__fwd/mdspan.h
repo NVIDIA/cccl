@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,7 +41,7 @@ template <class _OffsetType, ::cuda::std::ptrdiff_t... _Strides>
 class strides;
 
 //! @brief Tag value indicating a dynamic stride (similar to dynamic_extent for extents)
-inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = (::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min)();
+inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = ::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min();
 
 namespace __strides_detail
 {

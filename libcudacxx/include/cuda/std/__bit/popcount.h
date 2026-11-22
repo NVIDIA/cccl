@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,14 +56,14 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_BUILTIN_POPCOUNTG)
+#ifndef _CCCL_BUILTIN_POPCOUNTG
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl_constexpr(_Tp __v) noexcept
 {
   if constexpr (is_same_v<_Tp, uint32_t>)
   {
-#  if defined(_CCCL_BUILTIN_POPCOUNT)
+#  ifdef _CCCL_BUILTIN_POPCOUNT
     return _CCCL_BUILTIN_POPCOUNT(__v);
 #  else // ^^^ _CCCL_BUILTIN_POPCOUNT ^^^ / vvv !_CCCL_BUILTIN_POPCOUNT vvv
     __v = __v - ((__v >> 1) & 0x55555555);
@@ -73,7 +73,7 @@ template <typename _Tp>
   }
   else
   {
-#  if defined(_CCCL_BUILTIN_POPCOUNTLL)
+#  ifdef _CCCL_BUILTIN_POPCOUNTLL
     return _CCCL_BUILTIN_POPCOUNTLL(__v);
 #  else // ^^^ _CCCL_BUILTIN_POPCOUNTLL ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTLL vvv
     return ::cuda::std::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v))
@@ -150,7 +150,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 {
   int __count{};
 
-#if defined(_CCCL_BUILTIN_POPCOUNTG)
+#ifdef _CCCL_BUILTIN_POPCOUNTG
   __count = _CCCL_BUILTIN_POPCOUNTG(__v);
 #else // ^^^ _CCCL_BUILTIN_POPCOUNTG ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))

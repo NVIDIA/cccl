@@ -17,7 +17,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,14 +25,22 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__utility/pair.h>
+
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 
+#include <cstdlib>
 #include <queue> // for ::std::priority_queue
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

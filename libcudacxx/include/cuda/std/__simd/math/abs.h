@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -74,7 +74,8 @@ _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto abs(const _Vp& __x) noexcept
 {
   using __result_t = __deduced_vec_t<_Vp>;
-  return __result_t{__simd_abs_generator<__result_t, _Vp>{__x}};
+  const __result_t __x_vec(__x);
+  return __result_t{__simd_abs_generator<__result_t, __result_t>{__x_vec}};
 }
 
 // fabs
@@ -83,7 +84,8 @@ _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto fabs(const _Vp& __x) noexcept
 {
   using __result_t = __deduced_vec_t<_Vp>;
-  return __result_t{__simd_abs_generator<__result_t, _Vp>{__x}};
+  const __result_t __x_vec(__x);
+  return __result_t{__simd_abs_generator<__result_t, __result_t>{__x_vec}};
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD

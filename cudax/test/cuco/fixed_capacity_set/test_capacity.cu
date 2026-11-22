@@ -15,6 +15,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/type_traits>
 
@@ -28,6 +29,17 @@
 
 #include "test_common.cuh"
 
+template <class Set, class = void>
+inline constexpr bool has_capacity_rehash = false;
+
+template <class Set>
+inline constexpr bool has_capacity_rehash<
+  Set,
+  cuda::std::void_t<
+    decltype(cuda::std::declval<Set&>().rehash(cuda::std::declval<cuda::stream_ref>(), cuda::std::size_t{})),
+    decltype(cuda::std::declval<Set&>().rehash_async(cuda::std::declval<cuda::stream_ref>(), cuda::std::size_t{}))>> =
+  true;
+
 using probing_types =
   c2h::type_list<cudax::cuco::linear_probing<4, cuda::hash<int>>, cudax::cuco::double_hashing<2, cuda::hash<int>>>;
 
@@ -35,8 +47,8 @@ C2H_TEST("fixed_capacity_set preserves cuCollections default policies", "[contai
 {
   using set_type     = cudax::cuco::fixed_capacity_set<int>;
   using probing_type = cudax::cuco::double_hashing<4, cuda::hash<int, cuda::hash_algorithm::xxhash_32>>;
-  static_assert(cuda::std::is_same_v<typename set_type::probing_scheme_type, probing_type>);
-  static_assert(cuda::std::is_same_v<typename set_type::ref_type::probing_scheme_type, probing_type>);
+  static_assert(cuda::std::is_same_v<set_type::probing_scheme_type, probing_type>);
+  static_assert(cuda::std::is_same_v<set_type::ref_type::probing_scheme_type, probing_type>);
   static_assert(set_type::bucket_size == 1);
 
   const test_context context{};
@@ -74,6 +86,8 @@ C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", pr
   static_assert(!cuda::std::is_copy_assignable_v<dynamic_set>);
   static_assert(cuda::std::is_nothrow_move_constructible_v<dynamic_set>);
   static_assert(cuda::std::is_nothrow_move_assignable_v<dynamic_set>);
+  static_assert(has_capacity_rehash<dynamic_set>);
+  static_assert(!has_capacity_rehash<static_set>);
 
   test_context context;
   const dynamic_set dynamic{context.stream, context.mr, requested, empty_key{-1}};
@@ -89,6 +103,10 @@ C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", pr
   const auto first       = cuda::counting_iterator<int>{0};
   auto results           = cuda::make_buffer<int>(context.stream, context.mr, num_keys, 0);
   REQUIRE(fixed.insert(context.stream, first, first + num_keys) == num_keys);
+  fixed.contains(context.stream, first, first + num_keys, results.begin());
+  REQUIRE(context.all_equal(results.data(), num_keys, 1));
+  fixed.rehash(context.stream);
+  REQUIRE(fixed.capacity() == valid);
   fixed.contains(context.stream, first, first + num_keys, results.begin());
   REQUIRE(context.all_equal(results.data(), num_keys, 1));
 
@@ -201,12 +219,12 @@ struct tracking_resource
   _CCCL_HOST_API friend void get_property(const tracking_resource&, cuda::mr::device_accessible) noexcept {}
 };
 
-struct identity_hash
+struct last_slot_hash
 {
   template <class Key>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(Key key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(Key) const noexcept
   {
-    return static_cast<cuda::std::uint32_t>(key);
+    return cuda::std::numeric_limits<cuda::std::uint32_t>::max();
   }
 };
 
@@ -235,7 +253,7 @@ void check_last_slot(Set& set, test_context& context, const allocation_record& r
 
   const auto expected = static_cast<key_type>(capacity - 1);
   const auto first    = cuda::counting_iterator<key_type>{expected};
-  // Identity hashing places this key directly in the final slot, including capacity one.
+  // The maximal hash places this key directly in the final slot, including capacity one.
   REQUIRE(set.insert(context.stream, first, first + 1) == 1);
   REQUIRE(cuda::std::equal(context.policy(), set.data() + capacity - 1, set.data() + capacity, first));
   auto results = cuda::make_buffer<int>(context.stream, context.mr, 1, 0);
@@ -253,8 +271,8 @@ C2H_TEST("fixed_capacity_set subword allocation alignment and final-slot padding
 {
   using key_type         = c2h::get<0, TestType>;
   constexpr int capacity = c2h::get<1, TestType>::value;
-  using dynamic_set      = tracked_set<key_type, cuda::std::dynamic_extent, identity_hash>;
-  using static_set       = tracked_set<key_type, capacity, identity_hash>;
+  using dynamic_set      = tracked_set<key_type, cuda::std::dynamic_extent, last_slot_hash>;
+  using static_set       = tracked_set<key_type, capacity, last_slot_hash>;
   test_context context;
   allocation_record record;
   const tracking_resource resource{context.mr, &record};

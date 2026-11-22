@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,13 +17,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/function.h>
 #include <thrust/detail/static_assert.h> // for depend_on_instantiation
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/execution_policy.h>
-#include <thrust/system/omp/detail/pragma_omp.h>
 
 #include <cuda/std/cstdint>
+
+#if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
+#  include <thrust/detail/function.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/omp/detail/pragma_omp.h>
+#endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail

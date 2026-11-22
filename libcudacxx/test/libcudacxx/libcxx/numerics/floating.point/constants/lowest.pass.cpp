@@ -51,6 +51,7 @@ TEST_FUNC bool test()
 #endif // _CCCL_HAS_INT128()
   test_fp_lowest<cuda::std::__fp_format::__fp8_nv_e4m3>(0xfeu);
   test_fp_lowest<cuda::std::__fp_format::__fp8_nv_e5m2>(0xfbu);
+  test_fp_lowest<cuda::std::__fp_format::__fp8_nv_ue5m3>(0x00u);
   test_fp_lowest<cuda::std::__fp_format::__fp8_nv_e8m0>(0x00u);
   test_fp_lowest<cuda::std::__fp_format::__fp6_nv_e2m3>(0x3fu);
   test_fp_lowest<cuda::std::__fp_format::__fp6_nv_e3m2>(0x3fu);
@@ -74,6 +75,9 @@ TEST_FUNC bool test()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_lowest<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_lowest<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_fp_lowest<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

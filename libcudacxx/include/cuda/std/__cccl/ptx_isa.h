@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,19 +41,19 @@
 #elif _CCCL_CUDACC_AT_LEAST(13, 5) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 950ULL
 // PTX ISA 9.4 is available from CUDA 13.4
-#elif _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_CUDA_COMPILER(CLANG, <, 24)
 #  define __cccl_ptx_isa 940ULL
 // PTX ISA 9.3 is available from CUDA 13.3
-#elif _CCCL_CUDACC_AT_LEAST(13, 3) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 3) && !_CCCL_CUDA_COMPILER(CLANG, <, 24)
 #  define __cccl_ptx_isa 930ULL
 // PTX ISA 9.2 is available from CUDA 13.2
-#elif _CCCL_CUDACC_AT_LEAST(13, 2) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 2) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 920ULL
 // PTX ISA 9.1 is available from CUDA 13.1
-#elif _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 910ULL
 // PTX ISA 9.0 is available from CUDA 13.0, driver r580
-#elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 900ULL
 // PTX ISA 8.8 is available from CUDA 12.9, driver r575
 #elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG, <, 22)
@@ -130,7 +130,7 @@
 #if _CCCL_COMPILER(NVRTC)
 
 // missing SM_88
-#  if !defined(NV_PROVIDES_SM_88)
+#  ifndef NV_PROVIDES_SM_88
 #    define _NV_TARGET_VAL_SM_88 880
 #    define NV_PROVIDES_SM_88    __NV_PROVIDES_SM_88
 #    define NV_IS_EXACTLY_SM_88  __NV_IS_EXACTLY_SM_88
@@ -316,7 +316,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 
 // missing SM_121
-#  if !defined(NV_PROVIDES_SM_121)
+#  ifndef NV_PROVIDES_SM_121
 #    define _NV_TARGET_VAL_SM_121 1210
 #    define NV_PROVIDES_SM_121    __NV_PROVIDES_SM_121
 #    define NV_IS_EXACTLY_SM_121  __NV_IS_EXACTLY_SM_121

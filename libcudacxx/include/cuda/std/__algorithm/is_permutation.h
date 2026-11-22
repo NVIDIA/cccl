@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -132,7 +132,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   {
     return __first2 == __last2;
   }
-  else if (__first2 == __last2)
+  if (__first2 == __last2)
   {
     return false;
   }

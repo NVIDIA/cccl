@@ -17,6 +17,7 @@
 #include <hostjit/codegen/cub_call.hpp>
 #include <hostjit/jit_compiler.hpp>
 #include <util/build_utils.h>
+#include <util/error.h>
 #include <util/serialization.h>
 
 using namespace hostjit::codegen;
@@ -146,41 +147,36 @@ catch (const std::exception& exc)
 }
 
 CUresult cccl_device_unique_by_key_load(cccl_device_unique_by_key_build_result_t* build_ptr, const char* cudart_path)
-try
 {
-  if (cudart_path == nullptr || cudart_path[0] == '\0' || build_ptr == nullptr || build_ptr->payload == nullptr
-      || build_ptr->payload_size == 0 || build_ptr->jit_compiler != nullptr)
-  {
-    return CUDA_ERROR_INVALID_VALUE;
-  }
-  if (auto error = cccl::detail::check_device_compute_capability(build_ptr->cc); !error.empty())
-  {
-    fprintf(stderr, "\nERROR in cccl_device_unique_by_key_load(): %s\n", error.c_str());
-    return CUDA_ERROR_NO_BINARY_FOR_GPU;
-  }
+  return cccl::detail::guard("cccl_device_unique_by_key_load", [&] {
+    if (cudart_path == nullptr || cudart_path[0] == '\0' || build_ptr == nullptr || build_ptr->payload == nullptr
+        || build_ptr->payload_size == 0 || build_ptr->jit_compiler != nullptr)
+    {
+      throw cccl::detail::cccl_error(
+        CUDA_ERROR_INVALID_VALUE,
+        "cudart_path is required, and the build_result must hold a payload from compile "
+        "or deserialize and must not already be loaded");
+    }
+    if (auto error = cccl::detail::check_device_compute_capability(build_ptr->cc); !error.empty())
+    {
+      throw cccl::detail::cccl_error(CUDA_ERROR_NO_BINARY_FOR_GPU, error);
+    }
 
-  auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
-  std::vector<char> library_bytes(
-    static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
-  if (!compiler->loadFromBytes(library_bytes, cudart_path, build_ptr->cudart_version))
-  {
-    fprintf(stderr, "\nERROR in cccl_device_unique_by_key_load(): %s\n", compiler->getLastError().c_str());
-    return CUDA_ERROR_UNKNOWN;
-  }
-  auto fn = compiler->getFunction<unique_by_key_fn_t>("cccl_jit_unique_by_key");
-  if (!fn)
-  {
-    fprintf(stderr, "\nERROR in cccl_device_unique_by_key_load(): %s\n", compiler->getLastError().c_str());
-    return CUDA_ERROR_UNKNOWN;
-  }
-  build_ptr->jit_compiler     = compiler.release();
-  build_ptr->unique_by_key_fn = reinterpret_cast<void*>(fn);
-  return CUDA_SUCCESS;
-}
-catch (const std::exception& exc)
-{
-  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_load(): %s\n", exc.what());
-  return CUDA_ERROR_UNKNOWN;
+    auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
+    std::vector<char> library_bytes(
+      static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
+    if (!compiler->loadFromBytes(library_bytes, cudart_path, build_ptr->cudart_version))
+    {
+      throw cccl::detail::cccl_error(CUDA_ERROR_UNKNOWN, compiler->getLastError());
+    }
+    auto fn = compiler->getFunction<unique_by_key_fn_t>("cccl_jit_unique_by_key");
+    if (!fn)
+    {
+      throw cccl::detail::cccl_error(CUDA_ERROR_UNKNOWN, compiler->getLastError());
+    }
+    build_ptr->jit_compiler     = compiler.release();
+    build_ptr->unique_by_key_fn = reinterpret_cast<void*>(fn);
+  });
 }
 
 CUresult cccl_device_unique_by_key_serialize(
@@ -216,30 +212,25 @@ catch (const std::exception& exc)
 
 CUresult
 cccl_device_unique_by_key_deserialize(cccl_device_unique_by_key_build_result_t* build_ptr, const void* buf, size_t size)
-try
 {
-  if (build_ptr == nullptr || buf == nullptr || size == 0)
-  {
-    return CUDA_ERROR_INVALID_VALUE;
-  }
-  cccl::serialization_v2::parsed_blob parsed =
-    cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_UNIQUE_BY_KEY, buf, size);
+  return cccl::detail::guard("cccl_device_unique_by_key_deserialize", [&] {
+    if (build_ptr == nullptr || buf == nullptr || size == 0)
+    {
+      throw cccl::detail::cccl_error(CUDA_ERROR_INVALID_VALUE, "build_result is null or the blob is empty");
+    }
+    cccl::serialization_v2::parsed_blob parsed =
+      cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_UNIQUE_BY_KEY, buf, size);
 
-  cccl_device_unique_by_key_build_result_t result{};
-  result.cc             = parsed.cc;
-  result.cudart_version = parsed.cudart_version;
-  cccl::detail::copy_bytes(
-    std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
-  result.jit_compiler     = nullptr;
-  result.unique_by_key_fn = nullptr;
+    cccl_device_unique_by_key_build_result_t result{};
+    result.cc             = parsed.cc;
+    result.cudart_version = parsed.cudart_version;
+    cccl::detail::copy_bytes(
+      std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
+    result.jit_compiler     = nullptr;
+    result.unique_by_key_fn = nullptr;
 
-  *build_ptr = result;
-  return CUDA_SUCCESS;
-}
-catch (const std::exception& exc)
-{
-  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_deserialize(): %s\n", exc.what());
-  return CUDA_ERROR_UNKNOWN;
+    *build_ptr = result;
+  });
 }
 
 CUresult cccl_device_unique_by_key_build(

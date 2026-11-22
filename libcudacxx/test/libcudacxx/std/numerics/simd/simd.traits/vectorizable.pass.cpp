@@ -38,7 +38,7 @@ static_assert(simd::__is_vectorizable_v<char>);
 static_assert(simd::__is_vectorizable_v<char16_t>);
 static_assert(simd::__is_vectorizable_v<char32_t>);
 static_assert(simd::__is_vectorizable_v<wchar_t>);
-#if defined(__cccl_lib_char8_t)
+#ifdef __cccl_lib_char8_t
 static_assert(simd::__is_vectorizable_v<char8_t>);
 #endif
 

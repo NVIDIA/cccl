@@ -57,13 +57,13 @@ public:
     REQUIRE(id_to_allocate == 0u);
     REQUIRE(id_to_deallocate == 0u);
     REQUIRE(used_bytes == 0u);
-    REQUIRE(allocation_ids.size() == 0u);
+    REQUIRE(allocation_ids.empty());
   }
 
   void assert_empty_and_reset()
   {
     REQUIRE(used_bytes == 0u);
-    REQUIRE(allocation_ids.size() == 0u);
+    REQUIRE(allocation_ids.empty());
     free_bytes       = 1ull << 63;
     id_to_allocate   = 0;
     id_to_deallocate = 0;
@@ -314,9 +314,9 @@ void test_disjoint_pool_squeeze()
   opts.cache_oversized          = true;
 
   const std::size_t not_enough_bytes      = 3u; // free bytes that should trigger OOM
-  const std::size_t small_block           = opts.min_bytes_per_chunk / 8u - 3u;
+  const std::size_t small_block           = (opts.min_bytes_per_chunk / 8u) - 3u;
   const std::size_t medium_block          = opts.min_bytes_per_chunk + 3u;
-  const std::size_t large_block           = opts.min_bytes_per_chunk * 8u - 3u;
+  const std::size_t large_block           = (opts.min_bytes_per_chunk * 8u) - 3u;
   const std::size_t extra_large_block     = opts.largest_block_size - 3u;
   const std::size_t oversized_block       = opts.largest_block_size + 1u;
   const std::size_t many_chunks_of_blocks = 2048;

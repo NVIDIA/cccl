@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,11 +23,9 @@
 
 #if _CCCL_HOSTED() && __has_include(<nv_decode.h>)
 
-#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/cstdlib>
 #  include <cuda/std/string_view>
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,6 +38,9 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+// The device cache and its elements have a different representation from CCCL 3.5.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 struct __physical_devices_view
 {
@@ -290,6 +293,8 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   static auto __devices = ::cuda::__make_physical_devices(__device_count);
   return {__devices.data(), __device_count};
 }
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 // device_ref methods dependent on __physical_device
 

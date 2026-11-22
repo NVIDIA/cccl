@@ -13,11 +13,11 @@
 #include <nv/target>
 
 // Currently, nvcc is the only compiler that supports arch-specific architectures.
-#if !defined(__NVCC__)
+#ifndef __NVCC__
 #  error "This test works with nvcc only."
 #endif // !__NVCC__
 
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
 #  if __CUDA_ARCH_FAMILY_SPECIFIC__ != 1030
 #    error "This test must be compiled for sm_103f target."
 #  endif // __CUDA_ARCH_FAMILY_SPECIFIC__ != 1030
@@ -39,7 +39,7 @@ __tile__
 #endif // __CUDACC_TILE__
   __host__ __device__ void fn()
 {
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
   CHECK_TRUE(NV_IS_EXACTLY_SM_103);
 
   CHECK_TRUE(NV_HAS_FEATURE_SM_100f);

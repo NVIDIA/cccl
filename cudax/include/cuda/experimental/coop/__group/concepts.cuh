@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,7 @@
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -70,9 +70,15 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_count()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_count(),
+  _Same_as(::cuda::std::size_t) _Tp::static_group_rank(),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_rank()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_rank(),
   _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count()>::value),
+  _Same_as(bool) _Tp::has_uniform_static_unit_count(),
+  (::cuda::std::bool_constant<_Tp::has_uniform_static_unit_count()>::value),
+  _Same_as(::cuda::std::size_t) _Tp::static_unit_count(::cuda::std::size_t{}),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count(::cuda::std::size_t{0})>::value),
   _Same_as(::cuda::std::uint32_t) __v.unit_count(),
   _Same_as(::cuda::std::uint32_t) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,9 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>

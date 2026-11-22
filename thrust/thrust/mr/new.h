@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,7 +17,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/memory_resource.h>
+
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/new>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -30,8 +34,8 @@ namespace mr
 class new_delete_resource_base : public memory_resource<>
 {
 public:
-  void* do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
-                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void* do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                                   std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
 #if __cpp_aligned_new >= 201606L
     return ::operator new(bytes, std::align_val_t(alignment));
@@ -52,9 +56,9 @@ public:
 #endif // ^^^ __cpp_aligned_new < 201606L ^^^
   }
 
-  void do_deallocate(void* p, // NOLINT(google-default-arguments)
-                     [[maybe_unused]] std::size_t bytes,
-                     [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void* p, // NOLINT(google-default-arguments)
+                                    [[maybe_unused]] std::size_t bytes,
+                                    [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
 #if __cpp_aligned_new >= 201606L
 #  if __cpp_sized_deallocation >= 201309L
