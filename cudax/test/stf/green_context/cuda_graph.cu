@@ -19,7 +19,7 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   const size_t n = x.extent(0);
@@ -52,7 +52,7 @@ int main()
   for (int ind = 0; ind < n; ind++)
   {
     X[ind] = 1.0 * ind;
-    Y[ind] = 2.0 * ind - 3.0;
+    Y[ind] = (2.0 * ind) - 3.0;
   }
 
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
@@ -81,8 +81,8 @@ int main()
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto hX, auto hY) {
     for (int ind = 0; ind < n; ind++)
     {
-      EXPECT(fabs(hX(ind) - 1.0 * ind) < 0.00001);
-      EXPECT(fabs(hY(ind) - (2.0 * ind - 3.0) - NITER * ndevs * alpha * hX(ind)) < 0.00001);
+      EXPECT(fabs(hX(ind) - (1.0 * ind)) < 0.00001);
+      EXPECT(fabs(hY(ind) - ((2.0 * ind) - 3.0) - (NITER * ndevs * alpha * hX(ind))) < 0.00001);
     }
   };
 

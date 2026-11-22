@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -59,7 +59,7 @@ struct SegmentedReduceWarpReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReduceWarpReducePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReduceWarpReducePolicy& p)
   {
     return os << "SegmentedReduceWarpReducePolicy { .threads_per_block = " << p.threads_per_block
               << ", .threads_per_warp = " << p.threads_per_warp << ", .items_per_thread = " << p.items_per_thread
@@ -89,7 +89,7 @@ struct SegmentedReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReducePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReducePolicy& p)
   {
     return os << "SegmentedReducePolicy { .large_reduce = " << p.large_reduce
               << ", .medium_reduce = " << p.medium_reduce << ", .small_reduce = " << p.small_reduce << " }";

@@ -37,7 +37,7 @@ struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value and first element skipped
-    return 42 + val * (val - 1) / 2;
+    return 42 + (val * (val - 1) / 2);
   }
 };
 
@@ -58,8 +58,7 @@ void test_exclusive_scan(
   }
 
   { // same init type
-    auto res =
-      cuda::std::exclusive_scan(policy, input.begin(), input.end(), output.begin(), int{42}, cuda::std::plus<>{});
+    auto res = cuda::std::exclusive_scan(policy, input.begin(), input.end(), output.begin(), 42, cuda::std::plus<>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -79,7 +78,7 @@ void test_exclusive_scan(
       cuda::counting_iterator{short{1}},
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
-      int{42},
+      42,
       cuda::std::plus<>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));

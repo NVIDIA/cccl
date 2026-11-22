@@ -44,7 +44,7 @@ struct NonStandard
 
 TEST_FUNC constexpr bool test()
 {
-#if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
+#ifdef _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER
   // 1. Test struct A members to be corresponding with itself
   assert(cuda::std::is_corresponding_member(&A::m1, &A::m1));
   assert(cuda::std::is_corresponding_member(&A::m2, &A::m2));

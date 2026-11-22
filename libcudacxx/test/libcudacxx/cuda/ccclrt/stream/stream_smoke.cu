@@ -303,7 +303,7 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
 
   // 3. Test stream_ref comparisons
   {
-    const cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
+    const cuda::stream_ref valid_stream{(cudaStream_t) 123ull}; // NOLINT(performance-no-int-to-ptr)
     const cuda::stream_ref invalid_stream{cuda::invalid_stream};
 
     REQUIRE(!(valid_stream == cuda::invalid_stream));

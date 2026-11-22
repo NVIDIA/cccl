@@ -101,7 +101,7 @@ def make_prologue(file):
     write_section(
         file,
         """\
-#if defined(_CCCL_PROLOGUE_INCLUDED)
+#ifdef _CCCL_PROLOGUE_INCLUDED
 #  error \\
     "cccl internal error: <cuda/std/__cccl/epilogue.h> must be included before next <cuda/std/__cccl/prologue.h> is reincluded"
 #endif
@@ -124,7 +124,7 @@ def make_prologue(file):
             write_section(
                 file,
                 f"""\
-#if defined({macro})
+#ifdef {macro}
 #  pragma push_macro("{macro}")
 #  undef {macro}
 #  define _CCCL_POP_MACRO_{macro}
@@ -208,7 +208,7 @@ def make_epilogue(file):
     write_section(
         file,
         """\
-#if !defined(_CCCL_PROLOGUE_INCLUDED)
+#ifndef _CCCL_PROLOGUE_INCLUDED
 #  error "cccl internal error: <cuda/std/__cccl/prologue.h> must be included before <cuda/std/__cccl/epilogue.h>"
 #endif
 #undef _CCCL_PROLOGUE_INCLUDED""",
@@ -229,7 +229,7 @@ _CCCL_DIAG_POP""",
             write_section(
                 file,
                 f"""\
-#if defined({macro})
+#ifdef {macro}
 #  error \\
     "cccl internal error: macro `{macro}` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_{macro})

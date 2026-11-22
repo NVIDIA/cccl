@@ -47,7 +47,7 @@ public:
 
   iterator end() const
   {
-    return begin() + ((last - first) + (stride - 1)) / stride;
+    return begin() + (((last - first) + (stride - 1)) / stride);
   }
 
 private:

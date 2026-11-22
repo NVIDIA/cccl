@@ -129,7 +129,7 @@ TEST_FUNC constexpr bool tests()
 int main(int, char**)
 {
   tests();
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   static_assert(tests());
 #endif
   return 0;

@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -87,7 +87,7 @@ struct pool_options
    *
    *  /returns true if the options are self-consistent, false otherwise.
    */
-  bool validate() const
+  _CCCL_HOST_API bool validate() const
   {
     if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {
@@ -146,12 +146,7 @@ struct pool_options
       return false;
     }
 
-    if (alignment > smallest_block_size)
-    {
-      return false;
-    }
-
-    return true;
+    return alignment <= smallest_block_size;
   }
 };
 

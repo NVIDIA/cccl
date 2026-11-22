@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -55,7 +55,7 @@ struct UniqueByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
   {
     return os
         << "UniqueByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -97,19 +97,19 @@ enum class val_size
 };
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_val is_primitive_val()
+_CCCL_HOST_DEVICE_API constexpr primitive_val is_primitive_val()
 {
   return is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>
-_CCCL_HOST_DEVICE constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE constexpr key_size classify_key_size()
 }
 
 template <class ValueT>
-_CCCL_HOST_DEVICE constexpr val_size classify_val_size()
+_CCCL_HOST_DEVICE_API constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2
@@ -134,10 +134,10 @@ _CCCL_HOST_DEVICE constexpr val_size classify_val_size()
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm80_tuning;
 
 // 8-bit key
@@ -326,10 +326,10 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm90_tuning;
 
 // 8-bit key
@@ -538,10 +538,10 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm100_tuning;
 
 // 8-bit key
@@ -790,7 +790,7 @@ struct policy_hub
   template <int Nominal4bItemsPerThread, int Threads>
   struct DefaultPolicy
   {
-    static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
+    static constexpr int items_per_thread = _CUB::Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
       agent_unique_by_key_policy<Threads,
                                  items_per_thread,
@@ -879,7 +879,7 @@ struct policy_selector
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
-    return cub::detail::nominal_4B_items_to_items(11, key_size);
+    return _CUB::detail::nominal_4B_items_to_items(11, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy
@@ -1651,7 +1651,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> UniqueByKeyPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy>();
+    return _CUB::detail::unique_by_key::convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 

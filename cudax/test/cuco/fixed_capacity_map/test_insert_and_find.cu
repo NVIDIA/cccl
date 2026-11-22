@@ -300,7 +300,8 @@ C2H_TEST("fixed_capacity_map insert_and_find reports launch failures", "[contain
   REQUIRE(invalid_grid_x <= ::cuda::std::numeric_limits<unsigned>::max());
   const index_type num_inputs =
     invalid_grid_x * cudax::cuco::detail::__default_stride * cudax::cuco::detail::__default_block_size;
-  REQUIRE(cudax::cuco::detail::__grid_size(num_inputs, map_type::cg_size) == invalid_grid_x);
+  REQUIRE(cudax::cuco::detail::__grid_size(num_inputs, map_type::cg_size)
+          == static_cast<::cuda::std::size_t>(invalid_grid_x));
 
   const auto first   = ::cuda::constant_iterator<value_type, index_type>{value_type{key_type{0}, key_type{7}}};
   const auto last    = first + num_inputs;

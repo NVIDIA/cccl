@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/cpp/detail/execution_policy.h> // IWYU pragma: export
 
 // this system inherits the binary search algorithms
-#include <thrust/system/detail/sequential/binary_search.h>
+#include <thrust/system/detail/sequential/binary_search.h> // IWYU pragma: export

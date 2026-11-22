@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -52,7 +52,7 @@ class __simple_vector
     {
       return nullptr;
     }
-    else if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
+    if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
     {
       _CCCL_THROW(::std::bad_alloc);
     }

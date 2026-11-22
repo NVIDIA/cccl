@@ -1,7 +1,7 @@
 // This file is intended to be force included by the compiler (using -include=tbb_preinclude.h). It's purpose is to fix
 // unrecognized builtins by cudafe++ that are used in <immintrin.h>. We simply forward declare them in global namespace.
 
-#if defined(_IMMINTRIN_H_INCLUDED)
+#ifdef _IMMINTRIN_H_INCLUDED
 #  error "This file must be included before <immintrin.h>"
 #endif // _IMMINTRIN_H_INCLUDED
 
@@ -18,7 +18,7 @@ void __builtin_ia32_sttilecfg(void*);
 // cudafe++ has problems with many builtins used in <avx512fp16intrin.h> and <avx512vlfp16intrin.h> when compiling with
 // nvc++ as the host compiler. Since those headers are not used by thrust nor tbb, we can prevent their inclusion by
 // defining their include guard macros.
-#  if defined(__NVCOMPILER)
+#  ifdef __NVCOMPILER
 #    define __AVX512FP16INTRIN_H
 #    define __AVX512VLFP16INTRIN_H
 #  endif // __NVCOMPILER

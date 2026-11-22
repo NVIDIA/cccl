@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,7 +50,7 @@ template <class _Tp,
           class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#    ifdef _CCCL_BUILTIN_ADDRESSOF
   return ::new (::cuda::std::__voidify(*__location)) _Tp(::cuda::std::forward<_Args>(__args)...);
 #    else
   return ::new (const_cast<void*>(static_cast<const volatile void*>(__location)))

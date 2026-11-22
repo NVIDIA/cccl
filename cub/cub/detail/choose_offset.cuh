@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -59,7 +59,7 @@ template <::cuda::std::uint64_t MaxItems>
 struct choose_offset_for_max
 {
   using type _CCCL_NODEBUG =
-    ::cuda::std::_If<(MaxItems <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()),
+    ::cuda::std::_If<(MaxItems <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)()),
                      ::cuda::std::uint32_t,
                      unsigned long long>;
 };
@@ -119,11 +119,11 @@ struct choose_signed_offset
    * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,
    * otherwise returns cudaSuccess.
    */
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
   {
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
-    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>(::cuda::std::numeric_limits<type>::max()))
+    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>((::cuda::std::numeric_limits<type>::max)()))
     {
       return cudaErrorInvalidValue;
     }

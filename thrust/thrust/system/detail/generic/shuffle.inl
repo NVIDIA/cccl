@@ -3,16 +3,19 @@
 
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/random_bijection.h>
 #include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
-#include <thrust/random.h>
 #include <thrust/scan.h>
+#include <thrust/shuffle.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 
@@ -28,7 +31,7 @@ struct key_flag_tuple
 // scan only flags
 struct key_flag_scan_op
 {
-  _CCCL_HOST_DEVICE key_flag_tuple operator()(const key_flag_tuple& a, const key_flag_tuple& b)
+  _CCCL_HOST_DEVICE_API key_flag_tuple operator()(const key_flag_tuple& a, const key_flag_tuple& b)
   {
     return {b.key, a.flag + b.flag};
   }
@@ -38,11 +41,11 @@ struct construct_key_flag_op
 {
   std::uint64_t m;
   thrust::detail::feistel_bijection bijection;
-  _CCCL_HOST_DEVICE construct_key_flag_op(std::uint64_t m, thrust::detail::feistel_bijection bijection)
+  _CCCL_HOST_DEVICE_API construct_key_flag_op(std::uint64_t m, thrust::detail::feistel_bijection bijection)
       : m(m)
       , bijection(bijection)
   {}
-  _CCCL_HOST_DEVICE key_flag_tuple operator()(std::uint64_t idx)
+  _CCCL_HOST_DEVICE_API key_flag_tuple operator()(std::uint64_t idx) const
   {
     auto gather_key = bijection(idx);
     return key_flag_tuple{gather_key, (gather_key < m) ? 1ull : 0ull};
@@ -58,7 +61,7 @@ struct write_output_op
   // flag contains inclusive scan of valid keys
   // perform gather using valid keys
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE std::size_t operator()(key_flag_tuple x)
+  _CCCL_HOST_DEVICE_API std::size_t operator()(key_flag_tuple x)
   {
     if (x.key < m)
     {
@@ -70,7 +73,7 @@ struct write_output_op
 };
 
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g)
 {
   using InputType = typename thrust::detail::it_value_t<RandomIterator>;
@@ -81,7 +84,7 @@ shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, R
 }
 
 template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(
+_CCCL_HOST_DEVICE_API void shuffle_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   RandomIterator first,
   RandomIterator last,

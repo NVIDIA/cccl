@@ -19,7 +19,7 @@ struct fib_t
     {
       return t1;
     }
-    else if (n == 2)
+    if (n == 2)
     {
       return t2;
     }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,18 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/__utility/immovable.h>
-#include <cuda/std/__memory/allocator.h>
-#include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__utility/typeid.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/optional>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/any_allocator.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

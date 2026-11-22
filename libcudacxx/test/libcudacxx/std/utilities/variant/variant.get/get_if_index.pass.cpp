@@ -37,7 +37,7 @@ TEST_FUNC void test_const_get_if()
     constexpr V v(42);
     static_assert(noexcept(cuda::std::get_if<0>(&v)));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<0>(&v)), const int*>);
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
     static_assert(*cuda::std::get_if<0>(&v) == 42);
 #endif // _CCCL_BUILTIN_ADDRESSOF
     static_assert(cuda::std::get_if<1>(&v) == nullptr);
@@ -46,13 +46,13 @@ TEST_FUNC void test_const_get_if()
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<1>(&v)), const long*>);
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
     static_assert(*cuda::std::get_if<1>(&v) == 42);
 #endif // _CCCL_BUILTIN_ADDRESSOF
     static_assert(cuda::std::get_if<0>(&v) == nullptr);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;
@@ -100,7 +100,7 @@ TEST_FUNC void test_get_if()
     assert(cuda::std::get_if<0>(&v) == nullptr);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;

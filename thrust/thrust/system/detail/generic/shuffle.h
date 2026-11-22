@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,17 +17,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
 
 template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(
+_CCCL_HOST_DEVICE_API void shuffle_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   RandomIterator first,
   RandomIterator last,

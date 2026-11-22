@@ -15,7 +15,7 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void axpy(int n, T a, const T* x, T* y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < n; ind += nthreads)
@@ -48,7 +48,7 @@ int main()
   for (int ind = 0; ind < n; ind++)
   {
     X[ind] = 1.0 * ind;
-    Y[ind] = 2.0 * ind - 3.0;
+    Y[ind] = (2.0 * ind) - 3.0;
   }
 
   auto handle_X = ctx.logical_data(X);
@@ -66,9 +66,9 @@ int main()
     for (int ind = 0; ind < n; ind++)
     {
       // X unchanged
-      EXPECT(fabs(X(ind) - 1.0 * ind) < 0.00001);
+      EXPECT(fabs(X(ind) - (1.0 * ind)) < 0.00001);
       // Y = Y + alpha X
-      EXPECT(fabs(Y(ind) - (-3.0 + ind * (2.0 + alpha))) < 0.00001);
+      EXPECT(fabs(Y(ind) - (-3.0 + (ind * (2.0 + alpha)))) < 0.00001);
     }
   };
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -74,7 +74,7 @@ class optional<_Tp&>
     return *__value_;
   }
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __from_temporary = reference_constructs_from_temporary_v<_Tp&, _Up>;
 #else
@@ -268,14 +268,11 @@ public:
 
   _CCCL_API constexpr _Tp& value() const
   {
-    if (__value_ != nullptr)
-    {
-      return *__value_;
-    }
-    else
+    if (__value_ == nullptr)
     {
       __throw_bad_optional_access();
     }
+    return *__value_;
   }
 
   template <class _Up>

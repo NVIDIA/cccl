@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,10 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__container/buffer.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
 
 #include <cuda/experimental/__container/graph_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_buffer.cuh>
+// IWYU pragma: end_exports
 
 #endif //__CUDAX_CONTAINER__

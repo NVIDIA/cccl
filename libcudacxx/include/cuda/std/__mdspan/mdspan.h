@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -477,7 +477,7 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
   {
-    return (((mapping().extents().extent(_Idxs) == index_type{0})) || ...);
+    return ((mapping().extents().extent(_Idxs) == index_type{0}) || ...);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept

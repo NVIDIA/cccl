@@ -69,7 +69,7 @@ C2H_TEST("when_all when one sender sends void", "[when_all]")
   check_values(std::move(snd), 2);
 }
 
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 
 C2H_TEST("when_all completes when children complete", "[when_all]")
 {
@@ -119,7 +119,7 @@ C2H_TEST("when_all terminates with stopped if one child is cancelled", "[when_al
   ex::start(op);
 }
 
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 
 C2H_TEST("when_all cancels remaining children if error is detected", "[when_all]")
 {

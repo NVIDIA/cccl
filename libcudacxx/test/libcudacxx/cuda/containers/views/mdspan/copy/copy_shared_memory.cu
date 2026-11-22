@@ -110,8 +110,8 @@ TEST_CASE("copy d2d shared_memory 4D irregular partial tiles", "[copy][d2d][shar
   constexpr int D1        = 17;
   constexpr int D2        = 19;
   constexpr int D3        = 5;
-  constexpr int src_alloc = (D0 - 1) + (D1 - 1) * 257 + (D2 - 1) * 5000 + (D3 - 1) * 100000 + 1;
-  constexpr int dst_alloc = (D0 - 1) * 2000 + (D1 - 1) * 100 + (D2 - 1) * 5 + D3;
+  constexpr int src_alloc = (D0 - 1) + ((D1 - 1) * 257) + ((D2 - 1) * 5000) + ((D3 - 1) * 100000) + 1;
+  constexpr int dst_alloc = ((D0 - 1) * 2000) + ((D1 - 1) * 100) + ((D2 - 1) * 5) + D3;
   constexpr cuda::std::array<int, 4> shape{D0, D1, D2, D3};
   constexpr cuda::std::array<int, 4> src_strides{1, 257, 5000, 100000};
   constexpr cuda::std::array<int, 4> dst_strides{2000, 100, 5, 1};

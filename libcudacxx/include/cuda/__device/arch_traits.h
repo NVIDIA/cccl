@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -164,8 +164,8 @@ struct arch_traits_t
   __traits.max_block_dim_y                  = 1024;
   __traits.max_block_dim_z                  = 64;
   __traits.max_grid_dim_x                   = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-  __traits.max_grid_dim_y                   = 64 * 1024 - 1;
-  __traits.max_grid_dim_z                   = 64 * 1024 - 1;
+  __traits.max_grid_dim_y                   = (64 * 1024) - 1;
+  __traits.max_grid_dim_z                   = (64 * 1024) - 1;
   __traits.max_shared_memory_per_block      = 48 * 1024;
   __traits.total_constant_memory            = 64 * 1024;
   __traits.warp_size                        = 32;

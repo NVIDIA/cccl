@@ -42,7 +42,7 @@ struct custom_level_test
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
-  void run()
+  void run() const
   {
     // Check extending hierarchy_level_desc with custom info
     custom_level_dims<cuda::block_level, cuda::std::extents<int, 64, 1, 1>> custom_block;
