@@ -24,11 +24,11 @@ is its namespace parent.
 Installation
 ------------
 
-The standalone package requires CUDA 13 on Linux and CUTLASS CuTe DSL
+The standalone package requires CUDA Toolkit 13 and CUTLASS CuTe DSL
 4.9.0.dev1 or later in the 4.x series. Use a GPU architecture supported by
 your CuTe compiler. The earliest target in 4.9.0.dev1 is compute capability
-8.0 (SM80). One tested combination is an NVIDIA L4, CUDA Toolkit 13.4 and
-CuTe DSL 4.9.0.dev1.
+8.0 (SM80). One tested Linux configuration pairs an NVIDIA L4 with CUDA
+Toolkit 13.4 and CuTe DSL 4.9.0.dev1.
 
 Install from a checkout containing this project:
 
@@ -37,10 +37,11 @@ Install from a checkout containing this project:
    python -m pip install ./python/cuda_coop_cutlass
 
 Use a driver compatible with your toolkit. The toolkit's NVRTC compiles
-the CUB device code to LTO-IR. To link it into the kernel, CuTe needs
-an nvJitLink version at least as new as NVRTC in the same CUDA major
-series. For example, a CUDA 13.4 linker accepts CUDA 13.3 or 13.4 LTO-IR.
-CUDA 13.5 LTO-IR requires a CUDA 13.5 or later linker in the 13.x series. See
+the CUB device code to LTO-IR. CuTe's final linker must be at least as
+new as NVRTC within the same CUDA major series. The Linux CUDA 13 wheel
+for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
+13.4 have been tested with this wheel. CUDA 13.5 LTO-IR needs a newer
+linker. See
 `nvJitLink compatibility <https://docs.nvidia.com/cuda/nvjitlink/#compatibility>`__.
 
 The wheel includes the required CCCL headers and licenses. The
