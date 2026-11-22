@@ -352,19 +352,23 @@ _CCCL_FPMP_MATH_DISPATCH_1A(high_sinh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  const float __a_hi = ::cuda::__fpmp_internal_fabs(__x_hi);
+  // The sign and the size of x are those of x_hi + x_lo, which a pair with a zero high limb over a
+  // nonzero low one (a low-accuracy cancellation) needs; for a normalized pair the sum is x_hi.
+  const float __s = ::cuda::__fpmp_add_rn(__x_hi, __x_lo);
   // cosh(x) >= 2^128 above 89.416
-  if (!(__a_hi <= 89.5f))
+  if (!(::cuda::__fpmp_internal_fabs(__s) <= 89.5f))
   {
-    const bool __nan = __a_hi != __a_hi;
-    *__res_hi        = __nan ? __x_hi : ::cuda::std::__fp_inf<float>();
-    *__res_lo        = __nan ? __x_hi : 0.0f;
+    const bool __nan = __s != __s;
+    *__res_hi        = __nan ? __s : ::cuda::std::__fp_inf<float>();
+    *__res_lo        = __nan ? __s : 0.0f;
     return;
   }
+  const bool __neg = __s < 0.0f;
   // e^|x| = 2^n y: 2^(1 - n) cosh(x) = y + 4^-n / y. Past 4^-n = 2^-64 the second term is below 2^-65 of the
   // first, and the scale stops there.
   float __y_hi, __y_lo, __q_hi, __q_lo, __e;
-  const int __n   = ::cuda::__internal_fpmp2_exp_mantissa(__a_hi, __x_hi < 0.0f ? -__x_lo : __x_lo, &__y_hi, &__y_lo);
+  const int __n =
+    ::cuda::__internal_fpmp2_exp_mantissa(__neg ? -__x_hi : __x_hi, __neg ? -__x_lo : __x_lo, &__y_hi, &__y_lo);
   const float __z = ::cuda::__internal_fpmp2_exp2i(__n > 32 ? -64 : -2 * __n);
   ::cuda::__fpmp2_low_div<float>(1.0f, 0.0f, __y_hi, __y_lo, &__q_hi, &__q_lo);
   const float __sum = ::cuda::__fpmp_fast_two_sum(__y_hi, __z * __q_hi, &__e);
@@ -755,14 +759,16 @@ _CCCL_FPMP_MATH_DISPATCH_1A(asinh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  if (!(__x_hi >= 1.0f && __x_hi < ::cuda::std::__fp_inf<float>()) || (__x_hi == 1.0f && __x_lo < 0.0f))
+  // A high limb in [1/2, 1) goes on: x < 1 is decided below on d = x - 1, from both limbs, since a
+  // low-accuracy pair can hold a value of at least 1 under such a high limb.
+  if (!(__x_hi >= 0.5f && __x_hi < ::cuda::std::__fp_inf<float>()))
   {
     if (__x_hi == ::cuda::std::__fp_inf<float>())
     {
       *__res_hi = __x_hi;
       *__res_lo = 0.0f;
     }
-    else // x < 1, or NaN
+    else // x < 1/2, or NaN
     {
       *__res_hi = (__x_hi != __x_hi) ? __x_hi : ::cuda::std::__fp_nan<float>();
       *__res_lo = *__res_hi;
@@ -781,6 +787,11 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
     __d_hi       = ::cuda::__fpmp_fast_two_sum(__d_hi, ::cuda::__fpmp_add_rn(__d_lo, __x_lo), &__d_lo);
     if (__d_hi < 0x1p-60f)
     {
+      if (__d_hi < 0.0f) // x < 1
+      {
+        *__res_hi = *__res_lo = ::cuda::std::__fp_nan<float>();
+        return;
+      }
       // acosh(1 + d) = sqrt(2 d) to 2^-62 of it. The root is taken of 2^65 d: the device's square
       // root flushes subnormal operands, which a low limb of x below 2^-127 gives.
       ::cuda::__fpmp2_sqrt<float>(0x1p65f * __d_hi, 0x1p65f * __d_lo, &__s_hi, &__s_lo);

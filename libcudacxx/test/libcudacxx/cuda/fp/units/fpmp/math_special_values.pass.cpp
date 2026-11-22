@@ -237,7 +237,7 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 //
 // F_0(0) = 1, F_0(+inf) = 0, F_0(NaN) = NaN. The kernels cover a >= 0, the domain
 // the function is used on; below 0 they extrapolate the polynomial for [0, 2) and
-// lose its accuracy quickly, so no value is checked there. The function itself
+// lose its accuracy quickly, so no value is checked for accuracy there. The function itself
 // grows like exp(-a) / (2 |a|) for a < 0 and passes the largest float near
 // a = -94: +inf from there down to -inf.
 
@@ -323,7 +323,7 @@ TEST_HOST_DEVICE_FUNC void test_hyperbolic()
 }
 
 // At every accuracy level: expm1, log1p, sinh, tanh, asinh and atanh return a zero argument with
-// its sign; a pair (128, lo) with lo < 0 is below the overflow threshold of exp2; and atanh of
+// its sign; the pair (128, -1e-6) is below the overflow threshold of exp2; and atanh of
 // a pair (+-1, lo) with lo pointing inwards is finite down to a subnormal lo.
 
 template <typename T>
@@ -587,7 +587,8 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   // expm1, log1p, sinh, tanh, asinh and atanh return a tiny argument unchanged, and read "tiny"
   // off the high limb; log, log2, log10 and acosh read the domain off it (the logarithm of a
   // zero high limb is -inf). A low-accuracy pair whose high limb does not carry the value is
-  // renormalized before it reaches them.
+  // renormalized before it reaches them. The trigonometric and inverse trigonometric functions
+  // and the pair kernels of the norms take an operand with a zero high limb for its low limb.
   const T loose[] = {T(0.0f, 0.25f), T(-0.0f, 0.25f), T(16777216.0f, 0.25f) - T(16777216.0f)};
   for (int i = 0; i < 3; ++i)
   {
@@ -604,15 +605,36 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
     assert(approx_eq(static_cast<double>(log(q)), -1.3862943611198906));
     assert(approx_eq(static_cast<double>(log2(q)), -2.0));
     assert(approx_eq(static_cast<double>(log10(q)), -0.6020599913279624));
-    // exp, exp2, exp10 and cosh reduce such a pair like any other
+    assert(approx_eq(static_cast<double>(sin(q)), 0.24740395925452294));
+    assert(approx_eq(static_cast<double>(cos(q)), 0.9689124217106447));
+    assert(approx_eq(static_cast<double>(tan(q)), 0.25534192122103627));
+    assert(approx_eq(static_cast<double>(sinpi(q)), 0.7071067811865476));
+    assert(approx_eq(static_cast<double>(cospi(q)), 0.7071067811865476));
+    assert(approx_eq(static_cast<double>(asin(q)), 0.25268025514207865));
+    assert(approx_eq(static_cast<double>(acos(q)), 1.318116071652818));
+    assert(approx_eq(static_cast<double>(atan(q)), 0.24497866312686414));
+    assert(approx_eq(static_cast<double>(sin(-q)), -0.24740395925452294));
+    assert(approx_eq(static_cast<double>(atan(-q)), -0.24497866312686414));
+    // exp, exp2, exp10 and cosh take the size and the sign of such a pair from the sum of its limbs
     assert(approx_eq(static_cast<double>(exp(q)), 1.2840254166877414));
     assert(approx_eq(static_cast<double>(exp2(q)), 1.189207115002721));
     assert(approx_eq(static_cast<double>(exp10(q)), 1.7782794100389228));
     assert(approx_eq(static_cast<double>(cosh(q)), 1.0314130998795732));
+    assert(approx_eq(static_cast<double>(cosh(-q)), 1.0314130998795732));
+    assert(approx_eq(static_cast<double>(rhypot(q, T(0.0f))), 4.0));
+    assert(approx_eq(static_cast<double>(norm3d(q, T(0.0f), T(0.0f))), 0.25));
+    assert(approx_eq(static_cast<double>(rnorm3d(T(0.0f), -q, T(0.0f))), 4.0));
+    assert(approx_eq(static_cast<double>(norm4d(T(0.0f), T(0.0f), q, T(0.0f))), 0.25));
+    assert(approx_eq(static_cast<double>(rnorm4d(q, T(0.0f), T(0.0f), T(0.0f))), 4.0));
   }
   assert(approx_eq(static_cast<double>(exp(T(0.0f, 3.0f))), 20.085536923187668));
   assert(approx_eq(static_cast<double>(exp10(T(1.0f, 0.5f))), 31.622776601683793));
+  assert(approx_eq(static_cast<double>(cosh(T(0.0f, -50.0f))), 2.592352764293536e+21));
+  assert(approx_eq(static_cast<double>(sin(T(0.0f, 3.0f))), 0.1411200080598672));
   assert(approx_eq(static_cast<double>(acosh(T(0.0f, 1.5f))), 0.9624236501192069));
+  // acosh decides x < 1 on both limbs: (1 - 2^-24, 2^-23) is 1 + 2^-24, and (1, -2^-30) is below 1
+  assert(approx_eq(static_cast<double>(acosh(T(0x1.fffffep-1f, 0x1p-23f))), 0.00034526698128628427));
+  assert(is_nan(acosh(T(1.0f, -0x1p-30f))) && is_nan(acosh(T(0x1.fffffep-1f, 0x1p-26f))));
   // a high limb far below the low limb, and limbs of like size
   assert(approx_eq(static_cast<double>(expm1(T(0x1p-60f, 0.25f))), 0.2840254166877415));
   assert(approx_eq(static_cast<double>(log1p(T(-0x1p-40f, 0x1p-9f))), 0.0019512201303540276));
@@ -634,8 +656,9 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(atan2(x, m)), 0.75 * pi));
   assert(approx_eq(static_cast<double>(atan2(m, m)), -0.75 * pi));
   assert(approx_eq(static_cast<double>(atan2(x, T(1.0f))), 0x1p-30));
-  assert(approx_eq(static_cast<double>(atan2(m, T(-1.0f))), -pi + 0x1p-30));
-  assert(approx_eq(static_cast<double>(atan2(T(1.0f), m)), 0.5 * pi + 0x1p-30));
+  // to within 2^-32: a result that dropped the low limb of m is 2^-30 away
+  assert(cuda::std::fabs(static_cast<double>(atan2(m, T(-1.0f))) - (-pi + 0x1p-30)) <= 0x1p-32);
+  assert(cuda::std::fabs(static_cast<double>(atan2(T(1.0f), m)) - (0.5 * pi + 0x1p-30)) <= 0x1p-32);
 
   assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0.25f))), 0.97295507452765662));
   assert(approx_eq(static_cast<double>(atanh(T(-1.0f, 0.25f))), -0.97295507452765662));

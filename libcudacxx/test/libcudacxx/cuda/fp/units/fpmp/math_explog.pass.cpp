@@ -370,6 +370,9 @@ TEST_HOST_DEVICE_FUNC void test_special_values()
     {fn_log1p, -minn, F(0), -minn},
   };
   check_exact<T>(cases, false);
+  // expm1(-inf) is -1 in both limbs
+  const T m1 = cuda::expm1(T(-inf));
+  assert(m1.hi() == F(-1) && m1.lo() == F(0));
 }
 
 // Results at and beyond the ends of the fp32mp2 range: overflow to +inf, including the float

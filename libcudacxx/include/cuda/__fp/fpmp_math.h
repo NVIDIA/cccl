@@ -331,9 +331,11 @@
       reciprocal) even next to a NaN, otherwise NaN->NaN; all operands
       zero give +0 (+inf); overflow gives +inf.
       fpmp2_accuracy::high, fp32mp2: norm3d, norm4d, rnorm3d and
-      rnorm4d convert the operands to double, which holds each pair
-      exactly, and take the norm in double (CUDA's norm3d etc. on the
-      device): within 0.6 u^2 against 5 u^2 for the norms and 8 u^2 for
+      rnorm4d convert the operands to double and take the norm in
+      double (CUDA's norm3d etc. on the device).  The conversion is
+      exact for a pair whose limbs span at most 53 bits and rounds any
+      other pair by at most 2^-53 of its value (0.03 u^2).  Measured:
+      within 0.6 u^2 against 5 u^2 for the norms and 8 u^2 for
       the reciprocals of the pair kernel, at the price of FP64
       arithmetic.  Same special cases, answered on entry.
 
@@ -654,8 +656,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * renormalized first. A normalized pair, a zero of either sign and a limb that is not
  * finite pass through unchanged; the other levels keep their operands normalized.
  *
- * exp, exp2, exp10 and cosh need no such step: their reduction takes its multiple from
- * x_hi + x_lo and adds the limbs without assuming an order between them.
+ * exp, exp2, exp10 and cosh need no such step: they take the size of the argument (cosh also its
+ * sign) and the multiple of their reduction from x_hi + x_lo and add the limbs without assuming
+ * an order between them. The limbs still have to be in order of magnitude or to overlap:
+ * exp2((2^-30, 1)) drops the high limb.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -671,6 +675,28 @@ __fpmp2_math_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* 
     {
       *__x_hi = ::cuda::__fpmp_two_sum(__x.hi(), __x.lo(), __x_lo);
     }
+  }
+}
+
+/*
+ * The argument of sin, cos, tan, sincos, sinpi, cospi, sincospi, asin, acos and atan. Their
+ * fp32mp2 kernels read the size of the argument from its high limb too, but are too short for
+ * the test above: at fpmp2_accuracy::low an argument with a zero high limb over a nonzero low
+ * limb, which a cancellation leaves, is taken for its low limb, without a branch. A zero keeps
+ * its sign. atan2 and the pair kernel of rhypot and the norms do the same for their operands at
+ * every level. sqrt, rsqrt, cbrt, rcbrt, hypot, pow and fmod read the high limb alone.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_math_arg_zero_high(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const bool __loose = __x.hi() == _FpType(0) && __x.lo() != _FpType(0);
+    *__x_hi            = __loose ? __x.lo() : __x.hi();
+    *__x_lo            = __loose ? _FpType(0) : __x.lo();
   }
 }
 
@@ -745,14 +771,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cbrt(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_sin(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_sin(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -760,14 +788,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sin(const fpmp2
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_cos(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_cos(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -776,14 +806,16 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincos(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+    ::cuda::__fpmp2_high_sincos(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
   }
   else
   {
-    ::cuda::__fpmp2_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+    ::cuda::__fpmp2_sincos(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
   }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);
@@ -792,14 +824,16 @@ sincos(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_asin(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_asin(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -807,14 +841,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asin(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_acos(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_acos(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -822,14 +858,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acos(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_atan(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_atan(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -988,14 +1026,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atanh(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_tan(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_tan(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1189,14 +1229,16 @@ cyl_bessel_i1(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinpi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_sinpi(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_sinpi(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1204,14 +1246,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinpi(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cospi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_cospi(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_cospi(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1220,14 +1264,16 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincospi(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+    ::cuda::__fpmp2_high_sincospi(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
   }
   else
   {
-    ::cuda::__fpmp2_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+    ::cuda::__fpmp2_sincospi(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
   }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);

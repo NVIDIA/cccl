@@ -832,8 +832,10 @@ _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
  * the reciprocal): an infinite operand gives +inf (+0 for the reciprocal), also next to
  * a NaN; otherwise a NaN operand gives NaN; all operands zero give +0 (+inf). A norm
  * that overflows gives +inf, a reciprocal that overflows, +inf.
+ * An operand with a zero high limb over a nonzero low limb, which a low-accuracy
+ * cancellation leaves, counts with its low limb.
  */
-template <typename _FpType, int _Np, bool _Reciprocal>
+template <typename _FpType, int _Np, bool _Reciprocal, bool _LowLimbs = false>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
   const _FpType (&__x_hi)[_Np], const _FpType (&__x_lo)[_Np], _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
@@ -867,6 +869,25 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
     }
     else
     {
+      // Every high limb is zero. A low-accuracy cancellation leaves a zero high limb over a
+      // nonzero low one, (2^24, 0.25) - 2^24 = (0, 0.25): the norm is then that of the low limbs
+      // (`_LowLimbs` marks that second pass). Next to an operand with a nonzero high limb the sum
+      // of the squares below holds such an operand as it is.
+      if constexpr (!_LowLimbs)
+      {
+        bool __loose = false;
+        _FpType __zero[_Np];
+        for (int __k = 0; __k < _Np; ++__k)
+        {
+          __loose     = __loose || (__x_lo[__k] != _FpType(0));
+          __zero[__k] = _FpType(0);
+        }
+        if (__loose)
+        {
+          ::cuda::__internal_fpmp2_norm<_FpType, _Np, _Reciprocal, true>(__x_lo, __zero, __res_hi, __res_lo);
+          return;
+        }
+      }
       *__res_hi = _Reciprocal ? __inf : _FpType(0);
       *__res_lo = _FpType(0);
     }

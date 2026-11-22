@@ -394,7 +394,14 @@ constants of the next operation by about ``k``. The ``fp32mp2_low`` functions ``
 renormalize an argument with ``|lo| > 2^-20·|hi|`` themselves, because their kernels take the
 size of the argument, and with it the domain test, from the high limb, which a cancellation can
 leave at zero: ``(2^24, 0.25) - 2^24`` is ``(0, 0.25)``. ``exp``, ``exp2``, ``exp10`` and ``cosh``
-need no such step: their argument reduction reads both limbs.
+need no such step: they take the size of the argument and the multiple of their reduction from
+the sum of the limbs. The ``fp32mp2_low`` functions ``sin``, ``cos``, ``tan``, ``sincos``,
+``sinpi``, ``cospi``, ``sincospi``, ``asin``, ``acos`` and ``atan`` take an argument with a zero
+high limb for its low limb, as ``atan2``, ``rhypot``, ``norm3d``, ``norm4d``, ``rnorm3d`` and
+``rnorm4d`` do for their operands at every level. ``sqrt``, ``rsqrt``, ``cbrt``, ``rcbrt``, ``hypot``, ``pow``
+and ``fmod`` read the high limb alone: renormalize such an argument before the call. Below the
+threshold the domain of a function is decided on the high limb, except for ``acosh``, which
+decides ``x < 1`` on both limbs.
 Over a long ``low`` chain the overlap grows
 with the chain, which is why ``renormalize()`` exists and why converting a ``low`` value to
 ``mid`` or ``high`` restores the invariant (:ref:`changing the accuracy level

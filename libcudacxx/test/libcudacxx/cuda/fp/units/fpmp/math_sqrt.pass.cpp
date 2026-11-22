@@ -928,11 +928,18 @@ TEST_HOST_DEVICE_FUNC void test_exact()
 template <class T, class F>
 TEST_HOST_DEVICE_FUNC void test_special_values()
 {
-  const F inf                 = cuda::std::numeric_limits<F>::infinity();
-  const F nan                 = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn                = (cuda::std::numeric_limits<F>::max)();
-  const F minn                = (cuda::std::numeric_limits<F>::min)();
-  const F mind                = cuda::std::numeric_limits<F>::denorm_min();
+  const F inf  = cuda::std::numeric_limits<F>::infinity();
+  const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
+  const F maxn = (cuda::std::numeric_limits<F>::max)();
+  const F minn = (cuda::std::numeric_limits<F>::min)();
+  const F mind = cuda::std::numeric_limits<F>::denorm_min();
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operands and result: flushed to zero on the device
+  // the smallest operands: sqrt(2) times the smallest subnormal rounds to it, not to zero
+  {
+    const T h = cuda::hypot(T(mind), T(mind));
+    assert(h.hi() == mind && h.lo() == F(0));
+  }
+#endif // !TEST_HAS_CUDA_FAST_MATH
   const exact_case<F> cases[] = {
     // sqrt and rsqrt take no branch: sqrt(0) is 0, and every other operand that is not
     // positive and finite gives NaN, the zero and +inf of rsqrt included (a subnormal operand

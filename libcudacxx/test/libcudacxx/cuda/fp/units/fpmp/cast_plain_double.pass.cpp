@@ -6,8 +6,8 @@
 //  Unit test: the cast-based double -> fp32mp2 conversion, which
 //  CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP=0 selects in place of the integer one.
 //
-//  A double that is infinite, NaN or beyond FLT_MAX converts to a pair with a
-//  zero low limb, and so do the results of the functions that compute in double
+//  A double that is infinite, NaN or rounds to an infinite high limb converts to a
+//  pair with a zero low limb, and so do the results of the functions that compute in double
 //  and convert back: the fpmp2_accuracy::high norm3d, norm4d, rnorm3d and
 //  rnorm4d. Finite values in range convert to the normalized pair of the value.
 //
@@ -50,6 +50,9 @@ TEST_HOST_DEVICE_FUNC void test()
   assert(w.hi() == 1.0f && w.lo() == 0x1p-30f);
   const T top(static_cast<double>(fltmax));
   assert(top.hi() == fltmax && top.lo() == 0.0f);
+  // above FLT_MAX, but the high limb still rounds to it
+  const T edge(static_cast<double>(fltmax) + 0x1p102);
+  assert(edge.hi() == fltmax && edge.lo() == 0x1p102f);
   assert(static_cast<double>(T(-0x1.23456789abp-70)) == -0x1.23456789abp-70);
 
   // the norms that overflow, and the reciprocal norms of zero operands

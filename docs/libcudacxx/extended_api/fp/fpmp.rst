@@ -383,8 +383,8 @@ is ``0``, but ``rsqrt(0)`` is NaN rather than infinity, both return NaN for ``+i
 argument and for NaN, and on the device both return NaN for a subnormal argument. ``sqrt`` keeps
 its accuracy down to a high limb of about ``2^-100``; below that its residual term is subnormal
 and the error grows (11 u² at ``2^-108``). Code that can meet such arguments should test for them
-before the call, and scale a subnormal or tiny argument by an even power of two (and the result
-back by its square root) around it. In ``fp32mp2_high``, ``sqrt`` and ``rsqrt`` are a different
+before the call, and scale a subnormal or tiny argument by an even power of two ``2^(2k)`` around
+it: the result of ``sqrt`` is then scaled back by ``2^-k``, that of ``rsqrt`` by ``2^k``. In ``fp32mp2_high``, ``sqrt`` and ``rsqrt`` are a different
 kernel, which adds the second-order term of its Newton step: within ``1.3u²`` and ``2.9u²``,
 ``4.2u²`` for ``rsqrt`` on the device, against
 ``2.5u²`` and ``8u²``, ``13u²`` on the device. It takes the same arguments, returns the same
@@ -506,7 +506,8 @@ Math function accuracy
 
 How much precision a math function actually delivers depends on the type. Every dedicated
 ``fp32mp2`` implementation is pure float-float with no FP64 operations, which is the point on
-FP64-throttled hardware, and ``fp32mp2`` is never limited by its backend: functions without a
+FP64-throttled hardware; the one exception is the four norms in ``fp32mp2_high``, which go through
+``double``. ``fp32mp2`` is never limited by its backend: functions without a
 dedicated implementation evaluate in ``double`` and split into the pair, and binary64 already
 carries more significand than a float pair holds.
 

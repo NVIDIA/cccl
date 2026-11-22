@@ -2428,8 +2428,8 @@ other     1
 **-maxN** nan
 **-1**    nan
 **-minN** nan
-**-maxD** +inf
-**-minD** +inf
+**-maxD** nan
+**-minD** nan
 **-0**    +0
 **+0**    +0
 **+minD** nan
