@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,6 +29,34 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
+#  endif // ^^^ has _CCCL_BUILTIN_HUGE_VALF128 ^^^
+
+// nvcc does not implement __builtin_huge_valf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_HUGE_VALF128
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANF128() __builtin_nanf128("")
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
+#  endif // ^^^ has _CCCL_BUILTIN_NANF128 ^^^
+
+// nvcc does not implement __builtin_nanf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANF128
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -779,13 +807,21 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
+#  ifdef _CCCL_BUILTIN_HUGE_VALF128
     return _CCCL_BUILTIN_HUGE_VALF128();
+#  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
+    return ::cuda::std::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
+#  endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF128 ^^^
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
+#  ifdef _CCCL_BUILTIN_NANF128
     return _CCCL_BUILTIN_NANF128();
+#  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
+    return ::cuda::std::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
+#  endif // ^^^ !_CCCL_BUILTIN_NANF128 ^^^
   }
-#  if defined(_CCCL_BUILTIN_NANSF128)
+#  ifdef _CCCL_BUILTIN_NANSF128
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANSF128();

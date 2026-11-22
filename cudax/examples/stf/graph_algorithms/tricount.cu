@@ -26,7 +26,7 @@ __device__ int binary_search(slice<const int> arr, int start, int end, int looku
 {
   while (start <= end)
   {
-    const int mid = start + (end - start) / 2;
+    const int mid = start + ((end - start) / 2);
     if (arr[mid] == lookup)
     {
       return mid;

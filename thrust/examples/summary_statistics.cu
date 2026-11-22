@@ -102,19 +102,19 @@ struct summary_stats_binary_op
     result.min = thrust::min(x.min, y.min);
     result.max = thrust::max(x.max, y.max);
 
-    result.mean = x.mean + delta * y.n / n;
+    result.mean = x.mean + (delta * y.n / n);
 
     result.m2 = x.m2 + y.m2;
     result.m2 += delta2 * x.n * y.n / n;
 
     result.m3 = x.m3 + y.m3;
     result.m3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-    result.m3 += (T) 3.0 * delta * (x.n * y.m2 - y.n * x.m2) / n;
+    result.m3 += (T) 3.0 * delta * ((x.n * y.m2) - (y.n * x.m2)) / n;
 
     result.m4 = x.m4 + y.m4;
-    result.m4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-    result.m4 += (T) 6.0 * delta2 * (x.n * x.n * y.m2 + y.n * y.n * x.m2) / n2;
-    result.m4 += (T) 4.0 * delta * (x.n * y.m3 - y.n * x.m3) / n;
+    result.m4 += delta4 * x.n * y.n * ((x.n * x.n) - (x.n * y.n) + (y.n * y.n)) / n3;
+    result.m4 += (T) 6.0 * delta2 * ((x.n * x.n * y.m2) + (y.n * y.n * x.m2)) / n2;
+    result.m4 += (T) 4.0 * delta * ((x.n * y.m3) - (y.n * x.m3)) / n;
 
     return result;
   }

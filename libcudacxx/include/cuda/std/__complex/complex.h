@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -294,7 +294,7 @@ template <class _Tp>
   _Tp __c = __w.real();
   _Tp __d = __w.imag();
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   // Avoid floating point operations that are invalid during constant evaluation
   _CCCL_IF_CONSTEVAL
   {
@@ -435,7 +435,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     __d      = ::cuda::std::__constexpr_scalbn(__d, -__ilogbw);
   }
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   // Avoid floating point operations that are invalid during constant evaluation
   _CCCL_IF_CONSTEVAL
   {
@@ -686,7 +686,8 @@ template <class _Tp>
 
 #if _CCCL_HOSTED()
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
   ::std::complex<_Tp> __temp;
   __is >> __temp;
@@ -695,7 +696,8 @@ template <class _Tp, class _CharT, class _Traits>
 }
 
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>& operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
+operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }

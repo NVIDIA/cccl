@@ -37,7 +37,7 @@ struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value
-    return val * (val + 1) / 2 + 42;
+    return (val * (val + 1) / 2) + 42;
   }
 };
 

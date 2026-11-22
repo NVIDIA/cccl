@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,14 +20,13 @@
 #include <thrust/detail/type_deduction.h>
 #include <thrust/device_allocator.h>
 #include <thrust/device_new.h>
-#include <thrust/device_ptr.h>
 
 THRUST_NAMESPACE_BEGIN
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename... Args>
-_CCCL_HOST auto device_make_unique(Args&&... args)
+_CCCL_HOST_API auto device_make_unique(Args&&... args)
   -> decltype(uninitialized_allocate_unique<T>(::cuda::std::declval<device_allocator<T>>()))
 {
   // FIXME: This is crude - we construct an unnecessary T on the host for

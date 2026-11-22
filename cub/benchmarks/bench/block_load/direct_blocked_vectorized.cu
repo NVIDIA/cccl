@@ -119,7 +119,7 @@ void direct_blocked_vectorized(nvbench::state& state,
       return;
     }
     const auto num_tiles = static_cast<cuda::std::size_t>(state.get_int64("Elements{io}")) / tile_items;
-    thrust::device_vector<nvbench::uint8_t> buffer(num_tiles * tile_items * sizeof(T) + alignment);
+    thrust::device_vector<nvbench::uint8_t> buffer((num_tiles * tile_items * sizeof(T)) + alignment);
     T* input = reinterpret_cast<T*>(thrust::raw_pointer_cast(buffer.data()) + alignment);
 
     state.add_element_count(num_tiles * tile_items);

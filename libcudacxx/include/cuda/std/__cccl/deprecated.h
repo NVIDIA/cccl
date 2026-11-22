@@ -16,7 +16,7 @@
 #include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,32 +25,32 @@
 #endif // no system header
 
 // Check for deprecation opt outs
-#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT)
-#  if !defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+#ifdef LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT
+#  ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #    define CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #  endif
 #endif // suppress all dialect deprecation warnings
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_14) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
-#  if !defined(CCCL_IGNORE_DEPRECATED_CPP_14)
+#  ifndef CCCL_IGNORE_DEPRECATED_CPP_14
 #    define CCCL_IGNORE_DEPRECATED_CPP_14
 #  endif
 #endif // suppress all c++14 dialect deprecation warnings
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_11) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT) \
   || defined(CCCL_IGNORE_DEPRECATED_CPP_14)
-#  if !defined(CCCL_IGNORE_DEPRECATED_CPP_11)
+#  ifndef CCCL_IGNORE_DEPRECATED_CPP_11
 #    define CCCL_IGNORE_DEPRECATED_CPP_11
 #  endif
 #endif // suppress all c++11 dialect deprecation warnings
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_COMPILER) || defined(THRUST_IGNORE_DEPRECATED_COMPILER) \
   || defined(CUB_IGNORE_DEPRECATED_COMPILER) || defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)      \
   || defined(CCCL_IGNORE_DEPRECATED_CPP_14) || defined(CCCL_IGNORE_DEPRECATED_CPP_11)
-#  if !defined(CCCL_IGNORE_DEPRECATED_COMPILER)
+#  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
 #    define CCCL_IGNORE_DEPRECATED_COMPILER
 #  endif
 #endif // suppress all compiler deprecation warnings
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_API) || defined(THRUST_IGNORE_DEPRECATED_API) \
   || defined(CUB_IGNORE_DEPRECATED_API)
-#  if !defined(CCCL_IGNORE_DEPRECATED_API)
+#  ifndef CCCL_IGNORE_DEPRECATED_API
 #    define CCCL_IGNORE_DEPRECATED_API
 #  endif
 #endif // suppress all API deprecation warnings

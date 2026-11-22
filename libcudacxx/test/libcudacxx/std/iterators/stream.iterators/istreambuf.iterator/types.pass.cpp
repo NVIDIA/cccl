@@ -27,7 +27,7 @@
 //    a constexpr default constructor and a trivial destructor.
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #  include <cuda/std/type_traits>
 

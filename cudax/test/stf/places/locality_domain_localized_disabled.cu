@@ -31,7 +31,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void scale(double a, slice<double> x)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   const size_t n = x.extent(0);
@@ -120,7 +120,7 @@ int main()
     const double expected_factor = pow(a, NITER);
     for (int ind = 0; ind < n; ind++)
     {
-      EXPECT(fabs(hX(ind) - expected_factor * ind) < 0.00001 * expected_factor);
+      EXPECT(fabs(hX(ind) - (expected_factor * ind)) < 0.00001 * expected_factor);
     }
   };
 

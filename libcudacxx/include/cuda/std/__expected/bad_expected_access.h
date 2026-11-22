@@ -11,7 +11,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,7 +56,7 @@ public:
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
-  const char* what() const noexcept override
+  _CCCL_HOST_API const char* what() const noexcept override
   {
     return "bad access to cuda::std::expected";
   }

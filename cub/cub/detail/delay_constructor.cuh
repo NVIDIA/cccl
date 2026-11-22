@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,10 @@ inline constexpr auto lookback_delay_policy_from_type<no_delay_constructor_t<L2W
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency, false>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
@@ -75,6 +79,12 @@ template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency>
 {
   using type _CCCL_NODEBUG = fixed_delay_constructor_t<Delay, L2WriteLatency>;
+};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold, Delay, L2WriteLatency>
+{
+  using type _CCCL_NODEBUG = fixed_delay_constructor_t<Delay, L2WriteLatency, false>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>

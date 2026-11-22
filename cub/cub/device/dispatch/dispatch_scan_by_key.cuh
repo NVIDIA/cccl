@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -187,7 +187,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 
-  const int tid           = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int tid           = static_cast<int>((blockDim.x * blockIdx.x) + threadIdx.x);
   const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
   if (tid > 0 && tid < num_tiles)
   {
@@ -464,7 +464,7 @@ struct dispatch_scan_by_key
     }
 
     // Run grids in epochs (in case number of tiles exceeds max x-dimension
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
@@ -795,7 +795,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Run grids in epochs (in case number of tiles exceeds max x-dimension
-  const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+  const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration

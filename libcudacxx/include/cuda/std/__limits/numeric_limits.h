@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,30 @@
 #include <cuda/std/climits>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VAL() static_cast<double>(__INFINITY__)
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VAL ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(_CCCL_BUILTIN_HUGE_VAL())
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VALL ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NAN() __builtin_nan("")
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NAN() static_cast<double>(__NAN__)
+#endif // ^^^ has _CCCL_BUILTIN_NAN ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANL() __builtin_nanl("")
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NANL() static_cast<long double>(_CCCL_BUILTIN_NAN())
+#endif // ^^^ has _CCCL_BUILTIN_NANL ^^^
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -169,7 +193,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = type(-1) < type(0);
-  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - is_signed);
+  static constexpr int digits       = static_cast<int>((sizeof(type) * CHAR_BIT) - static_cast<int>(is_signed));
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type min() noexcept
@@ -323,7 +347,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = FLT_MANT_DIG;
   static constexpr int digits10     = FLT_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type min() noexcept
   {
     return FLT_MIN;
@@ -362,13 +386,21 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
+#ifdef _CCCL_BUILTIN_HUGE_VALF
     return _CCCL_BUILTIN_HUGE_VALF();
+#else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
+    return ::cuda::std::bit_cast<type>(0x7f800000);
+#endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF ^^^
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
+#ifdef _CCCL_BUILTIN_NANF
     return _CCCL_BUILTIN_NANF();
+#else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
+    return ::cuda::std::bit_cast<type>(0x7fc00000);
+#endif // ^^^ !_CCCL_BUILTIN_NANF ^^^
   }
-#if defined(_CCCL_BUILTIN_NANSF)
+#ifdef _CCCL_BUILTIN_NANSF
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANSF();
@@ -381,7 +413,7 @@ public:
 #endif // !_CCCL_BUILTIN_NANSF
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#if defined(FLT_TRUE_MIN)
+#ifdef FLT_TRUE_MIN
     return FLT_TRUE_MIN;
 #else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
     return __FLT_DENORM_MIN__;
@@ -408,7 +440,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = DBL_MANT_DIG;
   static constexpr int digits10     = DBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type min() noexcept
   {
     return DBL_MIN;
@@ -447,13 +479,21 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
+#ifdef _CCCL_BUILTIN_HUGE_VAL
     return _CCCL_BUILTIN_HUGE_VAL();
+#else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
+    return ::cuda::std::bit_cast<type>(0x7ff0000000000000);
+#endif // ^^^ !_CCCL_BUILTIN_HUGE_VAL ^^^
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
+#ifdef _CCCL_BUILTIN_NAN
     return _CCCL_BUILTIN_NAN();
+#else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
+    return ::cuda::std::bit_cast<type>(0x7ff8000000000000);
+#endif // ^^^ !_CCCL_BUILTIN_NAN ^^^
   }
-#if defined(_CCCL_BUILTIN_NANS)
+#ifdef _CCCL_BUILTIN_NANS
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
   {
     return _CCCL_BUILTIN_NANS();
@@ -466,7 +506,7 @@ public:
 #endif // !_CCCL_BUILTIN_NANS
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#if defined(DBL_TRUE_MIN)
+#ifdef DBL_TRUE_MIN
     return DBL_TRUE_MIN;
 #else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
     return __DBL_DENORM_MIN__;
@@ -495,7 +535,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = LDBL_MANT_DIG;
   static constexpr int digits10     = LDBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type min() noexcept
   {
     return LDBL_MIN;
@@ -545,7 +585,7 @@ public:
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type denorm_min() noexcept
   {
-#  if defined(LDBL_TRUE_MIN)
+#  ifdef LDBL_TRUE_MIN
     return LDBL_TRUE_MIN;
 #  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
     return __LDBL_DENORM_MIN__;

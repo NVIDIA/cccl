@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -55,25 +55,6 @@
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
-
-namespace detail
-{
-template <typename T>
-inline constexpr bool is_single_value_wrapper_v = false;
-
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::immediate<ArgT, StaticBoundsT>> = true;
-
-template <auto Value, typename T>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::constant<Value, T>> = true;
-
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, StaticBoundsT>> = true;
-
-// Classify argument roles here; validate the wrapped count type after selecting the overload.
-template <typename NumItemsT>
-inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || is_single_value_wrapper_v<NumItemsT>;
-} // namespace detail
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a

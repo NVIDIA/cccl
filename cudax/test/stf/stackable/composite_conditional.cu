@@ -90,7 +90,7 @@ int main()
       {
         for (size_t i = 0; i < nx; i++)
         {
-          EXPECT(s(i, k, v) == 1.0 + 2.0 * (double) iters);
+          EXPECT(s(i, k, v) == 1.0 + (2.0 * (double) iters));
         }
       }
     }

@@ -90,14 +90,9 @@ Checks:
   # again. It is easier to just follow the rule of "always explicitly default initialize
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
-  - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
-  - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
-  - '-readability-math-missing-parentheses'
   - '-readability-avoid-nested-conditional-operator'
-  - '-readability-redundant-declaration'
-  - '-readability-make-member-function-const'
   - '-readability-suspicious-call-argument'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'
@@ -330,6 +325,7 @@ HeaderFilterRegex: '.*/(thrust|cub|cuda|nv|cccl|c2h|cudastf|test)/.*'
 ExtraArgsBefore:
   # To match _CCCL_DOXYGEN_INVOKED
   - '-D_CCCL_CLANG_TIDY_INVOKED=1'
+  - '-DCCCL_ENABLE_ASSERTIONS=1'
   - '-ftemplate-backtrace-limit=0'
   - '-fmacro-backtrace-limit=0'
 ExtraArgs:
@@ -349,6 +345,9 @@ CheckOptions:
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
   readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'
+  # Parenthesizing a call like `(::cuda::std::numeric_limits<T>::max)()` keeps the function-like
+  # `min` and `max` macros of <windows.h> from expanding.
+  readability-redundant-parentheses.AllowedDecls: 'max;min'
   # readability-identifier-naming.ClassCase: 'lower_case'
   # readability-identifier-naming.UnionCase: 'lower_case'
   # readability-identifier-naming.ClassConstantCase: 'UPPER_CASE'

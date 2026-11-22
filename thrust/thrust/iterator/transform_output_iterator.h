@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,8 +17,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/transform_output_iterator.h>
+#include <thrust/iterator/iterator_facade.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -33,7 +35,7 @@ template <typename UnaryFunction, typename OutputIterator>
 class transform_output_iterator_proxy
 {
 public:
-  _CCCL_HOST_DEVICE transform_output_iterator_proxy(const OutputIterator& out, UnaryFunction fun)
+  _CCCL_HOST_DEVICE_API transform_output_iterator_proxy(const OutputIterator& out, UnaryFunction fun)
       : out(out)
       , fun(fun)
   {}
@@ -43,7 +45,7 @@ public:
   // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE transform_output_iterator_proxy operator=(const T& x)
+  _CCCL_HOST_DEVICE_API transform_output_iterator_proxy operator=(const T& x)
   {
     *out = fun(x);
     return *this;
@@ -136,7 +138,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
-  transform_output_iterator() = default;
+  _CCCL_HIDE_FROM_ABI transform_output_iterator() = default;
 
   //! This constructor takes as argument an \c OutputIterator and an \c UnaryFunction and copies them to a new \p
   //! transform_output_iterator
@@ -144,7 +146,7 @@ public:
   //! \param out An \c OutputIterator pointing to the output range whereto the result of \p transform_output_iterator's
   //!            \c UnaryFunction will be written.
   //! \param fun An \c UnaryFunction used to transform the objects assigned to this \p transform_output_iterator.
-  _CCCL_HOST_DEVICE transform_output_iterator(OutputIterator const& out, UnaryFunction fun)
+  _CCCL_HOST_DEVICE_API transform_output_iterator(OutputIterator const& out, UnaryFunction fun)
       : super_t(out)
       , fun(fun)
   {}
@@ -152,7 +154,7 @@ public:
   //! \cond
 
 private:
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return detail::transform_output_iterator_proxy<UnaryFunction, OutputIterator>(this->base_reference(), fun);
   }
@@ -169,8 +171,8 @@ private:
 //! transform_output_iterator
 //! \see transform_output_iterator
 template <typename UnaryFunction, typename OutputIterator>
-transform_output_iterator<UnaryFunction, OutputIterator> _CCCL_HOST_DEVICE
-make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
+transform_output_iterator<UnaryFunction, OutputIterator>
+  _CCCL_HOST_DEVICE_API make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
 {
   return transform_output_iterator<UnaryFunction, OutputIterator>(out, fun);
 }

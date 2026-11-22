@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -57,7 +57,7 @@ __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Co
     }
     ++__p;
     ++__pp;
-    __c = 2 * __p + 1;
+    __c = (2 * __p) + 1;
   }
   return __last;
 }

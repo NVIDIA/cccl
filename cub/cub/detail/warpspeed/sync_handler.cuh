@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,7 +45,7 @@ struct SyncHandler
   int mNumOwningThreads[mMaxNumResources][mMaxNumPhases]{};
   ::cuda::std::uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases]{};
 
-  constexpr SyncHandler() = default;
+  _CCCL_HIDE_FROM_ABI constexpr SyncHandler() = default;
 
   // we need constant destruction for the host side single stage SMEM amount, which is only possible in C++20
 #if _CCCL_STD_VER >= 2020

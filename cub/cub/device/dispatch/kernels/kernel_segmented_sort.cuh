@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,7 +44,7 @@ struct LargeSegmentsSelectorT
   global_segment_offset_t base_segment_offset{};
 
 #if !_CCCL_COMPILER(NVRTC)
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   LargeSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
       : value(value)
       , d_offset_begin(d_offset_begin)
@@ -52,7 +52,7 @@ struct LargeSegmentsSelectorT
   {}
 #endif // !_CCCL_COMPILER(NVRTC)
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
     // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
     const OffsetT segment_size =
@@ -70,7 +70,7 @@ struct SmallSegmentsSelectorT
   global_segment_offset_t base_segment_offset{};
 
 #if !_CCCL_COMPILER(NVRTC)
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   SmallSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
       : value(value)
       , d_offset_begin(d_offset_begin)
@@ -78,7 +78,7 @@ struct SmallSegmentsSelectorT
   {}
 #endif // !_CCCL_COMPILER(NVRTC)
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
     // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
     const OffsetT segment_size =
@@ -412,7 +412,7 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().small_segment.t
   if (bid < medium_blocks)
   {
     const local_segment_index_t sid_within_block  = tid / threads_per_medium_segment;
-    const local_segment_index_t medium_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const local_segment_index_t medium_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
     if (medium_segment_id < medium_segments)
     {
@@ -433,7 +433,8 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().small_segment.t
   else
   {
     const local_segment_index_t sid_within_block = tid / threads_per_small_segment;
-    const local_segment_index_t small_segment_id = (bid - medium_blocks) * segments_per_small_block + sid_within_block;
+    const local_segment_index_t small_segment_id =
+      ((bid - medium_blocks) * segments_per_small_block) + sid_within_block;
 
     if (small_segment_id < small_segments)
     {

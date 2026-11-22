@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -126,7 +126,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        Offset,
                        CompareOp>::type::items_per_tile;
   const Offset diagonal_idx =
-    static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+    static_cast<Offset>((blockDim.x * blockIdx.x) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);

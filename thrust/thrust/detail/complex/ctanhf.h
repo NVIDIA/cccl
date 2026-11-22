@@ -63,7 +63,7 @@ using thrust::complex;
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> ctanhf(const complex<float>& z)
 {
   float x;
   float y;
@@ -105,15 +105,15 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   }
 
   t     = ::cuda::std::tanf(y);
-  beta  = 1.0f + t * t;
+  beta  = 1.0f + (t * t);
   s     = ::cuda::std::sinhf(x);
-  rho   = ::cuda::std::sqrtf(1.0f + s * s);
-  denom = 1.0f + beta * s * s;
+  rho   = ::cuda::std::sqrtf(1.0f + (s * s));
+  denom = 1.0f + (beta * s * s);
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> ctanf(complex<float> z)
 {
   z = ctanhf(complex<float>(-z.imag(), z.real()));
   return (complex<float>(z.imag(), -z.real()));
@@ -121,13 +121,13 @@ _CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> tan(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> tan(const complex<float>& z)
 {
   return detail::complex::ctanf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> tanh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> tanh(const complex<float>& z)
 {
   return detail::complex::ctanhf(z);
 }

@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,7 +34,7 @@ class WarpExchangeSmem
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
+  static constexpr int ITEMS_PER_TILE = (ItemsPerThread * LogicalWarpThreads) + 1;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
@@ -60,54 +60,55 @@ public:
 
   WarpExchangeSmem() = delete;
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
   {}
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = ItemsPerThread * lane_id + item;
+      const int idx                  = (ItemsPerThread * lane_id) + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = LogicalWarpThreads * item + lane_id;
+      const int idx      = (LogicalWarpThreads * item) + lane_id;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = LogicalWarpThreads * item + lane_id;
+      const int idx                  = (LogicalWarpThreads * item) + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = ItemsPerThread * lane_id + item;
+      const int idx      = (ItemsPerThread * lane_id) + item;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
 
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     ScatterToStriped(items, items, ranks);
   }
 
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
     const InputT (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread])

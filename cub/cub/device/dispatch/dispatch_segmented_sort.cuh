@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -517,7 +517,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
     if (partition_segments)
     {
       constexpr auto num_segments_per_invocation_limit =
-        static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+        static_cast<global_segment_offset_t>((::cuda::std::numeric_limits<int>::max)());
       auto const max_num_segments_per_invocation =
         static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 
@@ -777,7 +777,7 @@ private:
     WrappedPolicyT wrapped_policy)
   {
     constexpr global_segment_offset_t num_segments_per_invocation_limit =
-      static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+      static_cast<global_segment_offset_t>((::cuda::std::numeric_limits<int>::max)());
 
     // We repeatedly invoke the partitioning and sorting kernels until all segments are processed.
     const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
@@ -1032,7 +1032,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   GetFinalOutputOp&& get_final_output)
 {
   constexpr auto num_segments_per_invocation_limit =
-    static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+    static_cast<global_segment_offset_t>((::cuda::std::numeric_limits<int>::max)());
 
   const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
   for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
@@ -1383,7 +1383,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     if (partition_segments)
     {
       constexpr auto num_segments_per_invocation_limit =
-        static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+        static_cast<global_segment_offset_t>((::cuda::std::numeric_limits<int>::max)());
       auto const max_num_segments_per_invocation =
         static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 

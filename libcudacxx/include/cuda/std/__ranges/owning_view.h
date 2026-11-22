@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -164,7 +164,7 @@ inline constexpr size_t __static_size_v<owning_view<_Range>> = __static_size_v<_
 
 template <class _Range>
 inline constexpr size_t __static_size_v<const owning_view<_Range>> =
-  (range<const owning_view<_Range>>) ? __static_size_v<const _Range> : dynamic_extent;
+  range<const owning_view<_Range>> ? __static_size_v<const _Range> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

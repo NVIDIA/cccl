@@ -47,7 +47,7 @@ inline constexpr bool is_custom_type_v<c2h::custom_type_t<Ps...>> = true;
 template <typename ValueT, typename KeyT>
 ValueT make_tagged_value(KeyT key, std::size_t source)
 {
-  const std::size_t tag = static_cast<std::size_t>(key) * 2 + source;
+  const std::size_t tag = (static_cast<std::size_t>(key) * 2) + source;
   if constexpr (is_custom_type_v<ValueT>)
   {
     ValueT value{};
@@ -139,7 +139,7 @@ void test_pairs(LaunchT launch, StdOp std_op, bool values_from_first_input_only,
     const std::size_t tag       = value_tag(values_out_h[i]);
     CAPTURE(i, keys_out_h[i], tag, key_value);
     // The value must belong to the emitted key: either the first-input tag (key*2) or the second-input tag (key*2+1).
-    REQUIRE((tag == key_value * 2 || tag == key_value * 2 + 1));
+    REQUIRE((tag == key_value * 2 || tag == (key_value * 2) + 1));
     if (values_from_first_input_only)
     {
       REQUIRE(tag == key_value * 2);

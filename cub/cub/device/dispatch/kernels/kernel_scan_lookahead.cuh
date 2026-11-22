@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_ENABLE_IKET)
+#ifdef _CCCL_ENABLE_IKET
 #  include <cub/agent/agent_scan.cuh>
 #endif // defined(_CCCL_ENABLE_IKET)
 
@@ -79,7 +79,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ThreadScan);
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
   const auto num_total_warps =
-    2 * policy.reduce_and_scan_warps + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/
+    (2 * policy.reduce_and_scan_warps) + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/
     + 1 /*num_store_warps*/;
   return num_total_warps * warp_threads;
 }
@@ -102,13 +102,13 @@ struct ScanResources
   static constexpr ScanLookaheadPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookahead;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
-  struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
+  struct alignas((::cuda::std::max) ({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
     static_assert(policy.tile_size() % 16 == 0, "tile_size must be multiple of 16");
 
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
-    ::cuda::std::byte inout[policy.tile_size() * sizeof(InputT) + 16];
+    ::cuda::std::byte inout[(policy.tile_size() * sizeof(InputT)) + 16];
   };
   static_assert(alignof(in_out_t) >= alignof(InputT));
   static_assert(alignof(in_out_t) >= alignof(OutputT));
@@ -134,7 +134,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   constexpr auto policy = _CUB::detail::current_policy<PolicySelector>().lookahead;
 
   const int num_aggr_exclusive_cta_stages =
-    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, numStages + policy.lookahead_stages);
+    policy.lookahead_stages > 0 ? policy.lookahead_stages : (::cuda::std::max) (1, numStages + policy.lookahead_stages);
 
   ScanResourcesT res = {
     _CUB::detail::warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
@@ -402,9 +402,9 @@ struct lookahead_scan_closure
     int num_tiles) const
   {
     const int valid_items_this_thread =
-      cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
+      cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
     const int valid_threads_this_warp =
-      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
     _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
@@ -515,9 +515,10 @@ struct lookahead_scan_closure
     [[maybe_unused]] int valid_warps             = 0;
     if constexpr (IsLastTile)
     {
-      valid_items_this_thread = ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
+      valid_items_this_thread =
+        ::cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
       valid_threads_this_warp =
-        ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+        ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
       valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
       _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
     }
@@ -728,13 +729,13 @@ struct lookahead_scan_closure
       static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
       for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
       {
-        const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
+        const int chunk_size = (::cuda::std::min) (valid_items - chunk_offset, elem_per_chunk);
         warpspeed::CpAsyncOobInfo storeInfo =
           _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
 
         // only stage elements of the current chunk to SMEM
         // storeInfo.smemStartSkipBytes < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-        _CCCL_ASSERT(storeInfo.smemStartSkipBytes + elem_per_chunk * sizeof(OutputT) <= res.smemInOut.mSizeBytes, "");
+        _CCCL_ASSERT(storeInfo.smemStartSkipBytes + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
         _CUB::detail::warpspeed::squadStoreSmemPartial(
           squad,
           reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each
@@ -840,7 +841,7 @@ struct lookahead_scan_closure
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
-        static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
+        static_cast<int>((cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
       const warpspeed::CpAsyncOobInfo loadInfo =
         _CUB::detail::warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
@@ -1018,7 +1019,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
   const int num_temp_states,
   [[maybe_unused]] ::cuda::std::uint32_t* atomic_counter)
 {
-  const int tile_id = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int tile_id = static_cast<int>((blockDim.x * blockIdx.x) + threadIdx.x);
 
   // The atomic counter is only used (and thus only needs zeroing) on SM90.
   NV_IF_TARGET(NV_PROVIDES_SM_100, (), ({

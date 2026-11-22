@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>

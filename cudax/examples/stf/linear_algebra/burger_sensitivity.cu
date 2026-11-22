@@ -67,7 +67,7 @@ void assemble_jacobian_full(
             else if (row == N - 1)
             {
               // Right boundary: u[N-1] = 0 (homogeneous Dirichlet)
-              const size_t val_idx = 1 + 3 * (N - 2);
+              const size_t val_idx = 1 + (3 * (N - 2));
               dvalues[val_idx]     = 1.0;
             }
             else
@@ -78,11 +78,11 @@ void assemble_jacobian_full(
               const double u_im1 = dU[row - 1];
 
               // Jacobian entries: ∂F_i/∂u_{i-1}, ∂F_i/∂u_i, ∂F_i/∂u_{i+1}
-              const double left   = -u_i / (2 * h) - nu / (h * h);
-              const double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
-              const double right  = u_i / (2 * h) - nu / (h * h);
+              const double left   = (-u_i / (2 * h)) - (nu / (h * h));
+              const double center = (1.0 / dt) + ((u_ip1 - u_im1) / (2 * h)) + (2.0 * nu / (h * h));
+              const double right  = (u_i / (2 * h)) - (nu / (h * h));
 
-              const size_t val_idx = 1 + 3 * (row - 1);
+              const size_t val_idx = 1 + (3 * (row - 1));
               dvalues[val_idx]     = left;
               dvalues[val_idx + 1] = center;
               dvalues[val_idx + 2] = right;
@@ -110,7 +110,7 @@ void compute_residual_full(
 
               const double term_time = (u_i - dU_prev(i)) / dt;
               const double term_conv = u_i * (u_ip1 - u_im1) / (2 * h);
-              const double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h);
+              const double term_diff = -nu * (u_im1 - (2 * u_i) + u_ip1) / (h * h);
 
               dresidual(i) = term_time + term_conv + term_diff;
             }
@@ -420,7 +420,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   auto nu_values = generate_nu_samples(nu_target, nu_std, num_samples);
 
   // Set up CSR structure
-  const size_t nz = 3 * N - 4;
+  const size_t nz = (3 * N) - 4;
   size_t* row_offsets;
   size_t* col_indices;
   cuda_safe_call(cudaHostAlloc(&row_offsets, (N + 1) * sizeof(size_t), cudaHostAllocMapped));

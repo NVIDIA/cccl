@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
@@ -412,7 +412,7 @@ struct agent_set_op
   static constexpr int block_threads    = policy.threads_per_block;
   static constexpr int items_per_thread = policy.items_per_thread;
   // One item is left in reserve so the serial set operations can read one past their range without a bounds check.
-  static constexpr int items_per_tile = block_threads * items_per_thread - 1;
+  static constexpr int items_per_tile = (block_threads * items_per_thread) - 1;
   static_assert(items_per_thread <= 32, "the serial set operations pack one live-slot bit per item into an int mask");
   // A partition coordinate is packed into the high 16 bits of a signed int and recovered with an arithmetic >> 16, so
   // it must stay below 2^15 to keep the packed value non-negative.
@@ -436,13 +436,13 @@ struct agent_set_op
 
     struct LoadStorage
     {
-      ::cuda::__uninitialized_array<int, block_threads> offset;
+      ::cuda::__uninitialized<int[block_threads]> offset;
       union
       {
         // Over-allocated by block_threads items so serial set operations can read one past their range (see
         // items_per_tile).
-        ::cuda::__uninitialized_array<key_type, items_per_tile + block_threads> keys_shared;
-        ::cuda::__uninitialized_array<value_type, items_per_tile + block_threads> values_shared;
+        ::cuda::__uninitialized<key_type[items_per_tile + block_threads]> keys_shared;
+        ::cuda::__uninitialized<value_type[items_per_tile + block_threads]> values_shared;
       };
     } load_storage;
   };
@@ -469,13 +469,13 @@ struct agent_set_op
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread - 1; ++item)
       {
-        const int idx = block_threads * item + threadIdx.x;
+        const int idx = (block_threads * item) + threadIdx.x;
         output[item]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
       }
 
       // The last item might be a conditional load even for full tiles.
       const int item = items_per_thread - 1;
-      const int idx  = block_threads * item + threadIdx.x;
+      const int idx  = (block_threads * item) + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -486,7 +486,7 @@ struct agent_set_op
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread; ++item)
       {
-        const int idx = block_threads * item + threadIdx.x;
+        const int idx = (block_threads * item) + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -506,7 +506,7 @@ struct agent_set_op
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int idx = block_threads * item + threadIdx.x;
+      const int idx = (block_threads * item) + threadIdx.x;
       if (idx < count1)
       {
         output[item] = static_cast<T>(input1[idx]);
@@ -520,7 +520,7 @@ struct agent_set_op
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int idx = block_threads * item + threadIdx.x;
+      const int idx = (block_threads * item) + threadIdx.x;
       output[idx]   = input[item];
     }
   }

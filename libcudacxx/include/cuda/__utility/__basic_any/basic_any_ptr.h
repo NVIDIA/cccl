@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   //! Constructors
   //!
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   _CCCL_NODEBUG_HOST_DEVICE_API __basic_any(::cuda::std::nullptr_t) {}
 
@@ -175,7 +175,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
     return *reinterpret_cast<::cuda::std::__maybe_const<__is_const_ptr, _Vp>**>(&__ref_.__optr_);
   }
 
-#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
+#ifndef _CCCL_NO_THREE_WAY_COMPARISON
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator==(__basic_any const& __other) const noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
@@ -237,7 +237,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
     return __ref_.__vptr_ != nullptr;
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;

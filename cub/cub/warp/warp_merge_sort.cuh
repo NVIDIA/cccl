@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -117,17 +117,17 @@ class WarpMergeSort
 public:
   WarpMergeSort() = delete;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
       : BlockMergeSortStrategyT(temp_storage, _CUB::detail::logical_lane_id<LogicalWarpThreads>())
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int get_member_mask() const
   {
     return member_mask;
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SyncImplementation() const
   {
     __syncwarp(member_mask);
   }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,7 @@
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__thread/poll.h>
 #include <cuda/std/__utility/move.h>
@@ -99,7 +100,7 @@ public:
       __completion();
       __arrived.store(__new_expected, memory_order_relaxed);
       __phase.store(!__old_phase, memory_order_release);
-      __atomic_notify_all(&__phase.__a, __scope_to_tag<_Sco>{});
+      __atomic_notify_all(::cuda::std::addressof(__phase.__a), __scope_to_tag<_Sco>{});
     }
     return __old_phase;
   }

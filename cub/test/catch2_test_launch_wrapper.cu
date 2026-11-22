@@ -70,7 +70,7 @@ void require_all_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& ac
 template <class T>
 __global__ void prepare_input_kernel(T* d_in, T* d_out, int num_items)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < num_items)
   {
     d_in[i]  = T{21};
@@ -103,7 +103,7 @@ struct launch_test_data
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if (i < num_items)
   {
@@ -114,7 +114,7 @@ __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_ite
 template <class T>
 __global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if (i < num_items)
   {
