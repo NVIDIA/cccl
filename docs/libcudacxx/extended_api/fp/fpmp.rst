@@ -444,7 +444,8 @@ hardware where FP64 is rationed:
   ``10^6`` u² for the float pairs closest to a multiple near ``2^19``). ``sin``, ``cos``, ``tan``,
   ``sincos``, ``sinpi``, ``cospi`` and ``sincospi`` evaluate a longer kernel in ``fp32mp2_high``,
   whose largest error for the sine and the cosine is about a quarter below that of the shorter
-  kernel of the other levels. ``asin``, ``acos``, ``atan`` and ``atan2`` have two kernels: a
+  kernel of the other levels, and a third for ``sinpi`` and ``cospi``, whose shorter kernels are
+  polynomials in the fraction of ``x`` itself and never multiply it by pi. ``asin``, ``acos``, ``atan`` and ``atan2`` have two kernels: a
   table-driven one in ``fp32mp2_low`` and the default level, and polynomial ones in
   ``fp32mp2_high``, 1 to 1.5 bits more accurate for two to three times the instructions; the
   special values are the same at every level
