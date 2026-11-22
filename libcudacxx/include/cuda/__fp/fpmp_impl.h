@@ -657,6 +657,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_rsqrt_rn(float __x) noexcep
                     }),
                     (return 1.0f / ::sqrtf(__x);))
 }
+// The seeds of the fpmp2 division kernels. The kernels correct them with a residual, so they
+// need about half the bits of a limb: for binary32 this is the approximate reciprocal above.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_div_seed(float __x) noexcept
+{
+  return ::cuda::__fpmp_rcp_rn(__x);
+}
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_low_div_seed(float __x) noexcept
+{
+  return ::cuda::__fpmp_rcp_rn(__x);
+}
 // The seed of the fpmp2 square root kernel: returns y ~ sqrt(a) and stores h ~ 1 / (2 sqrt(a)).
 // y is within an ulp of the root, which keeps the residual a - y^2 an exact single-limb
 // number; h only needs a few bits more than half of a limb. The host takes the correctly
@@ -874,6 +884,50 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_rcp_rn(double __x) noexcep
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_rsqrt_rn(double __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
+}
+// The binary64 seeds of the division kernels. On the device the correctly rounded reciprocal
+// costs about as much as the rest of a division, and the kernels do not need it: the default
+// division corrects its quotient with a residual, for which a relative error of 2^-27 is
+// enough. rcp.approx.ftz.f64 is good to 2^-20 and one Newton step takes it to 2^-39. The low
+// division takes one residual step only and needs the seed within about an ulp, which the
+// cubic step r (1 + d + d^2), d = 1 - x r, gives in one operation more.
+//
+// The approximate instruction flushes a subnormal operand and a subnormal result to zero.
+// Where x or its reciprocal is not a normal number (biased exponent 0 or above 2044), the
+// seed is the correctly rounded reciprocal, as it is on the host.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp_rcp_is_edge(double __x) noexcept
+{
+  const uint32_t __e = static_cast<uint32_t>(::cuda::std::bit_cast<uint64_t>(__x) >> 32) & 0x7FF00000U;
+  return __e - 0x00100000U > 0x7FB00000U;
+}
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_div_seed(double __x) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      if (::cuda::__fpmp_rcp_is_edge(__x))
+                      {
+                        return ::__drcp_rn(__x);
+                      }
+                      double __r;
+                      asm("rcp.approx.ftz.f64 %0,%1;" : "=d"(__r) : "d"(__x));
+                      return ::cuda::__fpmp_fma_rn(__r, ::cuda::__fpmp_fma_rn(-__x, __r, 1.0), __r);
+                    }),
+                    (return 1.0 / __x;))
+}
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_low_div_seed(double __x) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      if (::cuda::__fpmp_rcp_is_edge(__x))
+                      {
+                        return ::__drcp_rn(__x);
+                      }
+                      double __r;
+                      asm("rcp.approx.ftz.f64 %0,%1;" : "=d"(__r) : "d"(__x));
+                      const double __d = ::cuda::__fpmp_fma_rn(-__x, __r, 1.0);
+                      return ::cuda::__fpmp_fma_rn(__r, ::cuda::__fpmp_fma_rn(__d, __d, __d), __r);
+                    }),
+                    (return 1.0 / __x;))
 }
 // The double-precision seed of the fpmp2 square root kernel: as above, the device taking its
 // reciprocal square root as it is.

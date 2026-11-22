@@ -60,7 +60,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  const _FpType __r = ::cuda::__fpmp_rcp_rn(__b_hi);
+  const _FpType __r = ::cuda::__fpmp_low_div_seed(__b_hi);
   const _FpType __q = ::cuda::__fpmp_mul_rn(__a_hi, __r);
 
   _FpType __e = ::cuda::__fpmp_fma_rn(__b_hi, -__q, __a_hi);
@@ -88,7 +88,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_div(
 {
   _FpType __t_hi, __t_lo;
   _FpType __e, __r;
-  __r    = ::cuda::__fpmp_rcp_rn(__b_hi);
+  __r    = ::cuda::__fpmp_div_seed(__b_hi);
   __t_hi = ::cuda::__fpmp_mul_rn(__a_hi, __r);
   __e    = ::cuda::__fpmp_fma_rn(__b_hi, -__t_hi, __a_hi);
   __t_hi = ::cuda::__fpmp_fma_rn(__r, __e, __t_hi);
@@ -207,7 +207,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_div(
   // Perform division on scaled operands using Nagai et al. algorithm
   _FpType __t_hi, __t_lo;
   _FpType __e, __r;
-  __r    = ::cuda::__fpmp_rcp_rn(__sb_hi);
+  __r    = ::cuda::__fpmp_div_seed(__sb_hi);
   __t_hi = ::cuda::__fpmp_mul_rn(__sa_hi, __r);
   __e    = ::cuda::__fpmp_fma_rn(__sb_hi, -__t_hi, __sa_hi);
   __t_hi = ::cuda::__fpmp_fma_rn(__r, __e, __t_hi);
@@ -694,7 +694,7 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_div_limb(
   }
   else
   {
-    const _FpType __r = ::cuda::__fpmp_rcp_rn(__c);
+    const _FpType __r = (_Acc == fpmp2_accuracy::low) ? ::cuda::__fpmp_low_div_seed(__c) : ::cuda::__fpmp_div_seed(__c);
     _FpType __t_hi    = ::cuda::__fpmp_mul_rn(__a_hi, __r);
     _FpType __e       = ::cuda::__fpmp_fma_rn(__c, -__t_hi, __a_hi);
     if constexpr (_Acc == fpmp2_accuracy::low)

@@ -19,8 +19,9 @@
 //  with the Payne-Hanek range, the hyperbolic functions, cbrt, rcbrt, hypot,
 //  rhypot, fdim, modf, the error and probability functions, boys_f0, the six
 //  rounding functions (fp32mp2 and fp64mp2, whose zero result carries the sign
-//  of the argument) and the classification predicates on loose pairs. Values
-//  are compared against the double reference where one is in ISO <cmath>.
+//  of the argument), the fp64mp2 division by a divisor next to the largest
+//  finite value, and the classification predicates on loose pairs. Values are
+//  compared against the double reference where one is in ISO <cmath>.
 //
 //  Left out on purpose:
 //    - sqrt and rsqrt take no branch for special arguments and return NaN
@@ -788,6 +789,35 @@ TEST_HOST_DEVICE_FUNC void test_modf_and_classify()
   assert(llround(T(-0x1p63f, -1.0f)) == ::cuda::std::llround(-0x1p63));
 }
 
+// ---- fp64mp2 division next to the ends of the exponent range -------------------
+//
+// On the device the division starts from an approximate reciprocal, which flushes subnormal
+// numbers to zero. A divisor whose reciprocal is subnormal (from 2^1022 on) takes the correctly
+// rounded reciprocal instead, and the quotient does not collapse to zero: 64 u^2 allows for
+// the bits the subnormal reciprocal is short of at the low accuracy level.
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC void test_division_ends_fp64mp2()
+{
+  constexpr double u2        = 0x1p-106;
+  constexpr double scales[3] = {0x1p+1021, 0x1p+1022, 0x1p+1023}; // both sides of 2^1022, and the top binade
+  for (double scale : scales)
+  {
+    // the dividend is 3/4 of the divisor, exactly
+    MP2 d      = MP2(1.5 * scale, 1.25 * scale * 0x1p-54);
+    MP2 n      = MP2(1.125 * scale, 0.9375 * scale * 0x1p-54);
+    MP2 q      = n / d;
+    double err = (q.hi() - 0.75) + q.lo();
+    assert(cuda::std::fabs(err) <= 64 * u2);
+    // a one-limb divisor: (3/4) (1.5 + 1.25 2^-54) / 1.5 = 3/4 + (5/8) 2^-54
+    q   = n / (1.5 * scale);
+    err = (q.hi() - 0.75) + (q.lo() - 0.625 * 0x1p-54);
+    assert(cuda::std::fabs(err) <= 64 * u2);
+  }
+  MP2 big = MP2(cuda::std::numeric_limits<double>::max());
+  MP2 one = big / big;
+  assert(cuda::std::fabs((one.hi() - 1.0) + one.lo()) <= 64 * u2);
+}
+
 int main(int, char**)
 {
   // force_include.h makes this main __host__ __device__ and runs it twice, on the
@@ -823,5 +853,8 @@ int main(int, char**)
   test_loose_zero_high_limb();
   test_llrint_ends();
   test_modf_and_classify();
+  test_division_ends_fp64mp2<cuda::fp64mp2>();
+  test_division_ends_fp64mp2<cuda::fp64mp2_low>();
+  test_division_ends_fp64mp2<cuda::fp64mp2_high>();
   return 0;
 }
