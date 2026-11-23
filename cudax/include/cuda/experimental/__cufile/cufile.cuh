@@ -21,20 +21,19 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/string_view>
 
 #include <cuda/experimental/__cufile/cufile_ref.cuh>
 #include <cuda/experimental/__cufile/driver.cuh>
-#include <cuda/experimental/__cufile/exception.cuh>
 #include <cuda/experimental/__cufile/open_mode.cuh>
-
-#include <string>
 
 #include <cufile.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <sys/types.h>
 
 namespace cuda::experimental
 {

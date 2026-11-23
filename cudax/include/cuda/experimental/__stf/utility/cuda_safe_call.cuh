@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/source_location>
 #include <cuda/std/variant>
 
@@ -47,13 +48,13 @@
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 #if __has_include(<cublas_v2.h>)
 #  include <cublas_v2.h>
 #endif
 #if __has_include(<cusolverDn.h>)
-#  include <cusolverDn.h>
+#  include <cusolverDn.h> // IWYU pragma: keep
 #endif
 
 namespace cuda::experimental::stf

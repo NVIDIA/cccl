@@ -23,11 +23,14 @@
 #endif // no system header
 
 #include <cub/device/device_scan.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__container/simple_vector.h>
+#include <cuda/__runtime/types.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__ranges/access.h>

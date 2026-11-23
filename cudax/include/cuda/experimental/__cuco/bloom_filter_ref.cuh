@@ -27,6 +27,7 @@
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/span>
 

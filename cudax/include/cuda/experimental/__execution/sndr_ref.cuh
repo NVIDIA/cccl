@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

@@ -26,8 +26,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <unordered_map>
+#include <utility>
+
+#include <cuda.h>
 
 namespace cuda::experimental::stf::reserved
 {

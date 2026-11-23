@@ -25,10 +25,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
-#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/std/__cstddef/types.h>
 
-#include <mutex>
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+
+#include <string>
 
 namespace cuda::experimental::stf
 {

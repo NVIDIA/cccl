@@ -11,8 +11,8 @@
   class coalesced_group : public /*group-interface-for*/<coalesced_group>
   {
   public:
-    using unit_type       = thread_level;
-    using level_type      = warp_level;
+    using unit_level      = thread_level;
+    using bound_level     = warp_level;
     using hierarchy_type  = Hierarchy;
 
     coalesced_group() = delete;
@@ -47,7 +47,7 @@ A *coalesced* group uses the :ref:`cuda::experimental::coop::lane_synchronizer <
 Queries
 -------
 
-Sub-unit queries work as with any other group type; however, since the *coalesced* group doesn't have a parent group, a native hierarchy level must be used in the super-level queries as the upper bound. For example, ``cuda::experimental::coop::coalesced_group{...}.count(cuda::block)`` queries the number of coalesced groups within a block. It is equivalent to the number of warps within a block.
+Sub-unit queries work as with any other group type; however, since the *coalesced* group doesn't have a parent group, a native hierarchy level must be used in the super-bound queries as the upper bound. For example, ``cuda::experimental::coop::coalesced_group{...}.count(cuda::block)`` queries the number of coalesced groups within a block. It is equivalent to the number of warps within a block.
 
 Examples
 --------

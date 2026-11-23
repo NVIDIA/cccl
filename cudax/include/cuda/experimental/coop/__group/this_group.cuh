@@ -21,10 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__hierarchy/queries/count.h>
+#include <cuda/__hierarchy/queries/rank.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -38,7 +41,6 @@
 #include <cuda/experimental/coop/__group/traits.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
-#  include <cooperative_groups.h>
 #endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -138,12 +140,12 @@ class __this_group_base
   _SynchronizerInstance __synchronizer_instance_{};
 
 public:
-  using unit_type                    = _Level;
-  using level_type                   = _Level;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using hierarchy_type               = _Hierarchy;
-  using arrival_token                = typename _SynchronizerInstance::arrival_token;
+  using unit_level                                 = _Level;
+  using bound_level                                = _Level;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using hierarchy_type                             = _Hierarchy;
+  using arrival_token                              = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -165,18 +167,18 @@ public:
     return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
   // todo(dabayer): Do we want to expose mapping result getter?
-  [[nodiscard]] _CCCL_DEVICE_API const __mapping_result_type& __mapping_result() const
+  [[nodiscard]] _CCCL_DEVICE_API const __mapping_result_type& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }
@@ -218,7 +220,7 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel&)
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
     {
@@ -232,7 +234,7 @@ public:
 
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
-  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
+  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
     {
@@ -268,7 +270,7 @@ public:
 
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp
-  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
+  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
     {
@@ -298,7 +300,7 @@ public:
 template <class _Hierarchy>
 class this_thread : public __this_group_base<thread_level, _Hierarchy>
 {
-  using __base_type = __this_group_base<thread_level, _Hierarchy>;
+  using __base_type _CCCL_NODEBUG = __this_group_base<thread_level, _Hierarchy>;
 
 public:
   using __base_type::__base_type;
@@ -311,7 +313,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const _Hierarchy&) -> this_thread<_
 template <class _Hierarchy>
 class this_warp : public __this_group_base<warp_level, _Hierarchy>
 {
-  using __base_type = __this_group_base<warp_level, _Hierarchy>;
+  using __base_type _CCCL_NODEBUG = __this_group_base<warp_level, _Hierarchy>;
 
 public:
   using __base_type::__base_type;
@@ -324,7 +326,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const _Hierarchy&) -> this_warp<__hie
 template <class _Hierarchy>
 class this_block : public __this_group_base<block_level, _Hierarchy>
 {
-  using __base_type = __this_group_base<block_level, _Hierarchy>;
+  using __base_type _CCCL_NODEBUG = __this_group_base<block_level, _Hierarchy>;
 
 public:
   using __base_type::__base_type;
@@ -337,7 +339,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const _Hierarchy&) -> this_block<__h
 template <class _Hierarchy>
 class this_cluster : public __this_group_base<cluster_level, _Hierarchy>
 {
-  using __base_type = __this_group_base<cluster_level, _Hierarchy>;
+  using __base_type _CCCL_NODEBUG = __this_group_base<cluster_level, _Hierarchy>;
 
 public:
   using __base_type::__base_type;
@@ -350,7 +352,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const _Hierarchy&) -> this_cluster
 template <class _Hierarchy>
 class this_grid : public __this_group_base<grid_level, _Hierarchy>
 {
-  using __base_type = __this_group_base<grid_level, _Hierarchy>;
+  using __base_type _CCCL_NODEBUG = __this_group_base<grid_level, _Hierarchy>;
 
 public:
   using __base_type::__base_type;

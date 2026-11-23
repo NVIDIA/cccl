@@ -22,15 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
