@@ -401,18 +401,6 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
 // array element addresses is sizeof element type and each array element needs to fulfill the alignment requirement of
 // the element type.
 
-// Pointer with metadata to describe readonly input memory for memcpy_async and UBLKCP kernels. LDGSTS is most
-// efficient when the data is 16-byte aligned, UBLKCP when it is 128/16-byte aligned (Hopper/Blackwell), so the
-// pointer is aligned down and the kernel copies the head padding along with the tile.
-template <typename T>
-using aligned_base_ptr = ::cuda::device::aligned_ptr<T>;
-
-template <typename T>
-_CCCL_HOST_DEVICE_API auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<T>
-{
-  return ::cuda::device::make_aligned_ptr(ptr, alignment);
-}
-
 template <int ThreadsPerBlock>
 _CCCL_DEVICE_API void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
 {
@@ -579,7 +567,7 @@ _CCCL_DEVICE_API void transform_kernel_ldgsts(
   Predicate pred,
   F f,
   RandomAccessIteratorOut out,
-  aligned_base_ptr<InTs>... aligned_ptrs)
+  ::cuda::device::aligned_ptr<InTs>... aligned_ptrs)
 {
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
@@ -661,7 +649,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   Predicate pred,
   F f,
   RandomAccessIteratorOut out,
-  aligned_base_ptr<InTs>... aligned_ptrs)
+  ::cuda::device::aligned_ptr<InTs>... aligned_ptrs)
 {
   _CCCL_IKET_RANGE_PUSH(Load);
 
@@ -1088,7 +1076,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
 template <typename It>
 union kernel_arg
 {
-  aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
+  ::cuda::device::aligned_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
   static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>);
   It iterator; // may not be trivially [default|copy]-constructible
 
@@ -1122,7 +1110,7 @@ template <typename It>
 _CCCL_HOST_DEVICE_API auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  arg.aligned_ptr = _CUB::detail::transform::make_aligned_base_ptr(ptr, alignment);
+  arg.aligned_ptr = ::cuda::device::make_aligned_ptr(ptr, alignment);
   return arg;
 }
 
