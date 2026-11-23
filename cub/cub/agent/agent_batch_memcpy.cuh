@@ -36,6 +36,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
@@ -1194,33 +1195,17 @@ public:
     // Copy sub-warp-level and warp-level buffers, the partitions of which follow the TLEV partition
     BufferTuple* class_buffers =
       &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))];
-    BatchMemcpyWLEVBuffers<4>(
-      class_buffers,
-      tile_buffer_srcs,
-      tile_buffer_dsts,
-      tile_buffer_sizes,
-      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV4)));
-    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV4));
-    BatchMemcpyWLEVBuffers<8>(
-      class_buffers,
-      tile_buffer_srcs,
-      tile_buffer_dsts,
-      tile_buffer_sizes,
-      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV8)));
-    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV8));
-    BatchMemcpyWLEVBuffers<16>(
-      class_buffers,
-      tile_buffer_srcs,
-      tile_buffer_dsts,
-      tile_buffer_sizes,
-      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV16)));
-    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV16));
-    BatchMemcpyWLEVBuffers<warp_threads>(
-      class_buffers,
-      tile_buffer_srcs,
-      tile_buffer_dsts,
-      tile_buffer_sizes,
-      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV)));
+    auto copy_wlev_buffers = [&](auto logical_warp_size_tag, size_class wlev_size_class) {
+      constexpr uint32_t logical_warp_size = decltype(logical_warp_size_tag)::value;
+      const uint32_t num_class_buffers     = size_class_agg.get(static_cast<uint32_t>(wlev_size_class));
+      BatchMemcpyWLEVBuffers<logical_warp_size>(
+        class_buffers, tile_buffer_srcs, tile_buffer_dsts, tile_buffer_sizes, num_class_buffers);
+      class_buffers += num_class_buffers;
+    };
+    copy_wlev_buffers(::cuda::std::integral_constant<uint32_t, 4>{}, size_class::WLEV4);
+    copy_wlev_buffers(::cuda::std::integral_constant<uint32_t, 8>{}, size_class::WLEV8);
+    copy_wlev_buffers(::cuda::std::integral_constant<uint32_t, 16>{}, size_class::WLEV16);
+    copy_wlev_buffers(::cuda::std::integral_constant<uint32_t, warp_threads>{}, size_class::WLEV);
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
     const uint32_t num_tlev_buffers = size_class_agg.get(static_cast<uint32_t>(size_class::TLEV));
