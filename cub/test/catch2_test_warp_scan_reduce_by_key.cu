@@ -23,7 +23,7 @@ __global__ void reduce_by_key_scan_kernel(const int* keys, const T* values, T* o
   __shared__ typename warp_scan_t::TempStorage storage[total_warps];
 
   const int tid = static_cast<int>(threadIdx.x);
-  pair_t item(keys[tid], values[tid]);
+  const pair_t item(keys[tid], values[tid]);
   pair_t result;
   warp_scan_t(storage[tid / warp_threads]).InclusiveScan(item, result, cub::ReduceByKeyOp<::cuda::std::plus<>>{});
   out[tid] = result.value;
@@ -48,8 +48,8 @@ CUB_TEST("WarpScan inclusive scan by key accumulates every segment, the first on
   {
     const int lane = tid % warp_threads;
     // (The keys of the second warp are different, but that does not matter: the warps are scanned separately.)
-    h_keys[tid]     = (lane < first_length ? 0 : 1 + (lane - first_length) / length) + 100 * (tid / warp_threads);
-    h_values[tid]   = static_cast<type>(tid % 7 + 1);
+    h_keys[tid]     = (lane < first_length ? 0 : 1 + ((lane - first_length) / length)) + (100 * (tid / warp_threads));
+    h_values[tid]   = static_cast<type>((tid % 7) + 1);
     h_expected[tid] = (lane == 0 || h_keys[tid] != h_keys[tid - 1])
                       ? h_values[tid]
                       : static_cast<type>(h_expected[tid - 1] + h_values[tid]);

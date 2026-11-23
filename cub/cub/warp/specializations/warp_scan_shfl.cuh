@@ -591,7 +591,7 @@ struct WarpScanShfl
     // The highest set bit is the first lane of our segment. No bit is set for the first segment, which begins at
     // lane 0, so clamp to 0 (bit_msb(0) == -1). `ballot == 0 ? 0 : static_cast<int>(::cuda::std::__bit_log2(ballot))`
     // is equivalent, but ptxas generates two more instructions for it on sm_100 and later.
-    int segment_first_lane = (::cuda::std::max) (0, ::cuda::bit_msb(ballot));
+    const int segment_first_lane = (::cuda::std::max) (0, ::cuda::bit_msb(ballot));
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
