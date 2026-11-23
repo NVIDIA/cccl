@@ -57,8 +57,8 @@ class generic_group
   static_assert(group<_ParentGroup>);
   static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
                 "the parent group must not be a group_view");
-  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
-                "unit_type must be same as or below _ParentGroup's unit_type");
+  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>,
+                "unit_level must be same as or below _ParentGroup's unit_level");
 
   using _Hierarchy _CCCL_NODEBUG           = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult _CCCL_NODEBUG = typename _ParentGroup::__mapping_result_type;
@@ -69,8 +69,8 @@ class generic_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type                    = _Unit;
-  using level_type                   = typename _ParentGroup::level_type;
+  using unit_level                   = _Unit;
+  using bound_level                  = typename _ParentGroup::bound_level;
   using hierarchy_type               = _Hierarchy;
   using __mapping_result_type        = _MappingResult;
   using __synchronizer_instance_type = _SynchronizerInstance;
@@ -236,7 +236,7 @@ public:
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
-    return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __count_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
@@ -264,9 +264,9 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename bound_level::__product_type rank(const _Arg& __parent) const
   {
-    return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __rank_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 
@@ -278,7 +278,7 @@ _CCCL_TEMPLATE(
   class _MappingResult        = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>,
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
-                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES generic_group(const _Unit&, const _ParentGroup&, _Mapping&&, _Synchronizer&&)
   -> generic_group<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>;
 

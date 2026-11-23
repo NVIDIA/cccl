@@ -47,11 +47,11 @@ namespace cuda::experimental::coop
 template <class _Group>
 [[nodiscard]] _CCCL_DEVICE_API bool __elect_one(const _Group& __group)
 {
-  if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+  if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::bound_level, warp_level>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({ return ::cuda::ptx::elect_sync(~0u); }))
   }
-  else if constexpr (!::cuda::std::is_same_v<typename _Group::unit_type, thread_level>)
+  else if constexpr (!::cuda::std::is_same_v<typename _Group::unit_level, thread_level>)
   {
     // For groups whose unit is >= warp_level, we want to still execute the elect.sync PTX instruction by the root warp
     // to let the compiler enter the Uniform Data Path (UDP) when invoking the callable.

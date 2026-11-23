@@ -73,7 +73,7 @@ template <class _Callable, class _Unit, class _ParentGroup, class _PrevMappingRe
   _Callable& __fn, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
 {
   static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "labeled_partition can only group threads");
-  static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
+  static_assert(::cuda::std::is_same_v<typename _ParentGroup::bound_level, warp_level>,
                 "labeled_partition can be only used within warp_level");
 
   using ::cuda::std::uint32_t;

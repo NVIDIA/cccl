@@ -322,8 +322,8 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
-_CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
-                 _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::level_type>)
+_CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_level>
+                 _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::bound_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
   ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
@@ -356,8 +356,8 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
-_CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
-                 _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::level_type>)
+_CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_level>
+                 _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::bound_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
   ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {

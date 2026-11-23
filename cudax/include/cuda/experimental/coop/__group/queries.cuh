@@ -37,7 +37,7 @@ namespace cuda::experimental::coop
 template <class _Unit, class _Group>
 [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __static_count_query_group()
 {
-  using _GroupUnit          = typename _Group::unit_type;
+  using _GroupUnit          = typename _Group::unit_level;
   using _GroupMappingResult = typename _Group::__mapping_result_type;
 
   constexpr auto __group_unit_count = _GroupMappingResult::static_unit_count();
@@ -69,7 +69,7 @@ template <class _Unit, class _Group>
 template <class _Tp, class _Unit, class _Group>
 [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __count_query_group(const _Group& __group)
 {
-  using _GroupUnit = typename _Group::unit_type;
+  using _GroupUnit = typename _Group::unit_level;
 
   constexpr auto __static_count = ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>();
   if constexpr (__static_count != ::cuda::std::dynamic_extent)
@@ -94,7 +94,7 @@ template <class _Tp, class _Unit, class _Group>
 template <class _Tp, class _Unit, class _Group>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __rank_query_group(const _Group& __group)
 {
-  using _GroupUnit = typename _Group::unit_type;
+  using _GroupUnit = typename _Group::unit_level;
 
   const auto __group_unit_rank = static_cast<_Tp>(__group.__mapping_result().unit_rank());
   if constexpr (::cuda::std::is_same_v<_Unit, _GroupUnit>)

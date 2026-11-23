@@ -173,7 +173,7 @@ class barrier_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance<_Barrier, _Unit> __make_instance(
     _Range& __barriers, const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Bound = typename _ParentGroup::bound_level;
 
     constexpr auto __static_group_count   = _MappingResult::static_group_count();
     constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_Range>;
@@ -183,8 +183,8 @@ class barrier_synchronizer
       static_assert(__static_group_count <= __static_barrier_count, "invalid number of barriers passed");
     }
 
-    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
-                  "_Barrier's thread scope is insufficient for group synchronization in _Level");
+    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Bound>,
+                  "_Barrier's thread scope must cover the parent group's bound level");
 
     ::cuda::std::size_t __nthread_in_unit     = 1;
     ::cuda::std::size_t __thread_rank_in_unit = 0;

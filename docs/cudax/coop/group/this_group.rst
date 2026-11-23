@@ -11,8 +11,8 @@
   class /*this-group*/ : public /*group-interface-for*/</*this-group*/>
   {
   public:
-    using unit_type       = Level;
-    using level_type      = Level;
+    using unit_level      = Level;
+    using bound_level     = Level;
     using hierarchy_type  = Hierarchy;
 
     /*this-group*/() = delete;
@@ -61,7 +61,7 @@ Because every this group is a separate type, the ``cuda::experimental::coop::mak
 Queries
 -------
 
-Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-level queries as the upper bound. For example, ``cuda::experimental::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
+Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-bound queries as the upper bound. For example, ``cuda::experimental::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
 
 Examples
 --------

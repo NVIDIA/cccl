@@ -54,7 +54,7 @@ template <class _ParentGroup>
 inline constexpr bool __is_parent_group_query_v<parent_group_t, _ParentGroup> = true;
 template <class _ViewUnit, class _ViewMappingResult, class _ParentGroup>
 inline constexpr bool __is_parent_group_query_v<group_view<_ViewUnit, _ParentGroup, _ViewMappingResult>, _ParentGroup> =
-  ::cuda::std::is_same_v<_ViewUnit, typename _ParentGroup::unit_type>;
+  ::cuda::std::is_same_v<_ViewUnit, typename _ParentGroup::unit_level>;
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED
