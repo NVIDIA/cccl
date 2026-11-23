@@ -759,10 +759,6 @@ __make_config_from_levels(const _Levels&... __levels, const _Options&... __optio
     static_assert((::cuda::std::is_base_of_v<__detail::launch_option, _Options> && ...),
                   "Hierarchy levels and launch options can't be mixed");
   }
-  else if constexpr (sizeof...(_Levels) == 0)
-  {
-    return kernel_config<__empty_hierarchy, _Options...>{__empty_hierarchy{}, __options...};
-  }
   else
   {
     constexpr auto __make_hierarchy = ::cuda::make_hierarchy<void, const ::cuda::std::unwrap_ref_decay_t<_Levels>&...>;
@@ -783,7 +779,15 @@ template <typename... _Args>
 [[nodiscard]] _CCCL_HOST_API constexpr auto make_config(const _Args&... __args)
 {
   constexpr auto __num_levels = (0u + ... + !::cuda::std::is_base_of_v<__detail::launch_option, _Args>);
-  return ::cuda::__make_config(::cuda::std::make_index_sequence<__num_levels>{}, __args...);
+  // NVCC 12.0 cannot call __make_config_from_levels with two empty packs for make_config().
+  if constexpr (__num_levels == 0)
+  {
+    return kernel_config<__empty_hierarchy, _Args...>{__empty_hierarchy{}, __args...};
+  }
+  else
+  {
+    return ::cuda::__make_config(::cuda::std::make_index_sequence<__num_levels>{}, __args...);
+  }
 }
 
 namespace __detail
