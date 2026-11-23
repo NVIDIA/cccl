@@ -1620,7 +1620,7 @@ struct policy_hub
       SEGMENTED_RADIX_BITS - 1>;
   };
 
-  /// SM75: same as SM70, but always uses onesweep
+  /// SM75: same as SM70, but always uses onesweep, with fewer privatized rank partitions for small keys
   struct Policy750 : detail::chained_policy<750, Policy750, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = Policy700::PRIMARY_RADIX_BITS;
@@ -1631,7 +1631,15 @@ struct policy_hub
 
     using HistogramPolicy    = typename Policy700::HistogramPolicy;
     using ExclusiveSumPolicy = typename Policy700::ExclusiveSumPolicy;
-    using OnesweepPolicy     = typename Policy700::OnesweepPolicy;
+    using OnesweepPolicy     = detail::agent_radix_sort_onesweep_policy<
+      256,
+      sizeof(KeyT) == 4 && sizeof(ValueT) == 4 ? 46 : 23,
+      DominantT,
+      sizeof(KeyT) < 4 ? 2 : 4,
+      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+      BLOCK_SCAN_WARP_SCANS,
+      RADIX_SORT_STORE_DIRECT,
+      ONESWEEP_RADIX_BITS>;
     using ScanPolicy         = typename Policy700::ScanPolicy;
     using DownsweepPolicy    = typename Policy700::DownsweepPolicy;
     using AltDownsweepPolicy = typename Policy700::AltDownsweepPolicy;
@@ -2016,8 +2024,8 @@ struct policy_selector
       single_tile};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_sm70_policy(RadixSortAlgorithm algorithm) const
-    -> RadixSortPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  make_sm70_policy(RadixSortAlgorithm algorithm, int onesweep_rank_num_parts) const -> RadixSortPolicy
   {
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
@@ -2036,7 +2044,7 @@ struct policy_selector
       RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_WARP_SCANS,
-      4,
+      onesweep_rank_num_parts,
       onesweep_radix_bits);
 
     const auto scan = _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
@@ -2198,14 +2206,16 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{7, 5})
     {
-      return make_sm70_policy(RadixSortAlgorithm::onesweep);
+      // Small keys use fewer privatized rank partitions: on a T4, 2 partitions win over 4 at all entropies, while 1
+      // partition regresses low-entropy inputs
+      return make_sm70_policy(RadixSortAlgorithm::onesweep, key_size < 4 ? 2 : 4);
     }
 
     if (cc >= ::cuda::compute_capability{7, 0})
     {
       // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
       return make_sm70_policy(
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass);
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass, 4);
     }
 
     if (cc >= ::cuda::compute_capability{6, 2})
