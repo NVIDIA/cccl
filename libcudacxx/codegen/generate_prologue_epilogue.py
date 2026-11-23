@@ -82,7 +82,7 @@ PUSH_POP_MACROS = {
         "no_tls_guard",
     ],
     "Windows nasty macros": ["min", "max"],
-    "sal.h on Windows": ["__valid", "__callback"],
+    "sal.h on Windows": ["__callback"],
     "other macros": ["clang"],
     "sys/sysmacros.h on linux": ["major", "minor", "makedev"],
 }

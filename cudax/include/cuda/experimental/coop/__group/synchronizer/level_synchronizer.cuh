@@ -109,7 +109,7 @@ struct level_synchronizer::__synchronizer_instance
   template <bool _Aligned>
   _CCCL_DEVICE_API void __wait_impl([[maybe_unused]] arrival_token __tok) const
   {
-    _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to wait");
+    _CCCL_ASSERT(__tok.__is_valid(), "invalid arrival token passed to wait");
 
     if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
     {
