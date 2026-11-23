@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/generate.h>
 

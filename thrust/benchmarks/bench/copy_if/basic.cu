@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <thrust/copy.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cstddef>
