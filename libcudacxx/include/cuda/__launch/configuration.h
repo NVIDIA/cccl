@@ -29,6 +29,7 @@
 #  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__functional/unwrap_ref.h>
 #  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__type_traits/conjunction.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
@@ -36,6 +37,8 @@
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
 #  include <cuda/std/__type_traits/rank.h>
+#  include <cuda/std/__type_traits/type_list.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -328,8 +331,8 @@ private:
 };
 
 template <class _Tp>
-[[nodiscard]] _CCCL_HOST_API ::cudaError_t __apply_launch_option(
-  const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
+[[nodiscard]] _CCCL_HOST_API ::cudaError_t
+__apply_launch_option(const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel)
 {
   ::cudaError_t __status = ::cudaSuccess;
 
@@ -551,6 +554,8 @@ struct kernel_config
   using hierarchy_type = _Hierarchy;
   using options_type   = ::cuda::std::tuple<_Options...>;
 
+  static constexpr unsigned int __num_attrs = (0u + ... + _Options::needs_attribute_space);
+
   static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, _Options>...>::value);
   static_assert(__detail::no_duplicate_options<_Options...>);
 
@@ -745,62 +750,47 @@ _CCCL_HOST_API constexpr auto distribute(int numElements) noexcept
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
 }
 
-template <typename... _Prev>
-[[nodiscard]] _CCCL_HOST_API constexpr auto __process_config_args(const ::cuda::std::tuple<_Prev...>& previous)
+template <class... _Levels, class... _Options>
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+__make_config_from_levels(const _Levels&... __levels, const _Options&... __options)
 {
-  if constexpr (sizeof...(_Prev) == 0)
+  if constexpr (!(::cuda::std::is_base_of_v<__detail::launch_option, _Options> && ...))
   {
-    return kernel_config<__empty_hierarchy>(__empty_hierarchy());
+    static_assert((::cuda::std::is_base_of_v<__detail::launch_option, _Options> && ...),
+                  "Hierarchy levels and launch options can't be mixed");
+  }
+  else if constexpr (sizeof...(_Levels) == 0)
+  {
+    return kernel_config<__empty_hierarchy, _Options...>{__empty_hierarchy{}, __options...};
   }
   else
   {
-    constexpr auto fn = &make_hierarchy<void, const _Prev&...>;
-    return kernel_config(::cuda::std::apply(fn, previous));
+    constexpr auto __make_hierarchy = ::cuda::make_hierarchy<void, const ::cuda::std::unwrap_ref_decay_t<_Levels>&...>;
+    using _Hierarchy                = decltype(__make_hierarchy(__levels...));
+    return kernel_config<_Hierarchy, _Options...>{__make_hierarchy(__levels...), __options...};
   }
 }
 
-template <typename... _Prev, typename _Arg, typename... _Rest>
+template <::cuda::std::size_t... _LevelIndices, class... _Args>
 [[nodiscard]] _CCCL_HOST_API constexpr auto
-__process_config_args(const ::cuda::std::tuple<_Prev...>& previous, const _Arg& arg, const _Rest&... rest)
+__make_config(::cuda::std::index_sequence<_LevelIndices...>, const _Args&... __args)
 {
-  if constexpr (::cuda::std::is_base_of_v<__detail::launch_option, _Arg>)
-  {
-    static_assert((::cuda::std::is_base_of_v<__detail::launch_option, _Rest> && ...),
-                  "Hierarchy levels and launch options can't be mixed");
-    if constexpr (sizeof...(_Prev) == 0)
-    {
-      return kernel_config(__empty_hierarchy(), arg, rest...);
-    }
-    else
-    {
-      constexpr auto fn = make_hierarchy<void, const _Prev&...>;
-      return kernel_config(::cuda::std::apply(fn, previous), arg, rest...);
-    }
-  }
-  else
-  {
-    return __process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
-  }
+  // Specify the leading level types so only the trailing launch options need to be deduced.
+  return ::cuda::__make_config_from_levels<::cuda::std::__type_index_c<_LevelIndices, _Args...>...>(__args...);
 }
 
 template <typename... _Args>
-[[nodiscard]] _CCCL_HOST_API constexpr auto make_config(const _Args&... args)
+[[nodiscard]] _CCCL_HOST_API constexpr auto make_config(const _Args&... __args)
 {
-  return __process_config_args(::cuda::std::make_tuple(), args...);
+  constexpr auto __num_levels = (0u + ... + !::cuda::std::is_base_of_v<__detail::launch_option, _Args>);
+  return ::cuda::__make_config(::cuda::std::make_index_sequence<__num_levels>{}, __args...);
 }
 
 namespace __detail
 {
 template <typename _Dimensions, typename... _Options>
-_CCCL_HOST_API unsigned int constexpr kernel_config_count_attr_space(
-  const kernel_config<_Dimensions, _Options...>&) noexcept
-{
-  return (0 + ... + _Options::needs_attribute_space);
-}
-
-template <typename _Dimensions, typename... _Options>
 [[nodiscard]] _CCCL_HOST_API cudaError_t apply_kernel_config(
-  const kernel_config<_Dimensions, _Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
+  const kernel_config<_Dimensions, _Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel)
 {
   return ::cuda::std::apply(
     [&](auto&... config_options) {

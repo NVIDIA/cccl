@@ -118,9 +118,8 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
                 "Can't launch a configuration without hierarchy dimensions");
   using _Hierarchy = typename _Config::hierarchy_type;
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level = _Hierarchy::has_level(cluster);
-  constexpr unsigned int __num_attrs_needed =
-    ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
+  constexpr bool __has_cluster_level        = _Hierarchy::has_level(cluster);
+  constexpr unsigned int __num_attrs_needed = _Config::__num_attrs + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
