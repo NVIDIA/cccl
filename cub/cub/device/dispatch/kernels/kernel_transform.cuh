@@ -36,6 +36,7 @@
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/instructions/prefetch.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/async_copy>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cccl/ptx_isa.h>
@@ -661,75 +662,6 @@ _CCCL_DEVICE_API void transform_kernel_ldgsts(
   }
 }
 
-template <int BulkCopyAlignment>
-_CCCL_DEVICE_API void bulk_copy_maybe_unaligned(
-  void* dst,
-  const void* src,
-  unsigned int bytes_to_copy,
-  int head_padding,
-  uint64_t& bar,
-  /* inout */ ::cuda::std::uint32_t& total_copied,
-  bool elected)
-{
-  const char* src_ptr = static_cast<const char*>(src);
-  char* dst_ptr       = static_cast<char*>(dst);
-
-  // handle tiny copies to simplify head/tail bytes computations below
-  if (bytes_to_copy < BulkCopyAlignment)
-  {
-    if (threadIdx.x < bytes_to_copy)
-    {
-      dst_ptr[threadIdx.x] = src_ptr[threadIdx.x];
-    }
-    return;
-  }
-
-  const unsigned int head_bytes = (BulkCopyAlignment - head_padding) % BulkCopyAlignment;
-  const unsigned int tail_bytes = (bytes_to_copy - head_bytes) % bulk_copy_size_multiple;
-
-  // launch the bulk copy only from the elected thread
-  if (elected)
-  {
-    _CCCL_ASSERT(bytes_to_copy >= (head_bytes + tail_bytes), "");
-    const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
-    if (aligned_bytes_to_copy > 0)
-    {
-      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<BulkCopyAlignment>(dst_ptr + head_bytes), "");
-      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<BulkCopyAlignment>(src_ptr + head_bytes), "");
-      _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
-
-      ::cuda::ptx::cp_async_bulk(
-        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
-        ::cuda::ptx::space_global,
-        dst_ptr + head_bytes,
-        src_ptr + head_bytes,
-        aligned_bytes_to_copy,
-        &bar);
-      total_copied += aligned_bytes_to_copy;
-    }
-  }
-
-  // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte;
-  char tail_byte;
-  if (threadIdx.x < head_bytes)
-  {
-    head_byte = src_ptr[threadIdx.x];
-  }
-  if (threadIdx.x < tail_bytes)
-  {
-    tail_byte = src_ptr[bytes_to_copy - tail_bytes + threadIdx.x];
-  }
-  if (threadIdx.x < head_bytes)
-  {
-    dst_ptr[threadIdx.x] = head_byte;
-  }
-  if (threadIdx.x < tail_bytes)
-  {
-    dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
-  }
-}
-
 // TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
@@ -829,33 +761,17 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
 
-        // TODO(bgruber): we could precompute bytes_to_copy on the host
-        int bytes_to_copy;
-        int head_padding;
-        int tail_padding;
+        int head_padding = 0;
         if constexpr (alignof(T) < bulk_copy_size_multiple)
         {
-          head_padding  = aligned_ptr.head_padding;
-          tail_padding  = head_padding > 0 ? 16 - head_padding : 0; // tile size % 16 == 0
-          bytes_to_copy = ::cuda::round_up(head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
+          head_padding = aligned_ptr.head_padding;
         }
         else
         {
           _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-          head_padding  = 0;
-          tail_padding  = 0;
-          bytes_to_copy = int{sizeof(T)} * valid_items;
         }
-
-        ::cuda::ptx::cp_async_bulk_ignore_oob(
-          ::cuda::ptx::space_shared,
-          ::cuda::ptx::space_global,
-          dst,
-          src,
-          bytes_to_copy,
-          /* ignore left */ head_padding,
-          /* ignore right */ tail_padding,
-          &bar);
+        const int bytes_to_copy = static_cast<int>(
+          ::cuda::device::bulk_load_unaligned_ignore_oob(dst, src, int{sizeof(T)} * valid_items, head_padding, &bar));
         total_copied += bytes_to_copy;
 
         smem += tile_padding + int{sizeof(T)} * tile_size;
@@ -917,14 +833,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
             bytes_to_copy = int{sizeof(T)} * tile_size;
           }
 
-          ::cuda::ptx::cp_async_bulk(
-            ::cuda::std::
-              conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
-            ::cuda::ptx::space_global,
-            dst,
-            src,
-            bytes_to_copy,
-            &bar);
+          ::cuda::device::bulk_load(dst, src, bytes_to_copy, &bar);
           total_copied += bytes_to_copy;
 
           smem += tile_padding + (int{sizeof(T)} * tile_size);
@@ -977,13 +886,14 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
         const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-        const char* src = aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
-        char* dst       = smem + head_padding;
-        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
-        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
+        const char* src = aligned_ptr.ptr + (offset * sizeof(T));
+        char* dst       = smem;
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
-        _CUB::detail::transform::bulk_copy_maybe_unaligned<bulk_copy_alignment>(
-          dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
+        constexpr int copy_unit = alignof(T) < 8 ? int{alignof(T)} : 8;
+        total_copied += ::cuda::device::bulk_load_unaligned_precise<bulk_copy_alignment, copy_unit>(
+          dst, src, bytes_to_copy, head_padding, &bar, threadIdx.x, elected);
 
         // add padding to account for this tile's head padding
         smem += tile_padding + (int{sizeof(T)} * tile_size);
