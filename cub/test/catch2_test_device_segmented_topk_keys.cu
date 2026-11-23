@@ -1067,7 +1067,7 @@ struct concentrated_top_keys_op
     const auto j = i % segment_size;
     if (j < run)
     {
-      return 100.0f + static_cast<float>(j) / static_cast<float>(2 * run);
+      return 100.0f + (static_cast<float>(j) / static_cast<float>(2 * run));
     }
     return static_cast<float>(j) / static_cast<float>(segment_size);
   }

@@ -195,7 +195,7 @@ effective_max_cluster_blocks(int bits_per_pass, int max_blocks_per_cluster) noex
 {
   const int histogram_bytes = (1 << bits_per_pass) * int{sizeof(::cuda::std::uint32_t)};
   // The leader does not send its own histogram, hence the extra CTA.
-  const int max_fold_blocks = 1 + mbarrier_max_tx_count / histogram_bytes;
+  const int max_fold_blocks = 1 + (mbarrier_max_tx_count / histogram_bytes);
   return (max_blocks_per_cluster > 0 && max_blocks_per_cluster < max_fold_blocks)
          ? max_blocks_per_cluster
          : max_fold_blocks;
@@ -1355,7 +1355,7 @@ private:
     }
     // A full-warp reduction needs no shared memory (`TempStorage` is empty); the sum is valid in lane 0.
     using warp_reduce_t = WarpReduce<::cuda::std::uint32_t>;
-    typename warp_reduce_t::TempStorage warp_reduce_storage;
+    warp_reduce_t::TempStorage warp_reduce_storage;
     const ::cuda::std::uint32_t num_warp_skipped_bytes = warp_reduce_t(warp_reduce_storage).Sum(num_skipped_bytes);
     if (tid % detail::warp_threads == 0 && num_warp_skipped_bytes != 0)
     {
