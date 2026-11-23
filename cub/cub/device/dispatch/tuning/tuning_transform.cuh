@@ -441,7 +441,7 @@ struct policy_selector
         auto async           = TransformAsyncCopyPolicy{256};
         async.unroll_factor  = 2;
         async.store_vec_size = 8;
-        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + 48 * 1024, async};
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + (48 * 1024), async};
       }
       if (common_value_type_size == 2) // I16
       {
@@ -449,7 +449,7 @@ struct policy_selector
         auto async           = TransformAsyncCopyPolicy{256};
         async.unroll_factor  = 2;
         async.store_vec_size = 2;
-        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + 28 * 1024, async};
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + (28 * 1024), async};
       }
       // F32 and F64 tunings showed no measurable improvement
     }
