@@ -55,7 +55,7 @@ enum class RadixSortAlgorithm
                           "Use RadixSortAlgorithm::onesweep instead.") = 0,
   //! Single-pass radix sort using decoupled look-back
   onesweep = 1,
-  //! Internal alias of multi_pass, so CUB's own tuning policies can still select it without a deprecation warning
+  // Internal alias, so we can still use it for old architectures
   __deprecated_multi_pass = 0
 };
 
