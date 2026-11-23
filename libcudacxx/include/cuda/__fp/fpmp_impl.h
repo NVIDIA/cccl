@@ -371,7 +371,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 //
 // Public and internal functions are decorated at each call site with CCCL
 // visibility macros directly (_CCCL_HOST_DEVICE_API inline, _CCCL_DEVICE_API inline,
-// _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE, _CCCL_TRIVIAL_DEVICE_API); these expand
+// _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE, _CCCL_DEVICE_API _CCCL_FORCEINLINE); these expand
 // correctly for both CUDA and host-only compilation. The only decorators that still
 // need dedicated macros are the extern-"C" ABI symbols used when building or linking
 // the standalone libcufp library.
@@ -381,7 +381,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 #  define _CCCL_FPMP_BUILTIN_DEVICE_DECL _CCCL_FPMP_ABI extern "C" _CCCL_DEVICE
 #else
 #  define _CCCL_FPMP_BUILTIN_DECL        _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
-#  define _CCCL_FPMP_BUILTIN_DEVICE_DECL _CCCL_TRIVIAL_DEVICE_API
+#  define _CCCL_FPMP_BUILTIN_DEVICE_DECL _CCCL_DEVICE_API _CCCL_FORCEINLINE
 #endif
 
 /*
@@ -405,10 +405,10 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 */
 #ifdef _CCCL_FPMP_BUILD_LIB
 #  define _CCCL_FPMP_CORE_API        static _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
-#  define _CCCL_FPMP_CORE_DEVICE_API static _CCCL_DEVICE_API
+#  define _CCCL_FPMP_CORE_DEVICE_API static _CCCL_DEVICE_API _CCCL_FORCEINLINE
 #else
 #  define _CCCL_FPMP_CORE_API        _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
-#  define _CCCL_FPMP_CORE_DEVICE_API _CCCL_DEVICE_API
+#  define _CCCL_FPMP_CORE_DEVICE_API _CCCL_DEVICE_API _CCCL_FORCEINLINE
 #endif
 
 /*
