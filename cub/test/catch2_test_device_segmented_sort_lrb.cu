@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <random>
@@ -341,6 +342,124 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
   REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
+}
+
+CUB_TEST("LRB partition storage is capped at one window", "[segmented][sort][device]", CUB_SMALL)
+{
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (!capacity::can_use_lrb<int>(cc))
+  {
+    SKIP("LRB requires a compiled SM90-or-newer target.");
+  }
+
+  capacity::partition_result result;
+  size_t bytes     = 0;
+  int* ptr         = nullptr;
+  const auto query = [&](std::int64_t num_segments) {
+    return capacity::dispatch<cub::SortOrder::Ascending>(nullptr, bytes, ptr, ptr, num_segments, 1, ptr, ptr, result);
+  };
+  constexpr std::int64_t int_max  = std::numeric_limits<int>::max();
+  constexpr std::int64_t uint_max = std::numeric_limits<unsigned>::max();
+  REQUIRE(query(-1) == cudaErrorInvalidValue);
+  REQUIRE(query(int_max - 1) == cudaSuccess);
+  const auto below_limit = bytes;
+  REQUIRE(query(int_max) == cudaSuccess);
+  const auto at_limit = bytes;
+  REQUIRE(at_limit >= below_limit);
+  REQUIRE(at_limit >= sizeof(unsigned) * static_cast<size_t>(int_max));
+  for (const auto count : {int_max + 1, uint_max - 1, uint_max, uint_max + 1, std::numeric_limits<std::int64_t>::max()})
+  {
+    CAPTURE(count);
+    REQUIRE(query(count) == cudaSuccess);
+    REQUIRE(bytes == at_limit);
+  }
+}
+
+CUB_TEST("LRB reuses partition storage across segment windows",
+         "[segmented][sort][device]",
+         CUB_SMALL,
+         c2h::type_list<std::uint16_t, std::uint32_t>,
+         c2h::enum_type_list<cub::SortOrder, cub::SortOrder::Ascending, cub::SortOrder::Descending>)
+{
+  using key_t          = c2h::get<0, TestType>;
+  constexpr auto order = c2h::get<1, TestType>::value;
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (!capacity::can_use_lrb<key_t>(cc))
+  {
+    SKIP("LRB requires a compiled SM90-or-newer target.");
+  }
+
+  constexpr int window_size = 4;
+  // Two mixed windows, an empty window, and a partial window with both sort paths.
+  const std::vector<int> lengths{0, 16001, 2, 0, 3, 0, 16000, 1, 0, 0, 0, 0, 5, 16004};
+  c2h::host_vector<int> begins, ends;
+  c2h::host_vector<key_t> input;
+  for (const auto length : lengths)
+  {
+    input.push_back(17); // Gap between segments.
+    begins.push_back(static_cast<int>(input.size()));
+    for (int i = 0; i < length; ++i)
+    {
+      input.push_back(static_cast<key_t>((i * 73) % 997));
+    }
+    ends.push_back(static_cast<int>(input.size()));
+  }
+  auto expected = input;
+  for (size_t i = 0; i < lengths.size(); ++i)
+  {
+    std::sort(expected.begin() + begins[i], expected.begin() + ends[i], [](key_t lhs, key_t rhs) {
+      return order == cub::SortOrder::Ascending ? lhs < rhs : lhs > rhs;
+    });
+  }
+
+  const bool overwrite              = GENERATE(false, true);
+  const int initial_selector        = GENERATE(0, 1);
+  c2h::device_vector<int> d_begins  = begins;
+  c2h::device_vector<int> d_ends    = ends;
+  c2h::device_vector<key_t> d_input = input;
+  c2h::device_vector<key_t> d_alternate(input.size(), key_t{17});
+  auto* in        = thrust::raw_pointer_cast(d_input.data());
+  auto* alternate = thrust::raw_pointer_cast(d_alternate.data());
+  cub::DoubleBuffer<key_t> keys(initial_selector ? alternate : in, initial_selector ? in : alternate);
+  keys.selector = initial_selector;
+  capacity::partition_result result;
+  size_t bytes            = 0;
+  const auto stream_owner = c2h::make_current_device_stream();
+  const auto run          = [&](void* storage) {
+    return capacity::dispatch<order>(
+      storage,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<std::int64_t>(lengths.size()),
+      static_cast<std::int64_t>(input.size()),
+      keys,
+      overwrite,
+      result,
+      stream_owner.get(),
+      cub::detail::TripleChevronFactory{},
+      window_size);
+  };
+  REQUIRE(run(nullptr) == cudaSuccess);
+  REQUIRE(keys.selector == initial_selector);
+  c2h::device_vector<unsigned char> storage(bytes);
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+  REQUIRE(cudaStreamSynchronize(stream_owner.get()) == cudaSuccess);
+  const auto& output = keys.Current() == in ? d_input : d_alternate;
+  REQUIRE(c2h::host_vector<key_t>(output) == expected);
+  if (!overwrite)
+  {
+    REQUIRE(keys.Current() == alternate);
+    REQUIRE(c2h::host_vector<key_t>(d_input) == input);
+  }
+
+  // The final window has one bounded segment followed by one overflow segment.
+  unsigned ids[2]{};
+  REQUIRE(cudaMemcpy(ids, result.segment_ids, sizeof(ids), cudaMemcpyDeviceToHost) == cudaSuccess);
+  REQUIRE(ids[0] == 0);
+  REQUIRE(ids[1] == 1);
 }
 
 // Check supported floating-point comparisons without imposing radix-sort signed-zero ordering.

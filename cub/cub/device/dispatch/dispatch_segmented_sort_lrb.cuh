@@ -307,14 +307,19 @@ _CCCL_HOST_API cudaError_t dispatch(
   size_t& temp_storage_bytes,
   BeginIterator begins,
   EndIterator ends,
-  unsigned num_segments,
+  segmented_sort::global_segment_offset_t num_segments,
   ::cuda::std::int64_t num_items,
   DoubleBuffer<Key>& keys,
   bool is_overwrite_okay,
   partition_result& result,
   cudaStream_t stream                    = 0,
-  KernelLauncherFactory launcher_factory = {})
+  KernelLauncherFactory launcher_factory = {},
+  int max_segments_per_invocation        = (::cuda::std::numeric_limits<int>::max)())
 {
+  if (num_segments < 0 || num_items < 0 || max_segments_per_invocation <= 0)
+  {
+    return cudaErrorInvalidValue;
+  }
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -331,15 +336,28 @@ _CCCL_HOST_API cudaError_t dispatch(
       return cudaErrorNotSupported;
     }
     return dispatch_compute_cap(PolicySelector{}, cc, [&](auto policy_getter) -> cudaError_t {
-      using policy_getter_t = decltype(policy_getter);
-      using kernels_t       = group_merge_sort_kernels_t<Key, PolicySelector>;
-      using capacities_t    = typename kernels_t::template capacities_t<policy_getter_t>;
-      const auto partition  = [&](void* storage, size_t& bytes) {
-        return dispatch_partition<capacities_t, partition_subpolicy_selector<PolicySelector>>(
-          storage, bytes, begins, ends, num_segments, result, stream, launcher_factory, policy_getter().partition);
+      using policy_getter_t  = decltype(policy_getter);
+      using kernels_t        = group_merge_sort_kernels_t<Key, PolicySelector>;
+      using capacities_t     = typename kernels_t::template capacities_t<policy_getter_t>;
+      const auto window_size = [&](segmented_sort::global_segment_offset_t remaining) {
+        return static_cast<unsigned>(
+          (::cuda::std::min) (remaining, segmented_sort::global_segment_offset_t{max_segments_per_invocation}));
       };
+      const auto partition =
+        [&](void* storage, size_t& bytes, BeginIterator current_begins, EndIterator current_ends, unsigned count) {
+          return dispatch_partition<capacities_t, partition_subpolicy_selector<PolicySelector>>(
+            storage,
+            bytes,
+            current_begins,
+            current_ends,
+            count,
+            result,
+            stream,
+            launcher_factory,
+            policy_getter().partition);
+        };
       size_t partition_bytes = 0;
-      if (const auto error = partition(nullptr, partition_bytes))
+      if (const auto error = partition(nullptr, partition_bytes, begins, ends, window_size(num_segments)))
       {
         return error;
       }
@@ -355,50 +373,60 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      if (const auto error = partition(allocations[0], partition_bytes))
-      {
-        return error;
-      }
       if (!num_segments || !num_items)
       {
-        return cudaSuccess;
+        // Publish empty bin offsets even when there are no keys to sort.
+        return partition(allocations[0], partition_bytes, begins, ends, 0);
       }
       const auto policy        = segmented_sort::policy_selector_from_types<Key, NullType>{}(cc).large_segment;
       const int passes         = ::cuda::ceil_div(int{sizeof(Key) * 8}, policy.radix_bits);
       const int final_selector = (keys.selector + (is_overwrite_okay ? passes : 1)) % 2;
       Key* out                 = keys.d_buffers[final_selector];
-      if (may_have_overflow)
+      Key* other = is_overwrite_okay ? keys.d_buffers[1 - final_selector] : static_cast<Key*>(allocations[1]);
+      const device_double_buffer<Key> radix_buffers(passes % 2 ? out : other, passes % 2 ? other : out);
+
+      // IDs index the current offset iterators. The offsets themselves still index the full key buffers.
+      for (segmented_sort::global_segment_offset_t current_seg_offset = 0; current_seg_offset < num_segments;)
       {
-        // The radix outputs alternate. Arrange them so the last pass and GroupMerge write the same buffer.
-        Key* other = is_overwrite_okay ? keys.d_buffers[1 - final_selector] : static_cast<Key*>(allocations[1]);
-        const device_double_buffer<Key> radix_buffers(passes % 2 ? out : other, passes % 2 ? other : out);
-        if (const auto error = launch_radix_overflow<Order>(
-              result.segment_ids,
-              result.bin_offsets + capacities_t::size,
-              begins,
-              ends,
-              keys.Current(),
-              out,
-              radix_buffers,
-              policy.threads_per_block,
-              stream,
-              launcher_factory))
+        const unsigned current_num_segments = window_size(num_segments - current_seg_offset);
+        const auto current_begins           = begins + current_seg_offset;
+        const auto current_ends             = ends + current_seg_offset;
+        if (const auto error =
+              partition(allocations[0], partition_bytes, current_begins, current_ends, current_num_segments))
         {
           return error;
         }
-      }
-      if (const auto error = launch_sort_kernel_list<kernels_t, Order>(
-            result,
-            begins,
-            ends,
-            keys.Current(),
-            out,
-            stream,
-            launcher_factory,
-            ::cuda::std::make_index_sequence<kernels_t::size>{},
-            policy_getter))
-      {
-        return error;
+        if (may_have_overflow)
+        {
+          if (const auto error = launch_radix_overflow<Order>(
+                result.segment_ids,
+                result.bin_offsets + capacities_t::size,
+                current_begins,
+                current_ends,
+                keys.Current(),
+                out,
+                radix_buffers,
+                policy.threads_per_block,
+                stream,
+                launcher_factory))
+          {
+            return error;
+          }
+        }
+        if (const auto error = launch_sort_kernel_list<kernels_t, Order>(
+              result,
+              current_begins,
+              current_ends,
+              keys.Current(),
+              out,
+              stream,
+              launcher_factory,
+              ::cuda::std::make_index_sequence<kernels_t::size>{},
+              policy_getter))
+        {
+          return error;
+        }
+        current_seg_offset += current_num_segments;
       }
       keys.selector = final_selector;
       return cudaSuccess;
@@ -417,7 +445,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   size_t& temp_storage_bytes,
   BeginIterator begins,
   EndIterator ends,
-  unsigned num_segments,
+  segmented_sort::global_segment_offset_t num_segments,
   ::cuda::std::int64_t num_items,
   const Key* in,
   Key* out,

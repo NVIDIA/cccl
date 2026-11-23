@@ -1176,7 +1176,7 @@ struct lrb_sort_launcher_t
     KeyT* input,
     KeyT* output,
     ::cuda::std::int64_t num_items,
-    unsigned segments,
+    ::cuda::std::int64_t segments,
     BeginIterator begins,
     EndIterator ends) const
   {
@@ -1248,7 +1248,7 @@ void call_cub_segmented_sort_api(
                input_keys,
                output_keys,
                num_items,
-               static_cast<unsigned>(num_segments),
+               num_segments,
                d_begin_offsets,
                thrust::device_pointer_cast(d_end_offsets));
       };
