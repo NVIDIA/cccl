@@ -79,10 +79,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 // TODO(bgruber): this should be called from a uniform code path
 //! @brief Copies @p __bytes bytes from global to the calling block's shared memory with one `cp.async.bulk`,
-//! completing with a complete-tx of @p __bytes on the mbarrier at @p __bar. The caller must expect-tx the bytes.
-//! Issued by the calling thread alone. Pointers must be 16-byte aligned and @p __bytes a multiple of 16.
-_CCCL_DEVICE_API inline void __bulk_load(
+//! completing with a complete-tx of @p __bytes on the mbarrier at @p __bar. Issued by the calling thread alone.
+//! Pointers must be 16-byte aligned and @p __bytes a multiple of 16.
+//!
+//! Like all loads in this header, it returns the bytes it adds to the barrier's transaction count. The intended use is
+//! to issue the copies first and then arm the barrier once with `mbarrier.arrive.expect_tx` of the summed return
+//! values, which is legal since the tx-count may transiently be negative while an arrival is still pending.
+//! @return @p __bytes
+_CCCL_DEVICE_API inline auto __bulk_load(
   void* __smem_dst, const void* __gmem_src, ::cuda::std::uint32_t __bytes, ::cuda::std::uint64_t* __bar) noexcept
+  -> ::cuda::std::uint32_t
 {
   _CCCL_ASSERT(__bytes % 16 == 0, "__bulk_load: size must be a multiple of 16 bytes");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_dst),
@@ -104,6 +110,7 @@ _CCCL_DEVICE_API inline void __bulk_load(
     __gmem_src,
     __bytes,
     __bar);
+  return __bytes;
 }
 
 #  if __cccl_ptx_isa >= 920

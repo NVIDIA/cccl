@@ -803,8 +803,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
             bytes_to_copy = int{sizeof(T)} * tile_size;
           }
 
-          ::cuda::device::__bulk_load(dst, src, bytes_to_copy, &bar);
-          total_copied += bytes_to_copy;
+          total_copied += ::cuda::device::__bulk_load(dst, src, bytes_to_copy, &bar);
 
           smem += tile_padding + (int{sizeof(T)} * tile_size);
           _CCCL_ASSERT(bytes_to_copy <= (int{sizeof(T)} * tile_size) + bulk_copy_alignment, "");
