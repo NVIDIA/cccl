@@ -45,7 +45,7 @@
 
 namespace cuda::experimental::coop
 {
-using __interwarp_barrier_id = ::cuda::std::uint32_t;
+using __interwarp_barrier_id _CCCL_NODEBUG = ::cuda::std::uint32_t;
 
 template <::cuda::std::size_t _ThreadCount>
 class __interwarp_synchronizer_instance
@@ -188,7 +188,7 @@ class interwarp_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __make_instance(_Range& __barrier_ids, const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Bound = typename _ParentGroup::bound_level;
 
     constexpr auto __static_group_count      = _MappingResult::static_group_count();
     constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_Range>;
@@ -199,7 +199,7 @@ class interwarp_synchronizer
                     "insufficient amount of warp barrier ids were passed");
     }
 
-    static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Level, block_level>,
+    static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Bound, block_level>,
                   "interwarp_synchronizer can be only used to group warps within a single block");
 
     constexpr auto __static_unit_count = _MappingResult::static_unit_count();
@@ -241,7 +241,7 @@ class interwarp_synchronizer
 public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
+  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids) // NOLINT(bugprone-forwarding-reference-overload)
       : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
   {}
 

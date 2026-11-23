@@ -75,7 +75,8 @@ _CCCL_DEVICE_API void __check_group_mapping_result(const _MappingResult& __mappi
     _CCCL_ASSERT(
       (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
       "invalid lane mask - this lane must be contained in the lane mask");
-    _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
+    _CCCL_ASSERT(static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__mapping_result.lane_mask().value()))
+                   <= __mapping_result.unit_count(),
                  "invalid lane mask - too many lanes are set in the lane mask");
   }
   else
@@ -111,7 +112,7 @@ template <class _Unit, class _ParentGroup, class _Mapping>
 }
 
 template <class... _Args>
-using __group_mapping_result_t =
+using __group_mapping_result_t _CCCL_NODEBUG =
   decltype(::cuda::experimental::coop::__do_group_mapping(::cuda::std::declval<_Args>()...));
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
@@ -121,8 +122,8 @@ class virtual_group
   static_assert(group<_ParentGroup>);
   static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
                 "the parent group must not be a group_view");
-  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
-                "unit_type must be same as or below _ParentGroup's unit_type");
+  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>,
+                "unit_level must be same as or below _ParentGroup's unit_level");
 
   using _Hierarchy _CCCL_NODEBUG            = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult _CCCL_NODEBUG  = typename _ParentGroup::__mapping_result_type;
@@ -134,12 +135,12 @@ class virtual_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type                    = _Unit;
-  using level_type                   = typename _ParentGroup::level_type;
-  using hierarchy_type               = _Hierarchy;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _ParentGroup::arrival_token;
+  using unit_level                                 = _Unit;
+  using bound_level                                = typename _ParentGroup::bound_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = typename _ParentGroup::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
@@ -261,7 +262,7 @@ public:
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
-    return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __count_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
@@ -290,9 +291,9 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename bound_level::__product_type rank(const _Arg& __parent) const
   {
-    return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __rank_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 
@@ -301,7 +302,7 @@ _CCCL_TEMPLATE(class _Unit,
                class _Mapping,
                class _MappingResult = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
-                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 

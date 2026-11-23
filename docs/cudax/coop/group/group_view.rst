@@ -11,14 +11,14 @@
   class group_view : public /*group-interface-for*/<group_view>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename Group::level_type;
+    using unit_level      = Unit;
+    using bound_level     = typename Group::bound_level;
     using hierarchy_type  = typename Group::hierarchy_type;
 
     group_view() = delete;
 
     __device__ group_view(const Group& group [[lifetimebound]])
-      requires cuda::std::same_as<Unit, typename Group::unit_type>;
+      requires cuda::std::same_as<Unit, typename Group::unit_level>;
 
     __device__ explicit group_view(const Unit& unit, const Group& group [[lifetimebound]]);
 
@@ -37,9 +37,9 @@
 
   template <group Group>
   group_view(const Group&)
-    -> group_view<typename Group::unit_type,
+    -> group_view<typename Group::unit_level,
                   Group,
-                  /*view-mapping-result*/<typename Group::unit_type, Group>>;
+                  /*view-mapping-result*/<typename Group::unit_level, Group>>;
 
   template <typename Unit, class Group, class MappingResult>
   group_view(const group_view<Unit, Group, MappingResult>&) -> group_view<Unit, Group, MappingResult>;
@@ -57,16 +57,16 @@
 Overview
 --------
 
-``cuda::experimental::coop::group_view`` provides a non-owning view over another group that also allows you to view a group as if it had its ``unit_type`` changed. These properties can be useful when you need to pass a group by value or need more fine-grained rank addressing.
+``cuda::experimental::coop::group_view`` provides a non-owning view over another group that also allows you to view a group as if it had its ``unit_level`` changed. These properties can be useful when you need to pass a group by value or need more fine-grained rank addressing.
 
-``cuda::experimental::coop::group_view`` has the same mapping-related properties as the viewed group, unless the unit type was changed. In that case, the (static) unit count and unit rank are recalculated.
+``cuda::experimental::coop::group_view`` has the same mapping-related properties as the viewed group, unless the unit level was changed. In that case, the (static) unit count and unit rank are recalculated.
 
 ``cuda::experimental::coop::group_view`` uses the viewed group's synchronization mechanism.
 
 Queries
 -------
 
-``cuda::experimental::coop::group_view`` provides the exact same queries as the viewed group, unless the unit type was changed. In that case, the sub-unit queries are limited to the group view's unit type.
+``cuda::experimental::coop::group_view`` provides the exact same queries as the viewed group, unless the unit level was changed. In that case, the sub-unit queries are limited to the group view's unit level.
 
 Examples
 --------
@@ -86,21 +86,19 @@ Examples
 
   // The shuffle algorithm exchanges values among units within a given group.
 
-  // An overload for "this" groups (the unit type is the same as the level type) is basically useless,
-  // because there is just 1 unit within the group.
+  // A "this" group has matching unit and bound levels, so it contains a single unit.
   template <typename Group>
-    requires cuda::std::same_as<typename Group::unit_type, typename Group::level_type>
+    requires cuda::std::same_as<typename Group::unit_level, typename Group::bound_level>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     assert(src_rank == 0);
     return value;
   }
 
-  // What we need is an overload that takes a group whose unit and level types are not the same.
-  // This overload implements shuffling values among threads within a warp.
+  // This overload shuffles values among thread-level units within a warp.
   template <typename Group>
-    requires cuda::std::same_as<typename Group::unit_type, cuda::thread_level>
-      && cuda::std::same_as<typename Group::level_type, cuda::warp_level>
+    requires cuda::std::same_as<typename Group::unit_level, cuda::thread_level>
+      && cuda::std::same_as<typename Group::bound_level, cuda::warp_level>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     // Because this overload takes the group as const&, we can't use it in a constant expression
@@ -135,7 +133,7 @@ Examples
 
     // What we need is to treat g as a group of threads. That's where group_view can save us. We
     // needn't create another group that could require new synchronization resources; we can
-    // just change the unit type.
+    // just change the unit level.
     const auto result2 = shuffle(cudax::coop::group_view{cuda::gpu_thread, g},
                   /*value*/     cuda::gpu_thread.rank(g) * 200,
                     /*src_rank*/ (cuda::gpu_thread.rank(g) + 10) % cuda::gpu_thread.count(g));

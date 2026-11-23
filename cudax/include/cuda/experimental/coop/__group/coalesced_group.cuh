@@ -139,12 +139,12 @@ class coalesced_group
   _SynchronizerInstance __synchronizer_instance_{__mapping_result_.lane_mask()};
 
 public:
-  using unit_type                    = thread_level;
-  using level_type                   = warp_level;
-  using hierarchy_type               = _Hierarchy;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _SynchronizerInstance::arrival_token;
+  using unit_level                                 = thread_level;
+  using bound_level                                = warp_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -220,29 +220,29 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, bound_level>)
     {
       return 1;
     }
     else
     {
-      return ::cuda::__static_count_query<level_type, _InLevel, _Hierarchy>();
+      return ::cuda::__static_count_query<bound_level, _InLevel, _Hierarchy>();
     }
   }
 
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
-  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
+  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, bound_level>)
     {
       return _Tp{1};
     }
     else
     {
-      return __count_query<level_type, _InLevel>::template __call<_Tp>(__hier);
+      return __count_query<bound_level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -270,15 +270,15 @@ public:
 
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp
-  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
+  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, bound_level>)
     {
       return _Tp{0};
     }
     else
     {
-      return __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier);
+      return __rank_query<bound_level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 

@@ -65,7 +65,7 @@ try
   if (num_channels != 1 || num_active_channels != 1)
   {
     fprintf(stderr,
-            "\nERROR in cccl_device_histogram_build(): only num_channels=1, num_active_channels=1 is "
+            "\nERROR in cccl_device_histogram_build_ex(): only num_channels=1, num_active_channels=1 is "
             "supported in the HostJIT path.\n");
     return CUDA_ERROR_UNKNOWN;
   }
@@ -110,7 +110,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_histogram_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_histogram_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

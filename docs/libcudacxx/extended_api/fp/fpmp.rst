@@ -392,14 +392,21 @@ The sign of zero is not tracked, by the arithmetic or by most math functions. A 
 renormalized, and the renormalization adds the two limbs, which turns a ``-0`` high limb into
 ``+0``: every zero result of ``+``, ``-``, ``*`` and ``fma`` is ``+0``, including ``(-0) + (-0)``,
 ``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
-function carries whichever sign its evaluation happens to leave: ``sin(-0)`` and ``atan(-0)``
-return ``+0`` where C99 Annex F has ``-0``, and ``atan2`` reads a zero argument as ``+0``, so
-``atan2(-0, -1)`` is ``+pi``. The exceptions that do follow C99 are the operations that act on the
-sign bit itself (unary negation, ``fabs``, ``copysign``, construction from a built-in ``-0.0``),
-and the rounding functions ``ceil``, ``floor``, ``trunc``, ``round``, ``rint``, ``nearbyint`` and
-the fraction of ``modf``, whose zero result carries the sign of the argument on the host and the
-device alike. ``signbit`` reports the high limb. Code that distinguishes ``-0`` from ``+0``
-anywhere else has to take the sign from the operands, before the arithmetic.
+function carries whichever sign its evaluation happens to leave. The exceptions that do follow C99
+are the operations that act on the sign bit itself (unary negation, ``fabs``, ``copysign``,
+construction from a built-in ``-0.0``) and the rounding functions ``ceil``, ``floor``, ``trunc``,
+``round``, ``rint``, ``nearbyint`` and the fraction of ``modf``, whose zero result carries the sign
+of the argument on the host and the device alike. For ``fp32mp2`` they also include ``sin``,
+``tan`` and the sine of ``sincos``, ``sinpi`` and the sine of ``sincospi``, ``expm1``, ``log1p``,
+``sinh``, ``tanh``, ``asinh``, ``atanh``, ``erf`` and ``erfinv``, which return a zero argument
+unchanged, ``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)``
+and ``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), ``sinpi`` at a
+nonzero integer, whose zero has the sign of the argument, ``cospi``, which is ``+0`` at every
+half-integer, and ``fmax`` and ``fmin``, which order ``-0`` below ``+0``. For ``fp64mp2``,
+``sin(-0)`` and ``atan(-0)`` return ``+0`` where C99 Annex F has ``-0``, and ``atan2`` reads a zero
+argument as ``+0``, so ``atan2(-0, -1)`` is ``+pi``. ``signbit`` reports the high limb. Code that
+distinguishes ``-0`` from ``+0`` anywhere else has to take the sign from the operands, before the
+arithmetic.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
@@ -441,7 +448,9 @@ hardware where FP64 is rationed:
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
-- **Special** — ``boys_f0``, the zeroth-order Boys function, for ``a >= 0``
+- **Special** — ``boys_f0``, the zeroth-order Boys function, for arguments ``a >= 0``. A negative
+  argument is outside the domain the kernels cover: they extrapolate there, with a relative error
+  of ``2e-13`` at ``-0.25`` that grows to ``4%`` at ``-8``, and return ``+inf`` below ``-94``
 
 The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrint``, ``llround``,
 ``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``fdim``, ``remquo`` and the
