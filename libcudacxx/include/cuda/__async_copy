@@ -256,6 +256,25 @@ _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
   }
 }
 
+//! @brief Copies @p __bytes bytes from the calling block's shared memory to global memory with one `cp.async.bulk`.
+//! The copy joins the calling thread's current bulk async group; the caller commits the group and waits for it, and
+//! issues a `fence.proxy.async` beforehand if threads wrote the shared memory. Issued by the calling thread alone.
+//! Pointers must be 16-byte aligned and @p __bytes a multiple of 16.
+_CCCL_DEVICE_API inline void
+__bulk_store(void* __gmem_dst, const void* __smem_src, ::cuda::std::uint32_t __bytes) noexcept
+{
+  _CCCL_ASSERT(__bytes % 16 == 0, "__bulk_store: size must be a multiple of 16 bytes");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_dst),
+               "__bulk_store: destination must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_src), "__bulk_store: source must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_dst, ::cuda::device::address_space::global),
+               "__bulk_store: destination must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_src, ::cuda::device::address_space::shared),
+               "__bulk_store: source must be in the calling block's shared memory");
+
+  ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __gmem_dst, __smem_src, __bytes);
+}
+
 #  if __cccl_ptx_isa >= 860
 //! @brief Warp-cooperatively copies @p __bytes bytes from shared to global memory, to the possibly unaligned
 //! @p __gmem_dst_data. The data in shared memory must sit at the same offset past the 16-byte aligned @p __smem_src
@@ -325,12 +344,7 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
     // if the data does not cover a full 16-byte block.
     if (__elected)
     {
-      ::cuda::ptx::cp_async_bulk(
-        ::cuda::ptx::space_global,
-        ::cuda::ptx::space_shared,
-        __dst + __middle_start,
-        __src + __middle_start,
-        __middle_bytes);
+      ::cuda::device::__bulk_store(__dst + __middle_start, __src + __middle_start, __middle_bytes);
     }
     if (__do_start)
     {
