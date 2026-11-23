@@ -13,6 +13,13 @@
 
 // Some code bases define `noinline` as a macro. It must not break the NVCC 12.9 to 13.1 workarounds that use
 // _CCCL_NOINLINE.
+// libstdc++ spells `__attribute__((__noinline__))`, which the `__noinline__` macro of the CUDA Toolkit turns into
+// `__attribute__((noinline))`. So include the host headers that do so before defining the macro.
+#if __has_include(<memory>)
+#  include <memory>
+#  include <string>
+#endif // __has_include(<memory>)
+
 #define noinline "noinline must not be expanded inside CCCL headers"
 
 #include <cuda/memory>
