@@ -112,6 +112,26 @@ descriptive measurements. `AMBG` does not establish parity, and the comparator's
 successful exit status does not mean every result is `SAME`. Preserve the
 report, JSON, and relative binary sidecar directories together.
 
+## Compare the standalone warp sum with CUB
+
+Build the CUB target `cub.bench.reduce.warp_reduce_sum.base` and add the
+build's `bin` directory to `PATH`. Run both benchmarks from the same checkout,
+selecting the six shared types so NVBench can pair every result.
+
+```bash
+cub.bench.reduce.warp_reduce_sum.base -d 0 \
+  -a 'T{ct}=[I8,I16,I32,I64,F32,F64]' --jsonbin cub-warp-sum.json
+python python/cuda_coop_cutlass/benchmarks/reduce/warp_reduce_sum.py \
+  -d 0 --jsonbin cute-warp-sum.json
+nvbench-compare-robust cub-warp-sum.json cute-warp-sum.json
+```
+
+Each warp performs 128 dependent sums. Only lane zero carries the aggregate
+into the next round. The other lanes supply their own signed inputs, keeping
+the sum bounded even for I8. The measurement includes these input updates.
+Earlier versions fed the return value back on every lane and measured a
+different workload. Use the same recurrence on both sides of a comparison.
+
 ## Replay compiled kernels
 
 Use `--compiled-kernels` to measure qualified cubins on another machine with the

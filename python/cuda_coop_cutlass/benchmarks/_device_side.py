@@ -2,16 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Device-side benchmark harness matching CUB's ``device_side_benchmark.cuh``.
+"""Time a device-side workload using CUB's occupancy-sized grid and cold timing.
 
-C++ equivalent: ``nvbench_helper/nvbench_helper/device_side_benchmark.cuh``
-(``benchmark_kernel`` with ``Unroll = false``) and the host code in
-``cub/benchmarks/bench/reduce/warp_reduce_base.cuh``.
-
-Each thread seeds a value from ``%clock``, applies ``action`` ``unroll_factor``
-times in a loop that feeds every result into the next call, and passes the
-result to a sink that stores only when ``%smid == 0xFFFFFFFF``. The grid holds
-as many blocks as fit on the device at once.
+Each workload supplies its per-thread result. As in CUB's device-side harness,
+the sink only writes when the SM identifier equals 0xFFFFFFFF.
 """
 
 import sys
@@ -19,12 +13,10 @@ import sys
 import cuda.bench as bench
 import cutlass
 from cutlass import cute
-from cutlass._mlir.dialects import llvm
 from cutlass.cute.runtime import make_ptr
 
 from cuda.bindings import driver
 
-_FLOAT_TYPES = (cutlass.Float32, cutlass.Float64)
 _SINK_BYTES = 64
 
 
@@ -34,23 +26,10 @@ def _checked(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def _random_data(value_type):
-    """Fill ``value_type`` with ``%clock`` bits, as ``generate_random_data``."""
-    bits = cute.arch.clock()
-    if value_type.width > 32:
-        high = cute.arch.clock()
-        bits = (cutlass.Int64(bits) & 0xFFFFFFFF) | (cutlass.Int64(high) << 32)
-    if value_type in _FLOAT_TYPES:
-        return value_type(llvm.bitcast(value_type.mlir_type, bits.ir_value()))
-    return value_type(bits)
-
-
-def _make_launcher(action, value_type, block_size, unroll_factor):
+def _make_launcher(workload, value_type, block_size, rounds):
     @cute.kernel
     def kernel(sink: cute.Pointer):
-        data = _random_data(value_type)
-        for _ in cutlass.range(unroll_factor):
-            data = action(data)
+        data = workload(value_type, rounds)
         if cute.arch.smid() == cutlass.Int32(-1):
             cute.make_tensor(sink, cute.make_layout(1))[0] = data
 
@@ -94,17 +73,17 @@ def _kernel_launch_parameters(stream, launch):
 
 def run_device_side_benchmark(
     state: bench.State,
-    action,
+    workload,
     value_type,
     *,
     block_size,
-    unroll_factor,
+    rounds,
     grid_size=None,
 ):
     """Compile, size the grid, and time one device-side kernel per state.
 
-    ``action`` is traced inside the kernel and maps one ``value_type`` value to
-    another. ``grid_size=None`` uses the occupancy-sized grid.
+    ``workload(value_type, rounds)`` supplies the device code for each thread.
+    ``grid_size=None`` uses the occupancy-sized grid.
     """
     stream = driver.CUstream(state.get_stream().addressof())
     sink = _checked(driver.cuMemAlloc(_SINK_BYTES))
@@ -112,7 +91,7 @@ def run_device_side_benchmark(
         sink_ptr = make_ptr(
             value_type, int(sink), cute.AddressSpace.gmem, assumed_align=16
         )
-        launcher = _make_launcher(action, value_type, block_size, unroll_factor)
+        launcher = _make_launcher(workload, value_type, block_size, rounds)
         compiled = cute.compile(launcher, sink_ptr, cutlass.Int32(1), stream)
 
         # Module loading must finish before the capture below.

@@ -22,12 +22,18 @@ struct benchmark_op_t
   }
 };
 
+template <int BlockSize, int Rounds, typename Action, typename T, typename Op>
+_CCCL_HOST_API constexpr auto& get_warp_reduce_kernel(Op)
+{
+  return benchmark_kernel<BlockSize, Rounds, Action, T, false>;
+}
+
 template <typename T>
 _CCCL_HOST_API void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   constexpr int block_size    = 256;
   constexpr int unroll_factor = 128; // compromise between compile time and noise
-  const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T, false>;
+  const auto& kernel          = get_warp_reduce_kernel<block_size, unroll_factor, benchmark_op_t, T>(op_t{});
   const int num_SMs     = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   const int device      = state.get_device().value().get_id(); // NOLINT(bugprone-unchecked-optional-access)
   int max_blocks_per_SM = 0;
