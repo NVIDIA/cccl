@@ -24,11 +24,11 @@ void a()
 
   if (cudaPeekAtLastError() != cudaSuccess)
   {
-    printf("b: FAILED to launch kernel\n");
+    printf("a: FAILED to launch kernel\n");
   }
   else
   {
-    printf("b: launched kernel\n");
+    printf("a: launched kernel\n");
   }
 
   if (cudaStreamSynchronize(0) != cudaSuccess)

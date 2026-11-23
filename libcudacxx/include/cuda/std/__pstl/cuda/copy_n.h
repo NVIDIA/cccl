@@ -120,7 +120,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     else
     {
       static_assert(__always_false_v<_Policy>,
-                    "__pstl_dispatch: CUDA backend of cuda::std::copy_if requires at least random access iterators");
+                    "__pstl_dispatch: CUDA backend of cuda::std::copy_n requires at least random access iterators");
       auto __last = ::cuda::std::next(__first, __count);
       return ::cuda::std::copy_if(
         ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), ::cuda::std::move(__pred));

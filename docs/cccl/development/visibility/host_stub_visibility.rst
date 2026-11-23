@@ -99,7 +99,7 @@ A simple example program that exemplifies this can be found
    :./host_stub_visibility/host_stub_visibility
    a: kernel stub address: 0x7f43318a415d           <== same address as in B
    a: kernel is in mapping: no error                <== kernel is found in the mapping
-   b: launched kernel
+   a: launched kernel
    a: kernel: set val = 42
    a: synchronized stream
    a: copied from device to host
