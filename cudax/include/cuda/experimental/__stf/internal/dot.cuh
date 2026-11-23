@@ -91,19 +91,17 @@ class dot;
 //! writer knows the target syntax, so the escaping happens here, once, at the
 //! point where a symbol enters a label. `"` and `\` are the two characters
 //! that terminate or alter a quoted DOT string.
-inline ::std::string dot_escape(const ::std::string& symbol)
+inline ::std::string dot_escape(::std::string symbol)
 {
-  ::std::string out;
-  out.reserve(symbol.size());
-  for (char c : symbol)
+  for (::std::string::size_type i = 0; i < symbol.size(); ++i)
   {
-    if (c == '"' || c == '\\')
+    if (symbol[i] == '"' || symbol[i] == '\\')
     {
-      out.push_back('\\');
+      symbol.insert(i, 1, '\\');
+      ++i;
     }
-    out.push_back(c);
   }
-  return out;
+  return symbol;
 }
 
 //! Type of the edge
