@@ -60,6 +60,7 @@ extensions = [
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
+    "source_links",  # Opening raw-source notes for agents
 ]
 
 # Breathe configuration for Doxygen integration
