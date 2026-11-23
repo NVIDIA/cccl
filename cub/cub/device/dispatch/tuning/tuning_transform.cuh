@@ -490,8 +490,10 @@ struct policy_selector
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
         cc, (::cuda::std::max) (1, output.value_type_size), no_input_streams);
 
-      auto async           = TransformAsyncCopyPolicy{(cc < ::cuda::compute_capability{10, 0}) ? 256 : 128};
-      async.store_vec_size = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
+      // GCC 7 cannot constant-evaluate the policy when this conditional is inlined into the braced initializer
+      const int default_async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
+      auto async                         = TransformAsyncCopyPolicy{default_async_block_size};
+      async.store_vec_size               = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
 
       // try to pick a bulk copy tuning, and override the async copy policy
       const auto tuned_bulk_copy = find_bulk_copy_tuning(cc);
