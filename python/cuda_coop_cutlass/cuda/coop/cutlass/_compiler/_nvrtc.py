@@ -128,6 +128,15 @@ if hasattr(os, "register_at_fork"):
     os.register_at_fork(after_in_child=_reset_pch_after_fork)
 
 
+def pch_mode() -> str:
+    mode = os.environ.get(_PCH_ENV, "").strip().lower() or "auto"
+    if mode not in ("auto", "common", "off"):
+        raise ValueError(
+            f"{_PCH_ENV} must be 'auto', 'common', or 'off', got {mode!r}"
+        )
+    return mode
+
+
 def pch_options(context: CompileContext) -> tuple[bytes, ...]:
     """Select a process-private directory for automatic NVRTC PCH reuse.
 
@@ -136,10 +145,7 @@ def pch_options(context: CompileContext) -> tuple[bytes, ...]:
     These flags apply only to a JIT compile and do not identify its LTO-IR.
     """
 
-    mode = os.environ.get(_PCH_ENV, "").strip().lower() or "auto"
-    if mode not in ("auto", "off"):
-        raise ValueError(f"{_PCH_ENV} must be 'auto' or 'off', got {mode!r}")
-    if mode == "off" or context.nvrtc_version < (12, 8):
+    if pch_mode() == "off" or context.nvrtc_version < (12, 8):
         return ()
     with _PCH_LOCK:
         if context.header_identity not in _PCH_DIRECTORIES:

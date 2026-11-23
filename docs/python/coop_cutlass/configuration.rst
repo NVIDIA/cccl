@@ -32,12 +32,19 @@ Runtime environment variables
    cache validation.
 
 ``CUDA_COOP_CUTLASS_PROVIDER_PCH``
-   Defaults to ``auto``. On a provider cache miss, NVRTC can reuse precompiled
-   headers for another specialization with a compatible header prefix in the
-   same process. NVRTC stores the PCH files in a temporary directory that
-   is removed on normal process exit. If PCH creation exhausts the NVRTC
-   heap, subsequent misses for that set of headers use ordinary compilation.
-   Set this to ``off`` to compile each miss without PCH.
+   Selects the headers and precompiled header (PCH) behavior for provider
+   compilation. The default, ``auto``, uses the headers needed by each
+   provider bundle. Set this to ``common`` to use a shared header prefix
+   across operations. The first provider cache miss compiles the broader
+   header set. Set this to ``off`` to use per-bundle headers and disable PCH.
+
+   With either ``auto`` or ``common``, NVRTC 12.8 or later can create a PCH
+   on a provider cache miss. Later misses in the same process can reuse it
+   when the header prefix, target and compiler options match. Earlier
+   NVRTC versions compile the selected headers directly on each miss.
+   PCH files are stored in a temporary directory that is removed on normal
+   process exit. If PCH creation exhausts the NVRTC heap, subsequent misses
+   for that header set use ordinary compilation.
 
 ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.

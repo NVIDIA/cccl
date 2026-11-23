@@ -14,9 +14,13 @@ from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
+import cutlass
 import pytest
-from cutlass import Int32
+from cutlass import Int32, cute
+from cutlass.base_dsl.compiler import GPUArch
+from cutlass.cute.runtime import make_ptr
 
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler import (
     _bundle,
     _cache,
@@ -35,6 +39,20 @@ from cuda.coop.cutlass._planning import this_block
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
+def _record_compile_logs(monkeypatch):
+    nvrtc = _nvrtc._load_nvrtc()
+    compile_program = nvrtc.nvrtcCompileProgram
+    logs = []
+
+    def record(program, count, flags):
+        result = compile_program(program, count, flags)
+        logs.append(_nvrtc._program_log(nvrtc, program).lower())
+        return result
+
+    monkeypatch.setattr(nvrtc, "nvrtcCompileProgram", record)
+    return logs
+
+
 def test_pch_gating_and_unavailable_storage(monkeypatch):
     def unavailable(*args, **kwargs):
         raise OSError("temporary directory unavailable")
@@ -46,9 +64,10 @@ def test_pch_gating_and_unavailable_storage(monkeypatch):
     monkeypatch.setattr(_nvrtc.tempfile, "mkdtemp", pytest.fail)
     monkeypatch.setenv(_nvrtc._PCH_ENV, "off")
     assert _nvrtc.pch_options(context) == ()
-    monkeypatch.setenv(_nvrtc._PCH_ENV, "auto")
     context.nvrtc_version = (12, 7)
-    assert _nvrtc.pch_options(context) == ()
+    for mode in ("auto", "common"):
+        monkeypatch.setenv(_nvrtc._PCH_ENV, mode)
+        assert _nvrtc.pch_options(context) == ()
 
 
 def test_header_reuse_and_edit_preserve_compiled_layouts(tmp_path, monkeypatch):
@@ -71,16 +90,7 @@ def test_header_reuse_and_edit_preserve_compiled_layouts(tmp_path, monkeypatch):
     monkeypatch.setattr(_nvrtc, "resolve_compile_context", context)
     monkeypatch.setenv(_nvrtc._PCH_ENV, "auto")
     monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(tmp_path / "cache"))
-    nvrtc = _nvrtc._load_nvrtc()
-    compile_program = nvrtc.nvrtcCompileProgram
-    logs = []
-
-    def record_compile(program, count, options):
-        result = compile_program(program, count, options)
-        logs.append(_nvrtc._program_log(nvrtc, program))
-        return result
-
-    monkeypatch.setattr(nvrtc, "nvrtcCompileProgram", record_compile)
+    logs = _record_compile_logs(monkeypatch)
 
     def compile_layout(value):
         source = (
@@ -98,12 +108,12 @@ def test_header_reuse_and_edit_preserve_compiled_layouts(tmp_path, monkeypatch):
 
     assert compile_layout(1) == ScratchLayout(16, 16)
     assert compile_layout(2) == ScratchLayout(16, 16)
-    assert "creating precompiled header" in logs[0].lower()
-    assert "using precompiled header" in logs[1].lower()
+    assert "creating precompiled header" in logs[0]
+    assert "using precompiled header" in logs[1]
 
     header.write_text("struct alignas(32) S { int value; };")
     assert compile_layout(1) == ScratchLayout(32, 32)
-    assert "creating precompiled header" in logs[2].lower()
+    assert "creating precompiled header" in logs[2]
 
 
 def _prepared_provider(kind, items):
@@ -119,9 +129,40 @@ def _prepared_provider(kind, items):
     )
 
 
-def test_interleaved_cub_prefixes_and_simultaneous_compiles(monkeypatch):
-    from cuda.bindings import nvrtc
+def test_common_pch_reuses_across_cub_operations(tmp_path, monkeypatch):
+    if _nvrtc.resolve_compile_context(()).nvrtc_version < (12, 8):
+        pytest.skip("NVRTC automatic PCH requires CUDA 12.8 or later")
 
+    @cute.kernel
+    def kernel(memory: cute.Pointer, scan: cutlass.Constexpr):
+        block = coop.this_block()
+        data = cute.make_tensor(memory, cute.make_layout(64))
+        value = data[block.rank()]
+        if cutlass.const_expr(scan):
+            data[block.rank()] = coop.inclusive_scan(block, value)
+        else:
+            total = coop.sum(block, value)
+            if block.rank() == 0:
+                data[0] = total
+
+    @cute.jit
+    def launch(memory: cute.Pointer, scan: cutlass.Constexpr):
+        kernel(memory, scan).launch(grid=1, block=64)
+
+    logs = _record_compile_logs(monkeypatch)
+    monkeypatch.setattr(_nvrtc, "_PCH_DIRECTORIES", {})
+    monkeypatch.setenv(_nvrtc._PCH_ENV, "common")
+    monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(tmp_path / "cache"))
+    memory = make_ptr(Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    compile_kernel = cute.compile[(GPUArch("sm_80"),)]
+    assert compile_kernel(launch, memory, True) is not None
+    assert compile_kernel(launch, memory, False) is not None
+    assert len(logs) == 2
+    assert "creating precompiled header" in logs[0]
+    assert "using precompiled header" in logs[1]
+
+
+def test_interleaved_cub_prefixes_and_simultaneous_compiles(monkeypatch):
     context = _nvrtc.resolve_compile_context(())
     options = _nvrtc.compiler_options(context, "compute_80")
     inputs = [
@@ -138,15 +179,7 @@ def test_interleaved_cub_prefixes_and_simultaneous_compiles(monkeypatch):
     monkeypatch.setenv(_nvrtc._PCH_ENV, "")
     pch = _nvrtc.pch_options(context)
     assert pch
-    logs = []
-    compile_program = nvrtc.nvrtcCompileProgram
-
-    def record(program, count, flags):
-        result = compile_program(program, count, flags)
-        logs.append(_nvrtc._program_log(nvrtc, program))
-        return result
-
-    monkeypatch.setattr(nvrtc, "nvrtcCompileProgram", record)
+    logs = _record_compile_logs(monkeypatch)
 
     # Load, Store, then a distinct Load specialization with the first prefix.
     def compile_provider(index):
@@ -157,7 +190,7 @@ def test_interleaved_cub_prefixes_and_simultaneous_compiles(monkeypatch):
 
     for index in (0, 1, 2):
         compile_provider(index)
-    assert "using precompiled header" in logs[2].lower()
+    assert "using precompiled header" in logs[2]
 
     # Start simultaneous misses with a fresh directory, as on a cold worker.
     monkeypatch.setattr(_nvrtc, "_PCH_DIRECTORIES", {})
