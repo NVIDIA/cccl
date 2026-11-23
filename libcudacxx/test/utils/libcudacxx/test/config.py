@@ -1294,6 +1294,15 @@ class Configuration(object):
                     # GCC pre-GCC5 spuriously generates these on reasonable aggregate initialization.
                     addIfHostSupports("-Wno-missing-field-initializers")
 
+                if "nvhpc" in self.config.available_features:
+                    # nvc++ reparses the host code and does not see the NVCC suppressions above.
+                    self.cxx.warning_flags += [
+                        "-Xcompiler",
+                        "--diag_suppress=is_constant_evaluated_in_nonconstexpr_context",
+                        "-Xcompiler",
+                        "--diag_suppress=if_consteval_in_nonconstexpr_function",
+                    ]
+
                 # TODO: port the warning disables from the non-NVCC path?
 
                 if enable_pedantic:
