@@ -259,7 +259,7 @@ __device__ void test_this_queries(const cudax::coop::this_grid<Hierarchy>& group
 }
 
 template <template <class> class GroupTempl, class Level, class Config>
-__device__ void test_this_group(const Level& level, const Config& config)
+__device__ void test_this_group(const Level&, const Config& config)
 {
   GroupTempl group{config};
   // nvcc 12.0 doesn't evaluate these static asserts correctly

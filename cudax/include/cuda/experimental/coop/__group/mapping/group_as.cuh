@@ -107,7 +107,7 @@ __group_as_map(const _PrevMappingResult& __prev_mapping_result, _Range& __unit_c
     const auto __i_count = static_cast<::cuda::std::uint32_t>(*__it);
     if (__prev_unit_rank < __sum + __i_count)
     {
-      const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
+      const auto __group_rank = (__prev_mapping_result.group_rank() * __curr_ngroups) + __i;
       const auto __n          = __i_count;
       const auto __rank       = __prev_unit_rank - __sum;
       const auto __lane_mask =
@@ -134,9 +134,10 @@ class group_as
   _RangeView __unit_counts_;
 
 public:
+  // The viewable-range constraint excludes group_as itself.
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API explicit group_as(_Range&& __unit_counts)
+  _CCCL_DEVICE_API explicit group_as(_Range&& __unit_counts) // NOLINT(bugprone-forwarding-reference-overload)
       : __unit_counts_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__unit_counts))}
   {}
 
@@ -184,7 +185,7 @@ _CCCL_DEVICE_API constexpr auto __group_as_sequence(::cuda::std::index_sequence<
   ::cuda::narrow<::cuda::std::size_t>(*::cuda::std::next(::cuda::std::ranges::begin(_Wrapper::value), _Is))...>;
 
 template <class _Wrapper>
-using __group_as_sequence_t = decltype(::cuda::experimental::coop::__group_as_sequence<_Wrapper>(
+using __group_as_sequence_t _CCCL_NODEBUG = decltype(::cuda::experimental::coop::__group_as_sequence<_Wrapper>(
   ::cuda::std::make_index_sequence<::cuda::std::ranges::size(_Wrapper::value)>{}));
 
 template <::cuda::std::size_t... _Counts>

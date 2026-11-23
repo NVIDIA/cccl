@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -178,7 +179,7 @@ _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
 make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like)
 {
-  if constexpr (_Size == 1 && ::cuda::std::is_same_v<_ParentT, void>)
+  if constexpr (_Size == 1 && ::cuda::std::is_void_v<_ParentT>)
   {
     return this_thread{__hier_like};
   }

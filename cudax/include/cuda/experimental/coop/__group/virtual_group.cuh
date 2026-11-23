@@ -75,7 +75,8 @@ _CCCL_DEVICE_API void __check_group_mapping_result(const _MappingResult& __mappi
     _CCCL_ASSERT(
       (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
       "invalid lane mask - this lane must be contained in the lane mask");
-    _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
+    _CCCL_ASSERT(static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__mapping_result.lane_mask().value()))
+                   <= __mapping_result.unit_count(),
                  "invalid lane mask - too many lanes are set in the lane mask");
   }
   else
@@ -111,7 +112,7 @@ template <class _Unit, class _ParentGroup, class _Mapping>
 }
 
 template <class... _Args>
-using __group_mapping_result_t =
+using __group_mapping_result_t _CCCL_NODEBUG =
   decltype(::cuda::experimental::coop::__do_group_mapping(::cuda::std::declval<_Args>()...));
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
@@ -134,12 +135,12 @@ class virtual_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_level                   = _Unit;
-  using bound_level                  = typename _ParentGroup::bound_level;
-  using hierarchy_type               = _Hierarchy;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _ParentGroup::arrival_token;
+  using unit_level                                 = _Unit;
+  using bound_level                                = typename _ParentGroup::bound_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = typename _ParentGroup::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)

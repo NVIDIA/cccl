@@ -116,7 +116,7 @@ template <class _Unit, class _Group>
 }
 
 template <class _Unit, class _Group>
-using __group_view_mapping_result_t =
+using __group_view_mapping_result_t _CCCL_NODEBUG =
   decltype(::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, ::cuda::std::declval<_Group>()));
 
 template <::cuda::std::size_t _First, ::cuda::std::size_t _Last, class _Group, class _Fn>
@@ -131,7 +131,7 @@ _CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __g
   {
     // Rank thresholds keep large collective callbacks in a branch tree instead
     // of encouraging jump-table dispatch from a chain of equality comparisons.
-    constexpr auto __mid = _First + (_Last - _First) / 2;
+    constexpr auto __mid = _First + ((_Last - _First) / 2);
     return (__mapping_result.group_rank() < __mid)
            ? ::cuda::experimental::coop::__with_static_unit_count_range<_First, __mid>(
                __group, ::cuda::std::forward<_Fn>(__fn))
@@ -190,12 +190,12 @@ class group_view
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_level                   = _Unit;
-  using bound_level                  = typename _Group::bound_level;
-  using hierarchy_type               = typename _Group::hierarchy_type;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _Group::arrival_token;
+  using unit_level                                 = _Unit;
+  using bound_level                                = typename _Group::bound_level;
+  using hierarchy_type                             = typename _Group::hierarchy_type;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = typename _Group::arrival_token;
 
   group_view() = delete;
 

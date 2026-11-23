@@ -30,7 +30,7 @@ __device__ void test_view_synchronization(const View& view)
 }
 
 template <class View, class Group, class Level>
-__device__ void check_group_view(const View& view, const Group& group, Level level)
+__device__ void check_group_view(const View& view, const Group&, Level level)
 {
   if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
   {
