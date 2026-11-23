@@ -20,6 +20,7 @@
 #define lifetimebound
 #define msvc
 #define no_specializations
+#define noalias
 
 #include <cuda/std/__cccl/attributes.h>
 
@@ -35,6 +36,16 @@ _CCCL_INTRINSIC constexpr int&& intrinsic_test(int& x) noexcept
 }
 
 constexpr const int& lifetimebound_test(const int& x _CCCL_LIFETIMEBOUND) noexcept
+{
+  return x;
+}
+
+_CCCL_PURE int pure_test(const int* x) noexcept
+{
+  return *x;
+}
+
+_CCCL_CONST int const_test(int x) noexcept
 {
   return x;
 }

@@ -147,11 +147,12 @@
 
 // _CCCL_PURE
 
+// The MSVC attribute is optional, so skip it if users define its name as a macro, which would break it.
 #if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
 #  define _CCCL_PURE __nv_pure__
 #elif _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__pure__)
 #  define _CCCL_PURE [[__gnu__::__pure__]]
-#elif _CCCL_COMPILER(MSVC)
+#elif _CCCL_COMPILER(MSVC) && !defined(noalias)
 #  define _CCCL_PURE __declspec(noalias)
 #else
 #  define _CCCL_PURE
