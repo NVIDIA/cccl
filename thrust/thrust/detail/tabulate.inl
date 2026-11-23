@@ -17,6 +17,8 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
 // IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/tabulate.h>
