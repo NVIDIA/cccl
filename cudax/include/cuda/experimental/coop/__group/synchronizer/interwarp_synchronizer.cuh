@@ -45,7 +45,7 @@
 
 namespace cuda::experimental::coop
 {
-using __interwarp_barrier_id = ::cuda::std::uint32_t;
+using __interwarp_barrier_id _CCCL_NODEBUG = ::cuda::std::uint32_t;
 
 template <::cuda::std::size_t _ThreadCount>
 class __interwarp_synchronizer_instance
@@ -241,7 +241,7 @@ class interwarp_synchronizer
 public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
+  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids) // NOLINT(bugprone-forwarding-reference-overload)
       : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
   {}
 

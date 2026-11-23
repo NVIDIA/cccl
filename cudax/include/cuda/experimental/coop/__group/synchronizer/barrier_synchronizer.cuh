@@ -220,7 +220,7 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers)
+  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers) // NOLINT(bugprone-forwarding-reference-overload)
       : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
   {}
 

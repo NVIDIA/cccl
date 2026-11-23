@@ -45,7 +45,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
-using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer&>().make_instance(
+using __group_synchronizer_instance_t _CCCL_NODEBUG = decltype(::cuda::std::declval<_Synchronizer&>().make_instance(
   ::cuda::std::declval<const _Unit&>(),
   ::cuda::std::declval<const _ParentGroup&>(),
   ::cuda::std::declval<const _MappingResult&>()));
@@ -69,12 +69,12 @@ class generic_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_level                   = _Unit;
-  using bound_level                  = typename _ParentGroup::bound_level;
-  using hierarchy_type               = _Hierarchy;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _SynchronizerInstance::arrival_token;
+  using unit_level                                 = _Unit;
+  using bound_level                                = typename _ParentGroup::bound_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping, class _Synchronizer)
   _CCCL_REQUIRES(
@@ -116,7 +116,7 @@ public:
   // internal constructor used by make_group(non_exhaustive_t, ...)
   _CCCL_DEVICE_API explicit generic_group(
     const non_exhaustive_t&,
-    const _Unit& __unit,
+    const _Unit&,
     const _ParentGroup& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
     const ::cuda::std::type_identity_t<_SynchronizerInstance>& __synchronizer_instance)
@@ -128,7 +128,7 @@ public:
   template <class _ParentUnit, class _ParentMappingResult>
   _CCCL_DEVICE_API explicit generic_group(
     const non_exhaustive_t&,
-    const _Unit& __unit,
+    const _Unit&,
     const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
     const ::cuda::std::type_identity_t<_SynchronizerInstance>& __synchronizer_instance)

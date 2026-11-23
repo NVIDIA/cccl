@@ -57,13 +57,12 @@ template <::cuda::std::size_t _StaticUnitCount, class _PrevMappingResult>
     }
     return __count;
   }
-  else if constexpr (_PrevMappingResult::static_unit_count() != dynamic_extent)
-  {
-    return _PrevMappingResult::static_group_count() * (_PrevMappingResult::static_unit_count() / _StaticUnitCount);
-  }
   else
   {
-    return dynamic_extent;
+    constexpr auto __count = _PrevMappingResult::static_unit_count();
+    return __count == dynamic_extent
+           ? dynamic_extent
+           : _PrevMappingResult::static_group_count() * (__count / _StaticUnitCount);
   }
 }
 

@@ -103,7 +103,7 @@ __device__ T global_barriers_storage;
 //! @brief Returns a reference to N cuda::barrier objects with the thread scope required by the hierarchy level.
 //!        Allocates in suitable address space (shared or device memory). Id can be used to create unique object.
 template <cuda::std::size_t N, cuda::std::size_t Id = 0, class Level>
-__device__ auto& get_barriers(const Level& level) noexcept
+__device__ auto& get_barriers(const Level&) noexcept
 {
   constexpr auto thread_scope = minimum_thread_scope_for_v<Level>;
 

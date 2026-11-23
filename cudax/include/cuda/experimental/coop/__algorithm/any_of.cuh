@@ -75,7 +75,7 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, b
   }
   else
   {
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 

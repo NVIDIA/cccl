@@ -32,7 +32,7 @@
 namespace
 {
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(const cudax::coop::this_thread<Hierarchy>& group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::coop::this_thread<Hierarchy>&, T (&array)[N])
 {
   return {cub::ThreadReduce(array, cuda::std::plus<T>{})};
 }
@@ -98,7 +98,7 @@ __device__ cuda::std::optional<T> sum(const cudax::coop::this_cluster<Hierarchy>
                  }
                  group.sync_aligned();
 
-                 cudax::coop::this_block this_block{group.hierarchy()};
+                 const cudax::coop::this_block this_block{group.hierarchy()};
                  if (cuda::gpu_thread.is_root_rank(this_block) && !cuda::gpu_thread.is_root_rank(group))
                  {
                    [[maybe_unused]] unsigned old;

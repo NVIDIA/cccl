@@ -47,7 +47,6 @@ _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::u
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::bound_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank)
 {
-  using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
 
   _CCCL_ASSERT(__src_unit_rank < __mapping_result.unit_count(),

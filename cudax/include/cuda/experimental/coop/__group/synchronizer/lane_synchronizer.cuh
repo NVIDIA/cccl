@@ -26,6 +26,7 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
@@ -103,7 +104,8 @@ public:
     static_assert(__group_mapping_result<_MappingResult>);
     if (__mapping_result.is_valid())
     {
-      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.unit_count(),
+      _CCCL_ASSERT(static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__mapping_result.lane_mask().value()))
+                     == __mapping_result.unit_count(),
                    "lane_synchronizer can only synchronize units within the same warp");
     }
     return {__mapping_result.is_valid() ? __mapping_result.lane_mask() : ::cuda::device::lane_mask::none()};

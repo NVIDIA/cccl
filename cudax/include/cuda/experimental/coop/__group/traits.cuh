@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/hierarchy>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 
@@ -52,9 +51,10 @@ template <class _ParentGroup>
 inline constexpr bool __is_parent_group_query_v<_ParentGroup, _ParentGroup> = true;
 template <class _ParentGroup>
 inline constexpr bool __is_parent_group_query_v<parent_group_t, _ParentGroup> = true;
-template <class _ViewUnit, class _ViewMappingResult, class _ParentGroup>
-inline constexpr bool __is_parent_group_query_v<group_view<_ViewUnit, _ParentGroup, _ViewMappingResult>, _ParentGroup> =
-  ::cuda::std::is_same_v<_ViewUnit, typename _ParentGroup::unit_level>;
+template <class _ParentGroup, class _ViewMappingResult>
+inline constexpr bool
+  __is_parent_group_query_v<group_view<typename _ParentGroup::unit_level, _ParentGroup, _ViewMappingResult>,
+                            _ParentGroup> = true;
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED
