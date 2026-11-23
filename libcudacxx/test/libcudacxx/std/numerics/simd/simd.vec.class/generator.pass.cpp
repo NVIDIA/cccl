@@ -11,12 +11,12 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 // [simd.ctor], [simd.mask.ctor], generator constraints and invocation
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

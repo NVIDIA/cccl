@@ -13,13 +13,15 @@
 
 // [simd.bit], bit_compress and bit_expand
 
-#include <cuda/simd>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+
+static_assert(__cccl_lib_simd_bitops >= 202607L);
 
 struct bit_compress_function
 {

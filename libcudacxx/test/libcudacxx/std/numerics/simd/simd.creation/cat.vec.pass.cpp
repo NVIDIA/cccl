@@ -11,15 +11,15 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.creation], cat (basic_vec)
 //
 // template<class T, class A0, class... Abis> constexpr auto cat(const basic_vec<T,A0>&, const basic_vec<T,Abis>&...);
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.loadstore], partial_store
 //
@@ -22,10 +22,10 @@
 // partial_store(const basic_vec&, I first, S last, flags<> = {});
 // partial_store(const basic_vec&, I first, S last, const mask_type&, flags<> = {});
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
