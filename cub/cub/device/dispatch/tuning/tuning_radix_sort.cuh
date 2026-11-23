@@ -55,7 +55,8 @@ enum class RadixSortAlgorithm
                           "Use RadixSortAlgorithm::onesweep instead.") = 0,
   //! Single-pass radix sort using decoupled look-back
   onesweep = 1,
-  // Internal alias, so we can still use it for old architectures
+  // Internal alias of multi_pass, so we can still use it for old architectures. Spelled by value, since
+  // `= multi_pass` would itself trigger the deprecation warning.
   __deprecated_multi_pass = 0
 };
 
