@@ -34,10 +34,10 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__async_copy>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: keep
-#include <cuda/async_copy>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -347,7 +347,7 @@ struct lookahead_scan_closure
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<in_out_t>& phaseInOutL,
-    const ::cuda::device::aligned_ptr<InputT>& loadInfo,
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
     int valid_items) const
   {
     warpspeed::SmemRef refInOutL = phaseInOutL.acquireRef();
@@ -400,7 +400,7 @@ struct lookahead_scan_closure
     int valid_items,
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
-    const ::cuda::device::aligned_ptr<InputT>& loadInfo,
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
     int idxTile,
     int num_tiles) const
   {
@@ -509,7 +509,7 @@ struct lookahead_scan_closure
     warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
     bool is_first_tile,
     int valid_items,
-    const ::cuda::device::aligned_ptr<InputT>& loadInfo,
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
     ::cuda::std::size_t idxTileBase) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
     // need to init these to silence nvcc warning about reading uninitialized data
@@ -717,7 +717,7 @@ struct lookahead_scan_closure
     ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
     if constexpr (sizeof(OutputT) <= sizeof(InputT))
     {
-      const auto storeInfo = ::cuda::device::make_aligned_ptr(params.ptrOut + idxTileBase, 16);
+      const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
 
       _CUB::detail::warpspeed::squadStoreSmem(
         squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.head_padding), regAggrInclusive);
@@ -730,7 +730,7 @@ struct lookahead_scan_closure
       for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
       {
         const int chunk_size  = (::cuda::std::min) (valid_items - chunk_offset, elem_per_chunk);
-        const auto storeInfo  = ::cuda::device::make_aligned_ptr(params.ptrOut + idxTileBase + chunk_offset, 16);
+        const auto storeInfo  = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase + chunk_offset, 16);
         const auto storeBytes = static_cast<::cuda::std::uint32_t>(chunk_size * sizeof(OutputT));
 
         // only stage elements of the current chunk to SMEM
@@ -770,7 +770,7 @@ struct lookahead_scan_closure
     warpspeed::SmemRef refInOutS = phaseInOutS.acquireRef();
     if constexpr (!scanSquadStores)
     {
-      const auto storeInfo = ::cuda::device::make_aligned_ptr(params.ptrOut + idxTileBase, 16);
+      const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
       // Blocks until the bulk store finished reading from shared memory, then refInOutS is released for the next load
       _CUB::detail::warpspeed::squadStoreBulkSync(
         squad, storeInfo, static_cast<::cuda::std::uint32_t>(valid_items * sizeof(OutputT)), refInOutS.data().inout);
@@ -843,7 +843,7 @@ struct lookahead_scan_closure
       const int valid_items =
         static_cast<int>((cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
-      const auto loadInfo     = ::cuda::device::make_aligned_ptr(params.ptrIn + idxTileBase, 16);
+      const auto loadInfo     = ::cuda::device::__make_aligned_ptr(params.ptrIn + idxTileBase, 16);
 
       // Async loading and async tile index stealing are very lightweight, so one squad is enough to do both
       // slice is intentional, see SquadDesc::operator==()

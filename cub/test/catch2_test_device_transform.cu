@@ -786,9 +786,9 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
 namespace Catch
 {
 template <typename T>
-struct StringMaker<cuda::device::aligned_ptr<T>>
+struct StringMaker<cuda::device::__aligned_ptr<T>>
 {
-  static auto convert(cuda::device::aligned_ptr<T> abp) -> std::string
+  static auto convert(cuda::device::__aligned_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
     ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << "}";
@@ -798,31 +798,31 @@ struct StringMaker<cuda::device::aligned_ptr<T>>
 } // namespace Catch
 
 // TODO(bgruber): rewrite this example using int3
-CUB_TEST("DeviceTransform::Transform aligned_ptr", "[device][transform]", CUB_SMALL)
+CUB_TEST("DeviceTransform::Transform __aligned_ptr", "[device][transform]", CUB_SMALL)
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
-  CHECK(cuda::device::make_aligned_ptr(&arr[0], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 0});
-  CHECK(cuda::device::make_aligned_ptr(&arr[1], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 4});
-  CHECK(cuda::device::make_aligned_ptr(&arr[5], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 20});
-  CHECK(cuda::device::make_aligned_ptr(&arr[31], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 124});
-  CHECK(cuda::device::make_aligned_ptr(&arr[32], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[32]), 0});
-  CHECK(cuda::device::make_aligned_ptr(&arr[33], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[32]), 4});
-  CHECK(cuda::device::make_aligned_ptr(&arr[127], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
-  CHECK(cuda::device::make_aligned_ptr(&arr[128], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
-  CHECK(cuda::device::make_aligned_ptr(&arr[129], 128)
-        == cuda::device::aligned_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[0], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 0});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[1], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 4});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[5], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 20});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[31], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[0]), 124});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[32], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[32]), 0});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[33], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[32]), 4});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[127], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[128], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
+  CHECK(cuda::device::__make_aligned_ptr(&arr[129], 128)
+        == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
 }
 
-CUB_TEST("DeviceTransform::Transform aligned_ptr", "[device][transform]", CUB_SMALL)
+CUB_TEST("DeviceTransform::Transform __aligned_ptr", "[device][transform]", CUB_SMALL)
 {
   using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;

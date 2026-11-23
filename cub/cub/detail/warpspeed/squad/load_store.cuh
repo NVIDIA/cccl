@@ -16,6 +16,7 @@
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
+#include <cuda/__async_copy>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
@@ -23,7 +24,6 @@
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/fence.h>
-#include <cuda/async_copy>
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstdint>
@@ -47,7 +47,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreBulk);
 
 template <typename ResourceTp, typename Tp>
 _CCCL_DEVICE_API void squadLoadBulk(
-  Squad squad, SmemRef<ResourceTp>& refDestSmem, ::cuda::device::aligned_ptr<Tp> ptrGmem, ::cuda::std::uint32_t bytes)
+  Squad squad, SmemRef<ResourceTp>& refDestSmem, ::cuda::device::__aligned_ptr<Tp> ptrGmem, ::cuda::std::uint32_t bytes)
 {
   _CCCL_IKET_RANGE_PUSH(LoadBulk);
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
@@ -60,7 +60,7 @@ _CCCL_DEVICE_API void squadLoadBulk(
     _CCCL_ASSERT(ptrGmem.head_padding == 0, "");
     if (squad.isLeaderThread())
     {
-      ::cuda::device::bulk_load(ptrSmem, ptrGmem.data(), bytes, ptrBar);
+      ::cuda::device::__bulk_load(ptrSmem, ptrGmem.data(), bytes, ptrBar);
     }
     refDestSmem.squadIncreaseTxCount(squad, bytes);
   }
@@ -72,13 +72,13 @@ _CCCL_DEVICE_API void squadLoadBulk(
     if (squad.isLeaderThread())
     {
       copied =
-        ::cuda::device::bulk_load_unaligned_ignore_oob(ptrSmem, ptrGmem.ptr, bytes, ptrGmem.head_padding, ptrBar);
+        ::cuda::device::__bulk_load_unaligned_ignore_oob(ptrSmem, ptrGmem.ptr, bytes, ptrGmem.head_padding, ptrBar);
     }
     refDestSmem.squadIncreaseTxCount(squad, copied);
 #  else // __cccl_ptx_isa >= 920
     // if we don't have cp_async_bulk_ignore_oob, we have to undercopy and copy head and tail elements manually
     ::cuda::std::uint32_t copied = 0;
-    ::cuda::device::bulk_load_unaligned_precise<16, alignof(Tp)>(
+    ::cuda::device::__bulk_load_unaligned_precise<16, alignof(Tp)>(
       ptrSmem + ptrGmem.head_padding,
       ptrGmem.data(),
       bytes,
@@ -96,14 +96,14 @@ _CCCL_DEVICE_API void squadLoadBulk(
 template <typename OutputT>
 _CCCL_DEVICE_API void squadStoreBulkSync(
   Squad squad,
-  ::cuda::device::aligned_ptr<OutputT> ptrGmem,
+  ::cuda::device::__aligned_ptr<OutputT> ptrGmem,
   ::cuda::std::uint32_t bytes,
   const ::cuda::std::byte* srcSmem)
 {
   if (squad.isLeaderWarp())
   {
     _CCCL_IKET_RANGE_PUSH(StoreBulk);
-    ::cuda::device::bulk_store_unaligned(
+    ::cuda::device::__bulk_store_unaligned(
       const_cast<OutputT*>(ptrGmem.data()), srcSmem, bytes, squad.threadRank(), ::cuda::ptx::elect_sync(~0));
     // wait for the stores to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
