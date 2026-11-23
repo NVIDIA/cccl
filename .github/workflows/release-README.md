@@ -92,9 +92,13 @@ distribution. Use `release-cuda-coop-cutlass.yml` for both indexes.
 2. Record the successful tag workflow's run ID, source SHA and both SHA-256
    hashes from its summary. Download the `cuda-coop-cutlass-distributions`
    artifact for release QA and any required scans.
-3. From `main`, dispatch the workflow for TestPyPI and approve its deployment:
+3. Replace the example values below with the tag from step 1 and the numeric
+   run ID after `/actions/runs/` in the successful tag build's URL. Dispatch
+   the workflow from `main` for TestPyPI and approve its deployment.
 
    ```sh
+   TAG='cuda-coop-cutlass-v0.1.0rc1'
+   BUILD_RUN_ID='12345678901'
    gh workflow run release-cuda-coop-cutlass.yml -R NVIDIA/cccl --ref main \
      -f tag="$TAG" -f run-id="$BUILD_RUN_ID" -f target=testpypi
    ```
