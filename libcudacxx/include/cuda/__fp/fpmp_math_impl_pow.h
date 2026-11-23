@@ -755,17 +755,23 @@ _CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed_host(const float __r) noex
 _CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed(const float __r) noexcept
 {
 #  if _CCCL_FPMP_HOST_SEED_POLY
-  NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_cbrt_seed_host(__r);))
-#  endif // _CCCL_FPMP_HOST_SEED_POLY
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return ::cuda::__fpmp_fast_exp2(0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));),
+                    (return ::cuda::__internal_fpmp2_cbrt_seed_host(__r);))
+#  else // ^^^ _CCCL_FPMP_HOST_SEED_POLY ^^^ / vvv !_CCCL_FPMP_HOST_SEED_POLY vvv
   return ::cuda::__fpmp_fast_exp2(0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));
+#  endif // ^^^ !_CCCL_FPMP_HOST_SEED_POLY ^^^
 }
 
 _CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed(const float __r) noexcept
 {
 #  if _CCCL_FPMP_HOST_SEED_POLY
-  NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_rcbrt_seed_host(__r);))
-#  endif // _CCCL_FPMP_HOST_SEED_POLY
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return ::cuda::__fpmp_fast_exp2(-0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));),
+                    (return ::cuda::__internal_fpmp2_rcbrt_seed_host(__r);))
+#  else // ^^^ _CCCL_FPMP_HOST_SEED_POLY ^^^ / vvv !_CCCL_FPMP_HOST_SEED_POLY vvv
   return ::cuda::__fpmp_fast_exp2(-0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));
+#  endif // ^^^ !_CCCL_FPMP_HOST_SEED_POLY ^^^
 }
 
 /*
