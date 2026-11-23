@@ -286,7 +286,15 @@ _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
 
 inline constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE_API constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
+// Alignment of the global memory address a bulk copy reads from. 16 bytes is what the instruction requires.
+_CCCL_HOST_DEVICE_API constexpr auto bulk_copy_alignment(::cuda::compute_capability) -> int
+{
+  return 16;
+}
+
+// Alignment of each tile in shared memory, which is the destination of a bulk copy. Hopper performs measurably worse
+// with 16-byte aligned destinations, so it keeps 128.
+_CCCL_HOST_DEVICE_API constexpr auto smem_tile_alignment(::cuda::compute_capability cc) -> int
 {
   return (cc < ::cuda::compute_capability{10, 0}) ? 128 : 16;
 }

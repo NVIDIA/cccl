@@ -527,9 +527,9 @@ struct invoke_for_cc<RequiresStableAddress,
         ::cuda::std::move(op),
         stream,
         _CUB::detail::transform::bulk_copy_alignment(cc),
-        [&](int tile_size, int alignment) {
+        [&](int tile_size, int /*alignment*/) {
           return _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
-            kernel_source.InputIteratorInfos(), tile_size, alignment);
+            kernel_source.InputIteratorInfos(), tile_size, _CUB::detail::transform::smem_tile_alignment(cc));
         },
         seq,
         policy_getter,

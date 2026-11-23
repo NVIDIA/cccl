@@ -754,10 +754,11 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
 
   // constexpr int ThreadsPerBlock       = Policy.async_copy.ThreadsPerBlock;
   constexpr int bulk_copy_alignment = _CUB::detail::transform::bulk_copy_alignment(_CUB::detail::current_tuning_cc());
+  constexpr int smem_tile_alignment = _CUB::detail::transform::smem_tile_alignment(_CUB::detail::current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = (::cuda::std::max) ({int{alignof(InTs)}...});
-  constexpr int tile_padding  = (::cuda::std::max) (bulk_copy_alignment, max_alignment);
+  constexpr int tile_padding  = (::cuda::std::max) (smem_tile_alignment, max_alignment);
 
   // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
   // fails for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR
@@ -781,7 +782,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   // when we actually need it for correctness. That's when any value type's alignment is larger than 16. Hopper does
   // benefit from 128 byte alignment, which is granted by the alignment of the shared memory window. In case this ever
   // changes, it does not break the correctness and may entail up to 5% perf regression for TMA (the worst I have
-  // measured for a 16 byte aligned SMEM destination). So no manual alignment is needed to respect bulk_copy_alignment.
+  // measured for a 16 byte aligned SMEM destination). So no manual alignment is needed to respect smem_tile_alignment.
 
   extern __shared__ char smem_with_barrier_base[]; // aligned to 16 bytes by default
   char* smem_with_barrier = smem_with_barrier_base;
