@@ -108,7 +108,6 @@ _CCCL_DEVICE_API inline void __bulk_load(
     __bar);
 }
 
-// TODO(bgruber): this should become a cooperative API with a group parameter
 #  if __cccl_ptx_isa >= 920
 //! @brief Copies @p __bytes bytes of data starting @p __head_padding bytes after the 16-byte aligned pointers
 //! @p __smem_dst and @p __gmem_src with one `cp.async.bulk`. The copy is rounded out to 16-byte boundaries and the
@@ -117,6 +116,7 @@ _CCCL_DEVICE_API inline void __bulk_load(
 //!
 //! @param __head_padding Distance in bytes from the aligned pointers to the first byte of data, in [0, 16).
 //! @return Bytes the copy contributes to the transaction count of @p __bar, i.e. the rounded size.
+// TODO(bgruber): this should be called from a uniform code path
 _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
   void* __smem_dst,
   const void* __gmem_src,
@@ -139,6 +139,7 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
   const ::cuda::std::uint32_t __padded_bytes = static_cast<::cuda::std::uint32_t>(__head_padding) + __bytes;
   // round up as head padding + (bytes + 15), so the compiler can share bytes + 15 between copies of equally sized
   // ranges that only differ in their head padding. Rounding __padded_bytes up costs one SASS instruction per such copy.
+  // Not cuda::round_up: its ceil_div + multiply costs 8 SASS instructions on sm_100 in DeviceTransform.
   const ::cuda::std::uint32_t __size = (static_cast<::cuda::std::uint32_t>(__head_padding) + (__bytes + 15)) & ~15u;
   ::cuda::ptx::cp_async_bulk_ignore_oob(
     ::cuda::ptx::space_shared,
