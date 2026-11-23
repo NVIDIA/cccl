@@ -12,6 +12,7 @@
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
+#include <cuda/std/bit>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -213,6 +214,64 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
               num_items,
               begin_bit<key_t>(),
               end_bit<key_t>());
+  }
+
+  // Perform a bitwise comparison to ensure that 0 != -0:
+  REQUIRE_BITWISE_EQ(ref_keys, out_keys);
+}
+
+CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling with bit windows",
+         "[keys][radix][sort][device]",
+         CUB_SMALL,
+         fp_key_types)
+{
+  using key_t  = c2h::get<0, TestType>;
+  using bits_t = typename cub::Traits<key_t>::UnsignedBits;
+
+  constexpr int num_bits    = sizeof(key_t) * CHAR_BIT;
+  const key_t positive_zero = cuda::std::bit_cast<key_t>(bits_t(0));
+  const key_t negative_zero = cuda::std::bit_cast<key_t>(bits_t(bits_t(1) << (num_bits - 1)));
+
+  // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040. The sizes are chosen to cover both the
+  // single-tile and the multi-pass implementations:
+  const std::size_t num_items = GENERATE_COPY(values<std::size_t>({1000, 30000, 300000}));
+  const int begin_bit         = GENERATE_COPY(values<int>({0, num_bits / 4, num_bits - 1}));
+  const int end_bit           = GENERATE_COPY(values<int>({num_bits / 2, num_bits}));
+  if (end_bit <= begin_bit || (begin_bit == 0 && end_bit == num_bits))
+  {
+    return;
+  }
+
+  // Zeros of both signs interleaved with nonzero keys of both signs:
+  const key_t pattern[] = {positive_zero, key_t(1), key_t(-1), negative_zero, key_t(2), key_t(-2), positive_zero};
+  c2h::host_vector<key_t> h_keys(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    h_keys[i] = pattern[i % (sizeof(pattern) / sizeof(pattern[0]))];
+  }
+  c2h::device_vector<key_t> in_keys(h_keys);
+  c2h::device_vector<key_t> out_keys(num_items);
+
+  const bool is_descending = GENERATE(false, true);
+
+  auto ref_keys = radix_sort_reference(in_keys, is_descending, begin_bit, end_bit);
+
+  if (is_descending)
+  {
+    sort_keys_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      num_items,
+      begin_bit,
+      end_bit);
+  }
+  else
+  {
+    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
+              thrust::raw_pointer_cast(out_keys.data()),
+              num_items,
+              begin_bit,
+              end_bit);
   }
 
   // Perform a bitwise comparison to ensure that 0 != -0:

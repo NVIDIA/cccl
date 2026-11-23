@@ -112,7 +112,7 @@ struct AgentRadixSortHistogram
   using ShmemCounterT       = uint32_t;
   using ShmemAtomicCounterT = ShmemCounterT;
 
-  using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
+  using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT, IsDescending>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
   struct _TempStorage

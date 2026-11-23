@@ -39,20 +39,19 @@ CUB_NAMESPACE_BEGIN
 /** \brief Base struct for digit extractor. Contains common code to provide
     special handling for floating-point -0.0.
 
-    \note This handles correctly both the case when the keys are
-    bitwise-complemented after twiddling for descending sort (in onesweep) as
-    well as when the keys are not bit-negated, but the implementation handles
-    descending sort separately (in other implementations in CUB). Twiddling
-    alone maps -0.0f to 0x7fffffff and +0.0f to 0x80000000 for float, which are
-    subsequent bit patterns and bitwise complements of each other. For onesweep,
-    both -0.0f and +0.0f are mapped to the bit pattern of +0.0f (0x80000000) for
-    ascending sort, and to the pattern of -0.0f (0x7fffffff) for descending
-    sort. For all other sorting implementations in CUB, both are always mapped
-    to +0.0f. Since bit patterns for both -0.0f and +0.0f are next to each other
-    and only one of them is used, the sorting works correctly. For double, the
-    same applies, but with 64-bit patterns.
+    \note -0.0 and +0.0 compare equal, so every bit window has to extract the
+    same digits for both. Twiddling alone maps -0.0f to 0x7fffffff and +0.0f to
+    0x80000000 for float, which are subsequent bit patterns and bitwise
+    complements of each other. Both are mapped to the bit pattern of +0.0f. This
+    handles both the case when the keys are bitwise-complemented after
+    twiddling for descending sort (in onesweep, `IsInverted` is true and +0.0f
+    is 0x7fffffff) as well as when the keys are not bit-negated, but the
+    implementation handles descending sort separately (in other implementations
+    in CUB, +0.0f is 0x80000000). Therefore, all sorting implementations in CUB
+    extract the same digits for both zeros. For double, the same applies, but
+    with 64-bit patterns.
 */
-template <typename KeyT, bool IsFP = ::cuda::is_floating_point_v<KeyT>>
+template <typename KeyT, bool IsFP = ::cuda::is_floating_point_v<KeyT>, bool IsInverted = false>
 struct BaseDigitExtractor
 {
   using TraitsT      = Traits<KeyT>;
@@ -64,18 +63,23 @@ struct BaseDigitExtractor
   }
 };
 
-template <typename KeyT>
-struct BaseDigitExtractor<KeyT, true>
+template <typename KeyT, bool IsInverted>
+struct BaseDigitExtractor<KeyT, true, IsInverted>
 {
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
   _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
-    const UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
+    UnsignedBits twiddled_minus_zero =
       TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits((8 * sizeof(UnsignedBits)) - 1));
-    const UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
-    return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
+    UnsignedBits twiddled_zero = TraitsT::TwiddleIn(0);
+    if constexpr (IsInverted)
+    {
+      twiddled_minus_zero = static_cast<UnsignedBits>(~twiddled_minus_zero);
+      twiddled_zero       = static_cast<UnsignedBits>(~twiddled_zero);
+    }
+    return key == twiddled_minus_zero ? twiddled_zero : key;
   }
 };
 
@@ -102,11 +106,12 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 };
 
 /** \brief A wrapper type to extract digits. Uses a combination of shift and
- * bitwise and to extract digits. */
-template <typename KeyT>
-struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
+ * bitwise and to extract digits. `IsInverted` has to be true if the keys passed
+ * to `Digit` are bitwise-complemented after twiddling (descending onesweep). */
+template <typename KeyT, bool IsInverted = false>
+struct ShiftDigitExtractor : BaseDigitExtractor<KeyT, ::cuda::is_floating_point_v<KeyT>, IsInverted>
 {
-  using typename BaseDigitExtractor<KeyT>::UnsignedBits;
+  using typename BaseDigitExtractor<KeyT, ::cuda::is_floating_point_v<KeyT>, IsInverted>::UnsignedBits;
 
   ::cuda::std::uint32_t bit_start;
   ::cuda::std::uint32_t mask; // NOLINT(modernize-use-default-member-init)
@@ -379,6 +384,7 @@ _CCCL_HOST_DEVICE_API int default_end_bit(DecomposerT decomposer, T& aggregate)
   return result;
 }
 
+template <bool IsInverted>
 struct digit_f
 {
   ::cuda::std::uint32_t& dst;
@@ -405,7 +411,8 @@ struct digit_f
       if (bits_to_copy)
       {
         const bit_ordered_type ordered_src =
-          BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
+          BaseDigitExtractor<T, ::cuda::is_floating_point_v<T>, IsInverted>::ProcessFloatMinusZero(
+            reinterpret_cast<bit_ordered_type&>(src));
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
@@ -418,7 +425,7 @@ struct digit_f
   }
 };
 
-template <class DecomposerT, class T>
+template <bool IsInverted = false, class DecomposerT, class T>
 _CCCL_HOST_DEVICE_API void
 digit(DecomposerT decomposer,
       ::cuda::std::uint32_t& dst,
@@ -427,10 +434,11 @@ digit(DecomposerT decomposer,
       ::cuda::std::uint32_t& src_bit_start,
       ::cuda::std::uint32_t& num_bits)
 {
-  _CUB::detail::for_each_member(digit_f{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
+  _CUB::detail::for_each_member(digit_f<IsInverted>{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
 }
 
-template <class DecomposerT>
+// `IsInverted` is true if the keys passed to `Digit` are bitwise-complemented after twiddling (descending onesweep).
+template <class DecomposerT, bool IsInverted = false>
 struct custom_digit_extractor_t
 {
   DecomposerT decomposer;
@@ -451,7 +459,7 @@ struct custom_digit_extractor_t
     ::cuda::std::uint32_t dst_bit_start{};
     ::cuda::std::uint32_t src_bit_start = bit_start;
     ::cuda::std::uint32_t bits_remaining{num_bits};
-    _CUB::detail::radix::digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
+    _CUB::detail::radix::digit<IsInverted>(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
     return result;
   }
 };
@@ -483,6 +491,14 @@ struct custom_bit_inversion_policy_t
   }
 };
 
+// True if the digit extractor expects keys that are bitwise-complemented after twiddling. Does not instantiate the
+// extractor, because it may be named for a custom key type.
+template <class FundamentalExtractorT>
+inline constexpr bool is_inverted_extractor_v = false;
+
+template <class KeyT, bool IsInverted>
+inline constexpr bool is_inverted_extractor_v<ShiftDigitExtractor<KeyT, IsInverted>> = IsInverted;
+
 template <class T>
 struct traits_t<T, false /* is_fundamental */>
 {
@@ -491,7 +507,7 @@ struct traits_t<T, false /* is_fundamental */>
   using bit_ordered_inversion_policy  = custom_bit_inversion_policy_t;
 
   template <class FundamentalExtractorT, class DecomposerT>
-  using digit_extractor_t = custom_digit_extractor_t<DecomposerT>;
+  using digit_extractor_t = custom_digit_extractor_t<DecomposerT, is_inverted_extractor_v<FundamentalExtractorT>>;
 
   template <class DecomposerT>
   _CCCL_HOST_DEVICE_API static bit_ordered_type min_raw_binary_key(DecomposerT decomposer)
@@ -520,7 +536,7 @@ struct traits_t<T, false /* is_fundamental */>
   _CCCL_HOST_DEVICE_API static digit_extractor_t<FundamentalExtractorT, DecomposerT>
   digit_extractor(int begin_bit, int num_bits, DecomposerT decomposer)
   {
-    return custom_digit_extractor_t<DecomposerT>(decomposer, begin_bit, num_bits);
+    return digit_extractor_t<FundamentalExtractorT, DecomposerT>(decomposer, begin_bit, num_bits);
   }
 };
 } // namespace radix
