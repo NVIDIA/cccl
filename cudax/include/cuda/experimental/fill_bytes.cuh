@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__fill_bytes/fill_bytes_mdspan.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_FILL_BYTES_CUH

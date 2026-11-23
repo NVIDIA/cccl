@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 
 #include <limits>
+#include <type_traits>
 
 namespace cuda::experimental
 {

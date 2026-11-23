@@ -23,8 +23,6 @@
 
 #include <cuda/std/__type_traits/maybe_const.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

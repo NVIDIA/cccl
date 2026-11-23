@@ -24,16 +24,21 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__container/simple_vector.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>

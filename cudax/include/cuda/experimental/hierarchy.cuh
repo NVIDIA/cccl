@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/hierarchy>
 
 #include <cuda/experimental/__hierarchy/fwd.cuh>
 #include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+// IWYU pragma: end_exports
 
 #endif // _CUDAX_HIERARCHY

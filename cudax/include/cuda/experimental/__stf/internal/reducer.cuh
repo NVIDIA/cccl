@@ -28,11 +28,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/execution_space.h>
-
-#include <algorithm> // for std::min and std::max
-#include <limits>
-
 namespace cuda::experimental::stf::reducer
 {
 /**

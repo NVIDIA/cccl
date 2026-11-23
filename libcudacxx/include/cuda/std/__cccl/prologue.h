@@ -250,12 +250,6 @@
 #  define _CCCL_POP_MACRO_max
 #endif // defined(max)
 
-#ifdef interface
-#  pragma push_macro("interface")
-#  undef interface
-#  define _CCCL_POP_MACRO_interface
-#endif // defined(interface)
-
 // sal.h on Windows
 
 #ifdef __valid
@@ -342,12 +336,7 @@ _CCCL_DIAG_SUPPRESS_NVCC(342)
 // Suppress `if consteval`-related warnings.
 
 _CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)
-_CCCL_DIAG_SUPPRESS_NVHPC(is_constant_evaluated_in_nonconstexpr_context)
-_CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_in_nonconstexpr_function)
 
 _CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
-_CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are meaningless in a non-constexpr function
-_CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
-                               // produces "false"
 
 // NO include guards here (this file is included multiple times)

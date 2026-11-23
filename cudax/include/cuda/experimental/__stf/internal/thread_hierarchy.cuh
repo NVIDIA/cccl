@@ -29,12 +29,31 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 #include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+
+#include <nv/target>
+
+#include <array>
+#include <tuple>
+
+#include <cooperative_groups.h>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/internal/execution_policy.cuh>
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+
+#  include <utility>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

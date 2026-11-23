@@ -58,7 +58,7 @@ try
 
   if (d_out_keys.type == CCCL_ITERATOR || d_out_items.type == CCCL_ITERATOR)
   {
-    fprintf(stderr, "\nERROR in cccl_device_merge_sort_build(): merge sort output cannot be an iterator\n");
+    fprintf(stderr, "\nERROR in cccl_device_merge_sort_build_ex(): merge sort output cannot be an iterator\n");
     return CUDA_ERROR_UNKNOWN;
   }
 
@@ -110,7 +110,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_merge_sort_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_merge_sort_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

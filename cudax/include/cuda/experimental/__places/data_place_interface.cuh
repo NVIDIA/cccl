@@ -30,22 +30,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 #include <cstddef>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <typeinfo>
 #include <utility>
 
 #include <cuda.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 namespace cuda::experimental::places
 {

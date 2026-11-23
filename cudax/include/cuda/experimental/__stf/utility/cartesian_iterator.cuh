@@ -21,13 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
+#include <iterator>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/cassert>
+
+#  include <vector>
+#endif // UNITTESTED_FILE
+
 #ifdef UNITTESTED_FILE
 #  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #endif
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
-
-#include <iostream>
 
 namespace cuda::experimental::stf::reserved
 {

@@ -38,7 +38,7 @@ class __int_arrival_token
 public:
   __int_arrival_token() = delete;
 
-  _CCCL_DEVICE constexpr __int_arrival_token(_Tp __v)
+  _CCCL_DEVICE_API constexpr __int_arrival_token(_Tp __v)
       : __value_{__v}
   {}
 

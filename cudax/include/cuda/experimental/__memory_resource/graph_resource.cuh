@@ -23,7 +23,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__cstddef/types.h>
 
 // Forward declaration to avoid circular include
 namespace cuda::experimental

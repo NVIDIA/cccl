@@ -25,6 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 namespace cuda::experimental::stf

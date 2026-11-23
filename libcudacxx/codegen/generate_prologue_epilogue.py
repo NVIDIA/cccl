@@ -81,7 +81,7 @@ PUSH_POP_MACROS = {
         "noinline_calls",
         "no_tls_guard",
     ],
-    "Windows nasty macros": ["min", "max", "interface"],
+    "Windows nasty macros": ["min", "max"],
     "sal.h on Windows": ["__valid", "__callback"],
     "other macros": ["clang"],
     "sys/sysmacros.h on linux": ["major", "minor", "makedev"],
@@ -134,7 +134,7 @@ def make_prologue(file):
     # Add warnings suppressions.
     write_section(
         file,
-        '''\
+        """\
 _CCCL_DIAG_PUSH
 _CCCL_NV_DIAG_PUSH()
 
@@ -179,13 +179,8 @@ _CCCL_DIAG_SUPPRESS_NVCC(342)
 // Suppress `if consteval`-related warnings.
 
 _CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)
-_CCCL_DIAG_SUPPRESS_NVHPC(is_constant_evaluated_in_nonconstexpr_context)
-_CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_in_nonconstexpr_function)
 
-_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
-_CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are meaningless in a non-constexpr function
-_CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
-                               // produces "false"''',
+_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode""",
     )
 
     # Write the common footer.
