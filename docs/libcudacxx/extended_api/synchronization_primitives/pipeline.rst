@@ -87,11 +87,9 @@ producers and consumers. In a *partitioned pipeline*, each participating thread 
    * - Member function
      - Description
    * - (constructor)
-     - ``cuda::pipeline`` is move-only and is created by ``cuda::make_pipeline``. The moved-from pipeline is left
-       inactive and does not quit on destruction.
+     - ``cuda::pipeline`` is created by ``cuda::make_pipeline``. It can be moved, but not copied.
    * - ``operator=``
-     - Move assignment quits the current pipeline if it is still active, then takes over the other pipeline's state.
-       The moved-from pipeline is left inactive. Copy assignment is deleted.
+     - ``cuda::pipeline`` can be moved, but not copied.
    * - :ref:`(destructor) <libcudacxx-extended-api-synchronization-pipeline-pipeline-destructor>`
      -  Destroys the ``cuda::pipeline``.
    * - :ref:`producer_acquire <libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-acquire>`

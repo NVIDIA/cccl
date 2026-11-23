@@ -16,6 +16,7 @@
 #include <cuda/pipeline>
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -73,10 +74,34 @@ TEST_HOST_DEVICE_FUNC void test_move_assign()
 }
 
 template <cuda::thread_scope Scope>
+TEST_HOST_DEVICE_FUNC void test_traits()
+{
+  static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::pipeline<Scope>>);
+  static_assert(cuda::std::is_nothrow_move_assignable_v<cuda::pipeline<Scope>>);
+  static_assert(!cuda::std::is_copy_constructible_v<cuda::pipeline<Scope>>);
+  static_assert(!cuda::std::is_copy_assignable_v<cuda::pipeline<Scope>>);
+}
+
+template <cuda::thread_scope Scope>
 TEST_HOST_DEVICE_FUNC void test()
 {
+  test_traits<Scope>();
   test_move_construct<Scope>();
   test_move_assign<Scope>();
+}
+
+// The thread-scope pipeline has no shared state and nothing to quit, so it only has to stay movable.
+TEST_HOST_DEVICE_FUNC void test_thread_scope()
+{
+  test_traits<cuda::thread_scope_thread>();
+
+  auto pipe  = cuda::make_pipeline();
+  auto moved = cuda::std::move(pipe);
+  assert(moved.quit());
+
+  auto assigned = cuda::make_pipeline();
+  assigned      = cuda::std::move(moved);
+  assert(assigned.quit());
 }
 
 int main(int, char**)
@@ -84,6 +109,7 @@ int main(int, char**)
   test<cuda::thread_scope_system>();
   test<cuda::thread_scope_device>();
   test<cuda::thread_scope_block>();
+  test_thread_scope();
 
   return 0;
 }
