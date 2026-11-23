@@ -250,12 +250,6 @@
 #  define _CCCL_POP_MACRO_max
 #endif // defined(max)
 
-#ifdef interface
-#  pragma push_macro("interface")
-#  undef interface
-#  define _CCCL_POP_MACRO_interface
-#endif // defined(interface)
-
 // sal.h on Windows
 
 #ifdef __valid
