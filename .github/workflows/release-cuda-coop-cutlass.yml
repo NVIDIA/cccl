@@ -1,0 +1,192 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Release: cuda-coop-cutlass"
+run-name: cuda-coop-cutlass ${{ inputs.tag || github.ref_name }} (${{ inputs.target || 'build' }})
+
+on:
+  push:
+    tags: ['cuda-coop-cutlass-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Package tag to publish
+        required: true
+        type: string
+      run-id:
+        description: Successful tag build containing the wheel and sdist
+        required: true
+        type: string
+      target:
+        description: Package index
+        required: true
+        type: choice
+        options: [testpypi, pypi]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cuda-coop-cutlass-${{ inputs.tag || github.ref_name }}-${{ inputs.target || 'build' }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  distributions:
+    if: >-
+      github.repository == 'NVIDIA/cccl' &&
+      ((github.event_name == 'push' && github.event.created && !github.event.deleted) ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve the package tag on main
+        id: tag
+        run: |
+          [[ "$TAG" =~ ^cuda-coop-cutlass-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(rc(0|[1-9][0-9]*))?$ ]]
+          sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+          git merge-base --is-ancestor "$sha" origin/main
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            test "$sha" = "$GITHUB_SHA"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Build the sdist and its wheel
+        if: github.event_name == 'push'
+        run: |
+          python -m pip install build
+          # The RC and final tags can point to the same commit.
+          export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_COOP_CUTLASS="${TAG#cuda-coop-cutlass-v}"
+          python -m build --outdir dist python/cuda_coop_cutlass
+      - name: Verify the selected run built and tested this tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run-id }}
+          SOURCE_SHA: ${{ steps.tag.outputs.sha }}
+        run: |
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" |
+            jq -e --arg tag "$TAG" --arg sha "$SOURCE_SHA" '
+              .path == ".github/workflows/release-cuda-coop-cutlass.yml" and
+              .event == "push" and .conclusion == "success" and
+              .head_branch == $tag and .head_sha == $sha'
+      - name: Download the original distributions
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cuda-coop-cutlass-distributions
+          path: dist
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ github.token }}
+      - name: Check archive contents, version and bundled headers
+        env:
+          SOURCE_SHA: ${{ steps.tag.outputs.sha }}
+        run: |
+          python -m pip install packaging twine
+          git show "$SOURCE_SHA:ci/validate_cuda_coop_cutlass_artifacts.py" > "$RUNNER_TEMP/validate_artifacts.py"
+          python "$RUNNER_TEMP/validate_artifacts.py" --release-tag "$TAG" --source-commit "$SOURCE_SHA" dist/*
+          python -m twine check --strict dist/*
+          echo "$TAG at $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum dist/* | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Require the same distributions on TestPyPI before production
+        if: inputs.target == 'pypi'
+        run: python ci/verify_cuda_coop_cutlass_index.py testpypi dist
+      - name: Check any files already on the destination index
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TARGET: ${{ inputs.target }}
+        run: python ci/verify_cuda_coop_cutlass_index.py --allow-missing "$TARGET" dist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        id: upload
+        with:
+          name: ${{ github.event_name == 'push' && 'cuda-coop-cutlass-candidate' || 'cuda-coop-cutlass-upload' }}
+          path: dist/
+          if-no-files-found: error
+
+  test-wheel:
+    if: github.event_name == 'push'
+    needs: distributions
+    runs-on: linux-amd64-gpu-l4-latest-1
+    permissions: {}
+    container:
+      image: python:3.12-slim-bookworm
+      options: --gpus all
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.distributions.outputs.artifact-id }}
+          path: dist
+          merge-multiple: true
+      - name: Run an installed-wheel scan on L4
+        run: |
+          wheel=(dist/*.whl)
+          python -m pip install "${wheel[0]}[cu13]"
+          python -m pip check
+          sdist=(dist/*.tar.gz)
+          root=$(basename "${sdist[0]}" .tar.gz)
+          tar -xOzf "${sdist[0]}" "$root/examples/scan.py" > "$RUNNER_TEMP/scan.py"
+          for route in 0 1; do
+            CUTE_DSL_USE_EXTENSION_COMPILER="$route" CUTE_DSL_CACHE_DIR="$RUNNER_TEMP/cute-$route" \
+              python -I "$RUNNER_TEMP/scan.py"
+          done
+      - name: Save the GPU-tested distributions for release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: cuda-coop-cutlass-distributions
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: distributions
+    runs-on: ubuntu-24.04
+    environment:
+      name: cuda-coop-cutlass-${{ inputs.target }}
+      url: https://${{ inputs.target == 'testpypi' && 'test.' || '' }}pypi.org/project/cuda-coop-cutlass/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.distributions.outputs.artifact-id }}
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          skip-existing: true
+
+  verify-index:
+    needs: [distributions, publish]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/verify_cuda_coop_cutlass_index.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.distributions.outputs.artifact-id }}
+          path: dist
+          merge-multiple: true
+      - name: Verify the published filenames and SHA-256 hashes
+        env:
+          TARGET: ${{ inputs.target }}
+        run: python3 ci/verify_cuda_coop_cutlass_index.py "$TARGET" dist

@@ -24,18 +24,18 @@ is its namespace parent.
 Installation
 ------------
 
-The standalone package requires CUTLASS DSL 4.9.0.dev1 or later in the 4.x
-series and CUDA 13 on Linux. Install from a checkout containing this project:
+On Linux with a CUDA 13-capable NVIDIA driver, install a published release
+with its CUDA Toolkit 13.4 headers, NVRTC and nvJitLink:
 
 .. code-block:: bash
 
-   python -m pip install ./python/cuda_coop_cutlass
+   python -m pip install 'cuda-coop-cutlass[cu13]'
 
-Use a compatible CUDA driver and toolkit. NVRTC compiles the CUB providers,
-and the CuTe compiler must support external NVIDIA LTO-IR linking and
-trace-finalization hooks. The wheel includes the required CCCL headers and
-licenses. Package metadata selects the CuTe CUDA 13 libraries through the
-``nvidia-cutlass-dsl[cu13]`` dependency, including the 4.9.0.dev1 prerelease.
+For a source build, run ``python -m pip install './python/cuda_coop_cutlass[cu13]'``
+from the CCCL repository root. With a compatible system toolkit already
+installed, omit ``[cu13]``. The wheel supplies the matching CCCL headers and
+selects CUTLASS DSL 4.9.0.dev1 or later in the 4.x series. With 4.9.0.dev1,
+use NVRTC 13.1 through 13.4. Its linker cannot consume LTO-IR from NVRTC 13.5.
 
 Start with the :doc:`Programming Guide <programming_guide>` for a complete
 prefix-sum kernel and :doc:`concepts` for participation, layouts, ownership,

@@ -63,3 +63,62 @@ None.
 - Pushes final release tag
 - Generates source and install packages (zips and tgzs)
 - Creates draft Github release with auto-generated release notes and source/install archives.
+
+## Publish `cuda-coop-cutlass` to PyPI
+
+This package has its own release tags and ships a universal wheel and a source
+distribution. Use `release-cuda-coop-cutlass.yml` for both indexes.
+
+### One-time setup
+
+- In `NVIDIA/cccl`, protect `cuda-coop-cutlass-v*` tags against updates and
+  deletion and restrict creation to release maintainers.
+- Create the `cuda-coop-cutlass-testpypi` and `cuda-coop-cutlass-pypi`
+  GitHub environments. Limit deployments to the `main` branch and configure
+  the release reviewers who may approve each upload.
+- On each index, configure a GitHub Trusted Publisher for project
+  `cuda-coop-cutlass`, owner `NVIDIA`, repository `cccl`, workflow filename
+  `release-cuda-coop-cutlass.yml` and that index's environment name. An
+  existing project requires Owner access. For a new project, register a
+  pending publisher. [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+
+### Build, stage and promote
+
+1. Select a reviewed commit on `main` and create a package tag of the form
+   `cuda-coop-cutlass-vX.Y.ZrcN` or `cuda-coop-cutlass-vX.Y.Z`. Pushing the
+   new tag builds the sdist and builds the wheel from that sdist. The workflow
+   checks the tag version, bundled-header commit and archive contents, then
+   installs the wheel with `[cu13]` and runs the scan example on an L4.
+2. Record the successful tag workflow's run ID, source SHA and both SHA-256
+   hashes from its summary. Download the `cuda-coop-cutlass-distributions`
+   artifact for release QA and any required scans.
+3. From `main`, dispatch the workflow for TestPyPI and approve its deployment:
+
+   ```sh
+   gh workflow run release-cuda-coop-cutlass.yml -R NVIDIA/cccl --ref main \
+     -f tag="$TAG" -f run-id="$BUILD_RUN_ID" -f target=testpypi
+   ```
+
+   After the index check passes, install the TestPyPI wheel in a fresh
+   environment. Fetch the package from TestPyPI and resolve its dependencies
+   from PyPI:
+
+   ```bash
+   version=${TAG#cuda-coop-cutlass-v}
+   wheel_dir=$(mktemp -d)
+   python -m pip download --no-deps --only-binary=:all: --dest "$wheel_dir" \
+     --index-url https://test.pypi.org/simple "cuda-coop-cutlass==$version"
+   python -m pip install "$wheel_dir/cuda_coop_cutlass-$version-py3-none-any.whl[cu13]"
+   python -m pip check
+   python -I python/cuda_coop_cutlass/examples/scan.py
+   ```
+
+   Run the example from the tagged checkout on a supported GPU. A final tag
+   produces a new version and artifacts, even when it points at the RC commit.
+   Stage and qualify the final pair before promotion.
+4. After release approval, repeat the dispatch with `-f target=pypi`, keeping
+   the same tag and **original tag build run ID**. The workflow checks that
+   TestPyPI serves both expected hashes, presents the production deployment
+   for approval, and checks PyPI's filenames and hashes after upload. To
+   retry an interrupted upload, dispatch again with the same inputs. Existing
+   files must match the original build.

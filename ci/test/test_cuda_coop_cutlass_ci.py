@@ -2,12 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exercise standalone artifact routing through the actual CI generator."""
+"""Exercise standalone artifact routing and release checks."""
 
+import hashlib
+import io
 import json
+import runpy
 import shlex
 import subprocess
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -92,6 +96,7 @@ def test_runtime_uses_the_cpu_qualified_artifact(
         "ci/cuda_coop_cutlass_requirements.txt",
         "ci/test_cuda_coop_cutlass.sh",
         "ci/validate_cuda_coop_cutlass_artifacts.py",
+        "ci/verify_cuda_coop_cutlass_index.py",
     ],
 )
 def test_standalone_changes_select_only_standalone_project(path):
@@ -110,6 +115,41 @@ def test_standalone_changes_select_only_standalone_project(path):
     assert selection == {"FULL_BUILD": "cuda_coop_cutlass", "LITE_BUILD": ""}
 
 
-def test_release_workflow_does_not_publish_the_draft_package(tmp_path):
+def test_generic_wheel_workflow_excludes_standalone_package(tmp_path):
     workflow = _generate(tmp_path, ["cuda_coop_cutlass"], workflow="python-wheels")
     assert not workflow
+
+
+@pytest.mark.parametrize(
+    "remote_wheel,remote_sdist,allow_missing,error",
+    [
+        (b"wrong", None, True, "SHA-256 mismatch"),
+        (b"wheel", None, False, "Missing from test.pypi.org"),
+        (b"wheel", None, True, None),
+        (b"wheel", b"sdist", False, None),
+    ],
+)
+def test_release_index_hashes(
+    tmp_path, monkeypatch, remote_wheel, remote_sdist, allow_missing, error
+):
+    wheel = tmp_path / "cuda_coop_cutlass-0.1.0-py3-none-any.whl"
+    sdist = tmp_path / "cuda_coop_cutlass-0.1.0.tar.gz"
+    wheel.write_bytes(b"wheel")
+    sdist.write_bytes(b"sdist")
+    files = [
+        {"filename": path.name, "digests": {"sha256": hashlib.sha256(data).hexdigest()}}
+        for path, data in ((wheel, remote_wheel), (sdist, remote_sdist))
+        if data is not None
+    ]
+
+    def index_response(url, timeout):
+        assert url == "https://test.pypi.org/pypi/cuda-coop-cutlass/0.1.0/json"
+        return io.BytesIO(json.dumps({"urls": files}).encode())
+
+    checker = str(ROOT / "ci/verify_cuda_coop_cutlass_index.py")
+    flags = ["--allow-missing"] if allow_missing else []
+    monkeypatch.setattr(sys, "argv", [checker, "testpypi", str(tmp_path), *flags])
+    monkeypatch.setattr("urllib.request.urlopen", index_response)
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    with pytest.raises(SystemExit, match=error) if error else nullcontext():
+        runpy.run_path(checker, run_name="__main__")
