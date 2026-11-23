@@ -900,11 +900,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
   constexpr _FpType __big       = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p60f) : _FpType(0x1.0p500);
   constexpr _FpType __small     = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-40f) : _FpType(0x1.0p-450);
   constexpr _FpType __big_scl   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-80f) : _FpType(0x1.0p-600);
-  constexpr _FpType __big_inv   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p80f) : _FpType(0x1.0p600);
   constexpr _FpType __small_scl = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p100f) : _FpType(0x1.0p600);
-  constexpr _FpType __small_inv = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-100f) : _FpType(0x1.0p-600);
   const _FpType __scl           = (__m >= __big) ? __big_scl : (__m < __small) ? __small_scl : _FpType(1);
-  const _FpType __inv           = (__m >= __big) ? __big_inv : (__m < __small) ? __small_inv : _FpType(1);
 
   // s + c = sum of the squares, c holding the rounding errors and the low-limb terms.
   _FpType __s = _FpType(0);
@@ -941,6 +938,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
   }
   else
   {
+    // The inverse of the scale.
+    constexpr _FpType __big_inv   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p80f) : _FpType(0x1.0p600);
+    constexpr _FpType __small_inv = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-100f) : _FpType(0x1.0p-600);
+    const _FpType __inv           = (__m >= __big) ? __big_inv : (__m < __small) ? __small_inv : _FpType(1);
     ::cuda::__fpmp2_sqrt(__a_hi, __a_lo, &__r_hi, &__r_lo);
     __r_hi = ::cuda::__fpmp_mul_rn(__r_hi, __inv);
     __r_lo = ::cuda::__fpmp_mul_rn(__r_lo, __inv);

@@ -1126,7 +1126,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_log_residual_pair(
  */
 template <bool _WithExponent, bool _ExactLow = false>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_log_tail(
-  const float __kf,
+  [[maybe_unused]] const float __kf,
   const __fpmp2_log_table_entry& __t,
   const float __r_hi,
   const float __r_lo,
