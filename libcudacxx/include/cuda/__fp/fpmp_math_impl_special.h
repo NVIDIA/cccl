@@ -324,7 +324,8 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
     __result = -__result;
   }
 
-  *__res_hi = __result.hi();
+  // erf(-0) is -0; the renormalized argument and the kernel are +0 there.
+  *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 } // __internal_fpmp2_erf
 
@@ -546,7 +547,8 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfc_tail(const fp32mp2_low __a
  * Complementary error function erfc(x) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
  *   |x| < 1/2 : 1 - x Q(x^2) (no cancellation, erfc >= 0.48 there)
- *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above; zero above 27.5
+ *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above; zero above 10.0546875,
+ *               where erfc(x) < 2^-150 (2 below -10.0546875)
  *   x <= -1/2 : 2 - erfc(|x|)
  * The former single formula read 40-41 bits: 13 u^2 of fit error plus the
  * generic divisions at the kernel's t = -1 end near x = 0, and a reduction
@@ -559,14 +561,15 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
 {
   using __ffloat = fp32mp2_low;
 
-  if (__x_hi != __x_hi)
+  const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
+  // NaN in either limb (the renormalization carries a NaN low limb into the high one)
+  if (__x.hi() != __x.hi())
   {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_hi;
+    *__res_hi = __x.hi();
+    *__res_lo = __x.hi();
     return;
   }
-  const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
-  if (__x.hi() > 27.5f || __x.hi() < -27.5f) /* including +-inf */
+  if (__x.hi() > 10.0546875f || __x.hi() < -10.0546875f) /* including +-inf */
   {
     *__res_hi = (__x.hi() > 0.0f) ? 0.0f : 2.0f;
     *__res_lo = 0.0f;
@@ -701,11 +704,14 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfcinv_core(const fp32mp2_low 
   float __y0;
   if (__far)
   {
-    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. */
+    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. Both polynomials are Horner
+     * forms in explicit fmas: written with * and +, the compiler decides which products to
+     * contract, the seed differs between builds, and so does the last bit of the result. */
     const float __t = ::cuda::std::sqrt(-2.0f * (::cuda::std::log(__q.hi()) - 0.6931472f));
-    const float __z = __t
-                    - (2.515517f + 0.802853f * __t + 0.010328f * __t * __t)
-                        / (1.0f + 1.432788f * __t + 0.189269f * __t * __t + 0.001308f * __t * __t * __t);
+    const float __n = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.010328f, __t, 0.802853f), __t, 2.515517f);
+    const float __d = ::cuda::__fpmp_fma_rn(
+      ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.001308f, __t, 0.189269f), __t, 1.432788f), __t, 1.0f);
+    const float __z = __t - __n / __d;
     __y0            = __z * 0x1.6a09e6p-1f;
   }
   else
@@ -1859,9 +1865,11 @@ __internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi,
     *__res_lo = 0.0f;
     return;
   }
-  if (__x.hi() == 0.0f) /* +-0 */
+  if (__x.hi() == 0.0f)
   {
-    *__res_hi = __x.hi();
+    /* +-0 keeps its sign, which the renormalization drops. Both limbs are tested: the limbs of
+     * a low-accuracy pair can cancel ((2, -2) is a zero), and its high limb is not the result. */
+    *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : 0.0f;
     *__res_lo = 0.0f;
     return;
   }
@@ -1944,9 +1952,11 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
   {
     if (__neg)
     {
-      /* erfcx(-a) reaches FLT_MAX at a = 9.38241397; 0x1.2c3cbap+3 is the last float whose
-       * pairs (any low limb) stay below it, so 2 exp(a^2) cannot overflow past this test. */
-      if (__a.hi() > 0x1.2c3cbap+3f) /* including -inf */
+      /* 2 e^{x^2} passes the largest float between |x| = 0x1.2c3cbcp+3 and the next float
+       * up: a larger high limb is +inf outright, and at that high limb the low limb decides,
+       * through the check after the doubling (an overflowed sum has an infinite or a NaN
+       * high limb). */
+      if (__a.hi() > 0x1.2c3cbcp+3f) /* including -inf */
       {
         *__res_hi = ::cuda::std::__fp_inf<float>();
         *__res_lo = 0.0f;
@@ -1957,6 +1967,12 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
       ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), 1.0f, &__e_hi, &__e_lo);
       __r =
         renormalize(sub<fpmp2_accuracy::high>(__ffloat(__e_hi + __e_hi, __e_lo + __e_lo), __ffloat(__k_hi, __k_lo)));
+      if (!(__r.hi() < ::cuda::std::__fp_inf<float>()))
+      {
+        *__res_hi = ::cuda::std::__fp_inf<float>();
+        *__res_lo = 0.0f;
+        return;
+      }
     }
     else if (__a.hi() > 40.0f)
     {
@@ -1967,12 +1983,17 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
         return;
       }
       /* 1/(x sqrt pi) by one refined division; y = 1/x^2 = pi (1/(x sqrt pi))^2
-       * only needs ~36 bits (its terms are below 2^-11 of the sum) */
+       * only needs ~36 bits (its terms are below 2^-11 of the sum).  The division is
+       * by x 2^-64 and its quotient is scaled back (exact on the high limbs while the
+       * result is normal; a low limb of x below 2^-62 loses bits under 2^-67 of x): the
+       * device's approximate reciprocal flushes 1/x to zero for x above 2^126, where the
+       * result is a subnormal number. */
       constexpr __ffloat __inv_sqrtpi(0x1.20dd750429b6dp-1), __pi(0x1.921fb54442d18p+1);
       constexpr float __ac[8] = {1.0f, -0.5f, 0.75f, -1.875f, 6.5625f, -29.53125f, 162.421875f, -1055.7421875f};
       float __i_hi, __i_lo;
-      ::cuda::__fpmp_math_div_refined<true>(__inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi(), __a.lo(), &__i_hi, &__i_lo);
-      const __ffloat __rx(__i_hi, __i_lo);
+      ::cuda::__fpmp_math_div_refined<true>(
+        __inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi() * 0x1p-64f, __a.lo() * 0x1p-64f, &__i_hi, &__i_lo);
+      const __ffloat __rx(__i_hi * 0x1p-64f, __i_lo * 0x1p-64f);
       const __ffloat __y = renormalize(__rx * __rx) * __pi;
       __ffloat __v(__ac[7]);
       _CCCL_PRAGMA_UNROLL_FULL()

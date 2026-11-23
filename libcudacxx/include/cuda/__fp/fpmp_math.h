@@ -410,13 +410,24 @@
       Core: degree-24 Remez polynomial P for the argument, followed by
       expm1 via argument reduction + polynomial, all in fp32mp2.
 
+    asin(x), acos(x), atan(x), atan2(y, x) for fp32mp2:
+      13-coefficient polynomials in fp32mp2 arithmetic: atan and atan2
+      after one fold and a refined division, asin and acos in x^2 below
+      0.575 and in 1 - |x| above.  At most 1.9 (atan) to 3.4 (acos, atan2)
+      u^2.  The entry code returns the C99 Annex F special values, keeps
+      the sign of a zero argument (asin, atan, atan2), decides the domain
+      of asin and acos on both limbs, returns NaN in both limbs, and
+      scales the operands of atan2 by a common power of two, so that
+      subnormal operands are ordinary inputs.
+
     erfc(x) for fp32mp2:
       |x| < 1/2: 1 - x Q(x^2), Q a degree-8 fit of erf(x)/x shared by the
       small-argument paths of this family.  x >= 1/2: erfcx(x) exp(-x^2), the
       erfcx kernel below times the exact-argument exp(s x^2): x_hi^2 and
       2 x_hi x_lo are exact products and every piece above 2^-48 |x^2| enters
       the reduced argument through error-free sums, so no rounding of x^2
-      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 27.5.
+      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 10.0546875,
+      where erfc(x) < 2^-150 (and 2 below -10.0546875).
 
     erfcx kernel (a >= 1/2), the basis of erfc, erfcx, normcdf and the
     inverse error functions:

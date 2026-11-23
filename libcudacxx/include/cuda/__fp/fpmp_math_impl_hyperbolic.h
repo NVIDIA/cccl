@@ -103,6 +103,15 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. Both limbs are tested:
+   * a low-accuracy difference can carry a zero high limb over a nonzero low one. */
+  if (__x_hi == 0.0f && __x_lo == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
+
   __ffloat __x(__x_hi, __x_lo);
   __ffloat __abs_a = __is_neg ? -__x : __x;
 
@@ -246,6 +255,15 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. Both limbs are tested:
+   * a low-accuracy difference can carry a zero high limb over a nonzero low one. */
+  if (__x_hi == 0.0f && __x_lo == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
+
   __ffloat __x(__x_hi, __x_lo);
   __ffloat __abs_a = __is_neg ? -__x : __x;
 
@@ -265,9 +283,16 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
       return;
     }
     const __ffloat __half_e(__u_hi, __u_lo);
+    /* Past e/2 = 2^31 the reciprocal is under 2^-63 of the result and is dropped, with the
+     * divisor clamped there: dividing by a larger e forms subnormal products (and, next to the
+     * overflow threshold, a subnormal reciprocal), for which Intel cores take a microcode
+     * assist each; see __internal_fpmp2_half_inv_exp. */
+    const bool __negligible = __u_hi > 0x1p31f;
     float __i_hi, __i_lo;
-    ::cuda::__fpmp_math_div_refined<false>(0.25f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
-    __ffloat __result = renormalize(__half_e - __ffloat(__i_hi, __i_lo));
+    ::cuda::__fpmp_math_div_refined<false>(
+      0.25f, 0.0f, __negligible ? 0x1p31f : __u_hi, __negligible ? 0.0f : __u_lo, &__i_hi, &__i_lo);
+    const __ffloat __half_inv_e = __negligible ? __ffloat(0.0f) : __ffloat(__i_hi, __i_lo);
+    __ffloat __result           = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
     {
       __result = -__result;
@@ -741,7 +766,7 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* atanh(+-1) = +-inf.  Strict |x| > 1 -> NaN.  A high limb of +-1 with
    * a low limb pointing inwards is |x| < 1 by a sub-ulp amount and stays in
-   * the domain (1 - |x| below is then exact). */
+   * the domain. */
   if (__abs_hi >= 1.0f)
   {
     const float __abs_lo = __is_neg ? -__x_lo : __x_lo;
@@ -756,6 +781,28 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     {
       *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
       *__res_lo = 0.0f;
+      return;
+    }
+    /* |x| = 1 - d with d = -abs_lo <= 2^-25, down to a subnormal d, for which
+     * the quotient of the log1p form below would overflow:
+     *   atanh(|x|) = (ln(2 - d) - ln(d)) / 2 = (ln2 - d/2 - ln(d)) / 2
+     * to d^2/8 < 2^-53, and log1p of the pair (-1, d) is ln(d), below -17.
+     * A low-accuracy difference can carry a larger d under a high limb of 1
+     * ((2^24, -0.25) - (2^24 - 1) is (1, -0.25)): that one takes the log1p
+     * form, whose quotient is then in range. */
+    if (__abs_lo >= -0x1p-25f)
+    {
+      constexpr float __ln2_hi = 0x1.62e43p-1f; /* ln2 = __ln2_hi + __ln2_lo */
+      constexpr float __ln2_lo = -0x1.05c61p-29f;
+      float __r_hi, __r_lo, __e;
+      ::cuda::__fpmp2_log<float>(-__abs_lo, 0.0f, &__r_hi, &__r_lo);
+      const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
+      __r_hi          = ::cuda::__fpmp_fast_two_sum(
+        __s,
+        ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __abs_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
+        &__r_lo);
+      *__res_hi = __is_neg ? -0.5f * __r_hi : 0.5f * __r_hi;
+      *__res_lo = __is_neg ? -0.5f * __r_lo : 0.5f * __r_lo;
       return;
     }
   }
