@@ -451,22 +451,7 @@ struct policy_selector
         async.store_vec_size = 2;
         return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + 28 * 1024, async};
       }
-      if (common_value_type_size == 4) // F32
-      {
-        // kbif_-8.tpb_128.unrl_2.svsp_2: mul 1.001, add 1.025, triad 1.007, nstream 1.001
-        auto async           = TransformAsyncCopyPolicy{128};
-        async.unroll_factor  = 2;
-        async.store_vec_size = 4;
-        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) - 8 * 1024, async};
-      }
-      if (common_value_type_size == 8) // F64
-      {
-        // kbif_0.tpb_384.unrl_1.svsp_0: mul 1.007, add 1.020, triad 1.001, nstream 1.050
-        auto async           = TransformAsyncCopyPolicy{384};
-        async.unroll_factor  = 1;
-        async.store_vec_size = 1;
-        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc), async};
-      }
+      // F32 and F64 tunings showed no measurable improvement
     }
 
     return ::cuda::std::nullopt;
