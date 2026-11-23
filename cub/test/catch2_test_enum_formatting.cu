@@ -152,7 +152,7 @@ void do_test(const Tester& tester)
 
   // RadixSortAlgorithm
   {
-    tester(cub::RadixSortAlgorithm::multi_pass, "RadixSortAlgorithm::multi_pass");
+    tester(cub::RadixSortAlgorithm::__deprecated_multi_pass, "RadixSortAlgorithm::multi_pass");
     tester(cub::RadixSortAlgorithm::onesweep, "RadixSortAlgorithm::onesweep");
 
     tester(cub::RadixSortAlgorithm(100), "<unknown RadixSortAlgorithm>");
