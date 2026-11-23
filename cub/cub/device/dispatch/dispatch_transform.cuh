@@ -202,7 +202,6 @@ template <bool NoInputs,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_async_kernel(
   Offset num_items,
-  int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cudaStream_t stream,
   PolicyGetter policy_getter,
@@ -215,7 +214,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH int threads_per_block        = policy.async_copy.threads_per_block;
 
-  _CCCL_ASSERT(threads_per_block % alignment == 0, "threads_per_block needs to be a multiple of the copy alignment");
+  _CCCL_ASSERT(threads_per_block % async_copy_alignment == 0,
+               "threads_per_block needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
 
   CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy.async_copy.min_items_per_thread;
@@ -241,7 +241,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     for (int items_per_thread = +min_items_per_thread; items_per_thread <= +max_items_per_thread; ++items_per_thread)
     {
       const int tile_size     = threads_per_block * items_per_thread;
-      const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+      const int dyn_smem_size = dyn_smem_for_tile_size(tile_size);
       int max_occupancy       = 0;
       error                   = CubDebug(launcher_factory.MaxSmOccupancy(
         max_occupancy, kernel_source.TransformKernel(), threads_per_block, dyn_smem_size));
@@ -274,7 +274,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(config.error());
   }
   _CCCL_ASSERT(config->items_per_thread > 0, "");
-  _CCCL_ASSERT((config->items_per_thread * threads_per_block) % alignment == 0, "");
+  _CCCL_ASSERT((config->items_per_thread * threads_per_block) % async_copy_alignment == 0, "");
 
   const int ipt = _CUB::detail::transform::spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
@@ -303,7 +303,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     }));
 #endif // _CCCL_HOSTED()
 
-  const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+  const int dyn_smem_size = dyn_smem_for_tile_size(tile_size);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
   const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, static_cast<Offset>(tile_size)));
@@ -333,7 +333,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   Predicate pred,
   TransformOp op,
   cudaStream_t stream,
-  int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cuda::std::index_sequence<Is...>,
   PolicyGetter policy_getter,
@@ -342,7 +341,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   ::cuda::compute_capability cc)
 {
   auto ret = _CUB::detail::transform::configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
-    num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
+    num_items, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
   if (!ret)
   {
     return ret.error();
@@ -358,7 +357,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
     op,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
     kernel_source.MakeAlignedBasePtrKernelArg(
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), async_copy_alignment)...);
 }
 
 template <typename... RandomAccessIteratorsIn,
@@ -526,8 +525,7 @@ struct invoke_for_cc<RequiresStableAddress,
         ::cuda::std::move(pred),
         ::cuda::std::move(op),
         stream,
-        _CUB::detail::transform::bulk_copy_size_multiple,
-        [&](int tile_size, int /*alignment*/) {
+        [&](int tile_size) {
           return _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
             kernel_source.InputIteratorInfos(), tile_size, _CUB::detail::transform::smem_tile_alignment(cc));
         },
@@ -546,10 +544,9 @@ struct invoke_for_cc<RequiresStableAddress,
         ::cuda::std::move(pred),
         ::cuda::std::move(op),
         stream,
-        ldgsts_size_and_align,
-        [&](int tile_size, int alignment) {
+        [&](int tile_size) {
           return _CUB::detail::transform::memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
-            kernel_source.InputIteratorInfos(), tile_size, alignment);
+            kernel_source.InputIteratorInfos(), tile_size, ldgsts_size_and_align);
         },
         seq,
         policy_getter,

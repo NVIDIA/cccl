@@ -263,7 +263,9 @@ _CCCL_HOST_DEVICE_API constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-inline constexpr int ldgsts_size_and_align = 16;
+// Both asynchronous copy mechanisms (LDGSTS and bulk copies) need 16-byte aligned addresses and sizes
+inline constexpr int async_copy_alignment  = 16;
+inline constexpr int ldgsts_size_and_align = async_copy_alignment;
 
 template <int InputCount>
 _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
@@ -284,7 +286,7 @@ _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-inline constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = async_copy_alignment;
 
 // Alignment of each tile in shared memory, which is the destination of a bulk copy. Hopper performs measurably worse
 // with 16-byte aligned destinations, so it keeps 128.
