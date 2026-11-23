@@ -245,7 +245,7 @@ enum class __fmt_spec_sign : uint8_t
 
 enum class __fmt_spec_type : uint8_t
 {
-  __default = 0,
+  __default,
   __string,
   __binary_lower_case,
   __binary_upper_case,
@@ -388,6 +388,10 @@ static_assert(sizeof(__fmt_parsed_spec<wchar_t>) == 16);
 static_assert(is_trivially_copyable_v<__fmt_parsed_spec<wchar_t>>);
 #endif // _CCCL_HAS_WCHAR_T()
 
+// NVHPC warns about using __attribute__((noinline)) on an inline function.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(inline_gnu_noinline_conflict)
+
 //! The parser for the std-format-spec.
 //!
 //! Note this class is a member of std::formatter specializations. It's
@@ -413,8 +417,10 @@ public:
   //! The idea is that most times the format instead of the vformat
   //! functions are used. In that case the error will be detected during
   //! compilation and there is no need to pay for the run-time overhead.
+  //!
+  //! Make the parser noinline on device to avoid optimizing a copy for each formatter.
   template <class _ParseContext>
-  _CCCL_HOST_DEVICE_API constexpr typename _ParseContext::iterator
+  _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE constexpr typename _ParseContext::iterator
   __parse(_ParseContext& __ctx, __fmt_spec_fields __fields)
   {
     auto __begin = __ctx.begin();
@@ -1045,6 +1051,14 @@ private:
     ++__begin;
   }
 
+  // Share the argument lookup and visit on device. Literal widths and precisions skip the call.
+  template <class _Ctx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE static constexpr uint32_t
+  __substitute_arg_id(_Ctx& __ctx, size_t __id)
+  {
+    return ::cuda::std::visit_format_arg(__fmt_substitute_arg_id_visitor{}, __ctx.arg(__id));
+  }
+
   template <class _Ctx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API uint32_t __get_width(_Ctx& __ctx) const
   {
@@ -1052,7 +1066,7 @@ private:
     {
       return __width_;
     }
-    return ::cuda::std::__fmt_substitute_arg_id(__ctx.arg(__width_));
+    return __substitute_arg_id(__ctx, __width_);
   }
 
   template <class _Ctx>
@@ -1062,9 +1076,11 @@ private:
     {
       return __precision_;
     }
-    return ::cuda::std::__fmt_substitute_arg_id(__ctx.arg(__precision_));
+    return __substitute_arg_id(__ctx, __precision_);
   }
 };
+
+_CCCL_DIAG_POP
 
 // Validates whether the reserved bitfields don't change the size.
 static_assert(sizeof(__fmt_spec_parser<char>) == 16);

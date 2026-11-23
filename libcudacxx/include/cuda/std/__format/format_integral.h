@@ -61,8 +61,9 @@ __fmt_format_char(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __spec
   return ::cuda::std::__fmt_write(__buffer, __buffer + 1, ::cuda::std::move(__out_it), __specs);
 }
 
+// Share the digit conversion and its scratch buffer across signed and unsigned formatters on device.
 template <class _Tp, class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE _OutIt
 __fmt_format_int_impl(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs, bool __negative)
 {
   // Binary digits need the most space. Leave room for the sign and the two-character base prefix.
