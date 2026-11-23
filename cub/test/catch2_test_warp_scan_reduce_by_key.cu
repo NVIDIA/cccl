@@ -41,9 +41,9 @@ CUB_TEST("WarpScan inclusive scan by key accumulates every segment, the first on
   CAPTURE(first_length, length);
 
   constexpr int num_items = warp_threads * total_warps;
-  c2h::host_vector<int> h_keys(num_items);
-  c2h::host_vector<type> h_values(num_items);
-  c2h::host_vector<type> h_expected(num_items);
+  c2h::host_vector<int> h_keys(num_items, thrust::no_init);
+  c2h::host_vector<type> h_values(num_items, thrust::no_init);
+  c2h::host_vector<type> h_expected(num_items, thrust::no_init);
   for (int tid = 0; tid < num_items; ++tid)
   {
     const int lane = tid % warp_threads;
@@ -57,7 +57,7 @@ CUB_TEST("WarpScan inclusive scan by key accumulates every segment, the first on
 
   c2h::device_vector<int> d_keys    = h_keys;
   c2h::device_vector<type> d_values = h_values;
-  c2h::device_vector<type> d_out(num_items);
+  c2h::device_vector<type> d_out(num_items, thrust::no_init);
   reduce_by_key_scan_kernel<type><<<1, num_items>>>(
     thrust::raw_pointer_cast(d_keys.data()),
     thrust::raw_pointer_cast(d_values.data()),
