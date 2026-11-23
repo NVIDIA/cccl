@@ -91,6 +91,21 @@ Run Length Decode returns the requested number of decoded positions. Its
 input run count and output capacity can differ. The
 :doc:`data-flow diagrams </tile/visualizations/index>` illustrate each result.
 
+.. _tile-multirow-reduction-workaround:
+
+CUDA 13.5 multirow reductions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On SM120, CUDA 13.5.37 can generate an out-of-bounds shared-memory store
+when it lays out the results of a multirow warp reduction. This occurs, for
+example, when summing the rows of an ``8 × 128`` float32 tile in C++.
+Compute Sanitizer reports the invalid store even when the kernel returns
+the expected sums in an ordinary run.
+
+For affected row sums, use ``coop.sum(matrix, axis=1, algorithm="raking")``
+in Python. In C++, pass ``coop::reduce_policy<coop::reduce_algorithm::raking>{}``
+as the second argument to ``coop::sum<1>``.
+
 Compile-time choices and runtime controls
 -----------------------------------------
 

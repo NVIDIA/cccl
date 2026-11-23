@@ -44,6 +44,9 @@ without an axis, or the reduced-axis extent for axis overloads.
 batched provider and support a 128-element input with four, eight, or
 sixteen kernel worker warps.
 
+For multirow reductions on CUDA 13.5, see the
+:ref:`SM120 raking workaround <tile-multirow-reduction-workaround>`.
+
 Numerical behavior and native Tile comparison
 ---------------------------------------------
 

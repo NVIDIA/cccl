@@ -59,6 +59,9 @@ Each logical block computes its own aggregates.
    axes to restore the input shape; ``keepdims`` then has no effect on shape.
    Use this option when the consumer needs an input-shaped result.
 
+For multirow reductions on CUDA 13.5, see the
+:ref:`SM120 raking workaround <tile-multirow-reduction-workaround>`.
+
 For an already loaded ``matrix`` of shape ``(8, 128)`` and ``values`` of shape
 ``(128,)``:
 
