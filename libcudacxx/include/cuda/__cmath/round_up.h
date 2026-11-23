@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -50,7 +51,17 @@ _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND ::cuda::std::is_integra
   }
   using _Common = ::cuda::std::common_type_t<_Tp, _Up>;
   using _Prom   = decltype(_Tp{} / _Up{});
-  auto __c      = ::cuda::ceil_div(static_cast<_Prom>(__a), static_cast<_Prom>(__b));
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
+  // a compile-time power of two rounds with a mask; this is a few instructions shorter than the division below
+  if (_CCCL_BUILTIN_CONSTANT_P(__b) && ::cuda::is_power_of_two(__b))
+  {
+    const auto __mask = static_cast<_Prom>(__b) - 1;
+    _CCCL_ASSERT(static_cast<_Prom>(__a) <= ::cuda::std::numeric_limits<_Common>::max() - __mask,
+                 "cuda::round_up: result overflow");
+    return static_cast<_Common>((static_cast<_Prom>(__a) + __mask) & ~__mask);
+  }
+#endif // _CCCL_BUILTIN_CONSTANT_P
+  auto __c = ::cuda::ceil_div(static_cast<_Prom>(__a), static_cast<_Prom>(__b));
   _CCCL_ASSERT(static_cast<_Common>(__c) <= ::cuda::std::numeric_limits<_Common>::max() / static_cast<_Common>(__b),
                "cuda::round_up: result overflow");
   return static_cast<_Common>(static_cast<_Prom>(__c) * static_cast<_Prom>(__b));
