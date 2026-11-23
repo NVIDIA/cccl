@@ -705,10 +705,10 @@ __fpmp2_math_arg_zero_high(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi,
 }
 
 /*
- * An operand of rhypot, norm3d, norm4d, rnorm3d and rnorm4d. Their fp32mp2 pair kernel chooses
- * its scale from the high limbs. For fp32mp2 at fpmp2_accuracy::low an operand with a zero high
- * limb is taken for its low limb, so that the scale sees its size next to operands that have a
- * high limb. The sign of a zero does not matter to a norm.
+ * An operand of rhypot, norm3d, norm4d, rnorm3d and rnorm4d, and of the fp64mp2 hypot. Their
+ * pair kernel chooses its scale from the high limbs. At fpmp2_accuracy::low an operand with a
+ * zero high limb is taken for its low limb, so that the scale sees its size next to operands
+ * that have a high limb. The sign of a zero does not matter to a norm.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -716,7 +716,7 @@ __fpmp2_norm_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* 
 {
   *__x_hi = __x.hi();
   *__x_lo = __x.lo();
-  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  if constexpr (_TypeAcc == fpmp2_accuracy::low)
   {
     const bool __loose = __x.hi() == _FpType(0);
     *__x_hi            = __loose ? __x.lo() : __x.hi();
@@ -1525,8 +1525,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 hypot(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_hypot(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi = __x.hi(), __x_lo = __x.lo(), __y_hi = __y.hi(), __y_lo = __y.lo(), __res_hi, __res_lo;
+  // The fp32mp2 kernel reads the high limbs alone; the fp64mp2 hypot is the pair kernel of the norms.
+  if constexpr (!__fpmp2_is_fp32_v<_FpType>)
+  {
+    ::cuda::__fpmp2_norm_arg(__x, &__x_hi, &__x_lo);
+    ::cuda::__fpmp2_norm_arg(__y, &__y_hi, &__y_lo);
+  }
+  ::cuda::__fpmp2_hypot(__x_hi, __x_lo, __y_hi, __y_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

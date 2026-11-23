@@ -700,6 +700,14 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(atan2(D(0.0), -w)), pi));
   assert(approx_eq(static_cast<double>(atan2(D(-0.0), -w)), -pi));
   assert(is_pos_zero(atan2(D(0.0), w)) && is_neg_zero(atan2(D(-0.0), w)));
+  // hypot, rhypot and the norms, also next to an operand whose high limb is far below it
+  assert(approx_eq(static_cast<double>(hypot(w, D(0.0))), 0.25));
+  assert(approx_eq(static_cast<double>(hypot(w, D(0x1p-600))), 0.25));
+  assert(approx_eq(static_cast<double>(rhypot(-w, D(0x1p-600))), 4.0));
+  assert(approx_eq(static_cast<double>(norm3d(w, D(0x1p-600), D(0.0))), 0.25));
+  assert(approx_eq(static_cast<double>(rnorm3d(D(0x1p-600), D(0.0), -w)), 4.0));
+  assert(approx_eq(static_cast<double>(norm4d(D(0x1p-600), w, D(0.0), w)), 0.35355339059327379));
+  assert(approx_eq(static_cast<double>(norm3d(w, D(3.0), D(4.0))), 5.0062460986251967));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------
