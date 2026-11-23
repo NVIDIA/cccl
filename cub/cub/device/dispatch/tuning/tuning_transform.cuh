@@ -409,16 +409,20 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto find_bulk_copy_tuning(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<bulk_copy_tuning>
   {
-    bool all_value_types_are_one_byte = output.value_type_size == 1;
+    // the value type size shared by all inputs and the output, or 0 if they differ
+    int common_value_type_size = output.value_type_size;
     for (const auto& input : inputs)
     {
-      all_value_types_are_one_byte &= input.value_type_size == 1;
+      if (input.value_type_size != common_value_type_size)
+      {
+        common_value_type_size = 0;
+      }
     }
 
     // Rubin
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
-      if (all_value_types_are_one_byte) // I8
+      if (common_value_type_size == 1) // I8
       {
         // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
         auto async           = TransformAsyncCopyPolicy{128};
@@ -431,13 +435,37 @@ struct policy_selector
     // B200 + B300
     if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{10, 7})
     {
-      if (all_value_types_are_one_byte) // I8
+      if (common_value_type_size == 1) // I8
       {
         // kbif_48.tpb_256.unrl_2.svsp_3: mul 1.080, add 1.017, triad 1.057, nstream 1.069
         auto async           = TransformAsyncCopyPolicy{256};
         async.unroll_factor  = 2;
         async.store_vec_size = 8;
         return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + 48 * 1024, async};
+      }
+      if (common_value_type_size == 2) // I16
+      {
+        // kbif_28.tpb_256.unrl_2.svsp_1: mul 1.010, add 1.023, triad 1.024, nstream 1.028
+        auto async           = TransformAsyncCopyPolicy{256};
+        async.unroll_factor  = 2;
+        async.store_vec_size = 2;
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) + 28 * 1024, async};
+      }
+      if (common_value_type_size == 4) // F32
+      {
+        // kbif_-8.tpb_128.unrl_2.svsp_2: mul 1.001, add 1.025, triad 1.007, nstream 1.001
+        auto async           = TransformAsyncCopyPolicy{128};
+        async.unroll_factor  = 2;
+        async.store_vec_size = 4;
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc) - 8 * 1024, async};
+      }
+      if (common_value_type_size == 8) // F64
+      {
+        // kbif_0.tpb_384.unrl_1.svsp_0: mul 1.007, add 1.020, triad 1.001, nstream 1.050
+        auto async           = TransformAsyncCopyPolicy{384};
+        async.unroll_factor  = 1;
+        async.store_vec_size = 1;
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc), async};
       }
     }
 
