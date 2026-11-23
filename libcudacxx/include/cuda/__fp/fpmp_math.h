@@ -326,6 +326,8 @@
       rounding error to underflow; the squares are formed and summed as
       pairs, and the sum goes through the pair square root, or the pair
       reciprocal square root.  No double-precision arithmetic is used.
+      At fpmp2_accuracy::low an operand with a zero high limb is first
+      taken for its low limb.
       Accuracy against MPFR: see fpmp_math_impl_pow.h.
       Special cases: an infinite operand gives +inf (+0 for the
       reciprocal) even next to a NaN, otherwise NaN->NaN; all operands
@@ -683,8 +685,8 @@ __fpmp2_math_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* 
  * fp32mp2 kernels read the size of the argument from its high limb too, but are too short for
  * the test above: at fpmp2_accuracy::low an argument with a zero high limb over a nonzero low
  * limb, which a cancellation leaves, is taken for its low limb, without a branch. A zero keeps
- * its sign. atan2 and the pair kernel of rhypot and the norms do the same for their operands at
- * every level. sqrt, rsqrt, cbrt, rcbrt, hypot, pow and fmod read the high limb alone.
+ * its sign. atan2 does the same for its operands at every level; for rhypot and the norms see
+ * __fpmp2_norm_arg. sqrt, rsqrt, cbrt, rcbrt, hypot, pow and fmod read the high limb alone.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -695,6 +697,26 @@ __fpmp2_math_arg_zero_high(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi,
   if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
   {
     const bool __loose = __x.hi() == _FpType(0) && __x.lo() != _FpType(0);
+    *__x_hi            = __loose ? __x.lo() : __x.hi();
+    *__x_lo            = __loose ? _FpType(0) : __x.lo();
+  }
+}
+
+/*
+ * An operand of rhypot, norm3d, norm4d, rnorm3d and rnorm4d. Their fp32mp2 pair kernel chooses
+ * its scale from the high limbs. For fp32mp2 at fpmp2_accuracy::low an operand with a zero high
+ * limb is taken for its low limb, so that the scale sees its size next to operands that have a
+ * high limb. The sign of a zero does not matter to a norm.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_norm_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const bool __loose = __x.hi() == _FpType(0);
     *__x_hi            = __loose ? __x.lo() : __x.hi();
     *__x_lo            = __loose ? _FpType(0) : __x.lo();
   }
@@ -1347,7 +1369,11 @@ norm3d(const fpmp2<_FpType, _TypeAcc>& __a,
   }
   else
   {
-    ::cuda::__fpmp2_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm3d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1367,8 +1393,12 @@ norm4d(const fpmp2<_FpType, _TypeAcc>& __a,
   }
   else
   {
-    ::cuda::__fpmp2_norm4d(
-      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm_arg(__d, &__d_hi, &__d_lo);
+    ::cuda::__fpmp2_norm4d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1386,7 +1416,11 @@ rnorm3d(const fpmp2<_FpType, _TypeAcc>& __a,
   }
   else
   {
-    ::cuda::__fpmp2_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_rnorm3d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1406,8 +1440,12 @@ rnorm4d(const fpmp2<_FpType, _TypeAcc>& __a,
   }
   else
   {
-    ::cuda::__fpmp2_rnorm4d(
-      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm_arg(__d, &__d_hi, &__d_lo);
+    ::cuda::__fpmp2_rnorm4d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -1522,7 +1560,10 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 rhypot(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rhypot(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __y_hi, __y_lo;
+  ::cuda::__fpmp2_norm_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_norm_arg(__y, &__y_hi, &__y_lo);
+  ::cuda::__fpmp2_rhypot(__x_hi, __x_lo, __y_hi, __y_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

@@ -626,6 +626,13 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
     assert(approx_eq(static_cast<double>(rnorm3d(T(0.0f), -q, T(0.0f))), 4.0));
     assert(approx_eq(static_cast<double>(norm4d(T(0.0f), T(0.0f), q, T(0.0f))), 0.25));
     assert(approx_eq(static_cast<double>(rnorm4d(q, T(0.0f), T(0.0f), T(0.0f))), 4.0));
+    // also next to an operand whose high limb is far below it, or far above it
+    assert(approx_eq(static_cast<double>(rhypot(q, T(0x1p-100f))), 4.0));
+    assert(approx_eq(static_cast<double>(norm3d(q, T(0x1p-100f), T(0.0f))), 0.25));
+    assert(approx_eq(static_cast<double>(rnorm3d(T(0x1p-100f), T(0.0f), -q)), 4.0));
+    assert(approx_eq(static_cast<double>(norm4d(T(0x1p-100f), q, T(0.0f), q)), 0.35355339059327379));
+    assert(approx_eq(static_cast<double>(norm3d(q, T(3.0f), T(4.0f))), 5.0062460986251967));
+    assert(approx_eq(static_cast<double>(norm3d(q, T(0x1p100f), T(0.0f))), 0x1p100));
   }
   assert(approx_eq(static_cast<double>(exp(T(0.0f, 3.0f))), 20.085536923187668));
   assert(approx_eq(static_cast<double>(exp10(T(1.0f, 0.5f))), 31.622776601683793));
