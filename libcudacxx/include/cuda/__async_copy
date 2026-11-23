@@ -66,8 +66,6 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/__memory/address_space.h>
 #  include <cuda/__ptx/instructions/cp_async_bulk.h>
-#  include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
-#  include <cuda/__ptx/instructions/fence.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__type_traits/conditional.h>
@@ -264,9 +262,9 @@ _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
 //! as @p __gmem_dst_data past its preceding 16-byte boundary. The aligned middle goes through one
 //! `cp.async.bulk` issued by the thread with @p __elected set; the head and tail up to the next 16-byte boundaries are
 //! stored with byte-masked 16-byte bulk copies on SM100+ (issued by the elected thread) and with plain byte stores by
-//! the threads with `__thread_rank < 16` otherwise. All copies are added to the calling thread's bulk async group and
-//! committed; the caller waits for the group. Must be called by a full warp with the same arguments except
-//! @p __thread_rank.
+//! the threads with `__thread_rank < 16` otherwise. The bulk copies join the calling thread's current bulk async group;
+//! the caller commits and waits for the group, and issues a `fence.proxy.async` beforehand if threads wrote the
+//! shared memory. Must be called by a full warp with the same arguments except @p __thread_rank.
 //
 // TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
 _CCCL_DEVICE_API inline void __bulk_store_unaligned(
@@ -287,10 +285,6 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
                "__bulk_store_unaligned: destination must be in global memory");
   _CCCL_ASSERT(::cuda::device::is_address_from(__smem_src, ::cuda::device::address_space::shared),
                "__bulk_store_unaligned: source must be in the calling block's shared memory");
-
-  // Make the generic-proxy writes to shared memory visible to the async proxy. Executed by the full warp to avoid
-  // BSSY/BSYNC around the elected copies below.
-  ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
   auto* __dst       = static_cast<char*>(__gmem_dst);
   const auto* __src = static_cast<const char*>(__smem_src);
@@ -355,7 +349,6 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
                    static_cast<::cuda::std::uint32_t>(__head_padding),
                    __padded_bytes);
   }
-  ::cuda::ptx::cp_async_bulk_commit_group();
 }
 
 #  endif // __cccl_ptx_isa >= 860

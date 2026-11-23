@@ -103,9 +103,13 @@ _CCCL_DEVICE_API void squadStoreBulkSync(
   if (squad.isLeaderWarp())
   {
     _CCCL_IKET_RANGE_PUSH(StoreBulk);
+    // Make the generic-proxy writes to shared memory visible to the async proxy. Executed by the full warp to avoid
+    // BSSY/BSYNC around the elected copies.
+    ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
     ::cuda::device::__bulk_store_unaligned(
       const_cast<OutputT*>(ptrGmem.data()), srcSmem, bytes, squad.threadRank(), ::cuda::ptx::elect_sync(~0));
     // wait for the stores to have completed reading from shared memory
+    ::cuda::ptx::cp_async_bulk_commit_group();
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
     _CCCL_IKET_RANGE_POP();
   }
