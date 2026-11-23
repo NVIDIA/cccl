@@ -33,7 +33,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -587,8 +587,10 @@ struct WarpScanShfl
     // Mask away all lanes greater than ours
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
-    // Find index of first set bit
-    int segment_first_lane = static_cast<int>(::cuda::std::__bit_log2(ballot));
+    // The highest set bit is the first lane of our segment. No bit is set for the first segment, which begins at
+    // lane 0, so clamp to 0 (__clz(0) == 32). `ballot == 0 ? 0 : static_cast<int>(::cuda::std::__bit_log2(ballot))`
+    // is equivalent, but ptxas generates two more instructions for it on sm_100 and later.
+    int segment_first_lane = ::cuda::std::max(0, 31 - ::__clz(static_cast<int>(ballot)));
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
