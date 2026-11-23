@@ -29,7 +29,7 @@ inline constexpr int synthesizing_stride = 2;
 template <class ValueType>
 struct synthesizing_plus_one_t
 {
-  _CCCL_HOST_DEVICE constexpr ValueType operator()(ValueType value) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr ValueType operator()(ValueType value) const noexcept
   {
     return static_cast<ValueType>(value + ValueType{1});
   }
@@ -43,7 +43,7 @@ template <class ValueType>
 struct synthesizing_tuple_minus_t
 {
   template <class Lhs, class Rhs>
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<ValueType, ValueType> operator()(const Lhs& lhs, const Rhs& rhs) const
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<ValueType, ValueType> operator()(const Lhs& lhs, const Rhs& rhs) const
   {
     return {static_cast<ValueType>(::cuda::std::get<0>(lhs) - ::cuda::std::get<0>(rhs)),
             static_cast<ValueType>(::cuda::std::get<1>(lhs) - ::cuda::std::get<1>(rhs))};
@@ -53,7 +53,7 @@ struct synthesizing_tuple_minus_t
 // no_init is only valid for a trivially constructible value type. Zip outputs are tuples, so those are
 // value-initialized. thrust::default_init value-initializes element types that are not trivially constructible.
 template <class T>
-thrust::device_vector<T> synthesizing_make_output(std::size_t elements)
+_CCCL_HOST_API thrust::device_vector<T> synthesizing_make_output(std::size_t elements)
 {
   if constexpr (::cuda::std::is_trivially_constructible_v<T>)
   {
@@ -69,7 +69,7 @@ thrust::device_vector<T> synthesizing_make_output(std::size_t elements)
 struct synthesizing_select_even_t
 {
   template <class T>
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& value) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator()(const T& value) const noexcept
   {
     if constexpr (::cuda::std::is_integral_v<T>)
     {
@@ -89,13 +89,13 @@ struct cuda_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return cuda::counting_iterator<ValueType>{ValueType{0}};
   }
 
   // Values 0, 1, 2, ... so every other value is even, with the extra item even when the length is odd.
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return (num_items + 1) / 2;
   }
@@ -108,12 +108,12 @@ struct thrust_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return thrust::make_counting_iterator(ValueType{0});
   }
 
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return (num_items + 1) / 2;
   }
@@ -126,13 +126,13 @@ struct cuda_strided_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return cuda::make_strided_iterator(cuda::counting_iterator<ValueType>{ValueType{0}}, synthesizing_stride);
   }
 
   // Values 0, 2, 4, ... are all even.
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return num_items;
   }
@@ -145,12 +145,12 @@ struct thrust_strided_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return thrust::make_strided_iterator(thrust::make_counting_iterator(ValueType{0}), synthesizing_stride);
   }
 
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return num_items;
   }
@@ -163,14 +163,14 @@ struct cuda_transform_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return cuda::transform_iterator{
       cuda::counting_iterator<ValueType>{ValueType{0}}, synthesizing_plus_one_t<ValueType>{}};
   }
 
   // Values 1, 2, 3, ... so half of them, rounded down, are even.
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return num_items / 2;
   }
@@ -183,13 +183,13 @@ struct thrust_transform_counting_t
 
   static constexpr bool scalar = true;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return thrust::make_transform_iterator(
       thrust::make_counting_iterator(ValueType{0}), synthesizing_plus_one_t<ValueType>{});
   }
 
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return num_items / 2;
   }
@@ -202,7 +202,7 @@ struct cuda_zip_counting_t
 
   static constexpr bool scalar = false;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return cuda::make_zip_iterator(
       cuda::counting_iterator<ValueType>{ValueType{0}},
@@ -210,7 +210,7 @@ struct cuda_zip_counting_t
   }
 
   // Selection looks at the counting iterator, whose values are 0, 1, 2, ...
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return (num_items + 1) / 2;
   }
@@ -223,7 +223,7 @@ struct thrust_zip_counting_t
 
   static constexpr bool scalar = false;
 
-  static auto make()
+  static _CCCL_HOST_API auto make()
   {
     return thrust::make_zip_iterator(
       thrust::make_counting_iterator(ValueType{0}),
@@ -231,7 +231,7 @@ struct thrust_zip_counting_t
         thrust::make_counting_iterator(ValueType{42}), synthesizing_plus_one_t<ValueType>{}));
   }
 
-  static constexpr ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
+  static constexpr _CCCL_HOST_API ::cuda::std::int64_t num_selected(::cuda::std::int64_t num_items)
   {
     return (num_items + 1) / 2;
   }
@@ -260,7 +260,7 @@ struct synthesizing_instantiate_inputs;
 template <template <class> class Input, class... ValueTypes>
 struct synthesizing_instantiate_inputs<Input, nvbench::type_list<ValueTypes...>>
 {
-  using type = nvbench::type_list<Input<ValueTypes>...>;
+  using type _CCCL_NODEBUG = nvbench::type_list<Input<ValueTypes>...>;
 };
 
 template <template <class> class Input>
@@ -272,16 +272,16 @@ struct synthesizing_concat_inputs;
 template <class List>
 struct synthesizing_concat_inputs<List>
 {
-  using type = List;
+  using type _CCCL_NODEBUG = List;
 };
 
 template <class List1, class List2, class... Rest>
 struct synthesizing_concat_inputs<List1, List2, Rest...>
 {
-  using type = typename synthesizing_concat_inputs<nvbench::tl::concat<List1, List2>, Rest...>::type;
+  using type _CCCL_NODEBUG = typename synthesizing_concat_inputs<nvbench::tl::concat<List1, List2>, Rest...>::type;
 };
 
-using synthesizing_input_types = typename synthesizing_concat_inputs<
+using synthesizing_input_types = synthesizing_concat_inputs<
   synthesizing_inputs_for_t<cuda_counting_t>,
   synthesizing_inputs_for_t<thrust_counting_t>,
   synthesizing_inputs_for_t<cuda_strided_counting_t>,
@@ -295,12 +295,12 @@ using synthesizing_input_types = typename synthesizing_concat_inputs<
   template <class ValueType>                                                                           \
   struct nvbench::type_strings<Tag<ValueType>>                                                         \
   {                                                                                                    \
-    static std::string input_string()                                                                  \
+    static _CCCL_HOST_API std::string input_string()                                                   \
     {                                                                                                  \
       return std::string{InputPrefix} + nvbench::type_strings<ValueType>::input_string() + ">";        \
     }                                                                                                  \
                                                                                                        \
-    static std::string description()                                                                   \
+    static _CCCL_HOST_API std::string description()                                                    \
     {                                                                                                  \
       auto value = nvbench::type_strings<ValueType>::description();                                    \
       if (value.empty())                                                                               \

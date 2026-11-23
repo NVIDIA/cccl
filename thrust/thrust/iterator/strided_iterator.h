@@ -171,9 +171,9 @@ THRUST_NAMESPACE_END
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <class _Iter, class _StrideHolder>
-inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_iterator<_Iter, _StrideHolder>> =
-  __is_synthesizing_iterator_v<_Iter>;
+template <class Iter, class StrideHolder>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_iterator<Iter, StrideHolder>> =
+  __is_synthesizing_iterator_v<Iter>;
 _CCCL_END_NAMESPACE_CUDA
 _CCCL_SUPPRESS_DEPRECATED_POP
 

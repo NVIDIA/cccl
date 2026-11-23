@@ -19,6 +19,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/load_algorithm_for_input.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
@@ -558,7 +559,7 @@ struct policy_selector
   bool lengths_out_contiguous;
   bool num_runs_out_contiguous;
   bool input_matches_unique_type;
-  bool input_synthesizing = false;
+  bool input_synthesizing;
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleLookbackPolicy
   {

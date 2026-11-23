@@ -365,9 +365,8 @@ inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
   THRUST_NS_QUALIFIER::transform_iterator<AdaptableUnaryFunction, Iterator, Reference, Value>> =
   __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<Iterator>>;
 
-template <class _Fn, class _Iter, class _Reference, class _Value>
-inline constexpr bool
-  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::transform_iterator<_Fn, _Iter, _Reference, _Value>> =
-    __is_synthesizing_iterator_v<_Iter>;
+template <class Fn, class Iter, class Reference, class Value>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::transform_iterator<Fn, Iter, Reference, Value>> =
+  __is_synthesizing_iterator_v<Iter>;
 _CCCL_END_NAMESPACE_CUDA
 #endif // _CCCL_DOXYGEN_INVOKED

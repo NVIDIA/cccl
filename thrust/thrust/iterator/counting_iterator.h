@@ -353,9 +353,9 @@ _CCCL_HOST_DEVICE_API auto make_counting_iterator(Incrementable x)
 THRUST_NAMESPACE_END
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <class _Incrementable, class _System, class _Traversal, class _Difference, class _StrideHolder>
+template <class Incrementable, class System, class Traversal, class Difference, class StrideHolder>
 inline constexpr bool __is_synthesizing_iterator_v<
-  THRUST_NS_QUALIFIER::counting_iterator<_Incrementable, _System, _Traversal, _Difference, _StrideHolder>> = true;
+  THRUST_NS_QUALIFIER::counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>> = true;
 _CCCL_END_NAMESPACE_CUDA
 
 #ifdef _THRUST_POP_MACRO_empty_bases

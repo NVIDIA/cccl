@@ -18,6 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/load_algorithm_for_input.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/prefetch.cuh>
@@ -1797,7 +1798,7 @@ struct policy_selector
   int offset_size_bytes;
   bool distinct_partitions;
   SelectImpl selection_impl;
-  bool inputs_synthesizing = false; // items and, if present, flags are produced by synthesizing iterators
+  bool inputs_synthesizing; // items and, if present, flags are produced by synthesizing iterators
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const

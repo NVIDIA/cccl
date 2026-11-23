@@ -224,8 +224,8 @@ THRUST_NAMESPACE_END
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <class _Value, class _Incrementable, class _System>
+template <class Value, class Incrementable, class System>
 inline constexpr bool
-  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::constant_iterator<_Value, _Incrementable, _System>> = true;
+  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::constant_iterator<Value, Incrementable, System>> = true;
 _CCCL_END_NAMESPACE_CUDA
 _CCCL_SUPPRESS_DEPRECATED_POP

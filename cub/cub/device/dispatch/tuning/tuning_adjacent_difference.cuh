@@ -17,6 +17,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/load_algorithm_for_input.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
@@ -72,7 +73,7 @@ struct policy_selector
 {
   int value_type_size;
   bool may_alias;
-  bool input_synthesizing = false;
+  bool input_synthesizing;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> AdjacentDifferencePolicy

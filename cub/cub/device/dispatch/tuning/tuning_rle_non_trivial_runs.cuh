@@ -18,6 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/load_algorithm_for_input.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
@@ -440,7 +441,7 @@ struct policy_selector
   bool length_is_primitive;
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
   bool key_is_trivially_copyable;
-  bool input_synthesizing = false;
+  bool input_synthesizing;
 
 private:
   _CCCL_HOST_DEVICE_API constexpr auto

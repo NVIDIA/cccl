@@ -344,9 +344,9 @@ _CCCL_HOST_DEVICE_API inline zip_iterator<::cuda::std::tuple<Iterators...>> make
 THRUST_NAMESPACE_END
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <class... _Iterators>
-inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<_Iterators...>>> =
-  (__is_synthesizing_iterator_v<_Iterators> && ...);
+template <class... Iterators>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<Iterators...>>> =
+  (__is_synthesizing_iterator_v<Iterators> && ...);
 _CCCL_END_NAMESPACE_CUDA
 
 #ifdef _THRUST_POP_MACRO_empty_bases

@@ -181,7 +181,7 @@ _CCCL_HOST_DEVICE_API shuffle_iterator<IndexType> make_shuffle_iterator(IndexTyp
 THRUST_NAMESPACE_END
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <class _IndexType, class _BijectionFunc>
-inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::shuffle_iterator<_IndexType, _BijectionFunc>> =
+template <class IndexType, class BijectionFunc>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::shuffle_iterator<IndexType, BijectionFunc>> =
   true;
 _CCCL_END_NAMESPACE_CUDA

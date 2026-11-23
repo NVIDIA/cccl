@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_load.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_size.cuh>
@@ -124,7 +123,7 @@ struct iterator_info
   int value_type_alignment;
   bool value_type_is_trivially_relocatable;
   bool is_contiguous;
-  bool is_synthesizing = false;
+  bool is_synthesizing;
 };
 
 template <typename It>
@@ -192,21 +191,6 @@ template <class LengthT>
 _CCCL_HOST_DEVICE_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
-}
-
-// Synthesizing iterators produce their values without accessing memory, so exchanging them through shared memory to
-// coalesce memory accesses only costs shared memory and synchronization. Loading them directly yields the same blocked
-// arrangement.
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-load_algorithm_for_input(BlockLoadAlgorithm load_algorithm, bool input_synthesizing) noexcept -> BlockLoadAlgorithm
-{
-  if (input_synthesizing
-      && (load_algorithm == BLOCK_LOAD_TRANSPOSE || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE
-          || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
-  {
-    return BLOCK_LOAD_DIRECT;
-  }
-  return load_algorithm;
 }
 } // namespace detail
 
