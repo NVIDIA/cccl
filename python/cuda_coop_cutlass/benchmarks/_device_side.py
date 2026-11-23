@@ -151,8 +151,20 @@ def run_device_side_benchmark(
         _checked(driver.cuMemFree(sink))
 
 
-def run_all_benchmarks(argv):
-    """Run the registered benchmarks with ``argv`` hidden from the CuTe DSL."""
+def run_benchmark(callback, configure, argv):
+    """Run a mirror and propagate failures after NVBench reports its results."""
+    errors = []
+
+    def run_state(state):
+        try:
+            callback(state)
+        except Exception as error:
+            # NVBench logs this exception and continues with the other states.
+            errors.append(f"{state.get_axis_values_as_string()}: {error}")
+            raise
+
+    configure(bench.register(run_state))
+
     # The DSL parses sys.argv during compilation, and argparse would read
     # NVBench's "-d" as an abbreviation of the DSL's "-diagnostic" option.
     saved = sys.argv
@@ -161,3 +173,5 @@ def run_all_benchmarks(argv):
         bench.run_all_benchmarks(argv)
     finally:
         sys.argv = saved
+    if errors:
+        raise RuntimeError("Benchmark states failed:\n" + "\n".join(errors))

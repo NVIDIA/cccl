@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cuda.bench as bench
 import cutlass
-from _device_side import run_all_benchmarks, run_device_side_benchmark
+from _device_side import run_benchmark, run_device_side_benchmark
 
 import cuda.coop.cutlass as coop
 
@@ -46,10 +46,10 @@ def bench_warp_reduce_sum(state: bench.State):
     )
 
 
+def configure(benchmark):
+    benchmark.set_name("base")
+    benchmark.add_string_axis("T{ct}", list(TYPE_MAP))
+
+
 if __name__ == "__main__":
-    b = bench.register(bench_warp_reduce_sum)
-    b.set_name("base")
-
-    b.add_string_axis("T{ct}", list(TYPE_MAP.keys()))
-
-    run_all_benchmarks(sys.argv)
+    run_benchmark(bench_warp_reduce_sum, configure, sys.argv)

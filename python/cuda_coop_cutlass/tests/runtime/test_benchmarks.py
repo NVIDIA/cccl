@@ -174,3 +174,42 @@ def test_compiler_route_parameter_binding(tmp_path, route):
             parameter["binding"] for parameter in metadata["parameter_layout"]
         ]
         assert metadata["parameter_layout_source"] == "captured driver launch"
+
+
+@pytest.mark.parametrize(
+    ("flags", "expected_code", "expected_output"),
+    [
+        (["--axis", "T{ct}=F32"], 1, "Benchmark states failed:"),
+        (["--axis", "T{ct}=I8"], 0, "intentional skip"),
+        (["--list"], 0, "T{ct}"),
+    ],
+)
+def test_mirror_exit_status(flags, expected_code, expected_output):
+    """Check the mirror's exit status with NVBench, before any kernel launch."""
+    import subprocess
+    import sys
+
+    pytest.importorskip("cuda.bench", reason="benchmark runner dependency")
+    probe = """
+import runpy
+import _device_side
+
+def callback(state, *args, **kwargs):
+    if state.get_string("T{ct}") == "I8":
+        state.skip("intentional skip")
+        return
+    raise RuntimeError("deliberate callback failure")
+
+_device_side.run_device_side_benchmark = callback
+runpy.run_path("reduce/warp_reduce_sum.py", run_name="__main__")
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", probe, "-d", "0", *flags],
+        cwd=PACKAGE_ROOT / "benchmarks",
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == expected_code, output
+    assert expected_output in output
