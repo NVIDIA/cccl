@@ -13,12 +13,31 @@ import cutlass
 import pytest
 
 from cuda.coop.cutlass._compiler import _nvrtc
-from tests.support.paths import PACKAGE_ROOT
+from tests.support.paths import PACKAGE_ROOT, TESTS_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-def test_relocated_pack_launches_without_provider_compilation(tmp_path):
+@pytest.mark.parametrize(
+    ("script", "capture_args", "replay_args"),
+    [
+        pytest.param(
+            PACKAGE_ROOT / "examples" / "block_storage.py",
+            (),
+            (),
+            id="block-storage",
+        ),
+        pytest.param(
+            TESTS_ROOT / "runtime" / "radix_topk_workload.py",
+            ("1",),
+            ("3",),
+            id="radix-topk",
+        ),
+    ],
+)
+def test_relocated_pack_launches_without_provider_compilation(
+    tmp_path, script, capture_args, replay_args
+):
     major, minor = _nvrtc.resolve_compile_context(()).nvrtc_version
     consumer = cutlass.CUDA_VERSION
     if consumer.major != major or consumer.minor < minor:
@@ -26,13 +45,17 @@ def test_relocated_pack_launches_without_provider_compilation(tmp_path):
             f"Provider NVRTC {major}.{minor} is incompatible with "
             f"the CuTe {consumer.major}.{consumer.minor} device linker"
         )
-    example = PACKAGE_ROOT / "examples" / "block_storage.py"
-    workload = ["--", sys.executable, str(example)]
+    workload = ["--", sys.executable, str(script)]
 
     def run_cli(*args, cache, forbid_compilation=False):
         # Keep the same package provenance as the parent, including when the
         # CI runner imports an installed wheel with Python's isolated mode.
-        setup = f"import sys\nsys.path[:] = {sys.path!r}\n"
+        setup = (
+            f"import sys, types\nsys.path[:] = {sys.path!r}\n"
+            "tests = types.ModuleType('tests')\n"
+            f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
+            "sys.modules['tests'] = tests\n"
+        )
         if forbid_compilation:
             setup += (
                 "from cuda.coop.cutlass._compiler import _nvrtc\n"
@@ -56,7 +79,14 @@ def test_relocated_pack_launches_without_provider_compilation(tmp_path):
         return result.stdout
 
     original = tmp_path / "capture"
-    run_cli("capture", "--output", original, *workload, cache=tmp_path / "jit")
+    run_cli(
+        "capture",
+        "--output",
+        original,
+        *workload,
+        *capture_args,
+        cache=tmp_path / "jit",
+    )
     installed = original.rename(tmp_path / "relocated")
     cache = tmp_path / "consumer-cache"
     cache.mkdir()
@@ -70,6 +100,7 @@ def test_relocated_pack_launches_without_provider_compilation(tmp_path):
         "--mode",
         "required",
         *workload,
+        *replay_args,
         cache=cache,
         forbid_compilation=True,
     )
