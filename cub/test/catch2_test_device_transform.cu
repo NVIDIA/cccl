@@ -757,7 +757,7 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
     (128 * 6) /* blackwell u32 tilesize */ + 2,
     (128 * 3) /* blackwell u64 tilesize */ + 2);
 
-  // we should hit byte offsets up until 64 (128 is the highest bulk_copy_alignment)
+  // we should hit byte offsets up until 64 (128 is the highest smem_tile_alignment)
   const int offset_a = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
   const int offset_b = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
   if (num_items <= offset_a || num_items <= offset_b || offset_a * sizeof(type) > 64 || offset_b * sizeof(type) > 64)
