@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: nvrtc
+
 // <cuda/std/__cccl/attributes.h> must not use optional vendor attributes whose names users define as macros.
 
 // The MSVC STL evaluates some of these names in its own feature checks.
@@ -24,28 +26,30 @@
 
 #include <cuda/std/__cccl/attributes.h>
 
+#include "test_macros.h"
+
 static_assert(!_CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS());
 
 template <class T>
 struct _CCCL_NO_SPECIALIZATIONS no_specializations_test
 {};
 
-_CCCL_INTRINSIC constexpr int&& intrinsic_test(int& x) noexcept
+_CCCL_INTRINSIC TEST_FUNC constexpr int&& intrinsic_test(int& x) noexcept
 {
   return static_cast<int&&>(x);
 }
 
-constexpr const int& lifetimebound_test(const int& x _CCCL_LIFETIMEBOUND) noexcept
+TEST_FUNC constexpr const int& lifetimebound_test(const int& x _CCCL_LIFETIMEBOUND) noexcept
 {
   return x;
 }
 
-_CCCL_PURE int pure_test(const int* x) noexcept
+_CCCL_PURE TEST_FUNC int pure_test(const int* x) noexcept
 {
   return *x;
 }
 
-_CCCL_CONST int const_test(int x) noexcept
+_CCCL_CONST TEST_FUNC int const_test(int x) noexcept
 {
   return x;
 }
