@@ -401,35 +401,16 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
 // array element addresses is sizeof element type and each array element needs to fulfill the alignment requirement of
 // the element type.
 
-// Pointer with metadata to describe readonly input memory for memcpy_async and UBLKCP kernels.
-// LDGSTS is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
-// UBLKCP is most efficient when the data is 128/16-byte aligned (Hopper/Blackwell) and the size a multiple of 16 bytes
-template <typename T> // Cannot add alignment to signature, because we need a uniform kernel template instantiation
-struct aligned_base_ptr
-{
-  using value_type = T;
-
-  const char* ptr; // aligned pointer before the original pointer (16-byte or 128-byte). May not be aligned to
-                   // alignof(T). E.g.: array of int3 starting at address 4, ptr == 0
-  int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
-
-  _CCCL_HOST_DEVICE_API const T* ptr_to_elements() const
-  {
-    return reinterpret_cast<const T*>(ptr + head_padding);
-  }
-
-  _CCCL_HOST_DEVICE_API friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
-  {
-    return a.ptr == b.ptr && a.head_padding == b.head_padding;
-  }
-};
+// Pointer with metadata to describe readonly input memory for memcpy_async and UBLKCP kernels. LDGSTS is most
+// efficient when the data is 16-byte aligned, UBLKCP when it is 128/16-byte aligned (Hopper/Blackwell), so the
+// pointer is aligned down and the kernel copies the head padding along with the tile.
+template <typename T>
+using aligned_base_ptr = ::cuda::device::aligned_ptr<T>;
 
 template <typename T>
 _CCCL_HOST_DEVICE_API auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<T>
 {
-  const auto raw_ptr  = reinterpret_cast<const char*>(ptr);
-  const auto base_ptr = ::cuda::align_down(raw_ptr, alignment);
-  return aligned_base_ptr<T>{base_ptr, static_cast<int>(raw_ptr - base_ptr)};
+  return ::cuda::device::make_aligned_ptr(ptr, alignment);
 }
 
 template <int ThreadsPerBlock>

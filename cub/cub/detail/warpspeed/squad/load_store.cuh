@@ -45,34 +45,9 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreBulk);
 
 #if __cccl_ptx_isa >= 860
 
-template <typename Tp>
-struct CpAsyncOobInfo
-{
-  // The bulk copies align the global memory start down to 16 bytes. The data then starts smemStartSkipBytes into the
-  // shared memory tile. Expressed in bytes, since the aligned pointer may not point to a multiple of sizeof(Tp).
-  ::cuda::std::byte* ptrGmem;
-  ::cuda::std::uint32_t origCopySizeBytes;
-  ::cuda::std::uint32_t smemStartSkipBytes; // ptrSmem + smemStartSkipBytes points to the first valid element
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::byte* ptrGmemStartAlignDown() const
-  {
-    return ptrGmem - smemStartSkipBytes;
-  }
-};
-
-template <typename Tp>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrGmem, ::cuda::std::uint32_t sizeElem)
-{
-  auto ptrGmemBytes = reinterpret_cast<::cuda::std::byte*>(ptrGmem);
-  return {
-    ptrGmemBytes,
-    static_cast<::cuda::std::uint32_t>(sizeof(Tp) * sizeElem),
-    static_cast<::cuda::std::uint32_t>(ptrGmemBytes - ::cuda::align_down(ptrGmemBytes, 16)),
-  };
-}
-
 template <typename ResourceTp, typename Tp>
-_CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
+_CCCL_DEVICE_API void squadLoadBulk(
+  Squad squad, SmemRef<ResourceTp>& refDestSmem, ::cuda::device::aligned_ptr<Tp> ptrGmem, ::cuda::std::uint32_t bytes)
 {
   _CCCL_IKET_RANGE_PUSH(LoadBulk);
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
@@ -82,12 +57,12 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
   if constexpr (alignof(Tp) >= 16)
   {
     // for alignments larger than 16, we can just bulk copy, even just a single element
-    _CCCL_ASSERT(cpAsyncOobInfo.smemStartSkipBytes == 0, "");
+    _CCCL_ASSERT(ptrGmem.head_padding == 0, "");
     if (squad.isLeaderThread())
     {
-      ::cuda::device::bulk_load(ptrSmem, cpAsyncOobInfo.ptrGmem, cpAsyncOobInfo.origCopySizeBytes, ptrBar);
+      ::cuda::device::bulk_load(ptrSmem, ptrGmem.data(), bytes, ptrBar);
     }
-    refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.origCopySizeBytes);
+    refDestSmem.squadIncreaseTxCount(squad, bytes);
   }
   else
   {
@@ -96,22 +71,18 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     ::cuda::std::uint32_t copied = 0;
     if (squad.isLeaderThread())
     {
-      copied = ::cuda::device::bulk_load_unaligned_ignore_oob(
-        ptrSmem,
-        cpAsyncOobInfo.ptrGmemStartAlignDown(),
-        cpAsyncOobInfo.origCopySizeBytes,
-        static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
-        ptrBar);
+      copied =
+        ::cuda::device::bulk_load_unaligned_ignore_oob(ptrSmem, ptrGmem.ptr, bytes, ptrGmem.head_padding, ptrBar);
     }
     refDestSmem.squadIncreaseTxCount(squad, copied);
 #  else // __cccl_ptx_isa >= 920
     // if we don't have cp_async_bulk_ignore_oob, we have to undercopy and copy head and tail elements manually
     ::cuda::std::uint32_t copied = 0;
     ::cuda::device::bulk_load_unaligned_precise<16, alignof(Tp)>(
-      ptrSmem + cpAsyncOobInfo.smemStartSkipBytes,
-      cpAsyncOobInfo.ptrGmem,
-      cpAsyncOobInfo.origCopySizeBytes,
-      static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
+      ptrSmem + ptrGmem.head_padding,
+      ptrGmem.data(),
+      bytes,
+      ptrGmem.head_padding,
       ptrBar,
       squad.threadRank(),
       squad.isLeaderThread(),
@@ -123,18 +94,17 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API void
-squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
+_CCCL_DEVICE_API void squadStoreBulkSync(
+  Squad squad,
+  ::cuda::device::aligned_ptr<OutputT> ptrGmem,
+  ::cuda::std::uint32_t bytes,
+  const ::cuda::std::byte* srcSmem)
 {
   if (squad.isLeaderWarp())
   {
     _CCCL_IKET_RANGE_PUSH(StoreBulk);
     ::cuda::device::bulk_store_unaligned(
-      cpAsyncOobInfo.ptrGmem,
-      srcSmem,
-      cpAsyncOobInfo.origCopySizeBytes,
-      squad.threadRank(),
-      ::cuda::ptx::elect_sync(~0));
+      const_cast<OutputT*>(ptrGmem.data()), srcSmem, bytes, squad.threadRank(), ::cuda::ptx::elect_sync(~0));
     // wait for the stores to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
     _CCCL_IKET_RANGE_POP();
