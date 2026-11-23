@@ -1109,7 +1109,8 @@ __internal_fpmp2_normcdfinv(const double __x_hi, const double __x_lo, double* __
       float __f_hi;
       float __f_lo;
       const float __p_hi = static_cast<float>(__p);
-      ::cuda::__internal_fpmp2_normcdfinv(__p_hi, static_cast<float>(__p - __p_hi), &__f_hi, &__f_lo);
+      ::cuda::__internal_fpmp2_normcdfinv(
+        __p_hi, static_cast<float>(__p - static_cast<double>(__p_hi)), &__f_hi, &__f_lo);
       *__res_hi = static_cast<double>(__f_hi) + static_cast<double>(__f_lo);
       *__res_lo = 0.0;
     }))

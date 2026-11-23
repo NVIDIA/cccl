@@ -18,7 +18,7 @@
 #define _CCCL_HOST_DEVICE _CCCL_HOST _CCCL_DEVICE
 
 // CHECK-MESSAGES-NOT: warning:
-struct members {
+struct members final {
   _CCCL_HOST members() = default;
 // CHECK-MESSAGES: :[[@LINE-1]]:14: warning: use _CCCL_HIDE_FROM_ABI to limit ABI visibility [cccl-hide-from-abi]
 // CHECK-MESSAGES-NOT: warning:

@@ -904,7 +904,8 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__ll2double_rz(__x);), ({
                       double __d          = static_cast<double>(__x);
                       long double __exact = static_cast<long double>(__x);
-                      if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
+                      if ((__x > 0 && static_cast<long double>(__d) > __exact)
+                          || (__x < 0 && static_cast<long double>(__d) < __exact))
                       {
                         __d = ::nextafter(__d, 0.0);
                       }
@@ -917,7 +918,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexc
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__ull2double_rz(__x);), ({
                       double __d          = static_cast<double>(__x);
                       long double __exact = static_cast<long double>(__x);
-                      if (__d > __exact)
+                      if (static_cast<long double>(__d) > __exact)
                       {
                         __d = ::nextafter(__d, 0.0);
                       }

@@ -209,7 +209,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   SECTION("constant iterator")
   {
-    const cuda::constant_iterator<type> input(1.0f);
+    const cuda::constant_iterator<type> input(type{1});
     c2h::device_vector<type> d_output(1);
 
     auto error = cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
