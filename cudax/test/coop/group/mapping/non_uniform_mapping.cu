@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -101,7 +102,7 @@ template <unsigned GroupRank, bool Exhaustive, bool Contiguous>
 __device__ void test_per_group_result()
 {
   using Result =
-    cudax::coop::__mapping_result<cudax::coop::__per_group_count<3, GroupRank, 12>, Exhaustive, Contiguous>;
+    cudax::coop::__mapping_result<cudax::coop::__uniform_static_unit_count<3, 12>, Exhaustive, Contiguous, GroupRank>;
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == 3);
@@ -115,7 +116,7 @@ __device__ void test_per_group_result()
   for (unsigned rank = 0; rank < 12; ++rank)
   {
     const auto mask = cuda::device::lane_mask{0x55u};
-    const Result result{rank, mask};
+    const Result result{3, GroupRank, 12, rank, mask};
 
     CHECK(result.is_valid());
     CHECK(result.group_count() == 3);
@@ -127,7 +128,7 @@ __device__ void test_per_group_result()
 
   if constexpr (Exhaustive)
   {
-    constexpr Result result{11, cuda::device::lane_mask::all()};
+    constexpr Result result{3, GroupRank, 12, 11, cuda::device::lane_mask::all()};
     static_assert(result.group_rank() == GroupRank);
   }
 }

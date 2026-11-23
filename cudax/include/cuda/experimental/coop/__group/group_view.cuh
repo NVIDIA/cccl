@@ -62,7 +62,8 @@ __do_group_view_mapping(const _Unit&, const _Group& __group, ::cuda::std::index_
   using _MappingResult =
     __mapping_result<__static_unit_counts<(_GroupMappingResult::static_unit_count(_Is) * __units_per_group_unit)...>,
                      _GroupMappingResult::is_always_exhaustive(),
-                     _GroupMappingResult::is_always_contiguous()>;
+                     _GroupMappingResult::is_always_contiguous(),
+                     _GroupMappingResult::static_group_rank()>;
 
   const auto& __group_mapping_result = __group.__mapping_result();
   if constexpr (!_GroupMappingResult::is_always_exhaustive())
@@ -100,7 +101,8 @@ template <class _Unit, class _Group>
         __uniform_static_unit_count<_GroupMappingResult::static_group_count(),
                                     ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>()>,
         _GroupMappingResult::is_always_exhaustive(),
-        _GroupMappingResult::is_always_contiguous()>;
+        _GroupMappingResult::is_always_contiguous(),
+        _GroupMappingResult::static_group_rank()>;
 
       const auto& __group_mapping_result = __group.__mapping_result();
       return _MappingResult{
@@ -139,12 +141,19 @@ _CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __g
   else
   {
     using _PerGroupMappingResult = ::cuda::experimental::coop::__mapping_result<
-      __per_group_count<_MappingResult::static_group_count(), _First, _MappingResult::static_unit_count(_First)>,
+      __uniform_static_unit_count<_MappingResult::static_group_count(), _MappingResult::static_unit_count(_First)>,
       _MappingResult::is_always_exhaustive(),
-      _MappingResult::is_always_contiguous()>;
+      _MappingResult::is_always_contiguous(),
+      _First>;
 
-    return ::cuda::std::forward<_Fn>(__fn)(group_view<_Unit, __viewed_group_t<_Group>, _PerGroupMappingResult>{
-      __group, _PerGroupMappingResult{__mapping_result.unit_rank(), __mapping_result.lane_mask()}});
+    const _PerGroupMappingResult __view_mapping_result{
+      static_cast<::cuda::std::uint32_t>(_PerGroupMappingResult::static_group_count()),
+      static_cast<::cuda::std::uint32_t>(_First),
+      static_cast<::cuda::std::uint32_t>(_PerGroupMappingResult::static_unit_count()),
+      __mapping_result.unit_rank(),
+      __mapping_result.lane_mask()};
+    return ::cuda::std::forward<_Fn>(__fn)(
+      group_view<_Unit, __viewed_group_t<_Group>, _PerGroupMappingResult>{__group, __view_mapping_result});
   }
 }
 
