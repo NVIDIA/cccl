@@ -11,8 +11,8 @@
   class virtual_group : public /*group-interface-for*/<virtual_group>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
+    using unit_level      = Unit;
+    using bound_level     = typename ParentGroup::bound_level;
     using hierarchy_type  = typename ParentGroup::hierarchy_type;
 
     template <typename Mapping>
@@ -31,7 +31,7 @@
   };
 
   template </*hierarchy-level-type*/ Unit, group ParentGroup, typename Mapping>
-    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_type>
+    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_level>
   virtual_group(const Unit&, const ParentGroup&, Mapping&&)
     -> virtual_group<Unit,
                       ParentGroup,

@@ -78,7 +78,7 @@ _CCCL_TEMPLATE(
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>,
   class _Group                = _GroupTempl<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>)
 _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hierarchy_level_v<_Unit> _CCCL_AND
-                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Group> make_group(
   const non_exhaustive_t& __non_exhaustive,
   const _Unit& __unit,

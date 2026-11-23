@@ -122,7 +122,7 @@ __device__ cuda::std::optional<T> sum(const cudax::coop::this_cluster<Hierarchy>
 template <class Group, class T, cuda::std::size_t N>
 __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 {
-  using Unit          = typename Group::unit_type;
+  using Unit          = typename Group::unit_level;
   using MappingResult = typename Group::__mapping_result_type;
 
   constexpr auto ngroups = MappingResult::static_group_count();
@@ -158,8 +158,6 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 template <class Group>
 __device__ void test_cooperative_algorithm(Group group)
 {
-  using Level = typename Group::level_type;
-
   unsigned array[]{1, 2, 3};
   const auto result = sum(group, array);
 
