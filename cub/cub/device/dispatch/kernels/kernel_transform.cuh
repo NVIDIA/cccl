@@ -886,13 +886,13 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
         const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-        const char* src = aligned_ptr.ptr + (offset * sizeof(T));
-        char* dst       = smem;
-        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
-        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
+        const char* src = aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
+        char* dst       = smem + head_padding;
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
-        constexpr int copy_unit = alignof(T) < 8 ? int{alignof(T)} : 8;
-        total_copied += ::cuda::device::bulk_load_unaligned_precise<bulk_copy_alignment, copy_unit>(
+        // byte-wise head and tail copies measured best here (word-wise copies cost 8 SASS instructions)
+        total_copied += ::cuda::device::bulk_load_unaligned_precise<bulk_copy_alignment, 1>(
           dst, src, bytes_to_copy, head_padding, &bar, threadIdx.x, elected);
 
         // add padding to account for this tile's head padding

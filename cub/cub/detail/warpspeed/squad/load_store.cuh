@@ -107,8 +107,8 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
 #  else // __cccl_ptx_isa >= 920
     // if we don't have cp_async_bulk_ignore_oob, we have to undercopy and copy head and tail elements manually
     const auto copied = ::cuda::device::bulk_load_unaligned_precise<16, alignof(Tp)>(
-      ptrSmem,
-      cpAsyncOobInfo.ptrGmemStartAlignDown(),
+      ptrSmem + cpAsyncOobInfo.smemStartSkipBytes,
+      cpAsyncOobInfo.ptrGmem,
       cpAsyncOobInfo.origCopySizeBytes,
       static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
       ptrBar,

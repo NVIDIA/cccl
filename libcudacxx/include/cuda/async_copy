@@ -109,16 +109,16 @@ _CCCL_DEVICE_API inline auto bulk_load_unaligned_ignore_oob(
 }
 #  endif // __cccl_ptx_isa >= 920
 
-//! @brief Cooperatively copies @p __bytes bytes of data starting @p __head_padding bytes after the
-//! `_TargetAlignment`-aligned pointers @p __smem_dst and @p __gmem_src. The aligned middle goes through one
-//! `cp.async.bulk` issued by the thread with @p __elected set, head and tail bytes are copied by the threads with
+//! @brief Cooperatively copies @p __bytes bytes from @p __gmem_src to @p __smem_dst, where both pointers may be
+//! unaligned by the same @p __head_padding bytes past a `_TargetAlignment` boundary. The aligned middle goes through
+//! one `cp.async.bulk` issued by the thread with @p __elected set, head and tail bytes are copied by the threads with
 //! `__thread_rank < _TargetAlignment / _CopyUnit` in units of `_CopyUnit` bytes. Must be called at least by those
 //! threads, with the same arguments except @p __thread_rank; the elected thread must be among them.
 //!
 //! @tparam _CopyUnit Bytes moved per thread for the head and tail. @p __head_padding and @p __bytes must be multiples
 //! of it, e.g. the alignment of the element type.
-//! @param __head_padding Distance in bytes from the aligned pointers to the first byte of data, in [0,
-//! _TargetAlignment).
+//! @param __head_padding Distance in bytes from @p __smem_dst and from @p __gmem_src back to the preceding address
+//! aligned to `_TargetAlignment`. It must be the same for both pointers.
 //! @return Bytes the bulk copy contributes to the transaction count of @p __bar. Nonzero only for the elected thread.
 //
 // TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
@@ -142,10 +142,12 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
                "bulk_load_unaligned_precise: invalid head padding");
   _CCCL_ASSERT(__head_padding % _CopyUnit == 0 && __bytes % _CopyUnit == 0,
                "bulk_load_unaligned_precise: head padding and size must be multiples of the copy unit");
-  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<_TargetAlignment>(__smem_dst),
-               "bulk_load_unaligned_precise: destination must be aligned to _TargetAlignment");
-  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<_TargetAlignment>(__gmem_src),
-               "bulk_load_unaligned_precise: source must be aligned to _TargetAlignment");
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__smem_dst) % _TargetAlignment
+                 == static_cast<::cuda::std::uintptr_t>(__head_padding),
+               "bulk_load_unaligned_precise: head padding does not match the destination's misalignment");
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % _TargetAlignment
+                 == static_cast<::cuda::std::uintptr_t>(__head_padding),
+               "bulk_load_unaligned_precise: head padding does not match the source's misalignment");
   _CCCL_ASSERT(::cuda::device::is_address_from(__smem_dst, ::cuda::device::address_space::shared),
                "bulk_load_unaligned_precise: destination must be in the calling block's shared memory");
   _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_src, ::cuda::device::address_space::global),
@@ -153,8 +155,8 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   _CCCL_ASSERT(::cuda::device::is_address_from(__bar, ::cuda::device::address_space::shared),
                "bulk_load_unaligned_precise: barrier must be in the calling block's shared memory");
 
-  const auto* __src = reinterpret_cast<const __unit_t*>(static_cast<const char*>(__gmem_src) + __head_padding);
-  auto* __dst       = reinterpret_cast<__unit_t*>(static_cast<char*>(__smem_dst) + __head_padding);
+  const auto* __src = reinterpret_cast<const __unit_t*>(__gmem_src);
+  auto* __dst       = reinterpret_cast<__unit_t*>(__smem_dst);
 
   // handle tiny copies to simplify head/tail bytes computations below
   if (__bytes < _TargetAlignment)
@@ -189,7 +191,6 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   // perform both loads first and then both stores, this reduces the total latency
   const ::cuda::std::uint32_t __head_units = __head_bytes / _CopyUnit;
   const ::cuda::std::uint32_t __tail_units = __tail_bytes / _CopyUnit;
-  const ::cuda::std::uint32_t __tail_start = (__bytes - __tail_bytes) / _CopyUnit;
   __unit_t __head_value;
   __unit_t __tail_value;
   if (__thread_rank < __head_units)
@@ -198,7 +199,7 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   }
   if (__thread_rank < __tail_units)
   {
-    __tail_value = __src[__tail_start + __thread_rank];
+    __tail_value = __src[(__bytes - __tail_bytes) / _CopyUnit + __thread_rank];
   }
   if (__thread_rank < __head_units)
   {
@@ -206,7 +207,7 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   }
   if (__thread_rank < __tail_units)
   {
-    __dst[__tail_start + __thread_rank] = __tail_value;
+    __dst[(__bytes - __tail_bytes) / _CopyUnit + __thread_rank] = __tail_value;
   }
   return __copied;
 }
