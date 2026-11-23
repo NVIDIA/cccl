@@ -234,29 +234,27 @@ struct WarpReduceShfl
   template <typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduce(T& input, ReductionOp reduction_op, const int last_lane)
   {
-    // capture clause prevents regressions
-    ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
-      value = ReduceStep(value, reduction_op, last_lane, 1u << step);
-      input = value;
-    });
-  }
-
-  // TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
-  // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
-  template <int Step, typename ReductionOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduceRecursive(T& input, ReductionOp reduction_op, const int last_lane)
-  {
-    if constexpr (Step < steps)
+    // TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
+    // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
+    if constexpr (::cuda::std::is_same_v<ReductionOp, SwizzleScanOp<recursive_lookback_scan_op>>)
     {
-      input = ReduceStep(input, reduction_op, last_lane, 1u << Step);
-      ShuffleReduceRecursive<Step + 1>(input, reduction_op, last_lane);
+      ::cuda::static_for<steps>(
+        [](auto step, WarpReduceShfl& self, T& input, auto reduction_op, const int last_lane) {
+          input = self.ReduceStep(input, reduction_op, last_lane, 1 << step);
+        },
+        *this,
+        input,
+        reduction_op,
+        last_lane);
     }
-  }
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  ShuffleReduce(T& input, SwizzleScanOp<recursive_lookback_scan_op> reduction_op, const int last_lane)
-  {
-    ShuffleReduceRecursive<0>(input, reduction_op, last_lane);
+    else
+    {
+      // capture clause prevents regressions
+      ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
+        value = ReduceStep(value, reduction_op, last_lane, 1u << step);
+        input = value;
+      });
+    }
   }
 
   // Unrolls the reduction steps when all lanes are valid: no range check, only lane 0 holds the result
