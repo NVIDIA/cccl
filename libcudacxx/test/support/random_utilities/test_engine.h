@@ -153,14 +153,18 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_min_max()
 template <typename Engine>
 void test_save_restore()
 {
-  Engine e0;
-  e0.discard(10000);
+  // Use a state that differs from a default constructed engine in more than the first word
+  Engine e0(42);
+  e0.discard(10001);
   std::stringstream ss;
   ss << e0;
 
-  e0.discard(10000);
   Engine e1;
   ss >> e1;
+  assert(!ss.fail());
+  assert(e0 == e1);
+
+  e0.discard(10000);
   e1.discard(10000);
   assert(e0() == e1());
 }
