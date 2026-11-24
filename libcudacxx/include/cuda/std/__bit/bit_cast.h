@@ -73,8 +73,8 @@ _CCCL_DIAG_POP
 // NVCC + MSVC C++17 fails for guaranteed copy elision
 template <class _To, class _From>
 _CCCL_CONCEPT __can_be_directly_returned =
-                ::cuda::std::is_scalar_v<_To> && ::cuda::std::is_same_v < ::cuda::std::remove_cvref_t<_To>,
-              ::cuda::std::remove_cvref_t < _From >>> ;
+  ::cuda::std::is_scalar_v<_To>
+  && ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>;
 
 #else // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
 
