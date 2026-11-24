@@ -6,34 +6,39 @@
 TopK
 ====
 
-:func:`cuda.coop.cutlass.topk_min_keys` selects the smallest keys in a block;
-:func:`cuda.coop.cutlass.topk_max_keys` selects the largest. The corresponding
-:func:`~cuda.coop.cutlass.topk_min_pairs` and :func:`~cuda.coop.cutlass.topk_max_pairs`
-operations carry a value with each selected key. All four return new
-payloads and preserve the inputs.
+A top-k call selects the smallest or largest keys of a block's :term:`tile`
+and returns them in the first positions of the result, in no defined order.
+:func:`~cuda.coop.cutlass.topk_min_pairs` and
+:func:`~cuda.coop.cutlass.topk_max_pairs` also return the value that came
+with each selected key.
 
-The explorer uses one complete one-dimensional block of eight teaching
-threads. Change ``k`` and ``valid_items`` to see how the defined output
-prefix changes. Repeated keys expose the selection boundary: when several
-keys tie there, TopK may choose any subset needed to fill the result.
+The explorer covers all four functions. It draws one block of eight teaching
+threads with one, two or four items each. Change ``k`` and ``valid_items``
+to see which positions of the result hold a selected key. With
+``Repeated keys`` or ``All keys equal``, several equal keys can compete for
+the last selected positions, and the explorer shows one of the selections
+that top-k may return.
 
 .. coop-visualization:: topk
 
    .. only:: html
 
       .. figure:: topk.svg
-         :alt: A block selects four largest keys from twelve valid inputs.
-               One permitted unordered result is 11, 14, 9, 12, paired with
-               original positions 8, 6, 4, 2. The other twelve positions
-               are unspecified.
+         :alt: Eight threads hold two keys each. The four largest of the
+               first twelve keys, 11, 14, 9 and 12, fill the first four
+               positions of the result with their tile positions 8, 6, 4
+               and 2. The other twelve positions of the result are
+               question marks.
          :width: 100%
 
-         Maximum pairs, two items per thread, ``k=4``, ``valid_items=12``.
+         ``topk_max_pairs`` with two items per thread, ``k=4`` and
+         ``valid_items=12``.
 
-   Only the first ``min(k, valid_items)`` blocked output positions are
-   defined. This is one permitted output order. ``?`` marks an unspecified
-   output that the program must not read or store; parentheses mark inputs
-   outside the valid prefix.
+   The four largest of the first twelve keys are 14, 12, 11 and 9. They
+   fill the first four positions of the result, here in the order 11, 14,
+   9, 12, which is one of the orders top-k may return. Each key's value is
+   the position it came from. ``?`` marks a position that holds no selected
+   key, and parentheses mark the inputs at or past ``valid_items``.
 
    .. code-block:: text
 
@@ -46,46 +51,45 @@ keys tie there, TopK may choose any subset needed to fill the result.
 Reading the stages
 ------------------
 
-The input rows stay visible throughout playback. In blocked order,
-position ``thread_rank * items_per_thread + item`` belongs to that
-thread's local ``item`` slot. ``valid_items`` counts the input prefix in
-this order, across the whole block. Every thread participates even when
-none of its items is valid.
+The input rows stay in view during playback. In blocked order, item ``i`` of
+thread ``t`` is at position ``t * items_per_thread + i`` of the tile.
+``valid_items`` counts positions in this order across the whole block, and
+the explorer fades the inputs at or past it.
 
-The teaching model uses small nonnegative integer keys and two-bit digits.
-It counts candidates by the high digit first, then refines the bucket
-containing the selection boundary using the low digit. Digits on the
-preferred side are guaranteed selections; digits on the other side are
-excluded. Inspect a key to distinguish these from the remaining boundary
-candidates. The candidate row annotates source positions. It does not
-represent input data moving during filtering.
+The explorer is a teaching model with small non-negative keys and two-bit
+digits. The ``High digit`` stage counts the candidates by their high digit
+and finds the bucket that holds the last key to select. Keys in buckets
+with a better digit, lower for the smallest keys and higher for the
+largest, are selected. Keys in buckets with a worse digit are left out.
+The ``Low digit`` stage repeats the count with the low digit for that one
+bucket when its keys do not all fit. Select a key in the
+``Selection status`` row to see its status: guaranteed selection, boundary
+candidate or excluded. That row marks input positions, and items move only
+in the last stage, ``Defined output``, into the result rows.
 
-This follows the candidate-filtering idea in CUB's internal block TopK
-implementation. CUB determines a boundary with radix histograms, then
-partitions selected items through shared memory into a blocked output
-prefix. The explorer's digit width, tie choices, and output order are
-illustrative. It does not show the exact compiled instructions or imply a
-full sort. When all valid items are selected, filtering is unnecessary.
+CUB's block top-k follows the same idea with eight-bit digits. It builds
+histograms from the most significant digit down to find the bucket that
+holds the last key to select, then moves the selected items through shared
+memory into the first positions of the result. The tile is never sorted.
+When ``k`` is zero or at least ``valid_items``, the explorer goes from
+``Inputs`` to ``Defined output`` with no counting stage.
 
-The defined output length is ``min(k, valid_items)``. Setting either count
-to zero leaves no defined output items. If ``k`` exceeds ``valid_items``,
-all valid inputs are selected. Both counts must be uniform across the
-block and lie in ``[0, block_threads * items_per_thread]``. Uniformity is a
-caller precondition. The backend validates count ranges, but does not
-check agreement among threads.
-
-TopK does not promise sorted output, stable ordering among equal keys, or
-a particular choice of tied items at the boundary. For pairs, the chosen
-values still belong to their original keys. Use a sorting primitive when
-you need an ordered result. See :ref:`the TopK ordering FAQ
-<coop-faq-topk-order>`.
+:ref:`Top-k selection <coop-cutlass-topk>` in the API reference has the
+rules for both counts, for equal keys and for the positions after the
+selected keys. To get the selected keys in order, see
+:ref:`this FAQ <coop-faq-topk-order>`.
 
 Using TopK in a kernel
 ----------------------
 
-This example selects the smallest keys and largest pairs from a partial
-tile. It verifies selected multisets and pair identities without relying on
-output order or stable ties, and demonstrates register-payload conversions.
+This kernel selects the smallest keys and the largest pairs among the first
+``valid_items`` positions of a tile. It passes the keys as a register tensor
+and their positions as a ``TensorSSA``, and the two calls share one
+``TempStorage``. The first three ``store`` calls write ``selected_items``
+items of each result, and the last two write the original ``keys`` and
+``positions``. In the `complete program on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/topk.py>`__,
+``_THREADS`` is 64 and ``_K`` is 31.
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/examples/topk.py
    :language: python
@@ -93,7 +97,5 @@ output order or stable ties, and demonstrates register-payload conversions.
    :end-before: # docs: end cutlass-topk
    :dedent: 4
 
-TopK calls accept numeric ``ThreadData`` payloads in blocked order.
-All four variants accept ``ThreadData`` and CuTe register payloads. They
-preserve inputs and return fresh payloads. See :ref:`the Programming Guide
-<coop-cutlass-topk>` and :doc:`../api` for counts, dtypes, and scratch rules.
+:ref:`Top-k selection <coop-cutlass-topk>` in the API reference covers the
+counts, the element types and the scratch.

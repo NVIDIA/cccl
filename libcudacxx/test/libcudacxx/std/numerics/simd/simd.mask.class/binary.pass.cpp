@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.mask.binary], basic_mask binary operators
 //
@@ -21,8 +21,8 @@
 // friend constexpr basic_mask operator|(const basic_mask&, const basic_mask&) noexcept;
 // friend constexpr basic_mask operator^(const basic_mask&, const basic_mask&) noexcept;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

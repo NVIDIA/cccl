@@ -60,3 +60,31 @@ def test_reduce_example(items_per_thread):
         launch(src, total, maximum, items_per_thread)
     np.testing.assert_array_equal(totals, values.sum())
     np.testing.assert_array_equal(maxima, values.max())
+
+
+def test_logical_warp_sums_across_blocks():
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.kernel
+    def group_sums(source: cute.Pointer, destination: cute.Pointer):
+        block_index = cute.arch.block_idx()[0]
+        thread_rank = cute.arch.thread_idx()[0]
+        # cutlass-logical-warp-reduce-example-begin
+        index = block_index * 128 + thread_rank
+        group = coop.this_warp().group_by(8)
+        total = coop.sum(group, source[index])
+        if group.rank() == 0:
+            destination[index // 8] = total
+        # cutlass-logical-warp-reduce-example-end
+
+    @cute.jit
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        group_sums(source, destination).launch(grid=2, block=128)
+
+    values = np.arange(256, dtype=np.int32)
+    observed = np.full(32, -1, dtype=np.int32)
+    with device_array(values) as source, device_array(observed) as destination:
+        launch(source, destination)
+    np.testing.assert_array_equal(observed, values.reshape(-1, 8).sum(axis=1))

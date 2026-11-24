@@ -44,12 +44,13 @@ such as B200 or GB300. This program uses the ``tcgen05`` MMA and TMEM
 instructions supported by those architectures. Its device check rejects
 other architectures, including SM120.
 
-Download :download:`tensor_memory_topk.py
-<../../../python/cuda_coop_cutlass/examples/tensor_memory_topk.py>` and run:
+Read `tensor_memory_topk.py on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/tensor_memory_topk.py>`_
+and run it from the repository root:
 
 .. code-block:: bash
 
-   python tensor_memory_topk.py
+   python python/cuda_coop_cutlass/examples/tensor_memory_topk.py
 
 The default runs two independent batches, four dependent windows per batch,
 and keeps 129 of the 1,024 values after each MMA. The script checks every

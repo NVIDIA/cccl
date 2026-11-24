@@ -14,9 +14,9 @@
 // [simd.traits], member availability and disabled specializations
 
 #include <cuda/__complex_>
-#include <cuda/std/__simd_>
 #include <cuda/std/complex>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 

@@ -4,58 +4,71 @@
 
 .. _coop-overview:
 
-``cuda.coop.cutlass``
-=====================
+``cuda.coop.cutlass``: Cooperative Primitives for CuTe Kernels
+==============================================================
 
-``cuda.coop.cutlass`` provides CUB cooperative primitives inside CuTe kernels.
-Threads in a block or warp load and store tiles, reduce or scan values,
-rearrange payloads, sort or select keys, compare neighbors, count samples,
-and decode runs. CuTe compiles the enclosing kernel and links the generated
-CUB device functions into it.
+``cuda.coop.cutlass`` brings CUB's block and warp primitives to kernels
+written in the CUTLASS CuTe DSL. The threads of a block or warp call one
+function together to load and store data, reduce, scan, sort, select and more.
 
-.. code-block:: python
+This kernel computes a running sum across a block of 128 threads:
 
-   import cuda.coop.cutlass as coop
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
+   :language: python
+   :start-after: docs: start cutlass-prefix-sum
+   :end-before: docs: end cutlass-prefix-sum
 
-The distribution is ``cuda-coop-cutlass``. It contributes the
-``cuda.coop.cutlass`` package to the shared ``cuda`` namespace; ``cuda.coop``
-is its namespace parent.
+The :doc:`Programming Guide <programming_guide>` shows the whole program and
+explains each line.
+
+.. _coop-cutlass-installation:
 
 Installation
 ------------
 
-The standalone package requires CUTLASS DSL 4.9.0.dev1 or later in the 4.x
-series and CUDA 13 on Linux. Install from a checkout containing this project:
+From the repository root, install the package:
 
 .. code-block:: bash
 
    python -m pip install ./python/cuda_coop_cutlass
 
-Use a compatible CUDA driver and toolkit. NVRTC compiles the CUB providers,
-and the CuTe compiler must support external NVIDIA LTO-IR linking and
-trace-finalization hooks. The wheel includes the required CCCL headers and
-licenses. Package metadata selects the CuTe CUDA 13 libraries through the
-``nvidia-cutlass-dsl[cu13]`` dependency, including the 4.9.0.dev1 prerelease.
+.. _coop-cutlass-requirements:
 
-Start with the :doc:`Programming Guide <programming_guide>` for a complete
-prefix-sum kernel and :doc:`concepts` for participation, layouts, ownership,
-and storage. The :doc:`examples` page shows executable programs with CPU
-reference checks and downloads. The :doc:`API reference <api>` lists every operation and
-its controls. Developers new to CUTLASS can read :doc:`cutlass_primer`
-before the :doc:`Developer Guide <developer_guide>`.
+Requirements
+~~~~~~~~~~~~
+
+* Python 3.10 or later.
+* CUDA Toolkit 13 and a compatible driver.
+* A GPU architecture supported by your CuTe compiler. The earliest target
+  in CuTe DSL 4.9.0.dev1 is compute capability 8.0 (SM80).
+* CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends
+  on ``nvidia-cutlass-dsl[cu13]``, which brings CuTe's CUDA 13 libraries.
+
+One tested Linux configuration pairs an NVIDIA L4 with CUDA Toolkit 13.4
+and CuTe DSL 4.9.0.dev1. It uses CuTe's default setting of PyIR off.
+
+The wheel includes the CCCL headers it needs. The toolkit's NVRTC compiles
+the CUB device code to LTO-IR. CuTe's final linker must be at least as
+new as NVRTC within the same CUDA major series. The Linux CUDA 13 wheel
+for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
+13.4 have been tested with this wheel. CUDA 13.5 LTO-IR needs a newer
+linker. See
+`nvJitLink compatibility <https://docs.nvidia.com/cuda/nvjitlink/#compatibility>`__
+and :ref:`Compiler requirements <coop-cutlass-compiler-requirements>`.
+
+Documentation
+-------------
 
 .. toctree::
    :maxdepth: 2
 
-   concepts
    programming_guide
-   api
    examples
-   tensor_memory_topk
-   developer_guide
-   cutlass_primer
-   cutlass_integration_example
+   concepts
+   api
+   advanced
    configuration
    faqs
    glossary
    visualizations/index
+   developer_guide

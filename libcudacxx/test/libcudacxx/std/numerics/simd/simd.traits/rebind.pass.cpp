@@ -11,14 +11,14 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // template<class T, class V> struct rebind;
 // template<class T, class V> using rebind_t = typename rebind<T, V>::type;
 
 #include <cuda/__complex_>
-#include <cuda/std/__simd_>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include <nv/target>

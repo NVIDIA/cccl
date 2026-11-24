@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reduce a full block, eight-thread groups, and a valid input prefix."""
+"""Reduce a block, groups of eight lanes, and the first 23 threads."""
 
 import cutlass
 import numpy as np
@@ -24,12 +24,12 @@ def _check(result):
 
 
 def run_example(items_per_thread=2):
-    """Check full block and logical-warp results plus a scalar input prefix.
+    """Check a block sum, lane-group maxima and a sum over 23 threads.
 
-    The output has one block sum, one maximum per logical group, and one
-    prefix sum, each stored by its group leader. The expected prefix
-    sum uses each thread's first item; the count is threads, not contiguous
-    input elements.
+    The output has one block sum, one maximum for each group of eight lanes,
+    and one sum over the first 23 threads. The thread with rank 0 in its
+    group stores each result. The last sum adds each thread's first item,
+    and ``valid_items`` counts threads.
     """
 
     tile_size = _THREADS * items_per_thread

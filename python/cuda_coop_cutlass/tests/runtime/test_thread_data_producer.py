@@ -15,6 +15,7 @@ from tests.runtime_support import device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
+# cutlass-producer-class-begin
 class _RegisterProducer:
     def __init__(self, registers):
         self.registers = registers
@@ -31,6 +32,7 @@ class _RegisterProducer:
     def __cuda_coop_thread_data_load__(self):
         self.calls += 1
         return self.registers.load()
+        # cutlass-producer-class-end
 
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
@@ -42,6 +44,7 @@ def test_producer_snapshots_and_metadata_export(items_per_thread, iterations):
         registers = cute.make_rmem_tensor(items_per_thread, cutlass.Int32)
         for item in cutlass.range_constexpr(items_per_thread):
             registers[item] = thread * items_per_thread + item * 3
+        # cutlass-producer-load-begin
         source = _RegisterProducer(registers)
         values = coop.ThreadData.load(source)
         if cutlass.const_expr(source.calls != 1):
@@ -50,6 +53,7 @@ def test_producer_snapshots_and_metadata_export(items_per_thread, iterations):
         for iteration in range(iterations):
             values[0] += cutlass.Int32(1)
         snapshot = values.to_tensor_ssa(like=source)
+        # cutlass-producer-load-end
         values[0] += cutlass.Int32(100)
         output = cute.make_tensor(
             destination, cute.make_layout(2 * 32 * items_per_thread)

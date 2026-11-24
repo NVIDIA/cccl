@@ -24,9 +24,9 @@ def _check(result):
 
 
 def run_example(items_per_thread=2):
-    """Check exclusive prefix sums that start from seven across a block tile.
+    """Check an exclusive scan that starts from seven across a block's tile.
 
-    Load, Scan and Store share one descriptor with automatic synchronization.
+    Load, Scan and Store share one TempStorage with a barrier after each call.
     The CPU reference gives each item seven plus the sum of all earlier
     inputs in blocked order. The stored values come from Scan's separate
     output payload.
