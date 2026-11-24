@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 /*
  * --------------------------------------------------------------------
  * Division operations
@@ -48,7 +48,8 @@ native quotient estimate and the lo word carries the residual a - b*q divided by
 puts the pair in the same precision class as the mid-accuracy quotient for about half the
 arithmetic, at the cost of leaving it unnormalized - as the low accuracy level does
 throughout. The residual itself is exact: q is within an ulp or two of a_hi/b_hi, so the
-subtraction inside the fma cancels without rounding.
+subtraction inside the fma cancels without rounding. The lo word is a product that only
+the caller's adds consume, so it is formed by __fpmp_mul_rn_nocontract.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_div(
@@ -67,7 +68,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   __e         = ::cuda::__fpmp_fma_rn(__b_lo, -__q, __e);
 
   *__res_hi = __q;
-  *__res_lo = ::cuda::__fpmp_mul_rn(__r, __e);
+  *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, __e);
 } // __fpmp2_low_div
 
 /* Compute high-accuracy quotient, using Newton-
@@ -288,31 +289,133 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  _FpType __t_hi, __t_lo, __tmp_lo;
-  _FpType __e, __y, __s, __r;
-  _FpType __zero = static_cast<_FpType>(0.0);
-  _FpType __half = static_cast<_FpType>(0.5);
-  __r            = ::cuda::__fpmp_rsqrt_rn(__a_hi);
+  const _FpType __zero = static_cast<_FpType>(0.0);
+  const _FpType __half = static_cast<_FpType>(0.5);
+  _FpType __r          = ::cuda::__fpmp_rsqrt_rn(__a_hi);
   if (__a_hi == __zero)
   {
     __r = __zero;
   }
-  __y      = ::cuda::__fpmp_mul_rn(__a_hi, __r);
-  __s      = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
-  __r      = ::cuda::__fpmp_mul_rn(__half, __r);
-  __e      = ::cuda::__fpmp_add_rn(__s, __a_lo);
-  __tmp_lo = ::cuda::__fpmp_add_rn(__s - __e, __a_lo);
-  __t_hi   = ::cuda::__fpmp_mul_rn(__r, __e);
-  __t_lo   = ::cuda::__fpmp_fma_rn(__r, __e, -__t_hi);
-  __t_lo   = ::cuda::__fpmp_fma_rn(__r, __tmp_lo, __t_lo);
-  __r      = ::cuda::__fpmp_add_rn(__y, __t_hi);
-  __s      = ::cuda::__fpmp_add_rn(__y - __r, __t_hi);
-  __s      = ::cuda::__fpmp_add_rn(__s, __t_lo);
-  __e      = ::cuda::__fpmp_add_rn(__r, __s);
-
-  *__res_lo = ::cuda::__fpmp_add_rn(__r - __e, __s);
-  *__res_hi = __e;
+  /* y0 = a_hi * r is within a few ulps of sqrt(a_hi) (on the device the
+   * fp32 seed is the approximate rsqrt), s0 = a_hi - y0^2 its residual,
+   * h = r / 2 the seed's half reciprocal root. */
+  _FpType __y       = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+  const _FpType __h = ::cuda::__fpmp_mul_rn(__half, __r);
+  _FpType __s       = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
+  if constexpr (sizeof(_FpType) == 4)
+  {
+    /* fp32mp2: a_lo joins the Newton step (y ~ RN(sqrt(a_hi + a_lo)), which
+     * halves the correction), then the correction (a_hi - y^2 + a_lo) is
+     * scaled by the half reciprocal root refined once, h (1 + d), and the
+     * pair is normalized.  Host model against binary128: 2.5 u^2 max,
+     * 0.23 u^2 mean, independent of the seed's accuracy, against 5.7-52 u^2
+     * before.  12 operations. */
+    __y                = ::cuda::__fpmp_fma_rn(__h, __s + __a_lo, __y);
+    const _FpType __d  = ::cuda::__fpmp_fma_rn(-__y, __r, static_cast<_FpType>(1.0));
+    __s                = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
+    const _FpType __hr = ::cuda::__fpmp_fma_rn(__h, __d, __h);
+    const _FpType __e  = ::cuda::__fpmp_add_rn(__s, __a_lo);
+    const _FpType __t  = ::cuda::__fpmp_mul_rn(__hr, __e);
+    *__res_hi          = ::cuda::__fpmp_fast_two_sum(__y, __t, __res_lo);
+  }
+  else
+  {
+    /* fp64mp2: the original Nagai form, kept by choice.  The correction
+     * (a_hi - y0^2 + a_lo) / (2 sqrt a) is formed as an exact product with
+     * the residue of its sum, scaled by the seed's half reciprocal root,
+     * and added with error-free sums.  Its error is the seed's: the
+     * device's rsqrt() is close to correctly rounded and the form reads
+     * 1.0 u^2 on the test suite (2.9 u^2 over 80 binades), the host's
+     * two-rounding 1/sqrt(x) 5.8 u^2.  An exact-pair variant with a Newton
+     * step on y (26 operations) reaches the 0.5 u^2 floor on both sides,
+     * but costs 25 % of the throughput of an operation that is FP64-bound
+     * on most devices; see cccl-fpdev-internal notes/fp64mp2_math.
+     * 13 operations. */
+    const _FpType __e      = ::cuda::__fpmp_add_rn(__s, __a_lo);
+    const _FpType __tmp_lo = ::cuda::__fpmp_add_rn(__s - __e, __a_lo);
+    const _FpType __t_hi   = ::cuda::__fpmp_mul_rn(__h, __e);
+    _FpType __t_lo         = ::cuda::__fpmp_fma_rn(__h, __e, -__t_hi);
+    __t_lo                 = ::cuda::__fpmp_fma_rn(__h, __tmp_lo, __t_lo);
+    const _FpType __r1     = ::cuda::__fpmp_add_rn(__y, __t_hi);
+    _FpType __s2           = ::cuda::__fpmp_add_rn(__y - __r1, __t_hi);
+    __s2                   = ::cuda::__fpmp_add_rn(__s2, __t_lo);
+    const _FpType __hi     = ::cuda::__fpmp_add_rn(__r1, __s2);
+    *__res_lo              = ::cuda::__fpmp_add_rn(__r1 - __hi, __s2);
+    *__res_hi              = __hi;
+  }
 } // __fpmp2_sqrt
+
+/*
+ * --------------------------------------------------------------------
+ * Square root & reciprocal square root, fpmp2_accuracy::high
+ * --------------------------------------------------------------------
+ * Both kernels are one Newton step from a single-limb seed, in the form of Alan Karp and
+ * Peter Markstein, High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4,
+ * December 1997, pp. 561-589, with the step's own second-order term added, so that the
+ * error of the seed, squared, does not remain in the result.
+ *
+ * Like the kernels above they take no branch: they expect a positive, finite operand whose
+ * high limb is a normal number, and return what the kernels above do outside of that
+ * (sqrt(0) = 0; NaN for a negative, infinite or NaN operand and for rsqrt(0)). A branch for
+ * the special operands costs these kernels 13 to 20 % of their throughput on a GPU.
+ */
+
+/* Compute high-accuracy reciprocal square root. With r the seed and s = 1 - a r^2,
+1/sqrt(a) = r (1 - s)^(-1/2) = r + (r/2) s + (3r/8) s^2 + O(s^3). a r is the single-limb
+product e and its error, to which the low limb's a_lo r is added before both enter s.
+Within 2.9 u^2 on the host and 4.2 u^2 on the device (fp32mp2, u = 2^-24), against 8 u^2
+and 13 u^2 for __fpmp2_rsqrt, at 19 against 17 operations.
+*/
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_rsqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  const _FpType __r    = ::cuda::__fpmp_rsqrt_rn(__a_hi);
+  _FpType __e          = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+  _FpType __s          = ::cuda::__fpmp_fma_rn(__e, -__r, static_cast<_FpType>(1.0));
+  __e                  = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
+  __e                  = ::cuda::__fpmp_fma_rn(__a_lo, __r, __e);
+  __s                  = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
+  const _FpType __h    = ::cuda::__fpmp_mul_rn(static_cast<_FpType>(0.5), __r);
+  const _FpType __z_hi = ::cuda::__fpmp_mul_rn(__h, __s);
+  _FpType __z_lo       = ::cuda::__fpmp_fma_rn(__h, __s, -__z_hi);
+  // The second-order term (3r/8) s^2 = (3/4) s z.
+  __z_lo            = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_mul_rn(static_cast<_FpType>(0.75), __s), __z_hi, __z_lo);
+  const _FpType __t = ::cuda::__fpmp_add_rn(__r, __z_hi);
+  _FpType __u       = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__r, __t), __z_hi);
+  __u               = ::cuda::__fpmp_add_rn(__u, __z_lo);
+
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__t, __u, __res_lo);
+} // __fpmp2_high_rsqrt
+
+/* Compute high-accuracy square root. With y ~ sqrt(a_hi) and e = a - y^2,
+sqrt(a) = y + t - t^2 / (2y) + O(t^3),  t = e / (2y).  t is the product of e and the seed
+h ~ 1 / (2y), corrected by h times the remainder a - (y + t)^2, so that the accuracy of h
+does not enter. y is the correctly rounded root of a_hi but for operands next to a rounding
+boundary, which makes s = a_hi - y^2 exact.
+*/
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  _FpType __h;
+  const _FpType __y = ::cuda::__fpmp_sqrt_seed(__a_hi, &__h);
+  const _FpType __s = ::cuda::__fpmp_fma_rn(-__y, __y, __a_hi);
+  const _FpType __e = ::cuda::__fpmp_add_rn(__s, __a_lo);
+  const _FpType __t = ::cuda::__fpmp_mul_rn(__h, __e);
+  /* The remainder is s - 2 y t + a_lo - t^2, whose first sum is rounded once (it is about
+   * -a_lo), and the correction joins t before the pair is formed, which rounds a t of more
+   * than half an ulp of y once more. Against MPFR, on the host and on the device: 1.26 u^2
+   * max, 0.15 u^2 mean, against 2.5 u^2 and 0.23 u^2 for __fpmp2_sqrt, at 19 against 16
+   * operations. A variant that carries the rounding error of e and adds t to y before the
+   * correction reaches 0.5 u^2 at 24 operations. Like __fpmp2_sqrt it keeps its accuracy down
+   * to a high limb of about 2^-100. */
+  _FpType __rem          = ::cuda::__fpmp_fma_rn(-::cuda::__fpmp_add_rn(__y, __y), __t, __s);
+  __rem                  = ::cuda::__fpmp_add_rn(__rem, __a_lo);
+  __rem                  = ::cuda::__fpmp_fma_rn(-__t, __t, __rem);
+  const _FpType __t_corr = ::cuda::__fpmp_add_rn(__t, ::cuda::__fpmp_mul_rn(__h, __rem));
+  *__res_hi              = ::cuda::__fpmp_fast_two_sum(__y, __t_corr, __res_lo);
+} // __fpmp2_high_sqrt
 
 #else // _CCCL_FPMP_USE_LIB
 
@@ -349,6 +452,10 @@ _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_sqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_rsqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp32mp2_high_sqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp32mp2_high_rsqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
 
 // -- fp64 (double precision) built-in declarations --
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_div(
@@ -403,6 +510,12 @@ __fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) n
 template <typename _Tp>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+template <typename _Tp>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+template <typename _Tp>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 
 // -- fp32 template specializations --
 template <>
@@ -460,6 +573,18 @@ _CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
 {
   ::cuda::__fp32mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__fp32mp2_high_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__fp32mp2_high_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
 
 // -- fp64 template specializations --
@@ -521,6 +646,42 @@ __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi
 }
 
 #endif // _CCCL_FPMP_USE_LIB
+
+// a / c for a scalar c that one limb holds exactly: the low and default divisions without
+// the term that multiplies the divisor's zero low limb, which for finite operands leaves
+// the value unchanged up to the sign of a zero low limb. high keeps the scaled division.
+template <fpmp2_accuracy _Acc, typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_div_limb(
+  const _FpType __a_hi, const _FpType __a_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  if constexpr (_Acc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_div(__a_hi, __a_lo, __c, _FpType{0}, __res_hi, __res_lo);
+  }
+  else
+  {
+    const _FpType __r = ::cuda::__fpmp_rcp_rn(__c);
+    _FpType __t_hi    = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+    _FpType __e       = ::cuda::__fpmp_fma_rn(__c, -__t_hi, __a_hi);
+    if constexpr (_Acc == fpmp2_accuracy::low)
+    {
+      *__res_hi = __t_hi;
+      *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, ::cuda::__fpmp_add_rn(__a_lo, __e));
+    }
+    else
+    {
+      __t_hi         = ::cuda::__fpmp_fma_rn(__r, __e, __t_hi);
+      _FpType __t_lo = ::cuda::__fpmp_fma_rn(__c, -__t_hi, __a_hi);
+      __t_lo         = ::cuda::__fpmp_add_rn(__a_lo, __t_lo);
+      __e            = ::cuda::__fpmp_mul_rn(__r, __t_lo);
+      __t_lo         = ::cuda::__fpmp_fma_rn(__c, -__e, __t_lo);
+      __t_lo         = ::cuda::__fpmp_fma_rn(__r, __t_lo, __e);
+      __e            = ::cuda::__fpmp_add_rn(__t_hi, __t_lo);
+      *__res_lo      = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__t_hi, __e), __t_lo);
+      *__res_hi      = __e;
+    }
+  }
+}
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

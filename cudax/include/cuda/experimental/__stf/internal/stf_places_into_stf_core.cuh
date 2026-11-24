@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 
 namespace cuda::experimental::stf
 {

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -48,7 +48,7 @@ template <class _Tp>
 {
   static_assert(__fp_has_inf_v<__fp_format_of_v<_Tp>>, "The format does not support infinity");
 
-#if defined(_CCCL_BUILTIN_HUGE_VALF)
+#ifdef _CCCL_BUILTIN_HUGE_VALF
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_HUGE_VALF());
@@ -89,7 +89,7 @@ template <class _Tp>
 {
   static_assert(__fp_has_nan_v<__fp_format_of_v<_Tp>>, "The format does not support nan");
 
-#if defined(_CCCL_BUILTIN_NANF)
+#ifdef _CCCL_BUILTIN_NANF
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANF());
@@ -121,7 +121,7 @@ template <class _Tp>
 
   static_assert(__fp_has_nans_v<__fmt>, "The format does not support nans");
 
-#if defined(_CCCL_BUILTIN_NANS)
+#ifdef _CCCL_BUILTIN_NANS
   if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSF());
@@ -136,12 +136,12 @@ template <class _Tp>
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
-#  if defined(_CCCL_BUILTIN_NANFS128)
+#  ifdef _CCCL_BUILTIN_NANSF128
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128());
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF128());
   }
-#  endif // _CCCL_BUILTIN_NANFS128
+#  endif // _CCCL_BUILTIN_NANSF128
   else
 #endif // _CCCL_BUILTIN_NANS
   {

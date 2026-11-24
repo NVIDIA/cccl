@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -50,6 +51,9 @@ protected:
 
 public:
   using value_type = ::cudaStream_t;
+
+  //! @brief Advertises that @c stream_ref supports the @c cuda::get_stream query.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::get_stream_t>;
 
   //! @brief Constructs a `stream_ref` of the "default" CUDA stream.
   //!

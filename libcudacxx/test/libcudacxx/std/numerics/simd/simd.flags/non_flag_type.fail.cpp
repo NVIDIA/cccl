@@ -11,7 +11,7 @@
 // flags<Flags...> requires every type in the pack to be one of
 // convert_flag, aligned_flag, or overaligned_flag<N>.
 
-#include <cuda/std/__simd_>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

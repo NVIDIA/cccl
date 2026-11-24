@@ -103,6 +103,10 @@ function(cccl_build_compiler_targets)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  # Some constexpr functions of libcu++ check for constant evaluation, but not all of their specializations can be
+  # constexpr, e.g. the operators of `cuda::std::complex<__half>`. Users do not see these warnings, because the headers
+  # are system headers, which _CCCL_NO_SYSTEM_HEADER below disables.
+  list(APPEND cuda_compile_options "--diag-suppress=3060,3206")
   if (CCCL_ENABLE_WERROR)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
@@ -246,6 +250,16 @@ function(cccl_build_compiler_targets)
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)
+
+    # See the NVCC options above.
+    append_option_if_available(
+      "--diag_suppress=is_constant_evaluated_in_nonconstexpr_context"
+      cxx_compile_options
+    )
+    append_option_if_available(
+      "--diag_suppress=if_consteval_in_nonconstexpr_function"
+      cxx_compile_options
+    )
   endif()
 
   if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

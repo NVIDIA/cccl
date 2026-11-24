@@ -741,7 +741,7 @@ C2H_TEST("data_place_allocate_invalid_returns_null", "[places][allocate]")
 {
   stf_data_place_handle inv = stf_data_place_affine();
   REQUIRE(inv != nullptr);
-  void* ptr = stf_data_place_allocate(inv, 64, nullptr);
+  const void* ptr = stf_data_place_allocate(inv, 64, nullptr);
   REQUIRE(ptr == nullptr);
   stf_data_place_destroy(inv);
 }

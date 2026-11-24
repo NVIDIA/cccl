@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,7 +50,7 @@ struct SegmentedRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
   {
     return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
               << ", .alternate_pass = " << p.alternate_pass << " }";
@@ -78,7 +78,7 @@ struct policy_selector
   // Dominant-sized key/value type
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
-    return ::cuda::std::max(value_size, key_size);
+    return (::cuda::std::max) (value_size, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const

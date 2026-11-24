@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,7 +33,7 @@ struct agent_block_striped_t
   OpT op;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int threads_per_block)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int threads_per_block)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; item++)

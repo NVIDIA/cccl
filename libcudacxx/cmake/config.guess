@@ -443,10 +443,10 @@ case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
 	int main (argc, argv) int argc; char *argv[]; {
 #endif
 	#if defined (host_mips) && defined (MIPSEB)
-	#if defined (SYSTYPE_SYSV)
+	#ifdef SYSTYPE_SYSV
 	  printf ("mips-mips-riscos%ssysv\n", argv[1]); exit (0);
 	#endif
-	#if defined (SYSTYPE_SVR4)
+	#ifdef SYSTYPE_SVR4
 	  printf ("mips-mips-riscos%ssvr4\n", argv[1]); exit (0);
 	#endif
 	#if defined (SYSTYPE_BSD43) || defined(SYSTYPE_BSD)
@@ -620,7 +620,7 @@ EOF
 
 		int main ()
 		{
-		#if defined(_SC_KERNEL_BITS)
+		#ifdef _SC_KERNEL_BITS
 		    long bits = sysconf(_SC_KERNEL_BITS);
 		#endif
 		    long cpu  = sysconf (_SC_CPU_VERSION);
@@ -630,7 +630,7 @@ EOF
 			case CPU_PA_RISC1_0: puts ("hppa1.0"); break;
 			case CPU_PA_RISC1_1: puts ("hppa1.1"); break;
 			case CPU_PA_RISC2_0:
-		#if defined(_SC_KERNEL_BITS)
+		#ifdef _SC_KERNEL_BITS
 			    switch (bits)
 				{
 				case 64: puts ("hppa2.0w"); break;
@@ -979,7 +979,7 @@ EOF
 	# Do not check for __GLIBC__ because uclibc defines it too
 	sed 's/^	//' << EOF >$dummy.c
 	#include <features.h>
-	#if defined(__UCLIBC__)
+	#ifdef __UCLIBC__
 	LIBC=uclibc
 	#elif defined(__dietlibc__)
 	LIBC=dietlibc
@@ -1380,8 +1380,8 @@ cat >$dummy.c <<EOF
 #endif
 main ()
 {
-#if defined (sony)
-#if defined (MIPSEB)
+#ifdef sony
+#ifdef MIPSEB
   /* BFD wants "bsd" instead of "newsos".  Perhaps BFD should be changed,
      I don't know....  */
   printf ("mips-sony-bsd\n"); exit (0);
@@ -1405,8 +1405,8 @@ main ()
   printf ("m68k-hp-bsd\n"); exit (0);
 #endif
 
-#if defined (NeXT)
-#if !defined (__ARCHITECTURE__)
+#ifdef NeXT
+#ifndef __ARCHITECTURE__
 #define __ARCHITECTURE__ "m68k"
 #endif
   int version;
@@ -1419,10 +1419,10 @@ main ()
 #endif
 
 #if defined (MULTIMAX) || defined (n16)
-#if defined (UMAXV)
+#ifdef UMAXV
   printf ("ns32k-encore-sysv\n"); exit (0);
 #else
-#if defined (CMU)
+#ifdef CMU
   printf ("ns32k-encore-mach\n"); exit (0);
 #else
   printf ("ns32k-encore-bsd\n"); exit (0);
@@ -1430,20 +1430,20 @@ main ()
 #endif
 #endif
 
-#if defined (__386BSD__)
+#ifdef __386BSD__
   printf ("i386-pc-bsd\n"); exit (0);
 #endif
 
-#if defined (sequent)
-#if defined (i386)
+#ifdef sequent
+#ifdef i386
   printf ("i386-sequent-dynix\n"); exit (0);
 #endif
-#if defined (ns32000)
+#ifdef ns32000
   printf ("ns32k-sequent-dynix\n"); exit (0);
 #endif
 #endif
 
-#if defined (_SEQUENT_)
+#ifdef _SEQUENT_
     struct utsname un;
 
     uname(&un);
@@ -1458,10 +1458,10 @@ main ()
 
 #endif
 
-#if defined (vax)
-# if !defined (ultrix)
+#ifdef vax
+# ifndef ultrix
 #  include <sys/param.h>
-#  if defined (BSD)
+#  ifdef BSD
 #   if BSD == 43
       printf ("vax-dec-bsd4.3\n"); exit (0);
 #   else

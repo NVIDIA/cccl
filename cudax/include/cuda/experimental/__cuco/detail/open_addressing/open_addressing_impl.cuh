@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,6 +25,7 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__cmath/pow2.h>
@@ -39,10 +40,16 @@
 #include <cuda/__launch/launch.h>
 #include <cuda/__memory_resource/allocation_alignment.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__utility/no_init.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -52,6 +59,7 @@
 #include <cuda/experimental/__cuco/detail/open_addressing/functors.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
@@ -288,7 +296,7 @@ public:
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to clear slot storage",
       __slots.data(),
-      static_cast<detail::__index_type>(__n),
+      __n,
       __empty_slot_sentinel,
       __stream);
   }
@@ -315,7 +323,7 @@ public:
     _Predicate __pred,
     _Ref __container_ref)
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return 0;
@@ -326,8 +334,7 @@ public:
     const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
     const auto __config    = ::cuda::make_config(
       ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
-    using __kernel_type =
-      void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, typename _Ref::size_type*, _Ref);
+    using __kernel_type = void (*)(_InputIt, __size_type, _StencilIt, _Predicate, typename _Ref::size_type*, _Ref);
     const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
     ::cuda::launch(
       __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
@@ -357,7 +364,7 @@ public:
     _Predicate __pred,
     _Ref __container_ref)
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -374,7 +381,7 @@ public:
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
       const auto __config    = ::cuda::make_config(
         ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
-      using __kernel_type          = void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, _Ref);
+      using __kernel_type          = void (*)(_InputIt, __size_type, _StencilIt, _Predicate, _Ref);
       const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
       ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __container_ref);
     }
@@ -404,7 +411,7 @@ public:
     _InsertedIt __inserted_begin,
     _Ref __container_ref)
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -432,7 +439,7 @@ public:
   _CCCL_HOST_API void
   insert_or_assign_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -478,7 +485,7 @@ public:
     _OutputIt __output_begin,
     _Ref __container_ref) const
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -518,7 +525,7 @@ public:
     _OutputIt __output_begin,
     _Ref __container_ref) const
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -565,7 +572,7 @@ public:
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op, _Ref __container_ref)
     const
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -621,7 +628,7 @@ public:
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to initialize rehashed slot storage",
       __new_slots.data(),
-      static_cast<detail::__index_type>(__new_capacity),
+      __new_capacity,
       __empty_slot_sentinel,
       __stream);
 
@@ -630,7 +637,7 @@ public:
     if (!__new_slots.empty())
     {
       constexpr auto __block_size = detail::__default_block_size;
-      const auto __grid_size      = detail::__grid_size(static_cast<detail::__index_type>(__new_slots.size()));
+      const auto __grid_size      = detail::__grid_size(__new_slots.size());
       const auto __old_storage = __storage_ref_type{__new_slots.data(), static_cast<__size_type>(__new_slots.size())};
       const auto __new_ref     = __container.ref();
       const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};

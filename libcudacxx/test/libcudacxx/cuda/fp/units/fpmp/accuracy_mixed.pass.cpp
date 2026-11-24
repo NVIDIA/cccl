@@ -7,9 +7,12 @@
 //
 //  Companion to fpmp accuracy. Tests the mixed-type overloads of add<m>, sub<m>,
 //  mul<m>, div<m>, fma<m>, mad<m> that accept any mix of fpmp2 and built-in
-//  arithmetic operands (at least one fpmp2). Each mixed-type call must be
-//  bit-identical to the strict all-fpmp2 call where the scalar(s) are wrapped in
-//  the participating type; result-type preservation is pinned by static_asserts.
+//  arithmetic operands (at least one fpmp2). Each mixed-type call must equal the
+//  strict all-fpmp2 call where the scalar(s) are wrapped in the participating
+//  type: add, sub and div with a single-limb scalar give the same value, and mul,
+//  whose single-limb kernel is more accurate, is checked here on an exact product
+//  (scalar_ops covers its accuracy). Result-type preservation is pinned by
+//  static_asserts.
 //
 //===----------------------------------------------------------------------===//
 
@@ -47,7 +50,7 @@ static_assert(
   "mad(float, float, mp2_def) must return mp2_def");
 
 // Each mixed-type call must equal the strict form (scalars wrapped in the fpmp2
-// type) bit-for-bit.
+// type). s = 0.5 makes every product exact, so mul agrees as well.
 TEST_HOST_DEVICE_FUNC void run_test()
 {
   using ff = cuda::fp32mp2_low;

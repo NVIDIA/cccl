@@ -14,6 +14,7 @@ set(
   cpp/wait_token.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
+  dot/escaped_symbols.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
@@ -74,6 +75,7 @@ set(
   local_stf/stream_ctx_lifetime_btb.cu
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
+  local_stf/stackable_threads_task.cu
   local_stf/stackable_token.cu
   local_stf/stackable_while_token.cu
   local_stf/stackable_write_back.cu

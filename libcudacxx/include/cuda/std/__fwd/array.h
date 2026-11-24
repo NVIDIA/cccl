@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,10 +32,17 @@ _CCCL_BEGIN_NAMESPACE_STD
 #  if _CCCL_HOST_STD_LIB(STL)
 template <class _Tp, size_t _Size>
 class array;
-#  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
+#  elif _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 11) && defined(_GLIBCXX_DEBUG)
+// Before GCC 11, the debug mode of libstdc++ provides std::array through the inline namespace std::__debug
+inline namespace __debug
+{
 template <class _Tp, size_t _Size>
 struct array;
-#  endif // !_CCCL_HOST_STD_LIB(STL)
+} // namespace __debug
+#  else // ^^^ libstdc++ debug mode before GCC 11 ^^^ / vvv other host standard library vvv
+template <class _Tp, size_t _Size>
+struct array;
+#  endif // ^^^ other host standard library ^^^
 
 _CCCL_END_NAMESPACE_STD
 #endif // _CCCL_HAS_HOST_STD_LIB()

@@ -19,7 +19,7 @@
 #include <string>
 #include <string_view>
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #  include <mutex>
 #endif // _WIN32
 
@@ -37,7 +37,7 @@ struct items_storage_t; // Used in merge_sort
 // for these unsupported types and converts them to nvcc-compatible types.
 // The method signature is kept identical to `nvrtcGetTypeName` so that this
 // helper can be used as a drop-in replacement.
-#if defined(_WIN32)
+#ifdef _WIN32
 // The Windows nvrtcGetTypeName path demangles through DbgHelp's
 // UnDecorateSymbolName, which Microsoft documents as single-threaded: concurrent
 // calls "will likely result in unexpected behavior or memory corruption." Under
@@ -53,7 +53,7 @@ inline std::mutex nvrtc_type_name_mutex;
 template <typename T>
 nvrtcResult cccl_type_name_from_nvrtc(std::string* result)
 {
-#if defined(_WIN32)
+#ifdef _WIN32
   const std::lock_guard<std::mutex> lock(nvrtc_type_name_mutex);
 #endif // _WIN32
   if (const nvrtcResult res = nvrtcGetTypeName<T>(result); res != NVRTC_SUCCESS)

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,6 +25,10 @@
 #include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(is_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, >=, 9)
+#  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

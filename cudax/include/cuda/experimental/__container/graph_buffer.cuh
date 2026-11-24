@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,6 @@
 #if _CCCL_CTK_AT_LEAST(12, 2)
 
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
@@ -32,6 +31,7 @@
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/initializer_list>
 #  include <cuda/std/span>
 

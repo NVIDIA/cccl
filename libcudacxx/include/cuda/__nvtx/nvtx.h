@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -91,7 +91,7 @@ struct __nvtx_cccl_optional_range_host_only
   bool __engaged = false;
   alignas(__nvtx_cccl_range) unsigned char __storage[sizeof(__nvtx_cccl_range)]{};
 
-  __nvtx_cccl_optional_range_host_only() = default;
+  _CCCL_HIDE_FROM_ABI __nvtx_cccl_optional_range_host_only() = default;
 
   _CCCL_HOST_API void __start(const ::nvtx3::v1::event_attributes& __attributes)
   {

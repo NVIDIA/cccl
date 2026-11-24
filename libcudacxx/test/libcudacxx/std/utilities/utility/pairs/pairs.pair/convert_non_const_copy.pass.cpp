@@ -150,7 +150,7 @@ TEST_FUNC constexpr bool test()
 
     test_pair_non_const<ConvertingType&, int, false>();
     test_pair_non_const<ExplicitTypes::ConvertingType&, int, false>();
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     // Constructing a reference element from a temporary is deleted.
     test_pair_non_const<ConvertingType&&, int, false>();
     test_pair_non_const<ConvertingType const&, int, false>();
