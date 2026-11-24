@@ -21,12 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__cuco/detail/hyperloglog/default_policy.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hll_policies.cuh>
 

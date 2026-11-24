@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/memory>
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>

@@ -30,7 +30,7 @@ __device__ void test_view_synchronization(const View& view)
 }
 
 template <class View, class Group, class Level>
-__device__ void check_group_view(const View& view, const Group& group, Level level)
+__device__ void check_group_view(const View& view, const Group&, Level level)
 {
   if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
   {
@@ -210,14 +210,14 @@ __device__ void check_parent_view_queries(const Group& group, const Parent& pare
   check(cudax::coop::group_view{parent});
   const cudax::coop::group_view parent_view{parent};
   // Parent views must preserve the parent's unit.
-  if constexpr (!cuda::std::is_same_v<typename Parent::unit_type, cuda::thread_level>)
+  if constexpr (!cuda::std::is_same_v<typename Parent::unit_level, cuda::thread_level>)
   {
     using ChangedUnit = decltype(cudax::coop::group_view{cuda::gpu_thread, parent_view});
     check_invalid_parent_queries<Group, ChangedUnit>();
   }
 
   // A child group and its view are not the parent, even when they share a hierarchy.
-  using Unrelated = cudax::coop::group_view<typename Group::unit_type, Group, typename Group::__mapping_result_type>;
+  using Unrelated = cudax::coop::group_view<typename Group::unit_level, Group, typename Group::__mapping_result_type>;
   check_invalid_parent_queries<Group, Unrelated>();
 }
 
@@ -392,6 +392,17 @@ __device__ void test_nonuniform_group_view(Config config)
 
   check(same_unit, cuda::block, 1);
 
+  // Changing units preserves the selected group rank even when the new unit count is dynamic.
+  group.with_static_unit_count([&](auto specialized) {
+    constexpr auto selected_rank = specialized.static_rank(cudax::coop::parent_group);
+    static_assert(selected_rank < 2);
+    const cudax::coop::group_view threads{cuda::gpu_thread, specialized};
+    static_assert(threads.static_rank(cudax::coop::parent_group) == selected_rank);
+    static_assert(cuda::gpu_thread.static_count(threads)
+                  == (Static ? Original::static_unit_count(selected_rank) * 128 : cuda::std::dynamic_extent));
+    check(threads, cuda::gpu_thread, 128);
+  });
+
   // With 128 threads per block, the groups contain four and twelve warps.
   // Static dimensions preserve those counts; runtime dimensions require dynamic counts.
   const cudax::coop::group_view warps{cuda::warp, group};
@@ -554,7 +565,7 @@ struct ViewedParentKernel
 
 // Same-unit views preserve the group's mapping result type without requiring device construction.
 template <class Group>
-using group_view_t = cudax::coop::group_view<typename Group::unit_type, Group, typename Group::__mapping_result_type>;
+using group_view_t = cudax::coop::group_view<typename Group::unit_level, Group, typename Group::__mapping_result_type>;
 
 void test_viewed_parent_types()
 {

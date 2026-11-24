@@ -22,8 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>

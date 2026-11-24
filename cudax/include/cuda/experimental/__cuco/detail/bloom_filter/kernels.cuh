@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/iterator_traits.h>

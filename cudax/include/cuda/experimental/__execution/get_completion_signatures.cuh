@@ -21,12 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh> // IWYU pragma: export
+#include <cuda/experimental/__execution/diagnostics.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 

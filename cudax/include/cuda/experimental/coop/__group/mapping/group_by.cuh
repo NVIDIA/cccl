@@ -21,24 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fwd/hierarchy.h>
-#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
-#include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
-#include <cuda/experimental/coop/__group/queries.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,49 +40,178 @@
 
 namespace cuda::experimental::coop
 {
-// Previous mappings may split units into groups of different unit counts. However, the current mapping result only
-// knows how many units are within the current group. That means that we need to do a collective operation to determine
-// the group count and rank.
-//
-// This occurs only when group_by is used in composite_mapping as the second (or later) mapping, so it's not a common
-// case. We currently implement the collective for threads within a warp groups.
-template <class _PrevMappingResult>
-inline constexpr bool __group_by_mapping_result_needs_fix_v =
-  _PrevMappingResult::has_uniform_static_unit_count()
-  && _PrevMappingResult::static_unit_count() == ::cuda::std::dynamic_extent
-  && _PrevMappingResult::static_group_count() != 1;
-
-template <class _Unit, class _ParentGroup, class _MappingResult>
-[[nodiscard]] _CCCL_DEVICE_API _MappingResult
-__group_by_fix_group_count_rank(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+template <::cuda::std::size_t _StaticUnitCount, class _PrevMappingResult>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __group_by_static_group_count()
 {
-  using ::cuda::std::is_same_v;
-  using ::cuda::std::uint32_t;
-
-  if constexpr (is_same_v<_Unit, thread_level> && is_same_v<typename _ParentGroup::level_type, warp_level>)
+  using ::cuda::std::dynamic_extent;
+  if constexpr (_StaticUnitCount == dynamic_extent || _PrevMappingResult::static_group_count() == dynamic_extent)
   {
-    // Excluded threads must also participate in the parent-wide ballot.
-    const auto __group_leaders = ::__ballot_sync(__parent.__mapping_result().lane_mask().value(),
-                                                 __mapping_result.is_valid() && __mapping_result.unit_rank() == 0);
-
-    if (!__mapping_result.is_valid())
+    return dynamic_extent;
+  }
+  else if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
+  {
+    ::cuda::std::size_t __count = 0;
+    for (::cuda::std::size_t __i = 0; __i < _PrevMappingResult::static_group_count(); ++__i)
     {
-      return __mapping_result;
+      __count += _PrevMappingResult::static_unit_count(__i) / _StaticUnitCount;
     }
-
-    const auto __lane_mask  = __mapping_result.lane_mask();
-    const auto __first_lane = ::cuda::std::countr_zero(__lane_mask.value());
-
-    const auto __ngroups = static_cast<uint32_t>(::cuda::std::popcount(__group_leaders));
-    const auto __group_rank =
-      static_cast<uint32_t>(::cuda::std::popcount(::cuda::bit_trunc(__group_leaders, __first_lane)));
-    return _MappingResult{
-      __ngroups, __group_rank, __mapping_result.unit_count(), __mapping_result.unit_rank(), __lane_mask};
+    return __count;
   }
   else
   {
-    static_assert(::cuda::std::__always_false_v<_Unit>, "Not implemented");
+    constexpr auto __count = _PrevMappingResult::static_unit_count();
+    return __count == dynamic_extent
+           ? dynamic_extent
+           : _PrevMappingResult::static_group_count() * (__count / _StaticUnitCount);
   }
+}
+
+template <::cuda::std::size_t _StaticUnitCount, class _PrevMappingResult>
+[[nodiscard]] _CCCL_DEVICE_API constexpr bool __group_by_is_always_divisible()
+{
+  using ::cuda::std::dynamic_extent;
+  if constexpr (_StaticUnitCount == dynamic_extent)
+  {
+    return false;
+  }
+  else if constexpr (_PrevMappingResult::has_uniform_static_unit_count())
+  {
+    constexpr auto __count = _PrevMappingResult::static_unit_count();
+    return __count != dynamic_extent && __count % _StaticUnitCount == 0;
+  }
+  else
+  {
+    for (::cuda::std::size_t __i = 0; __i < _PrevMappingResult::static_group_count(); ++__i)
+    {
+      if (_PrevMappingResult::static_unit_count(__i) % _StaticUnitCount != 0)
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, class _Bound, class _PrevMappingResult>
+[[nodiscard]] _CCCL_DEVICE_API auto
+__group_by_partition(::cuda::std::uint32_t __unit_count, const _PrevMappingResult& __prev)
+{
+  using ::cuda::std::dynamic_extent;
+  using ::cuda::std::uint32_t;
+
+  constexpr bool __divisible = __group_by_is_always_divisible<_StaticUnitCount, _PrevMappingResult>();
+  using _MappingResult       = __mapping_result<
+    __uniform_static_unit_count<__group_by_static_group_count<_StaticUnitCount, _PrevMappingResult>(), _StaticUnitCount>,
+    _Exhaustive || (_PrevMappingResult::is_always_exhaustive() && __divisible),
+    _PrevMappingResult::is_always_contiguous()>;
+
+  if constexpr (!_PrevMappingResult::is_always_exhaustive())
+  {
+    if (!__prev.is_valid())
+    {
+      return _MappingResult::__invalid();
+    }
+  }
+
+  const auto __prev_unit_count   = __prev.unit_count();
+  const auto __prev_unit_rank    = __prev.unit_rank();
+  const auto __groups_per_parent = __prev_unit_count / __unit_count;
+  const auto __local_group_rank  = __prev_unit_rank / __unit_count;
+
+  const auto __prev_group_rank = __prev.group_rank();
+  uint32_t __group_count       = 0;
+  uint32_t __group_offset      = 0;
+  if constexpr (_PrevMappingResult::has_uniform_static_unit_count())
+  {
+    __group_count  = __prev.group_count() * __groups_per_parent;
+    __group_offset = __prev_group_rank * __groups_per_parent;
+  }
+  else if constexpr (_StaticUnitCount != dynamic_extent)
+  {
+    // NVCC can fold each prefix into an immediate. Indexing a local offset table would require a stack frame.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (::cuda::std::size_t __i = 0; __i < _PrevMappingResult::static_group_count(); ++__i)
+    {
+      if (__i == __prev_group_rank)
+      {
+        __group_offset = __group_count;
+      }
+      __group_count += static_cast<uint32_t>(_PrevMappingResult::static_unit_count(__i) / _StaticUnitCount);
+    }
+  }
+  else
+  {
+    for (::cuda::std::size_t __i = 0; __i < _PrevMappingResult::static_group_count(); ++__i)
+    {
+      const auto __count = static_cast<uint32_t>(_PrevMappingResult::static_unit_count(__i)) / __unit_count;
+      __group_count += __count;
+      if (__i < __prev_group_rank)
+      {
+        __group_offset += __count;
+      }
+    }
+  }
+
+  if constexpr (_Exhaustive)
+  {
+    if constexpr (_StaticUnitCount != dynamic_extent
+                  && (!_PrevMappingResult::has_uniform_static_unit_count()
+                      || _PrevMappingResult::static_unit_count() != dynamic_extent))
+    {
+      static_assert(__divisible, "group_by mapping would produce units without a group during exhaustive mapping");
+    }
+    else
+    {
+      _CCCL_ASSERT(__prev_unit_count % __unit_count == 0,
+                   "group_by mapping would produce units without a group during exhaustive mapping");
+    }
+  }
+  else if constexpr (!__divisible)
+  {
+    // Divisible parents have no tail. Checking divisibility first keeps register usage down for runtime widths.
+    if (__prev_unit_count % __unit_count != 0 && __local_group_rank >= __groups_per_parent)
+    {
+      return _MappingResult::__invalid();
+    }
+  }
+
+  const auto __unit_rank = __prev_unit_rank % __unit_count;
+  const auto __lane_mask =
+    ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Bound, _PrevMappingResult::is_always_contiguous()>(
+      __prev.lane_mask(), __unit_count, __unit_rank);
+  return _MappingResult{__group_count, __group_offset + __local_group_rank, __unit_count, __unit_rank, __lane_mask};
+}
+
+template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, class _ParentGroup, class _PrevMappingResult>
+[[nodiscard]] _CCCL_DEVICE_API auto __group_by_map(
+  ::cuda::std::uint32_t __unit_count, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev)
+{
+  using _Bound = typename _ParentGroup::bound_level;
+  using ::cuda::std::uint32_t;
+
+  auto __result = ::cuda::experimental::coop::__group_by_partition<_StaticUnitCount, _Exhaustive, _Unit, _Bound>(
+    __unit_count, __prev);
+
+  if constexpr (_PrevMappingResult::has_uniform_static_unit_count()
+                && _PrevMappingResult::static_unit_count() == ::cuda::std::dynamic_extent
+                && _PrevMappingResult::static_group_count() != 1)
+  {
+    static_assert(::cuda::std::is_same_v<_Unit, thread_level> && ::cuda::std::is_same_v<_Bound, warp_level>,
+                  "group_by with multiple runtime-sized groups requires threads within a warp");
+
+    // Excluded threads must also participate in the parent-wide ballot.
+    const auto __leaders = ::__ballot_sync(
+      __parent.__mapping_result().lane_mask().value(), __result.is_valid() && __result.unit_rank() == 0);
+    if (__result.is_valid())
+    {
+      // The trailing zeros in the group's mask are the lanes below its first member.
+      const auto __mask               = __result.lane_mask().value();
+      const auto __lanes_before_group = ~__mask & (__mask - 1u);
+      __result.__group_count_         = static_cast<uint32_t>(::cuda::std::popcount(__leaders));
+      __result.__group_rank_          = static_cast<uint32_t>(::cuda::std::popcount(__leaders & __lanes_before_group));
+    }
+  }
+  return __result;
 }
 
 template <::cuda::std::size_t _StaticUnitCount>
@@ -104,184 +227,20 @@ public:
     _CCCL_ASSERT(__unit_count == _StaticUnitCount, "__unit_count must match the static _StaticUnitCount");
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult, ::cuda::std::size_t... _Is>
-  [[nodiscard]] _CCCL_DEVICE_API static auto
-  __do_map(const _PrevMappingResult& __prev_mapping_result, const ::cuda::std::index_sequence<_Is...>&)
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev) const
   {
-    constexpr auto __unit_count = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
-    constexpr auto __static_ngroups =
-      (::cuda::std::size_t{0} + ... + (_PrevMappingResult::static_unit_count(_Is) / _StaticUnitCount));
-    constexpr bool __curr_is_always_exhaustive =
-      ((_PrevMappingResult::static_unit_count(_Is) % _StaticUnitCount == 0) && ...);
-    using _MappingResult =
-      __mapping_result<__uniform_static_unit_count<__static_ngroups, _StaticUnitCount>,
-                       _Exhaustive || (_PrevMappingResult::is_always_exhaustive() && __curr_is_always_exhaustive),
-                       _PrevMappingResult::is_always_contiguous()>;
-
-    if constexpr (!_PrevMappingResult::is_always_exhaustive())
-    {
-      if (!__prev_mapping_result.is_valid())
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    constexpr auto __group_rank_offsets = [] {
-      ::cuda::std::array<::cuda::std::size_t, sizeof...(_Is)> __offsets{};
-      ::cuda::std::size_t __sum = 0;
-      ((__offsets[_Is] = __sum, __sum += _PrevMappingResult::static_unit_count(_Is) / _StaticUnitCount), ...);
-      return __offsets;
-    }();
-
-    const auto __prev_group_rank = __prev_mapping_result.group_rank();
-    const auto __prev_unit_count = __prev_mapping_result.unit_count();
-    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
-
-    const auto __curr_group_rank = __prev_unit_rank / __unit_count;
-    const auto __rank            = __prev_unit_rank % __unit_count;
-
-    // If the mapping is exhaustive, check the preconditions, otherwise return invalid mapping for the remainder.
-    if constexpr (_Exhaustive)
-    {
-      static_assert(__curr_is_always_exhaustive,
-                    "group_by mapping would produce units without a group during exhaustive mapping");
-    }
-    else if constexpr (!__curr_is_always_exhaustive)
-    {
-      if (__prev_unit_count % __unit_count != 0 && __curr_group_rank >= __prev_unit_count / __unit_count)
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    return _MappingResult{
-      static_cast<::cuda::std::uint32_t>(__static_ngroups),
-      static_cast<::cuda::std::uint32_t>(__group_rank_offsets[__prev_group_rank]) + __curr_group_rank,
-      __unit_count,
-      __rank,
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
-        __prev_mapping_result.lane_mask(), __unit_count, __rank)};
-  }
-
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API static auto __do_map(const _PrevMappingResult& __prev_mapping_result)
-  {
-    constexpr auto __unit_count = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
-
-    constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
-    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
-    constexpr auto __static_curr_ngroups =
-      (__static_prev_nunits != ::cuda::std::dynamic_extent)
-        ? __static_prev_nunits / _StaticUnitCount
-        : ::cuda::std::dynamic_extent;
-    constexpr auto __static_ngroups =
-      (__static_prev_ngroups != ::cuda::std::dynamic_extent && __static_curr_ngroups != ::cuda::std::dynamic_extent)
-        ? (__static_prev_ngroups * __static_curr_ngroups)
-        : ::cuda::std::dynamic_extent;
-    constexpr bool __curr_is_always_exhaustive =
-      __static_prev_nunits != ::cuda::std::dynamic_extent && __static_prev_nunits % _StaticUnitCount == 0;
-
-    using _MappingResult =
-      __mapping_result<__uniform_static_unit_count<__static_ngroups, _StaticUnitCount>,
-                       _Exhaustive || (_PrevMappingResult::is_always_exhaustive() && __curr_is_always_exhaustive),
-                       _PrevMappingResult::is_always_contiguous()>;
-
-    if constexpr (!_PrevMappingResult::is_always_exhaustive())
-    {
-      if (!__prev_mapping_result.is_valid())
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    const auto __prev_nunits     = __prev_mapping_result.unit_count();
-    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
-    const auto __curr_ngroups    = __prev_nunits / __unit_count;
-    const auto __curr_group_rank = __prev_unit_rank / __unit_count;
-    const auto __ngroups         = __prev_mapping_result.group_count() * __curr_ngroups;
-
-    // If the mapping is exhaustive, check the preconditions, otherwise return invalid mapping for the remainder.
-    if constexpr (_Exhaustive)
-    {
-      if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
-      {
-        static_assert(__static_prev_nunits % _StaticUnitCount == 0,
-                      "group_by mapping would produce units without a group during exhaustive mapping");
-      }
-      else
-      {
-        _CCCL_ASSERT(__prev_nunits % __unit_count == 0,
-                     "group_by mapping would produce units without a group during exhaustive mapping");
-      }
-    }
-    else if constexpr (!__curr_is_always_exhaustive)
-    {
-      if (__prev_nunits % __unit_count != 0 && __curr_group_rank >= __curr_ngroups)
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
-    const auto __n          = __unit_count;
-    const auto __rank       = __prev_unit_rank % __n;
-    const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
-        __prev_mapping_result.lane_mask(), __n, __rank);
-    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
+    return ::cuda::experimental::coop::__group_by_map<_StaticUnitCount, true>(
+      _StaticUnitCount, __unit, __parent, __prev);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
+  [[nodiscard]] _CCCL_DEVICE_API auto map(
+    const non_exhaustive_t&, const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev) const
   {
-    using _Level = typename _ParentGroup::level_type;
-
-    if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
-    {
-      return __do_map<true, _Unit, _Level>(
-        __prev_mapping_result, ::cuda::std::make_index_sequence<_PrevMappingResult::static_group_count()>{});
-    }
-    else
-    {
-      const auto __ret = __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
-      if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
-      {
-        return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
-      }
-      else
-      {
-        return __ret;
-      }
-    }
-  }
-
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const non_exhaustive_t&,
-      const _Unit& __unit,
-      const _ParentGroup& __parent,
-      const _PrevMappingResult& __prev_mapping_result) const
-  {
-    using _Level = typename _ParentGroup::level_type;
-
-    if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
-    {
-      return __do_map<false, _Unit, _Level>(
-        __prev_mapping_result, ::cuda::std::make_index_sequence<_PrevMappingResult::static_group_count()>{});
-    }
-    else
-    {
-      const auto __ret = __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
-      if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
-      {
-        return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
-      }
-      else
-      {
-        return __ret;
-      }
-    }
+    return ::cuda::experimental::coop::__group_by_map<_StaticUnitCount, false>(
+      _StaticUnitCount, __unit, __parent, __prev);
   }
 };
 
@@ -297,98 +256,20 @@ public:
     _CCCL_ASSERT(__unit_count > 0, "__unit_count must be greater than 0");
   }
 
-  template <bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _PrevMappingResult& __prev_mapping_result) const
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev) const
   {
-    using _MappingResult =
-      __mapping_result<__uniform_static_unit_count<::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>,
-                       _Exhaustive,
-                       _PrevMappingResult::is_always_contiguous()>;
-
-    if constexpr (!_PrevMappingResult::is_always_exhaustive())
-    {
-      if (!__prev_mapping_result.is_valid())
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    const auto __prev_nunits     = __prev_mapping_result.unit_count();
-    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
-    const auto __curr_ngroups    = __prev_nunits / __unit_count_;
-    const auto __curr_group_rank = __prev_unit_rank / __unit_count_;
-    auto __ngroups               = __prev_mapping_result.group_count() * __curr_ngroups;
-    auto __group_offset          = __prev_mapping_result.group_rank() * __curr_ngroups;
-    if constexpr (!_PrevMappingResult::has_uniform_static_unit_count())
-    {
-      __ngroups      = 0;
-      __group_offset = 0;
-      for (::cuda::std::size_t __i = 0; __i < _PrevMappingResult::static_group_count(); ++__i)
-      {
-        const auto __count =
-          static_cast<::cuda::std::uint32_t>(_PrevMappingResult::static_unit_count(__i)) / __unit_count_;
-        __ngroups += __count;
-        if (__i < __prev_mapping_result.group_rank())
-        {
-          __group_offset += __count;
-        }
-      }
-    }
-
-    // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
-    if constexpr (_Exhaustive)
-    {
-      _CCCL_ASSERT(__prev_nunits % __unit_count_ == 0,
-                   "group_by mapping would produce units without a group during exhaustive mapping");
-    }
-    else if (__prev_nunits % __unit_count_ != 0)
-    {
-      if (__curr_group_rank >= __curr_ngroups)
-      {
-        return _MappingResult::__invalid();
-      }
-    }
-
-    const auto __group_rank = __group_offset + __curr_group_rank;
-    const auto __n          = __unit_count_;
-    const auto __rank       = __prev_unit_rank % __unit_count_;
-    const auto __lane_mask =
-      ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
-        __prev_mapping_result.lane_mask(), __n, __rank);
-    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
+    return ::cuda::experimental::coop::__group_by_map<::cuda::std::dynamic_extent, true>(
+      __unit_count_, __unit, __parent, __prev);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
+  [[nodiscard]] _CCCL_DEVICE_API auto map(
+    const non_exhaustive_t&, const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev) const
   {
-    const auto __ret = __do_map<true, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
-    if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
-    {
-      return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
-    }
-    else
-    {
-      return __ret;
-    }
-  }
-
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const non_exhaustive_t&,
-      const _Unit& __unit,
-      const _ParentGroup& __parent,
-      const _PrevMappingResult& __prev_mapping_result) const
-  {
-    const auto __ret = __do_map<false, _Unit, typename _ParentGroup::level_type>(__prev_mapping_result);
-    if constexpr (__group_by_mapping_result_needs_fix_v<_PrevMappingResult>)
-    {
-      return ::cuda::experimental::coop::__group_by_fix_group_count_rank(__unit, __parent, __ret);
-    }
-    else
-    {
-      return __ret;
-    }
+    return ::cuda::experimental::coop::__group_by_map<::cuda::std::dynamic_extent, false>(
+      __unit_count_, __unit, __parent, __prev);
   }
 };
 

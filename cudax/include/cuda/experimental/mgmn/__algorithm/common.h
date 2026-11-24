@@ -34,6 +34,7 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/no_init.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__iterator/concepts.h>

@@ -27,9 +27,9 @@
 
 #include <cuda/experimental/__execution/bulk.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
-#include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 
 #include <cooperative_groups.h>
 

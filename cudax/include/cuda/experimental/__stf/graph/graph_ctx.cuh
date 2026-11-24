@@ -25,21 +25,51 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
-#include <cuda/experimental/__stf/internal/acquire_release.cuh>
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/acquire_release.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
-#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <cstdlib>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <cuda.h>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/internal/data_interface.cuh>
+#  include <cuda/experimental/__stf/internal/slice.cuh>
+#  include <cuda/experimental/__stf/utility/memory.cuh>
+
+#  include <cmath>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

@@ -2,14 +2,130 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate block and warp Load/Store calls for CuTe lowering.
+"""Load and Store move a group's tile between memory and registers.
 
-Exact launch facts and shared group planning determine participation and
-algorithm support. Argument bindings mark each control as omitted, as a
-constant embedded in generated C++, or as a runtime argument. Block calls can
-use explicit scratch descriptors; physical and logical warps use
-compiler-managed scratch when their algorithm needs it.
+:func:`~cuda.coop.cutlass.load` reads a tile and returns each thread's items
+as a payload, and :func:`~cuda.coop.cutlass.store` writes each thread's
+payload to a tile. Values that are already in registers, in a CuTe register
+tensor or a ``TensorSSA``, become a payload through the conversions of
+:ref:`ThreadData <coop-thread-data>`.
+
+A :term:`tile` is the run of consecutive elements that one group reads or
+writes in one call, ``items_per_thread`` elements for each of its threads:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 32 38
+
+   * - Group
+     - Elements in a tile
+     - Where the tile starts
+   * - ``this_block()``
+     - Block size times ``items_per_thread``
+     - At ``offset``
+   * - ``this_warp()``
+     - 32 times ``items_per_thread``
+     - At ``offset`` plus the tiles of the block's earlier warps
+   * - ``this_warp().group_by(n)``
+     - ``n`` times ``items_per_thread``
+     - At ``offset`` plus the tiles of the block's earlier groups
+
+``offset`` counts elements from the start of the memory. On a warp or a
+group of lanes the compiler adds the tiles of the earlier groups: with ``G``
+threads in the group and ``K`` items per thread it adds ``(b // G) * G * K``,
+where ``b = x + block_x * (y + block_y * z)`` is the thread's rank in the
+block. The warps of a block, or its groups of lanes, can therefore all pass
+the same ``offset``. Every block of a grid works on the same tiles when it
+passes the same ``offset``, so a kernel with more than one block computes
+``offset`` from ``cute.arch.block_idx()``.
+
+``algorithm`` chooses how the threads reach the tile. It decides the layout
+of the payload and whether the call uses
+:ref:`scratch <coop-temp-storage>`:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 10 11 10 43
+
+   * - ``algorithm``
+     - Groups
+     - Payload
+     - Scratch
+     - Memory access
+   * - ``"direct"``
+     - All
+     - Blocked
+     - No
+     - Each thread reads or writes its own consecutive elements.
+   * - ``"striped"``
+     - All
+     - Striped
+     - No
+     - The thread with rank ``t`` in the group reads or writes elements
+       ``t``, ``t + G``, ``t + 2 * G`` and so on.
+   * - ``"vectorize"``
+     - All
+     - Blocked
+     - No
+     - As ``"direct"``, with vector instructions when the call has no
+       ``valid_items``, ``items_per_thread`` is even and the tile's address
+       is aligned for them.
+   * - ``"transpose"``
+     - All
+     - Blocked
+     - Yes
+     - As ``"striped"``. The threads exchange items through scratch, after
+       they read or before they write.
+   * - ``"warp_transpose"``
+     - Blocks
+     - Blocked
+     - Yes
+     - As ``"transpose"``, with each warp of the block working by itself on
+       its own part of the tile.
+   * - ``"warp_transpose_timesliced"``
+     - Blocks
+     - Blocked
+     - Yes
+     - As ``"warp_transpose"``, with scratch for one warp that the warps
+       use in turn.
+
+Item ``i`` of the thread with rank ``t`` in its group is tile element
+``t * K + i`` in a :term:`blocked` payload and ``t + i * G`` in a
+:term:`striped` one. On a warp or a group of lanes, ``t`` is ``b % G``. A
+payload keeps no record of its layout, and ``store`` reads it in the layout
+of its own ``algorithm``. In a group of more than one thread with more than
+one item each, a tile loaded with ``"striped"`` and stored with ``"direct"``
+is therefore written in another order.
+
+.. figure:: visualizations/load-transpose.svg
+   :alt: Two rows of eight threads with two elements each, and a bar named
+         shared scratch between them. In the top row thread 0 holds
+         elements 0 and 8, and thread 7 holds 7 and 15. In the bottom row
+         thread 0 holds elements 0 and 1, and thread 7 holds 14 and 15.
+   :width: 100%
+
+   ``load`` with ``algorithm="transpose"`` on eight threads with two items
+   each. The threads read in striped order, the top row, where thread 0
+   holds elements 0 and 8. The exchange through scratch gives the blocked
+   payload of the bottom row, where thread 0 holds elements 0 and 1.
+   ``algorithm="striped"`` returns the top row.
+
+``load`` takes the element type from the memory and the item count from
+``items_per_thread``. ``store`` takes both from the payload. CuTe reports
+unsigned integers behind a ``cute.Pointer`` argument as signed, and
+``dtype`` on both calls declares them unsigned.
 """
+
+# Implementation notes.
+#
+# Validate block and warp Load/Store calls for CuTe lowering.
+#
+# Exact launch facts and shared group planning determine participation and
+# algorithm support. Argument bindings mark each control as omitted, as a
+# constant embedded in generated C++, or as a runtime argument. Block calls
+# can use explicit scratch descriptors; physical and logical warps use
+# compiler-managed scratch when their algorithm needs it. Load materializes a
+# temporary register tensor and copies its scalar values into ThreadData.
 
 from __future__ import annotations
 
@@ -99,84 +215,199 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
-    """Load a contiguous group tile into per-thread values.
+    """Read a group's tile from memory into a payload in each thread.
 
-    Supply a positive compile-time ``items_per_thread`` to return fresh
-    ThreadData with the source dtype. The result owns independent values,
-    including when the count is one. Blocks and physical or logical warps
-    are supported.
+    Parameters
+    ----------
+    group : ThreadGroup
+        ``this_block()``, ``this_warp()``, or ``this_warp().group_by(n)``
+        with ``n`` of 1, 2, 4, 8, 16 or 32. Every thread of the group makes
+        the call and passes the same ``valid_items``, ``oob_default`` and
+        ``offset``. A warp or a group of lanes needs a block whose size is
+        a multiple of 32. The block's other warps or groups of lanes can
+        skip the call, or make it with other values of those three.
+    source : CuTe pointer or tensor
+        The memory to read, global or shared. It is a CuTe pointer, such as
+        a kernel argument made with ``cutlass.cute.runtime.make_ptr``, or a
+        tensor whose shape and strides are Python values and form a compact
+        layout: ``cute.make_tensor(pointer, cute.make_layout(n))``, a
+        ``cute.recast_tensor`` view of it, a shared tensor from CuTe's
+        ``SmemAllocator``, or a tensor from
+        :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`.
+        Its element type is one of the ten listed under
+        :ref:`ThreadData <coop-thread-data>`. A register tensor, a tensor
+        with a runtime shape and any other element type are rejected when
+        the kernel is compiled. For unsigned integers behind a
+        ``cute.Pointer`` argument, pass ``dtype``.
 
-    The source dtype is the element type its CuTe operand reports. CuTe
-    reports integer memory behind a ``cute.Pointer`` as signed, including
-    when the host created the pointer with an unsigned type. The exception is
-    a pointer that the kernel itself made with ``cute.make_ptr`` and passes
-    unchanged. A ``cute.make_tensor`` view of such memory is signed as well.
-    ``Uint32`` data then loads as ``Int32`` with no error, and a maximum, a
-    sort, or a widening conversion gives the signed answer.
+        ``source`` must hold every element the call reads. A tensor that
+        is too small is rejected when the kernel is compiled, as long as
+        ``offset`` and ``valid_items`` are Python values or left out. On a
+        warp or a group of lanes, the check covers the tiles of all such
+        groups of the block, including groups that skip the call. A
+        pointer has no size, so nothing is checked.
 
-    For unsigned memory, pass ``dtype`` with the unsigned type of the same
-    width, such as ``dtype=cutlass.Uint32``. The result has that dtype, and
-    ``oob_default`` is checked against it. ``dtype`` may also repeat the
-    reported type. Any other ``dtype`` is an error, so it cannot change the
-    element width or turn integers into floats. A ``cute.recast_tensor`` view
-    states its element type and needs no ``dtype``.
+        If other threads wrote the elements to shared memory, put a
+        barrier such as ``block.sync()`` between those writes and the call.
+    items_per_thread : int
+        The number of items each thread receives, a positive Python
+        integer or a kernel argument declared ``cutlass.Constexpr``. A
+        CuTe value is rejected when the kernel is compiled.
+    dtype : CUTLASS or NumPy type, optional
+        Declares the integers in ``source`` unsigned. CuTe reports integer
+        memory behind a ``cute.Pointer`` argument as signed, including when
+        the host made the pointer with an unsigned type, and a
+        ``cute.make_tensor`` view of any pointer is signed too. ``Uint32``
+        data then loads as ``Int32`` with no error, and a maximum, a sort
+        or a conversion to a wider type gives the signed answer.
 
-    ``alignment`` requests a minimum power-of-two byte alignment for the
-    result's materialized storage, as in ``ThreadData``. It does not describe
-    source memory alignment or change the selected item layout. To update
-    a native CuTe register tensor, use ``tensor.store(values.to_tensor_ssa())``
-    with compatible shape and item order. The Load implementation materializes
-    a temporary register tensor and copies its scalar values into ThreadData.
+        Pass the unsigned type of the same width, such as
+        ``dtype=cutlass.Uint32`` for memory that CuTe reports as ``Int32``.
+        The payload has that element type, and ``oob_default`` is checked
+        against it. ``dtype`` can also repeat the type CuTe reports. Any
+        other type is rejected when the kernel is compiled, so ``dtype``
+        cannot change the width or turn integers into floats.
 
-    Load populates the payload in the selected algorithm's layout. Beyond
-    ``valid_items``, slots have unspecified values unless ``oob_default`` is
-    supplied. A default requires
-    ``valid_items``. A runtime default must have the memory dtype. A Python or
-    NumPy default must be finite and within the memory dtype's range; a float
-    default requires a floating-point dtype.
+        ``dtype`` is not needed for a ``source`` that already reports the
+        unsigned type, such as a ``cute.recast_tensor`` view, a tensor from
+        :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`,
+        or a pointer the kernel made itself with ``cute.make_ptr`` and
+        passes unchanged.
+    alignment : int, optional
+        The smallest byte alignment, a power of two, of register storage
+        made from the returned payload, as for ``alignment`` of
+        :class:`~cuda.coop.cutlass.ThreadData`. It is a Python integer, or
+        ``None`` (the default) to ask for none. The items, their order and
+        the way ``source`` is read stay the same.
+    algorithm : str, optional
+        A Python string, one of the six names in the ``algorithm`` table
+        of :ref:`Load & Store <memory-operations>`. The default is
+        ``"direct"``. A block takes all six. A warp or a group of lanes
+        takes ``"direct"``, ``"striped"``, ``"vectorize"`` and
+        ``"transpose"``. ``"warp_transpose"`` and
+        ``"warp_transpose_timesliced"`` need a block size that is a
+        multiple of 32. Any other choice is rejected when the kernel is
+        compiled.
+    valid_items : int or CuTe integer, optional
+        The number of elements to read, counted from the start of the
+        group's tile, from 0 to the size of that tile. Left out, the whole
+        tile is read. An item whose element is at or past the count
+        receives ``oob_default``. Without ``oob_default`` its value is
+        undefined, so assign it before anything reads it.
 
-    The count ranges from zero through the group's full tile size. ``offset``
-    is a nonnegative element offset. Counts, offsets, and supplied defaults
-    must agree within the group. Physical and logical warps receive
-    consecutive tiles in linear block-thread order; the compiler adds that
-    group's tile origin to the offset. Different groups can use different
-    controls. The caller must provide enough accessible memory for the
-    selected prefix at the resulting offset.
+        A Python count out of range is rejected when the kernel is
+        compiled, and a runtime count out of range traps on the device.
+    oob_default : number or CuTe scalar, optional
+        The value for items at or past the count. It needs ``valid_items``.
+        A Python or NumPy number is fixed when the kernel is compiled. It
+        must be finite and fit the element type. A float needs ``Float32``
+        or ``Float64`` memory. An integer for such memory must also lie
+        between ``-2**63`` and ``2**64 - 1``, so write a default outside
+        that range as a float. A CuTe scalar is computed while the kernel
+        runs and has exactly the payload's element type. Anything else is
+        rejected when the kernel is compiled.
+    offset : int or CuTe integer, optional
+        The number of elements from the start of ``source`` to the tile, 0
+        by default. On a warp or a group of lanes it leads to the tile of
+        the block's first group, and the compiler adds the tiles of the
+        groups before the calling one. A negative Python integer is
+        rejected when the kernel is compiled, and a negative runtime value
+        traps on the device. A call reads the same tile every time it runs
+        with the same offset, so a loop over tiles computes a new offset
+        on each trip.
+    temp_storage : TempStorage, optional
+        For blocks. ``"transpose"``, ``"warp_transpose"`` and
+        ``"warp_transpose_timesliced"`` use scratch. Leave this out and
+        the compiler provides the scratch and a block barrier after the
+        call. Pass a :ref:`TempStorage <coop-temp-storage>` to share the
+        bytes with other calls. A barrier then follows the call only if
+        the ``TempStorage`` was created with ``auto_sync=True``. The other
+        three algorithms use no scratch and no barrier, with or without a
+        ``TempStorage``.
 
-    For ``this_warp().group_by(width)``, ``width`` must be 1, 2, 4, 8, 16, or
-    32. Each logical tile contains ``width * items_per_thread`` elements. The
-    enclosing block must contain complete 32-thread physical warps.
+        Warps and groups of lanes take ``None``. There, ``"transpose"``
+        uses scratch from the compiler, one slice for each warp or group
+        of lanes, and a warp barrier for that group's lanes follows the
+        call.
 
-    The source must expose a raw pointer and a provably compact layout. A bare
-    pointer object with no shape or stride metadata is also accepted, but its
-    capacity is not checked. Register or local-memory tensors are rejected.
-    Load reads addressable memory, such as global or shared memory. Shared
-    tensors from ``SmemAllocator`` and ``TempStorage.reserve`` are supported
-    when their dtype and compact layout meet these requirements. Synchronize
-    the participating threads after shared-memory writes and before Load
-    reads values produced by other threads. DIRECT, STRIPED, and VECTORIZE
-    need no shared scratch or reuse barrier; an accepted block descriptor
-    does not change that.
+    Returns
+    -------
+    cuda.coop.cutlass.ThreadData
+        A new payload in each thread, with ``items_per_thread`` items of
+        the element type of ``source``, or of ``dtype`` when it is given,
+        in the layout that ``algorithm`` gives. With ``items_per_thread=1``
+        the result is a payload of one item. ``source`` is only read, and
+        every call returns its own payload.
 
-    Transpose algorithms use shared scratch. With no ``temp_storage``, the
-    compiler allocates it and inserts a trailing reuse barrier. An explicit
-    :class:`cuda.coop.cutlass.TempStorage` is supported only for block calls.
-    It sets size, alignment, sharing, and synchronization policy; its default
-    ``auto_sync=False`` requires a barrier before reuse. Each physical or
-    logical warp uses an independent scratch slice and a reuse barrier that
-    covers only its own lanes.
+    See Also
+    --------
+    :cpp:struct:`cub::BlockLoad`, :cpp:struct:`cub::WarpLoad`
+        The CUB classes behind the call.
 
     Examples
     --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    On a block of 64 threads, copy a tile without its last three elements.
+    ``load`` starts five elements into ``source`` and sets the three items
+    at or past the count to 0. ``store`` writes the same number of
+    elements, starting two elements into ``destination``.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
         :language: python
         :start-after: # cutlass-load-store-example-begin
         :end-before: # cutlass-load-store-example-end
+        :dedent: 4
+
+    The two warps of a block copy one tile each. ``_BLOCK`` is
+    ``(8, 4, 2)``, which is 64 threads. ``warp`` is 0 in the first warp
+    and 1 in the second. Each warp reads its tile without the last
+    ``7 + warp * 11`` elements, a count computed while the kernel runs,
+    and the items at or past the count are set to -1. Both warps pass the
+    same offsets, a ``_SOURCE_OFFSET`` of 3 and a ``_DESTINATION_OFFSET``
+    of 5, and the compiler puts the second warp's tile after the first.
+    ``store`` writes each warp's whole tile.
+
+    `Full example on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/warp_load_store.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/examples/warp_load_store.py
+        :language: python
+        :start-after: docs: start cutlass-warp-load-store
+        :end-before: docs: end cutlass-warp-load-store
+        :dedent: 4
+
+    The same copy with groups of eight lanes, where ``_WIDTH`` is 8. The
+    block's 64 threads form eight groups with one tile each.
+    ``group_index`` numbers the groups from 0, and each group reads its
+    tile without the last ``1 + group_index`` elements.
+
+    `Full example on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/logical_warp_load_store.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/examples/logical_warp_load_store.py
+        :language: python
+        :start-after: docs: start cutlass-logical-warp-load-store
+        :end-before: docs: end cutlass-logical-warp-load-store
+        :dedent: 4
+
+    Sort ``Uint32`` keys from one pointer argument into another. CuTe
+    reports both pointers as ``Int32``, so the kernel passes
+    ``dtype=cutlass.Uint32`` to ``load`` and ``store``. Without ``dtype``
+    the keys with the top bit set would sort first, as negative numbers.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
+        :language: python
+        :start-after: # cutlass-load-store-unsigned-example-begin
+        :end-before: # cutlass-load-store-unsigned-example-end
         :dedent: 4
     """
 
@@ -220,39 +451,75 @@ def store(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
-    """Store per-thread values into a contiguous group tile.
+    """Write each thread's payload to a group's tile in memory.
 
-    Blocks and physical or logical warps are supported. Each thread
-    supplies a scalar or an initialized CUTLASS ThreadData payload whose dtype
-    matches the destination. Do not rely on the payload's contents after a
-    transpose Store; copy values needed later.
+    Parameters
+    ----------
+    group : ThreadGroup
+        The groups that :func:`~cuda.coop.cutlass.load` takes, under the
+        same rules. Every thread of the group makes the call and passes
+        the same ``valid_items`` and ``offset``.
+    destination : CuTe pointer or tensor
+        The memory to write, global or shared, in the forms that ``load``
+        takes as ``source`` and with the same check of its size. Its
+        element type, as CuTe reports it or as ``dtype`` declares it, is
+        the element type of ``value``. Nothing is converted, and two
+        different types are rejected when the kernel is compiled.
+    value : ThreadData or CuTe scalar
+        This thread's payload. Every item must be assigned, and a payload
+        with an unassigned item is rejected when the kernel is compiled.
+        One scalar per thread, such as ``cutlass.Int32(x)``, is stored as
+        a payload of one item. To store a CuTe register tensor or a
+        ``TensorSSA``, convert it first with ``ThreadData``'s
+        :meth:`~cuda.coop.cutlass.ThreadData.from_register_tensor` or
+        :meth:`~cuda.coop.cutlass.ThreadData.from_vector`.
 
-    ``dtype`` declares the destination's element type as it does for
-    :func:`load`. To store an unsigned payload through a ``cute.Pointer``,
-    which reports the signed type of the same width, pass the payload's
-    dtype. The declared type must equal the payload dtype.
+        ``"direct"``, ``"striped"`` and ``"vectorize"`` leave the payload
+        as it was. After ``"transpose"``, ``"warp_transpose"`` or
+        ``"warp_transpose_timesliced"`` its items are undefined, so copy
+        the ones the kernel still needs before the call.
+    dtype : CUTLASS or NumPy type, optional
+        Declares the integers in ``destination`` unsigned, under the rules
+        of ``dtype`` of ``load``. To store an unsigned payload through a
+        ``cute.Pointer`` argument, pass the payload's element type, such as
+        ``dtype=cutlass.Uint32``.
+    algorithm : str, optional
+        A Python string, a name from the ``algorithm`` table of
+        :ref:`Load & Store <memory-operations>`. It states the layout of
+        ``value`` and decides how the tile is written. ``"striped"`` takes
+        a striped payload, and the other five take a blocked one. The
+        default is ``"direct"``. Groups and block sizes limit the choice
+        as they do for ``load``.
+    valid_items : int or CuTe integer, optional
+        The number of elements to write, counted from the start of the
+        group's tile, from 0 to the size of that tile. Left out, the whole
+        tile is written. Elements of ``destination`` at or past the count
+        keep their values, so a count of 0 writes nothing. A count out of
+        range is handled as it is for ``load``.
+    offset : int or CuTe integer, optional
+        The number of elements from the start of ``destination`` to the
+        tile, 0 by default, under the rules of ``offset`` of ``load``.
+    temp_storage : TempStorage, optional
+        For blocks, the scratch of the three transpose algorithms, under
+        the rules of ``temp_storage`` of ``load``.
 
-    ``valid_items`` selects a prefix from zero through the group's full tile
-    size. ``offset`` is a nonnegative element offset. Both must agree within
-    the group. Physical and logical warp widths, tile origins, and prefix
-    bounds follow :func:`load`. Different groups can use different controls.
-    The caller must provide enough accessible destination memory for the
-    prefix at the resulting offset. Items outside it are not written. The
-    destination has the same pointer and layout requirements as :func:`load`.
+    Returns
+    -------
+    None
 
-    Transpose algorithms use shared scratch. With no ``temp_storage``, the
-    compiler allocates it and inserts a trailing reuse barrier. An explicit
-    descriptor is supported only for block calls and controls allocation and
-    reuse. The caller must synchronize before reuse unless ``auto_sync=True``.
-    Physical and logical warps use independent scratch slices and a barrier
-    that covers only the group's lanes. DIRECT, STRIPED, and VECTORIZE need no
-    scratch or reuse barrier.
+    See Also
+    --------
+    :cpp:struct:`cub::BlockStore`, :cpp:struct:`cub::WarpStore`
+        The CUB classes behind the call.
 
     Examples
     --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    ``store`` below writes a block's tile without its last three elements,
+    starting two elements into ``destination``. Those three elements of
+    ``destination`` keep the values they had.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py

@@ -25,7 +25,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/reduction_base.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 namespace cuda::experimental::stf

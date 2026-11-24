@@ -13,14 +13,18 @@ Terms
    :sorted:
 
    compiler integration
-      The machinery that recognizes ``cuda.coop.cutlass`` calls while CuTe
-      traces a kernel, generates CUB provider functions, and links them into
-      device code. See the :doc:`Developer Guide <developer_guide>`.
+      The part of the package that works with the CuTe compiler. It records
+      each primitive call while CuTe traces a kernel. When tracing ends,
+      it supplies the compiled CUB code for CuTe to link into the kernel.
+      The code can come from an :ref:`ahead-of-time pack <coop-cutlass-aot-packs>`,
+      the disk cache or a new NVRTC compilation. See the
+      :doc:`Developer Guide <developer_guide>`.
 
    blocked
-      A layout in which each thread owns consecutive elements of a
-      :term:`tile`. With ``K`` items per thread, thread ``t`` owns tile
-      positions ``t * K`` through ``t * K + K - 1``. See
+      A layout in which each thread holds consecutive elements of a
+      :term:`tile`. With ``K`` items per thread, the thread with
+      :term:`rank` ``t`` holds tile positions ``t * K`` to
+      ``t * K + K - 1``. See
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
    primitive
@@ -28,146 +32,209 @@ Terms
 
          <span id="term-collective"></span>
 
-      A cooperative operation provided by ``cuda.coop.cutlass``, such as ``load``,
-      ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
-      participate, how it uses their data, and where its results are
-      available. See
-      :ref:`participation and synchronization <coop-concepts-participation>`.
+      One of the package's functions that the threads of a
+      :term:`thread group` call together, such as ``load``, ``reduce`` or
+      ``exclusive_sum``. Every thread of the group makes the call. See
+      :ref:`Participation <coop-concepts-participation>` and
+      :ref:`the top of the API reference <cuda_coop-module>`.
+
+   single-phase call
+      A :term:`primitive` call made in one step, inside the kernel, with
+      nothing to construct first. The block size comes from the launch, the
+      element type from the memory or the items, and the :term:`scratch`
+      from the compiler or from a ``TempStorage`` that the kernel passes.
+      CUB's C++ classes take two steps. See
+      :ref:`Single-phase calls <coop-concepts-single-phase>`.
 
    family
-      A group of related :term:`primitives <primitive>` that share semantics
-      and implementation. For example, the Scan family includes ``scan``,
-      ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
-      ``inclusive_sum``. Families organize implementation modules; a
-      :term:`thread group` describes the threads executing a primitive.
-      See the implementation discussion in the
-      :doc:`Developer Guide <developer_guide>`.
+      Related :term:`primitives <primitive>` that share a section of the
+      :doc:`API reference <api>`. The Scan family is ``scan``,
+      ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum`` and
+      ``inclusive_sum``. The :doc:`Developer Guide <developer_guide>` says
+      where the code of a family lives.
 
    payload
-      The values contributed or received by one thread. ``ThreadData(K)``
-      describes a fixed-size payload of ``K`` items. Some operations also
-      accept scalars or CuTe register tensors. See
-      :ref:`thread data <coop-concepts-payloads>`.
+      One thread's items, held in a ``ThreadData``. ``load`` returns a
+      payload in each thread, and ``ThreadData(K)`` makes a payload of ``K``
+      items for the kernel to fill. Primitives other than ``load`` and
+      ``store`` also read a CuTe register tensor or a ``TensorSSA`` as a
+      payload. A warp scan takes one scalar per thread in place of a
+      payload. See :ref:`ThreadData <coop-thread-data>`.
 
    phi
-      A compiler intermediate representation (IR) operation that selects a
-      value according to the control-flow path taken into a block. For
-      example, after an ``if`` statement assigns different values to a
-      variable, a phi selects the value from the branch that ran. At a loop
-      header, it can select the initial value or the value from the previous
-      iteration. Comments refer to these alternatives as *phi inputs*.
+      An operation in a compiler's intermediate representation (IR) that
+      selects a value by the path the program took to reach it. After an
+      ``if`` statement assigns different values to a variable, a phi selects
+      the value from the branch that ran. At the top of a loop, it selects
+      the initial value or the value from the previous trip.
 
    batch
-      One independent reduction in :func:`cuda.coop.cutlass.reduce_batched`. Each lane
-      contributes the value in the same local payload slot: slot ``j``
-      contributes to batch ``j``. A batch spans the selected warp, and its
-      result belongs to the lane and slot selected by the output layout. See
-      :doc:`batched reduction <visualizations/reduce-batched>`.
+      One of the reductions that :func:`~cuda.coop.cutlass.reduce_batched`
+      makes in one call. Item ``b`` of every lane's payload belongs to batch
+      ``b``. A batch covers the lanes of the group, and ``output_layout`` sets
+      which lane holds its result. See
+      :ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API
+      reference and the :doc:`explorer <visualizations/reduce-batched>`.
 
    bin
-      A counter indexed by an input sample in :func:`cuda.coop.cutlass.histogram`.
-      A sample with value ``b`` increments bin ``b``. Every sample must
-      satisfy ``0 <= b < bins``. Returned bins use :term:`striped`
-      ownership. See :doc:`Histogram <visualizations/histogram>`.
+      One counter of :func:`~cuda.coop.cutlass.histogram`. A sample with
+      value ``b`` adds one to bin ``b``, so every sample must be at least 0
+      and less than ``bins``. The counters come back in :term:`striped`
+      order: on a block of ``G`` threads, item ``i`` of the thread with rank
+      ``t`` holds the count of bin ``t + i * G``. See
+      :ref:`Histogram <coop-cutlass-histogram>` in the API reference and the
+      :doc:`explorer <visualizations/histogram>`.
 
    tile boundary
-      The edge between one group's tile and the neighboring data.
-      Adjacent Difference and Discontinuity can consume an explicit
-      predecessor or successor value to compare across this edge.
-      Without one, their endpoint rules apply to the local tile. See
-      :doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-      :doc:`Discontinuity <visualizations/discontinuity>`.
+      The edge between one group's tile and the data next to it.
+      :func:`~cuda.coop.cutlass.adjacent_difference` and
+      :func:`~cuda.coop.cutlass.discontinuity` take the item on the other
+      side of the edge as ``tile_predecessor_item`` or
+      ``tile_successor_item``. Without it, ``adjacent_difference`` copies
+      the item at the edge and ``discontinuity`` flags it with 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    run
-      A consecutive sequence represented by one value and its repetition
-      count, such as value ``7`` and length ``3`` representing ``7, 7, 7``.
-      Run Length Decode expands these pairs. Its run-length payload uses
-      positive lengths followed by optional zero-length padding. See
-      :doc:`Run Length Decode <visualizations/run-length-decode>`.
+      A value and the number of times it repeats. The value 7 with the
+      length 3 stands for ``7, 7, 7``.
+      :func:`~cuda.coop.cutlass.run_length_decode` and
+      :func:`~cuda.coop.cutlass.run_length_decode_into` turn a block's runs
+      back into the repeated values. In the run lengths of a block, taken
+      thread by thread, every positive length comes before every zero, and
+      a zero is padding. See
+      :ref:`Run Length Decode <coop-cutlass-run-length>` in the API
+      reference and the :doc:`explorer <visualizations/run-length-decode>`.
 
    head flag
-      An integer flag marking the start of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its predecessor.
-      Without an explicit tile predecessor, the first item is a head.
-      See :doc:`Discontinuity <visualizations/discontinuity>`.
+      An ``Int32`` flag from :func:`~cuda.coop.cutlass.discontinuity` that
+      is 1 where an item differs from the item before it, which marks the
+      first item of a run of equal values. Without
+      ``tile_predecessor_item``, the tile's first head flag is 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    tail flag
-      An integer flag marking the end of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its successor.
-      Without an explicit tile successor, the last item is a tail.
+      An ``Int32`` flag from :func:`~cuda.coop.cutlass.discontinuity` that
+      is 1 where an item differs from the item after it, which marks the
+      last item of a run of equal values. Without ``tile_successor_item``,
+      the tile's last tail flag is 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    decoded window
-      The output interval returned by one :func:`cuda.coop.cutlass.run_length_decode`
-      call. Its start is an offset in the expanded sequence, and its
-      capacity is ``block_threads * decoded_items_per_thread``. Positions
-      beyond the sequence contain zero. See
-      :ref:`decoding windows and scratch <coop-glossary-decoding>`.
+      The part of the decoded stream that one
+      :func:`~cuda.coop.cutlass.run_length_decode` call returns. It starts at
+      position ``decoded_window_offset`` of the stream and has
+      ``decoded_items_per_thread`` items for each thread of the block. An
+      item of the result past the end of the stream is zero.
+      :func:`~cuda.coop.cutlass.run_length_decode_into` writes the stream
+      one window at a time. See
+      :ref:`run positions, windows, and scratch <coop-glossary-decoding>`.
 
    relative run offset
-      A decoded element's position within its own :term:`run`. For runs
-      ``[7, 9]`` with lengths ``[3, 2]``, the full sequence has relative
-      offsets ``[0, 1, 2, 0, 1]``. This differs from its absolute decoded
-      position or its position within a requested window.
+      A decoded item's position inside its own :term:`run`. For the values
+      ``[7, 9]`` with the lengths ``[3, 2]``, the five items of the stream
+      have the relative offsets ``[0, 1, 2, 0, 1]`` and the stream
+      positions ``[0, 1, 2, 3, 4]``. CUB can return the relative offset of
+      every decoded item. ``run_length_decode`` and
+      ``run_length_decode_into`` have no such result.
 
    key-value pair
-      A key used for ordering or selection and an associated value, such as
-      its original array index. Pair operations move the two together.
-      Key and value payloads have the same number of items per thread
-      but may have different dtypes. See :ref:`Merge Sort <coop-cutlass-merge-sort>`.
+      A key and a value that travels with it, such as the key's position in
+      the input. ``merge_sort_pairs``, ``radix_sort_pairs``,
+      ``topk_min_pairs`` and ``topk_max_pairs`` sort or select by the keys
+      and move each value with its key. The key payload and the value
+      payload have the same number of items per thread, and their element
+      types can differ. See
+      :ref:`Comparison sorting <coop-cutlass-merge-sort>`,
+      :ref:`Radix sorting and ranking <coop-cutlass-radix>` and
+      :ref:`Top-k selection <coop-cutlass-topk>`.
 
    stable sort
-      A sort that preserves the input order of elements with equal keys.
-      A function's contract must promise stability before a program relies
-      on it. Radix Sort in ``cuda.coop.cutlass`` is stable; Merge Sort does not
-      promise equal-key order. See :doc:`radix sorting <visualizations/radix>`.
+      A sort that keeps equal keys in the order they had in the input.
+      ``radix_sort_keys`` and ``radix_sort_pairs`` are stable: keys that
+      are equal in the bits the sort compares keep their input order.
+      ``merge_sort_keys`` and ``merge_sort_pairs`` can return equal keys in
+      any order. See :ref:`Radix sorting and ranking <coop-cutlass-radix>`
+      and :ref:`Comparison sorting <coop-cutlass-merge-sort>`.
 
    radix digit
-      A fixed-width interval of key bits used in one ranking or sorting step.
-      ``radix_rank_keys`` assigns ranks according to one such digit;
-      ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :doc:`radix sorting and ranks
-      <visualizations/radix>`.
+      A few neighboring bits of a key, such as bits 0 to 3.
+      ``radix_sort_keys`` and ``radix_sort_pairs`` sort by the bits from
+      ``begin_bit`` to ``end_bit - 1``, one digit at a time from the lowest
+      up. ``radix_rank_keys`` ranks the keys by one digit of ``radix_bits``
+      bits. See :ref:`Radix sorting and ranking <coop-cutlass-radix>` in the
+      API reference and the :doc:`explorer <visualizations/radix>`.
 
    striped
-      A layout in which consecutive threads own consecutive tile elements
-      at each per-thread item position. For ``G`` threads, thread ``t`` owns
-      tile positions ``t``, ``t + G``, ``t + 2 * G``, and so on. See
+      A layout in which neighboring threads hold neighboring elements of a
+      :term:`tile`. In a group of ``G`` threads, the thread with
+      :term:`rank` ``t`` holds tile positions ``t``, ``t + G``,
+      ``t + 2 * G`` and so on. See
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
+   scratch
+      Shared memory that a :term:`primitive` uses while it runs. A block
+      scan needs it, and a ``load`` with the default algorithm needs none.
+      Leave ``temp_storage`` out of a call and the compiler provides the
+      scratch and a barrier after the call. Pass a ``TempStorage`` to choose
+      which calls share bytes and where the barriers go. See
+      :ref:`TempStorage <coop-temp-storage>`.
+
    temporary storage
-      Shared-memory scratch used internally by a primitive. The compiler
-      allocates it automatically when needed. An explicit ``TempStorage``
-      descriptor can control allocation sharing and synchronization for
-      supported operations. A reservation returns a typed shared view for application data; its
-      lifetime and synchronization remain the caller's responsibility.
-      See :ref:`the temporary-storage FAQ <coop-faq-temp-storage>`.
+      CUB's name for :term:`scratch`. A
+      :class:`~cuda.coop.cutlass.TempStorage` is one region of shared memory
+      that holds the scratch of every call it is passed to.
+      :meth:`~cuda.coop.cutlass.TempStorage.reserve` returns a typed shared
+      tensor inside the region for the kernel's own data. The kernel places
+      the barriers for that tensor, and with the default ``sharing`` the
+      next primitive that uses the region overwrites it. See
+      :ref:`TempStorage <coop-temp-storage>`.
 
    thread group
-      The threads participating in a primitive, such as a block, a physical
-      warp, or a logical group within a warp. A thread's rank identifies its
-      position within that group. See :ref:`groups <coop-concepts-groups>`.
+      The threads that make a call together. The first argument of every
+      :term:`primitive` names them: ``this_block()``, ``this_warp()`` or
+      ``this_warp().group_by(n)``. See
+      :ref:`Thread groups <coop-thread-groups>`.
+
+   lane
+      One thread of a warp. A warp has 32 lanes, and ``this_warp().rank()``
+      returns the calling thread's lane, from 0 to 31. See
+      :ref:`Thread groups <coop-thread-groups>`.
+
+   logical warp
+      CUB's name for a group of lanes. ``this_warp().group_by(n)`` is the
+      calling thread's group of ``n`` neighboring :term:`lanes <lane>`, so
+      ``group_by(8)`` splits a warp into four groups of eight. See
+      :ref:`Thread groups <coop-thread-groups>`.
+
+   rank
+      A thread's position in its :term:`thread group`, counted from 0.
+      ``group.rank()`` returns it. ``reduce`` and ``sum`` leave their result
+      in the thread with rank 0. ``radix_rank_keys`` and the ``ranks`` of
+      ``exchange`` use the word for a position among the items of a
+      :term:`tile`. See :ref:`Thread groups <coop-thread-groups>`.
 
    tile
-      The sequence of values processed by one group in an operation. With
-      ``G`` threads and ``K`` items per thread, a full tile has ``G * K``
-      values. ``valid_items`` in Load and Store selects a prefix of that
-      sequence. It counts tile elements, not elements per thread.
+      The elements one group works on in one call. A group of ``G`` threads
+      with ``K`` items per thread has a tile of ``G * K`` elements. For
+      ``load`` and ``store`` they are consecutive elements of memory, and
+      ``valid_items`` counts them from the start of the tile, from 0 to
+      ``G * K``. See :ref:`Load & Store <memory-operations>`.
 
    top-k
-      Selection of up to ``k`` smallest or largest keys, optionally with
-      associated values. ``cuda.coop.cutlass`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :doc:`TopK <visualizations/topk>`.
+      Selection of up to ``k`` smallest or largest keys, optionally with a
+      value for each key. The selected keys fill the first positions of the
+      result in no defined order. See
+      :ref:`Top-k selection <coop-cutlass-topk>` in the API reference and
+      the :doc:`explorer <visualizations/topk>`.
 
 .. _coop-glossary-layouts:
 
 Blocked versus striped
 ----------------------
 
-Both layouts distribute the same tile across threads. They differ in which
-thread owns each position. For four illustrative threads and two items per
-thread, a tile of positions ``0`` through ``7`` is distributed as follows:
+Both layouts spread one :term:`tile` over the threads of a group. They
+differ in which thread holds each element. With four threads and two items
+per thread, the tile positions 0 to 7 go to these threads:
 
 .. list-table::
    :header-rows: 1
@@ -188,53 +255,57 @@ thread, a tile of positions ``0`` through ``7`` is distributed as follows:
      - 6, 7
      - 3, 7
 
-For group size ``G``, items per thread ``K``, thread rank ``t``, and local
-item slot ``i``:
+For a group of ``G`` threads with ``K`` items each, where ``t`` is a
+thread's rank and ``i`` is the index of one of its items:
 
 .. list-table::
    :header-rows: 1
 
    * - Layout
-     - Tile position owned by ``items[i]`` in thread ``t``
-     - Owner of tile position ``p``
+     - Tile position of ``items[i]`` in thread ``t``
+     - Holder of tile position ``p``
    * - Blocked
      - ``t * K + i``
-     - Thread ``p // K``, slot ``p % K``
+     - Thread ``p // K``, item ``p % K``
    * - Striped
      - ``t + i * G``
-     - Thread ``p % G``, slot ``p // G``
+     - Thread ``p % G``, item ``p // G``
 
-The four-thread table illustrates ownership, not a supported physical CUDA
-warp size. A physical warp has 32 threads.
+The first table shows four threads to stay small.
+``this_warp().group_by(4)``, a group of four :term:`lanes <lane>`, has
+these layouts.
 
-Layout describes the values a caller sees. The memory-access algorithm may
-use a different intermediate layout. For example, ``load(...,
-algorithm="transpose")`` reads striped values, then rearranges them into
-blocked payloads. ``algorithm="striped"`` leaves the payloads striped.
+A layout describes the payload that a call returns or takes. Inside the
+call the items can pass through another order. ``load`` with
+``algorithm="transpose"`` reads the tile in striped order and then exchanges
+the items between the threads, so it returns a blocked payload.
+``algorithm="striped"`` returns the striped payload.
 
-Store expects the layout selected by its algorithm. Combining a striped
-Load with a direct Store without conversion changes the output order.
-``ThreadData`` does not carry a layout tag that corrects this mismatch.
+A payload keeps no record of its layout, and ``store`` reads it in the
+layout of its own ``algorithm``. In a group of more than one thread with
+more than one item each, a tile loaded with ``"striped"`` and stored with
+``"direct"`` is written in another order.
 
-Follow the values in the :doc:`Load <visualizations/load>` and
-:doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
-<visualizations/exchange>` converts between layouts; the
-:ref:`shared layout discussion <coop-concepts-layouts>` explains how layout
-affects Scan.
+The :doc:`Load <visualizations/load>` and :doc:`Store
+<visualizations/store>` explorers follow every element.
+:func:`~cuda.coop.cutlass.exchange` converts one layout into the other, and
+the :doc:`Exchange <visualizations/exchange>` explorer shows it. A scan
+reads a payload in blocked order, as
+:ref:`Layouts <coop-concepts-layouts>` explains.
 
 .. _coop-glossary-decoding:
 
 Run positions, windows, and scratch
 -----------------------------------
 
-Run Length Decode first prepares a table of run values and starting
-positions in shared scratch. A window offset then selects where to read
-from the expanded sequence. For values ``[7, 9]`` and lengths ``[3, 2]``:
+A :term:`run` starts at the position of the decoded stream where the runs
+before it end. For the values ``[7, 9]`` with the lengths ``[3, 2]``, the
+first run starts at position 0 and the second at position 3:
 
 .. list-table::
    :header-rows: 1
 
-   * - Absolute decoded position
+   * - Position in the decoded stream
      - Value
    * - 0
      - 7
@@ -247,12 +318,15 @@ from the expanded sequence. For values ``[7, 9]`` and lengths ``[3, 2]``:
    * - 4
      - 9
 
-A window starting at position two begins with values ``[7, 9, 9]``.
-The total decoded size remains five.
-Each independent window call prepares its table again; passing the same
-``TempStorage`` descriptor reuses memory, not a prepared decoder.
+A :term:`decoded window` that starts at position 2 begins with ``7, 9, 9``.
+The stream still has five items.
 
-:func:`cuda.coop.cutlass.run_length_decode_into` keeps that table alive while it
-loops over windows within one call. The table's lifetime ends when the
-call returns. Neither form exposes a parent decoder object or a mutable
-decode cursor. See :ref:`the RLD lifecycle FAQ <coop-faq-rld-lifecycle>`.
+Run Length Decode keeps the value and the starting position of each run in
+a table in :term:`scratch`, and reads a window from that table. Each
+``run_length_decode`` call makes its own table, even when the calls share a
+``TempStorage``: they reuse its bytes and nothing else. One
+:func:`~cuda.coop.cutlass.run_length_decode_into` call makes one table and
+reads all its windows from it. The table lasts until the call returns. A
+call with nothing to decode makes no table. Neither function returns a
+decoder or keeps a position for a later call to use. See
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference.

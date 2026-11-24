@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
+#include <cuda/devices>
 #include <cuda/std/span>
 
 #include <cuda/experimental/launch.cuh>

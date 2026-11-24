@@ -324,7 +324,8 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
     __result = -__result;
   }
 
-  *__res_hi = __result.hi();
+  // erf(-0) is -0; the renormalized argument and the kernel are +0 there.
+  *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 } // __internal_fpmp2_erf
 
@@ -419,7 +420,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erf_small(const fp32mp2_low __y
  * --------------------------------------------------------------------
  * exp(s x^2) for a pair x, s in {-1, +1, -1/2} (fp32mp2) - exact argument
  * --------------------------------------------------------------------
- * erfc, erfcx, normcdf and the inverse error functions need exp(-x^2),
+ * erfcx, normcdf and the inverse error functions need exp(-x^2),
  * exp(x^2) or exp(-x^2/2) of a pair x at the kernel's full accuracy.  A
  * rounded pair s x^2 carries an absolute error of 2^-48 |s x^2|, which
  * becomes the result's relative error -- 88 u^2 at x = 9 (the old erfc's
@@ -530,8 +531,9 @@ __internal_fpmp2_erfcx_kernel(const float __a_hi, const float __a_lo, float* __r
 
 /* erfc(a) = erfcx(a) exp(-a^2) for a >= 1/2: the kernel, the exact-argument
  * exp and the exact-cross-term product; zero beyond 27.5, where the exp
- * underflows.  The tail of erfc, the Newton residuals of erfcinv and
- * normcdfinv. */
+ * underflows.  The tail of erfc at fpmp2_accuracy::high, the Newton
+ * residuals of erfcinv and normcdfinv; at the other levels erfc has the
+ * dedicated kernel below for a >= 1/2. */
 _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfc_tail(const fp32mp2_low __a) noexcept
 {
   using __ffloat = fp32mp2_low;
@@ -543,15 +545,104 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfc_tail(const fp32mp2_low __a
 
 /*
  * --------------------------------------------------------------------
- * Complementary error function erfc(x) (fp32mp2) - dedicated implementation
+ * The one-reciprocal erfcx kernel: erfcx(a) for 0 <= a <= 10.0546875
  * --------------------------------------------------------------------
- *   |x| < 1/2 : 1 - x Q(x^2) (no cancellation, erfc >= 0.48 there)
- *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above; zero above 27.5
- *   x <= -1/2 : 2 - erfc(|x|)
- * The former single formula read 40-41 bits: 13 u^2 of fit error plus the
- * generic divisions at the kernel's t = -1 end near x = 0, and a reduction
- * of exp(-x^2) that rounded n ln2 (36 u^2 at x = 6).  Host check against
- * binary128: 4.1 u^2 worst on [1/2, 8.3], 2.3 u^2 below.
+ * erfcx(a) = s * R(v) with s = 4 / (a + 4) and v = s - 9/16 (steps 1 and 2 of
+ * erfc below).  One reciprocal with its residual and a degree-18 polynomial in
+ * compensated Horner form, against the two refined divisions and the degree-22
+ * polynomial of __internal_fpmp2_erfcx_kernel: fewer operations and about twice
+ * the error.  The kernel of erfc, erfcx and normcdf at the low and default
+ * levels, on the range where erfc(a) does not underflow; fpmp2_accuracy::high
+ * and erfcx beyond that range use __internal_fpmp2_erfcx_kernel.
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfcx_short_kernel(const float __a_hi, const float __a_lo) noexcept
+{
+  using __ffloat = fp32mp2_low;
+
+  /* R(v) = erfcx(a) * (a + 4) / 4 with a = 4 * (1 - s) / s and s = v + 9/16, ascending
+   * degree. Sollya fpminimax with these coefficient formats (48-bit pairs, then single
+   * floats): relative error 2^-49.1 on 0 <= a <= 10.0546875. */
+  constexpr __ffloat __r_c[19] = {
+    __ffloat(0x1.3b35b725c71cp-2), // [ 0]
+    __ffloat(0x1.32b1220caf34p-1), // [ 1]
+    __ffloat(0x1.02bfff5f4034p0), // [ 2]
+    __ffloat(0x1.792f364cf1e8p0), // [ 3]
+    __ffloat(0x1.d671b460a65p0), // [ 4]
+    __ffloat(0x1.eccbcbc7004ap0), // [ 5]
+    __ffloat(0x1.a267a16ed516p0), // [ 6]
+    __ffloat(0x1.0a65e63c8bfap0), // [ 7]
+    __ffloat(0x1.8c980cd02838p-2), // [ 8]
+    __ffloat(-0x1.cb1560041134p-5), // [ 9]
+    __ffloat(-0x1.69f5c5bf3e7cp-3), // [10]
+    __ffloat(-0x1.484d5cd596bp-4), // [11]
+    __ffloat(0x1.0ce8080f90bep-5), // [12]
+    __ffloat(0x1.921fb43e843p-5), // [13]
+    __ffloat(0x1.476f3a720628p-9), // [14]
+    __ffloat(-0x1.855c4aa0c394p-6), // [15] (last pair)
+    /* the M = 3 highest-degree entries are single floats */
+    __ffloat(-0x1.3f62fcp-8f), // [16]
+    __ffloat(0x1.a7092ep-7f), // [17]
+    __ffloat(-0x1.c535ep-9f) // [18]
+  };
+
+  /* rho = 1 / (a + 4) as the pair r + r_lo. With den = a + 4 as a pair and r = fl(1 / den_hi),
+   * e = 1 - den * r (1 - den_hi * r is exact in the fma) gives 1 / den = r * (1 + e + e^2 + ...);
+   * |e| is about 2^-23, so the series stops at e^2. s = 4 * rho and w = a * rho both inherit the
+   * relative error of rho; taking w as 1 - s instead would turn a relative error d of s into
+   * an absolute error 4 * d of a, which is 4.5 * d in erfc(a) near a = 0. */
+  float __den_lo;
+  const float __den_hi = ::cuda::__fpmp_two_sum(__a_hi, 4.0f, &__den_lo);
+  __den_lo             = ::cuda::__fpmp_add_rn(__den_lo, __a_lo);
+  const float __r      = ::cuda::__fpmp_rcp_rn(__den_hi);
+  float __e            = ::cuda::__fpmp_fma_rn(-__den_hi, __r, 1.0f);
+  __e                  = ::cuda::__fpmp_fma_rn(-__den_lo, __r, __e);
+  const float __r_lo   = ::cuda::__fpmp_mul_rn(__r, ::cuda::__fpmp_fma_rn(__e, __e, __e));
+  const __ffloat __s(4.0f * __r, 4.0f * __r_lo);
+  float __w_lo;
+  const float __w_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, __r, &__w_lo);
+  __w_lo = ::cuda::__fpmp_add_rn(__w_lo, ::cuda::__fpmp_fma_rn(__a_hi, __r_lo, ::cuda::__fpmp_mul_rn(__a_lo, __r)));
+
+  /* v = 7/16 - w, renormalized: the high limbs cancel near w = 7/16. */
+  float __dif_lo;
+  const float __dif_hi = ::cuda::__fpmp_two_sum(0.4375f, -__w_hi, &__dif_lo);
+  float __v_lo;
+  const float __v_hi = ::cuda::__fpmp_two_sum(__dif_hi, ::cuda::__fpmp_sub_rn(__dif_lo, __w_lo), &__v_lo);
+  const __ffloat __v(__v_hi, __v_lo);
+
+  // erfcx(a) = s * R(v): 3 high-order terms in float, the remaining 16 compensated
+  return ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp, 3>(__v, __r_c) * __s;
+} // __internal_fpmp2_erfcx_short_kernel
+
+/*
+ * --------------------------------------------------------------------
+ * Complementary error function erfc(x) (fp32mp2) - dedicated implementation
+ * (the low and mid levels; fpmp2_accuracy::high has its own, below)
+ * --------------------------------------------------------------------
+ *   |x| < 1/2 : 1 - x Q(x^2), the small-argument erf above (no
+ *               cancellation, erfc >= 0.48 there)
+ *   |x| >= 1/2: erfc(x) = erfcx(|x|) * exp(-x^2), where erfcx(a) =
+ *               exp(a^2) * erfc(a) is the scaled complementary error
+ *               function, by the one-reciprocal kernel above
+ *
+ * Algorithm for a = |x| >= 1/2:
+ *   1. rho = 1 / (a + 4) as a pair, from one reciprocal and its residual;
+ *      s = 4 * rho and w = a * rho = 1 - s.
+ *   2. erfcx(a) = s * R(v), v = s - 9/16 = 7/16 - w, with R a degree-18
+ *      polynomial evaluated by compensated Horner. R(v) = erfcx(a) / s
+ *      varies from 1 at a = 0 to 0.2 at the largest a, and v stays in
+ *      [-0.28, 0.44], so the terms of R decay and its three highest
+ *      coefficients are single floats.
+ *   3. exp(-x^2) via the reduction -x^2 = z + i * ln 2 and a degree-11
+ *      polynomial for exp(z); x^2 enters the reduction exactly.
+ *   4. erfc(a) = erfcx(a) * exp(z) * 2^i, scaled last so that only the
+ *      scaling can underflow.
+ *   5. For negative x, erfc(-a) = 2 - erfc(a).
+ *
+ * erfc(a) < 2^-150 for a > 10.0542, so the result is 0 (or 2) for
+ * a > 10.0546875. R is fitted on 0 <= a <= 10.0546875, a superset of the
+ * range it is used on.
+ * All arithmetic is in fp32mp2 (no double-precision operations).
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
@@ -559,14 +650,140 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
 {
   using __ffloat = fp32mp2_low;
 
-  if (__x_hi != __x_hi)
+  /* exp polynomial coefficients, ascending degree:
+   *   exp_c[0]  = constant term (= original ep11)
+   *   exp_c[11] = leading coeff (= original ep0)
+   * M = 5 highest-degree entries (exp_c[7..11]) run in float. */
+  constexpr __ffloat __exp_c[12] = {
+    __ffloat(1.0E+000), // [ 0] (= ep11, constant)
+    __ffloat(1.0E+000), // [ 1] (= ep10)
+    __ffloat(5.0000000000000122E-001), // [ 2] (= ep9)
+    __ffloat(1.6666666666666477E-001), // [ 3] (= ep8)
+    __ffloat(4.1666666666519754E-002), // [ 4] (= ep7)
+    __ffloat(8.3333333334550432E-003), // [ 5] (= ep6)
+    __ffloat(1.3888888945916380E-003), // [ 6] (= ep5, last ff term)
+    /* high-order M = 5 entries: .lo() == 0 by construction */
+    __ffloat(1.984127e-4f), // [ 7] (= ep4)
+    __ffloat(2.480149e-5f), // [ 8] (= ep3)
+    __ffloat(2.7557515e-6f), // [ 9] (= ep2)
+    __ffloat(2.76309e-7f), // [10] (= ep1)
+    __ffloat(2.5022323e-8f) // [11] (= ep0, leading)
+  };
+
+  constexpr float __l2e   = 0x1.715476p+0f;
+  constexpr float __ln2_1 = 0x1.62ep-1f;
+  constexpr float __ln2_2 = 0x1.0bfbe8p-15f;
+  constexpr float __ln2_3 = 0x1.cf79acp-40f;
+
+  __ffloat __x   = renormalize(__ffloat(__x_hi, __x_lo));
+  bool __is_neg  = __x.hi() < 0.f;
+  uint32_t __xhi = ::cuda::std::bit_cast<uint32_t>(__x.hi()) & 0x7fffffffU;
+  __ffloat __a   = (__is_neg) ? -__x : __x;
+
+  // NaN in either limb (the renormalization carries a NaN low limb into the high one):
+  // return it before the reduction converts a NaN to an integer
+  if (__x.hi() != __x.hi())
   {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_hi;
+    *__res_hi = __x.hi();
+    *__res_lo = __x.hi();
     return;
   }
+
+  // |x| > 10.0546875, including Inf: erfc(|x|) rounds to zero
+  if ((__xhi > 0x4120e000U) && (__xhi <= 0x7f800000U))
+  {
+    *__res_hi = (__is_neg) ? 2.f : 0.f;
+    *__res_lo = 0.f;
+    return;
+  }
+
+  // |x| < 1/2: erfc(x) = 1 - erf(x) without cancellation, erf(x) = x Q(x^2)
+  if (__xhi < 0x3f000000U)
+  {
+    const __ffloat __small = sub<fpmp2_accuracy::high>(1.0f, ::cuda::__internal_fpmp2_erf_small(__x));
+    *__res_hi              = __small.hi();
+    *__res_lo              = __small.lo();
+    return;
+  }
+
+  const float __a_hi = __a.hi();
+  const float __a_lo = __a.lo();
+
+  // erfcx(a) = s * R(v), by the one-reciprocal kernel
+  const __ffloat __erfcx = ::cuda::__internal_fpmp2_erfcx_short_kernel(__a_hi, __a_lo);
+
+  /* erfc(x) = erfcx * exp(-a^2), with -a^2 = z + i * ln 2. a^2 is taken exactly, as
+   * a_hi^2 = p_hi + p_lo and 2 a_hi a_lo = q_hi + q_lo plus a_lo^2, and ln 2 as L1 + L2 + L3
+   * with L1 to 12 bits, so i * L1 is exact for |i| <= 1091 and -p_hi - i * L1 is exact by
+   * Sterbenz's lemma. The other terms are at most |i * L2| or 2^-22 * a^2 and are summed as
+   * a pair before the leading one, which leaves z with an absolute error of about u^2;
+   * rounding -a^2 to a pair first costs about u^2 * a^2. */
+  float __p_lo;
+  const float __p_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, __a_hi, &__p_lo);
+  float __q_lo;
+  const float __q_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, 2.0f * __a_lo, &__q_lo);
+
+  const int __i        = ::cuda::__fpmp_fp2int_rn(::cuda::__fpmp_mul_rn(-__p_hi, __l2e));
+  const float __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
+  float __b_lo;
+  const float __b_hi = ::cuda::__fpmp_two_mult_fma(__t_rint, __ln2_2, &__b_lo);
+  const float __tiny = ::cuda::__fpmp_fma_rn(
+    __t_rint, __ln2_3, ::cuda::__fpmp_fma_rn(__a_lo, __a_lo, ::cuda::__fpmp_add_rn(__b_lo, __q_lo)));
+  float __m_lo;
+  const float __m_hi = ::cuda::__fpmp_two_sum(-__b_hi, -__q_hi, &__m_lo);
+  const __ffloat __m = __ffloat(__m_hi, ::cuda::__fpmp_sub_rn(__m_lo, __tiny)) - __p_lo;
+  __ffloat __z       = renormalize(__m + ::cuda::__fpmp_fma_rn(-__t_rint, __ln2_1, -__p_hi));
+
+  // exp polynomial: 5 high-order terms in float, remaining 7 in ff
+  const __ffloat __exp_z = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
+
+  /* erfc(a) = erfcx(a) * exp(z) * 2^i. The two O(1) factors are multiplied first and the
+   * product is scaled in two steps: a <= 10.0546875 gives -146 <= i <= 0, so both powers of
+   * two are normal and the high limb rounds at most once, into the subnormal range. */
+  const __ffloat __prod = renormalize(__erfcx * __exp_z);
+  const int __k         = __i / 2;
+  const float __scale_1 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(127 + __k) << 23);
+  const float __scale_2 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(127 + (__i - __k)) << 23);
+  __ffloat __erfc_val   = __ffloat(__prod.hi() * __scale_1 * __scale_2, __prod.lo() * __scale_1 * __scale_2);
+
+  if (__is_neg)
+  {
+    __erfc_val = renormalize(2.0f - __erfc_val);
+  }
+
+  *__res_hi = __erfc_val.hi();
+  *__res_lo = __erfc_val.lo();
+} // __internal_fpmp2_erfc
+
+/*
+ * --------------------------------------------------------------------
+ * Complementary error function erfc(x) (fp32mp2), fpmp2_accuracy::high
+ * --------------------------------------------------------------------
+ *   |x| < 1/2 : 1 - x Q(x^2) (no cancellation, erfc >= 0.48 there)
+ *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above
+ *   x <= -1/2 : 2 - erfc(|x|)
+ * The erfcx kernel with the two refined divisions: about half the error
+ * of the one-reciprocal kernel of the other levels for |x| >= 1/2, in
+ * more operations.  Host check against binary128: 4.1 u^2 worst on
+ * [1/2, 8.3], 2.3 u^2 below.  As at the other levels, the result is 0
+ * (or 2) for |x| > 10.0546875, where erfc(|x|) < 2^-150, and a NaN in
+ * either limb returns before the reduction.
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_erfc(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  using __ffloat = fp32mp2_low;
+
   const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
-  if (__x.hi() > 27.5f || __x.hi() < -27.5f) /* including +-inf */
+  // NaN in either limb (the renormalization carries a NaN low limb into the high one)
+  if (__x.hi() != __x.hi())
+  {
+    *__res_hi = __x.hi();
+    *__res_lo = __x.hi();
+    return;
+  }
+  if (__x.hi() > 10.0546875f || __x.hi() < -10.0546875f) /* including +-inf */
   {
     *__res_hi = (__x.hi() > 0.0f) ? 0.0f : 2.0f;
     *__res_lo = 0.0f;
@@ -584,7 +801,7 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
   *__res_hi = __r.hi();
   *__res_lo = __r.lo();
-} // __internal_fpmp2_erfc
+} // __internal_fpmp2_high_erfc
 
 /*
  * --------------------------------------------------------------------
@@ -701,11 +918,14 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfcinv_core(const fp32mp2_low 
   float __y0;
   if (__far)
   {
-    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. */
+    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. Both polynomials are Horner
+     * forms in explicit fmas: written with * and +, the compiler decides which products to
+     * contract, the seed differs between builds, and so does the last bit of the result. */
     const float __t = ::cuda::std::sqrt(-2.0f * (::cuda::std::log(__q.hi()) - 0.6931472f));
-    const float __z = __t
-                    - (2.515517f + 0.802853f * __t + 0.010328f * __t * __t)
-                        / (1.0f + 1.432788f * __t + 0.189269f * __t * __t + 0.001308f * __t * __t * __t);
+    const float __n = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.010328f, __t, 0.802853f), __t, 2.515517f);
+    const float __d = ::cuda::__fpmp_fma_rn(
+      ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.001308f, __t, 0.189269f), __t, 1.432788f), __t, 1.0f);
+    const float __z = __t - __n / __d;
     __y0            = __z * 0x1.6a09e6p-1f;
   }
   else
@@ -753,7 +973,15 @@ __internal_fpmp2_erfc(const double __x_hi, const double __x_lo, double* __res_hi
 #  endif
 }
 
+/* fp64mp2 has one erfc for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_erfc(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_erfc(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(erfc)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_erfc)
 
 /*
  * ====================================================================
@@ -1655,20 +1883,27 @@ _CCCL_FPMP_MATH_DISPATCH_INT_FP(yn)
  * --------------------------------------------------------------------
  *   normcdf(x) = erfc(-x/sqrt 2)/2, y = |x|/sqrt 2:
  *   y < 1/2     : (1 +- y Q(y^2))/2
- *   otherwise   : h = erfcx(y) exp(-x^2/2)/2 with the erfcx kernel and the
+ *   otherwise   : h = erfcx(y) exp(-x^2/2)/2 with an erfcx kernel and the
  *                 exact-argument exp applied to x itself (s = -1/2), so the
  *                 rounding of y never reaches the exponent; h for x < 0,
  *                 1 - h for x > 0 (h <= 0.24 there: no cancellation).
- * Zero below x = -14.5 (the result is under 2^-150), one from x = 8.4 on
- * (erfc(y) is under 2^-54 there).  Host model against
- * binary128: 5.3 u^2 worst on [-13, 9].
+ * The erfcx kernel is the one-reciprocal kernel at the low and default levels
+ * and the kernel with the two refined divisions at fpmp2_accuracy::high
+ * (_High), as in erfc.  One from x = 8.4 on (erfc(y) is under 2^-54 there).
+ * Zero below x = -14.5 at fpmp2_accuracy::high and below x = -14.219 at the
+ * other levels: there y > 10.0543 and the result is under 2^-151, which
+ * rounds to zero, and up to it y stays inside the range of the one-reciprocal
+ * kernel, y <= 10.0546875.  Host check against MPFR on [-13, 9]: 4.5 u^2
+ * worst at fpmp2_accuracy::high, 7.0 u^2 at the other levels.
  * --------------------------------------------------------------------
  */
+template <bool _High>
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+__internal_fpmp2_normcdf_core(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
   constexpr __ffloat __inv_sqrt2(0x1.6a09e667f3bcdp-1);
+  constexpr float __zero_below = _High ? -14.5f : -14.219f;
 
   const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
   if (__x.hi() != __x.hi())
@@ -1677,7 +1912,7 @@ __internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi
     *__res_lo = __x.hi();
     return;
   }
-  if (__x.hi() < -14.5f) /* including -inf */
+  if (__x.hi() < __zero_below) /* including -inf */
   {
     *__res_hi = 0.0f;
     *__res_lo = 0.0f;
@@ -1703,7 +1938,16 @@ __internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi
     /* erfc(y)/2 with the kernel at y and the exp at x itself (s = -1/2): the
      * rounding of y never reaches the exponent */
     float __k_hi, __k_lo, __e_hi, __e_lo;
-    ::cuda::__internal_fpmp2_erfcx_kernel(__y.hi(), __y.lo(), &__k_hi, &__k_lo);
+    if constexpr (_High)
+    {
+      ::cuda::__internal_fpmp2_erfcx_kernel(__y.hi(), __y.lo(), &__k_hi, &__k_lo);
+    }
+    else
+    {
+      const __ffloat __k = ::cuda::__internal_fpmp2_erfcx_short_kernel(__y.hi(), __y.lo());
+      __k_hi             = __k.hi();
+      __k_lo             = __k.lo();
+    }
     ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), -0.5f, &__e_hi, &__e_lo);
     const __ffloat __h = ::cuda::__internal_fpmp2_mul_acc(__ffloat(__k_hi, __k_lo), __ffloat(__e_hi, __e_lo));
     const __ffloat __half(0.5f * __h.hi(), 0.5f * __h.lo());
@@ -1711,6 +1955,18 @@ __internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi
   }
   *__res_hi = __r.hi();
   *__res_lo = __r.lo();
+} // __internal_fpmp2_normcdf_core
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_normcdf_core<false>(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_normcdf(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_normcdf_core<true>(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -1738,7 +1994,15 @@ __internal_fpmp2_normcdf(const double __x_hi, const double __x_lo, double* __res
 #  endif
 }
 
+/* fp64mp2 has one normcdf for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_normcdf(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_normcdf(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(normcdf)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_normcdf)
 
 // (rcbrt: dedicated fp32mp2 implementation defined above; see __fpmp2_rcbrt.)
 
@@ -1859,9 +2123,11 @@ __internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi,
     *__res_lo = 0.0f;
     return;
   }
-  if (__x.hi() == 0.0f) /* +-0 */
+  if (__x.hi() == 0.0f)
   {
-    *__res_hi = __x.hi();
+    /* +-0 keeps its sign, which the renormalization drops. Both limbs are tested: the limbs of
+     * a low-accuracy pair can cancel ((2, -2) is a zero), and its high limb is not the result. */
+    *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : 0.0f;
     *__res_lo = 0.0f;
     return;
   }
@@ -1916,17 +2182,25 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erfinv)
  * Scaled complementary error function erfcx(x) (fp32mp2) - dedicated
  * --------------------------------------------------------------------
  *   |x| < 1/2  : exp(x^2) (1 - x Q(x^2)), exact-argument exp
- *   x >= 1/2   : the erfcx kernel up to 40, beyond it the asymptotic series
+ *   x >= 1/2   : an erfcx kernel up to 40, beyond it the asymptotic series
  *                (1/(x sqrt pi)) sum_k (-1)^k (2k-1)!!/(2x^2)^k, 8 terms
  *                (truncation below 2^-65 at 40)
- *   x <= -1/2  : 2 exp(x^2) - erfcx(|x|); +inf below -9.3824139, where
- *                2 exp(x^2) passes FLT_MAX
- * erfcx(+inf) = 0.  Host check against binary128: 3.7 u^2 worst up to 40,
- * 4.5 u^2 in the asymptotic tail (one refined division and a product).
+ *   x <= -1/2  : 2 exp(x^2) - erfcx(|x|); +inf where 2 exp(x^2) passes
+ *                FLT_MAX, between -0x1.2c3cbcp+3 and the next float down
+ * The erfcx kernel is the one with the two refined divisions at
+ * fpmp2_accuracy::high (_High); the other levels use the one-reciprocal
+ * kernel up to 10.0546875, where its fit ends, and the former from there to
+ * 40.  At each level the exp and each kernel are written once, shared by the
+ * two cases that need them: on the device a warp whose threads take different cases executes
+ * every case, so a second copy of either would be paid for by all of them.
+ * erfcx(+inf) = 0.  Host check against MPFR: 3.9 u^2 worst up to 40 at
+ * fpmp2_accuracy::high and 7.3 u^2 at the other levels, 4.5 u^2 in the
+ * asymptotic tail (one refined division and a product).
  * --------------------------------------------------------------------
  */
+template <bool _High>
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+__internal_fpmp2_erfcx_core(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -1939,65 +2213,102 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
   }
   const bool __neg   = __x.hi() < 0.0f;
   const __ffloat __a = __neg ? -__x : __x;
-  __ffloat __r;
-  if (__a.hi() >= 0.5f)
+  /* 2 e^{x^2} passes the largest float between |x| = 0x1.2c3cbcp+3 and the next float up: a
+   * larger high limb is +inf outright, and at that high limb the low limb decides, through
+   * the check after the doubling (an overflowed sum has an infinite or a NaN high limb). */
+  if (__neg && __a.hi() > 0x1.2c3cbcp+3f) /* including -inf */
   {
-    if (__neg)
+    *__res_hi = ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+  __ffloat __r;
+  if (__a.hi() > 40.0f)
+  {
+    if (__a.hi() == ::cuda::std::__fp_inf<float>())
     {
-      /* erfcx(-a) reaches FLT_MAX at a = 9.38241397; 0x1.2c3cbap+3 is the last float whose
-       * pairs (any low limb) stay below it, so 2 exp(a^2) cannot overflow past this test. */
-      if (__a.hi() > 0x1.2c3cbap+3f) /* including -inf */
+      *__res_hi = 0.0f;
+      *__res_lo = 0.0f;
+      return;
+    }
+    /* 1/(x sqrt pi) by one refined division; y = 1/x^2 = pi (1/(x sqrt pi))^2
+     * only needs ~36 bits (its terms are below 2^-11 of the sum).  The division is
+     * by x 2^-64 and its quotient is scaled back (exact on the high limbs while the
+     * result is normal; a low limb of x below 2^-62 loses bits under 2^-67 of x): the
+     * device's approximate reciprocal flushes 1/x to zero for x above 2^126, where the
+     * result is a subnormal number. */
+    constexpr __ffloat __inv_sqrtpi(0x1.20dd750429b6dp-1), __pi(0x1.921fb54442d18p+1);
+    constexpr float __ac[8] = {1.0f, -0.5f, 0.75f, -1.875f, 6.5625f, -29.53125f, 162.421875f, -1055.7421875f};
+    float __i_hi, __i_lo;
+    ::cuda::__fpmp_math_div_refined<true>(
+      __inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi() * 0x1p-64f, __a.lo() * 0x1p-64f, &__i_hi, &__i_lo);
+    const __ffloat __rx(__i_hi * 0x1p-64f, __i_lo * 0x1p-64f);
+    const __ffloat __y = renormalize(__rx * __rx) * __pi;
+    __ffloat __v(__ac[7]);
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __k = 6; __k >= 0; --__k)
+    {
+      __v = __v * __y + __ffloat(__ac[__k]);
+    }
+    __r = ::cuda::__internal_fpmp2_mul_acc(__v, __rx);
+  }
+  else
+  {
+    const bool __small = __a.hi() < 0.5f;
+    __ffloat __e(0.0f);
+    if (__neg || __small)
+    {
+      float __e_hi, __e_lo;
+      ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), 1.0f, &__e_hi, &__e_lo);
+      __e = __ffloat(__e_hi, __e_lo);
+    }
+    if (__small)
+    {
+      const __ffloat __one_me = sub<fpmp2_accuracy::high>(1.0f, ::cuda::__internal_fpmp2_erf_small(__x));
+      __r                     = ::cuda::__internal_fpmp2_mul_acc(__e, __one_me);
+    }
+    else
+    {
+      float __k_hi, __k_lo;
+      if constexpr (_High)
+      {
+        ::cuda::__internal_fpmp2_erfcx_kernel(__a.hi(), __a.lo(), &__k_hi, &__k_lo);
+      }
+      else if (__a.hi() > 10.0546875f)
+      {
+        ::cuda::__internal_fpmp2_erfcx_kernel(__a.hi(), __a.lo(), &__k_hi, &__k_lo);
+      }
+      else
+      {
+        const __ffloat __s = ::cuda::__internal_fpmp2_erfcx_short_kernel(__a.hi(), __a.lo());
+        __k_hi             = __s.hi();
+        __k_lo             = __s.lo();
+      }
+      const __ffloat __k(__k_hi, __k_lo);
+      __r = __neg ? renormalize(sub<fpmp2_accuracy::high>(__ffloat(__e.hi() + __e.hi(), __e.lo() + __e.lo()), __k))
+                  : __k;
+      if (!(__r.hi() < ::cuda::std::__fp_inf<float>()))
       {
         *__res_hi = ::cuda::std::__fp_inf<float>();
         *__res_lo = 0.0f;
         return;
       }
-      float __k_hi, __k_lo, __e_hi, __e_lo;
-      ::cuda::__internal_fpmp2_erfcx_kernel(__a.hi(), __a.lo(), &__k_hi, &__k_lo);
-      ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), 1.0f, &__e_hi, &__e_lo);
-      __r =
-        renormalize(sub<fpmp2_accuracy::high>(__ffloat(__e_hi + __e_hi, __e_lo + __e_lo), __ffloat(__k_hi, __k_lo)));
     }
-    else if (__a.hi() > 40.0f)
-    {
-      if (__a.hi() == ::cuda::std::__fp_inf<float>())
-      {
-        *__res_hi = 0.0f;
-        *__res_lo = 0.0f;
-        return;
-      }
-      /* 1/(x sqrt pi) by one refined division; y = 1/x^2 = pi (1/(x sqrt pi))^2
-       * only needs ~36 bits (its terms are below 2^-11 of the sum) */
-      constexpr __ffloat __inv_sqrtpi(0x1.20dd750429b6dp-1), __pi(0x1.921fb54442d18p+1);
-      constexpr float __ac[8] = {1.0f, -0.5f, 0.75f, -1.875f, 6.5625f, -29.53125f, 162.421875f, -1055.7421875f};
-      float __i_hi, __i_lo;
-      ::cuda::__fpmp_math_div_refined<true>(__inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi(), __a.lo(), &__i_hi, &__i_lo);
-      const __ffloat __rx(__i_hi, __i_lo);
-      const __ffloat __y = renormalize(__rx * __rx) * __pi;
-      __ffloat __v(__ac[7]);
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int __k = 6; __k >= 0; --__k)
-      {
-        __v = __v * __y + __ffloat(__ac[__k]);
-      }
-      __r = ::cuda::__internal_fpmp2_mul_acc(__v, __rx);
-    }
-    else
-    {
-      float __k_hi, __k_lo;
-      ::cuda::__internal_fpmp2_erfcx_kernel(__a.hi(), __a.lo(), &__k_hi, &__k_lo);
-      __r = __ffloat(__k_hi, __k_lo);
-    }
-  }
-  else
-  {
-    float __x_hi2, __x_lo2;
-    ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), 1.0f, &__x_hi2, &__x_lo2);
-    const __ffloat __one_me = sub<fpmp2_accuracy::high>(1.0f, ::cuda::__internal_fpmp2_erf_small(__x));
-    __r                     = ::cuda::__internal_fpmp2_mul_acc(__ffloat(__x_hi2, __x_lo2), __one_me);
   }
   *__res_hi = __r.hi();
   *__res_lo = __r.lo();
+} // __internal_fpmp2_erfcx_core
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_erfcx_core<false>(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_erfcx_core<true>(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -2021,7 +2332,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_erfcx(
     }))
 }
 
+/* fp64mp2 has one erfcx for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_erfcx(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_erfcx(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(erfcx)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_erfcx)
 
 #endif // _CCCL_FPMP_USE_LIB
 _CCCL_END_NAMESPACE_CUDA

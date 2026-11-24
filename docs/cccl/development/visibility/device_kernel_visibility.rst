@@ -97,7 +97,7 @@ A simple example program that exemplifies this can be found
    ./device_kernel_visibility/device_kernel_visibility
    a: kernel stub address: 0x7fdec19e13eb                      <== launching kernel_a from a
    a: kernel is in mapping: no error
-   b: launched kernel
+   a: launched kernel
    a: kernel: set val = 42
    a: synchronized stream
    a: copied from device to host

@@ -3,7 +3,7 @@
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-classes-title cutlass-phases-classes-desc" viewBox="0 0 270 2640">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-classes-title cutlass-phases-classes-desc" viewBox="0 0 270 2760">
   <title id="cutlass-phases-classes-title">Compiler phases: classes</title>
   <desc id="cutlass-phases-classes-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop.cutlass finalizes the provider bundle inside the CuTe hook. CuTe then compiles and links the kernel.</desc>
   <defs>
@@ -11,7 +11,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
       <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
     </marker>
   </defs>
-  <rect width="270" height="2640" fill="#ffffff"/>
+  <rect width="270" height="2760" fill="#ffffff"/>
   <text x="8" y="22" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">1. Trace the kernel</text>
   <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class. CuTeDSL. Trace staged Python with symbolic values.. Build the kernel's typed MLIR.">
     <rect x="8" y="36.400000000000006" width="254" height="131.90000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
@@ -84,7 +84,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <path d="M135 1515.1V1540.1" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <text x="8" y="1568.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">5. Resolve deferred scratch</text>
   <g data-node="DeferredTempStoragePlan + DeferredTempStorageBinding" role="group" aria-label="cuda.coop.cutlass. Optional storage records; finalizer function. DeferredTempStoragePlan + DeferredTempStorageBinding">
-    <rect x="8" y="1582.5" width="254" height="302.6" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <rect x="8" y="1582.5" width="254" height="422.6" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="1610.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Optional storage records; finalizer function</text>
     <text x="20" y="1633.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">DeferredTempStoragePlan +</text>
     <text x="20" y="1655.6000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">DeferredTempStorageBinding</text>
@@ -94,42 +94,47 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="20" y="1751.1000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">resolved C++ layouts.</text>
     <text x="20" y="1773.5000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Replace each call's address and</text>
     <text x="20" y="1795.9000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">capacity placeholders.</text>
-    <text x="20" y="1826.3000000000006" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">append_link_library_attr()</text>
-    <text x="20" y="1848.7000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Attach the provider path to</text>
-    <text x="20" y="1871.1000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">gpu.module link-libraries.</text>
+    <text x="20" y="1826.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">lower_convergent_provider_</text>
+    <text x="20" y="1848.7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">calls()</text>
+    <text x="20" y="1871.1" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Replace each provider declaration</text>
+    <text x="20" y="1893.5" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">and func.call with convergent</text>
+    <text x="20" y="1915.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">llvm.func and llvm.call.</text>
+    <text x="20" y="1946.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">append_link_library_attr()</text>
+    <text x="20" y="1968.7" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Attach the provider path to</text>
+    <text x="20" y="1991.1" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">gpu.module link-libraries.</text>
   </g>
-  <path d="M135 1888.1V1913.1" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1941.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Compile and link the kernel</text>
+  <path d="M135 2008.1V2033.1" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="2061.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Compile and link the kernel</text>
   <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class with inherited methods. CuTeDSL">
-    <rect x="8" y="1955.5" width="254" height="408.19999999999993" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1983.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler class with inherited methods</text>
-    <text x="20" y="2006.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CuTeDSL</text>
-    <text x="20" y="2036.6000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">generate_original_ir()</text>
-    <text x="20" y="2059" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">After the hook returns, hash and</text>
-    <text x="20" y="2081.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">build the module.</text>
-    <text x="20" y="2111.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_merge_gpu_link_libraries()</text>
-    <text x="20" y="2134.2000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Copy gpu.module link-libraries into</text>
-    <text x="20" y="2156.6000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">the LinkLibraries option.</text>
-    <text x="20" y="2187.0000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">compile_and_cache()</text>
-    <text x="20" y="2209.4000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Compile the completed kernel IR.</text>
-    <text x="20" y="2237.7000000000007" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">External linker</text>
-    <text x="20" y="2260.100000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">nvJitLink</text>
-    <text x="20" y="2282.500000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Link kernel and provider LTO-IR into</text>
-    <text x="20" y="2304.900000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">a cubin.</text>
-    <text x="20" y="2327.300000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Resolve or inline each provider</text>
-    <text x="20" y="2349.700000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">symbol.</text>
+    <rect x="8" y="2075.5" width="254" height="408.19999999999993" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="2103.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler class with inherited methods</text>
+    <text x="20" y="2126.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CuTeDSL</text>
+    <text x="20" y="2156.6" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">generate_original_ir()</text>
+    <text x="20" y="2179" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">After the hook returns, hash and</text>
+    <text x="20" y="2201.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">build the module.</text>
+    <text x="20" y="2231.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_merge_gpu_link_libraries()</text>
+    <text x="20" y="2254.2" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Copy gpu.module link-libraries into</text>
+    <text x="20" y="2276.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">the LinkLibraries option.</text>
+    <text x="20" y="2307" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">compile_and_cache()</text>
+    <text x="20" y="2329.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Compile the completed kernel IR.</text>
+    <text x="20" y="2357.7" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">External linker</text>
+    <text x="20" y="2380.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">nvJitLink</text>
+    <text x="20" y="2402.5" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Link kernel and provider LTO-IR into</text>
+    <text x="20" y="2424.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">a cubin.</text>
+    <text x="20" y="2447.3" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Resolve or inline each provider</text>
+    <text x="20" y="2469.7" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">symbol.</text>
   </g>
-  <path d="M135 2366.7V2391.7" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="2419.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Load and launch</text>
+  <path d="M135 2486.7V2511.7" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="2539.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Load and launch</text>
   <g data-node="JitCompiledFunction → CudaModuleAndKernel" role="group" aria-label="CuTe compiler. Compiled-function class and runtime record. JitCompiledFunction → CudaModuleAndKernel. Load the device binary. Resolve the kernel entry.. Launch and reuse the compiled kernel.">
-    <rect x="8" y="2434.1" width="254" height="197.00000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="2462.4" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiled-function class and runtime</text>
-    <text x="20" y="2482.7000000000003" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">record</text>
-    <text x="20" y="2505.1000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">JitCompiledFunction →</text>
-    <text x="20" y="2527.5000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CudaModuleAndKernel</text>
-    <text x="20" y="2549.9000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Load the device binary. Resolve the</text>
-    <text x="20" y="2572.3000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel entry.</text>
-    <text x="20" y="2594.7000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Launch and reuse the compiled</text>
-    <text x="20" y="2617.100000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel.</text>
+    <rect x="8" y="2554.1" width="254" height="197.00000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="2582.4" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiled-function class and runtime</text>
+    <text x="20" y="2602.7" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">record</text>
+    <text x="20" y="2625.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">JitCompiledFunction →</text>
+    <text x="20" y="2647.5" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CudaModuleAndKernel</text>
+    <text x="20" y="2669.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Load the device binary. Resolve the</text>
+    <text x="20" y="2692.3" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel entry.</text>
+    <text x="20" y="2714.7" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Launch and reuse the compiled</text>
+    <text x="20" y="2737.1" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel.</text>
   </g>
 </svg>

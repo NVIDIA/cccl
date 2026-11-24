@@ -63,3 +63,32 @@ def test_load_store_example(items_per_thread):
     np.testing.assert_array_equal(observed[2 : 2 + count], values[5:])
     np.testing.assert_array_equal(observed[:2], -101)
     np.testing.assert_array_equal(observed[2 + count :], -101)
+
+
+def test_unsigned_pointer_example():
+    # cutlass-load-store-unsigned-example-begin
+    import cutlass
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.kernel
+    def sort_unsigned(source: cute.Pointer, destination: cute.Pointer):
+        block = coop.this_block()
+        keys = coop.load(
+            block, source, items_per_thread=2, dtype=cutlass.Uint32
+        )
+        ordered = coop.radix_sort_keys(block, keys)
+        coop.store(block, destination, ordered, dtype=cutlass.Uint32)
+
+    @cute.jit
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        sort_unsigned(source, destination).launch(grid=1, block=64)
+
+    # cutlass-load-store-unsigned-example-end
+    keys = np.arange(128, dtype=np.uint32) * np.uint32(2654435761)
+    assert (keys >> 31).min() == 0 and (keys >> 31).max() == 1
+    observed = np.zeros_like(keys)
+    with device_array(keys) as src, device_array(observed) as out:
+        launch(src, out)
+    np.testing.assert_array_equal(observed, np.sort(keys))

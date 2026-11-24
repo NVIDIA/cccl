@@ -27,8 +27,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/cstdint>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <nv/target>
+
+#include <cstring>
+#include <functional>
 
 namespace cuda::experimental::stf
 {

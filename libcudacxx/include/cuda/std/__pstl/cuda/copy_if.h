@@ -154,7 +154,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
     else
     {
       static_assert(__always_false_v<_Policy>,
-                    "__pstl_cuda_generate: CUDA backend of cuda::std::generate requires at least random access "
+                    "__pstl_cuda_copy_if: CUDA backend of cuda::std::copy_if requires at least random access "
                     "iterators");
       auto __last = ::cuda::std::next(__first, __count);
       return ::cuda::std::copy_if(

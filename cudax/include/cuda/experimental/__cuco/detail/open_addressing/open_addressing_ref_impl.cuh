@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/device_reference.h>
 
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
@@ -31,9 +30,9 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/__utility/static_for.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -46,8 +45,8 @@
 
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
+#include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
-#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/detail/utility/traits.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 

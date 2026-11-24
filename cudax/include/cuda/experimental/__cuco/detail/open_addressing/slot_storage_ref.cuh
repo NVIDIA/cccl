@@ -23,6 +23,7 @@
 
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/span>
 

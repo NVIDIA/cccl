@@ -201,7 +201,10 @@ int main(int, char**)
 {
   test_accuracy();
   test_special_values();
+#if !TEST_HAS_CUDA_FAST_MATH
+  // subnormal results and operands: --use_fast_math flushes them to zero on the device (FTZ)
   test_gradual_underflow();
+#endif // !TEST_HAS_CUDA_FAST_MATH
 
   return 0;
 }
