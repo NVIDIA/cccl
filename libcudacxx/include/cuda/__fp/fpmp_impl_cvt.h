@@ -72,7 +72,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // When CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP == 0 or FpType != float:
 //   Uses the standard cast-based approach:
 //     hi = (FpType)x;  lo = (FpType)(x - (double)hi);
-//   This relies on two FP64 operations (cast + subtract).
+//   This relies on two FP64 operations (cast + subtract). lo is zero where
+//   hi is not finite, as on the integer path.
 //
 // IEEE 754 bit layout reference:
 //   double (64-bit): [1 sign][11 exponent][52 mantissa]
@@ -170,9 +171,15 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_double(const double __x, _FpType* __res_hi
   }
   else
   {
-    // Non-optimized path: two FP64 operations (cast + subtract).
-    *__res_hi = static_cast<_FpType>(__x);
-    *__res_lo = static_cast<_FpType>(__x - static_cast<double>(*__res_hi));
+    // Non-optimized path: two FP64 operations (cast + subtract). For fp32mp2, where the high
+    // limb is not finite (x is infinite, NaN, or beyond FLT_MAX) the difference is NaN or an
+    // infinity of the opposite sign; the low limb is zero there, as on the optimized path.
+    *__res_hi         = static_cast<_FpType>(__x);
+    const _FpType __d = static_cast<_FpType>(__x - static_cast<double>(*__res_hi));
+    *__res_lo         = (!__fpmp2_is_fp32_v<_FpType>
+                         || ::cuda::__fpmp_internal_fabs(*__res_hi) <= (::cuda::std::numeric_limits<_FpType>::max)())
+                        ? __d
+                        : _FpType(0);
   }
 #  endif // !_CCCL_FPMP_USE_OPT_FROM_DOUBLE == 1
 } // __fpmp2_from_double
