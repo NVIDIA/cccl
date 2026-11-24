@@ -41,6 +41,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE_DEVICE.
+#ifdef noinline
+#  pragma push_macro("noinline")
+#  undef noinline
+#  define _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(noinline)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _CharT, class _OutIt>
@@ -170,6 +177,11 @@ __fmt_format_bool(bool __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __spe
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noinline
+#  pragma pop_macro("noinline")
+#  undef _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 #include <cuda/std/__cccl/epilogue.h>
 
