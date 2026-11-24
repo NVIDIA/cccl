@@ -352,11 +352,13 @@ _CCCL_HOST_DEVICE_API auto make_counting_iterator(Incrementable x)
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _CCCL_BEGIN_NAMESPACE_CUDA
 template <class Incrementable, class System, class Traversal, class Difference, class StrideHolder>
 inline constexpr bool __is_synthesizing_iterator_v<
   THRUST_NS_QUALIFIER::counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>> = true;
 _CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")

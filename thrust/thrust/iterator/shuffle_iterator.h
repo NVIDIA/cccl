@@ -180,8 +180,10 @@ _CCCL_HOST_DEVICE_API shuffle_iterator<IndexType> make_shuffle_iterator(IndexTyp
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _CCCL_BEGIN_NAMESPACE_CUDA
 template <class IndexType, class BijectionFunc>
 inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::shuffle_iterator<IndexType, BijectionFunc>> =
   true;
 _CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED

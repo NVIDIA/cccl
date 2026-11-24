@@ -168,6 +168,7 @@ make_strided_iterator(Iterator it)
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -176,6 +177,7 @@ inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_
   __is_synthesizing_iterator_v<Iter>;
 _CCCL_END_NAMESPACE_CUDA
 _CCCL_SUPPRESS_DEPRECATED_POP
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")

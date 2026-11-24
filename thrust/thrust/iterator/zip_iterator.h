@@ -343,11 +343,13 @@ _CCCL_HOST_DEVICE_API inline zip_iterator<::cuda::std::tuple<Iterators...>> make
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _CCCL_BEGIN_NAMESPACE_CUDA
 template <class... Iterators>
 inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<Iterators...>>> =
   (__is_synthesizing_iterator_v<Iterators> && ...);
 _CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")
