@@ -12,18 +12,25 @@
  * @file
  * @brief Symbols containing `"` or `\` must be escaped in the DOT output
  *
- * Task, logical data and section symbols are written inside `label="..."`;
- * an unescaped quote in a symbol ends the string early and Graphviz rejects
- * the file. Symbols themselves stay verbatim (NVTX, diagnostics): the escaping
- * belongs to the DOT writer alone, and this test checks every path a symbol
- * takes into a label.
+ * Symbols are written inside `label="..."`; an unescaped quote in a symbol ends
+ * the string early and Graphviz rejects the file. Symbols themselves stay
+ * verbatim (NVTX, diagnostics): the escaping belongs to the DOT writer alone.
+ *
+ * A symbol enters a label in five places: the task vertex, the logical data
+ * listed in it, the prerequisite vertex, the cluster of a section and the vertex
+ * a collapsed section becomes. Prerequisite vertices and collapsed sections only
+ * exist when CUDASTF_DOT_IGNORE_PREREQS=0 and CUDASTF_DOT_MAX_DEPTH are set, so
+ * this test sets both and checks each of the five labels in full.
  */
 
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #if !_CCCL_COMPILER(MSVC)
 #  include <unistd.h> // access(), unlink()
@@ -39,15 +46,20 @@ int main()
   char filename[64];
   snprintf(filename, 64, "output_%u.dot", r);
   setenv("CUDASTF_DOT_FILE", filename, 1);
+  // prerequisite vertices carry the symbol of their task
+  setenv("CUDASTF_DOT_IGNORE_PREREQS", "0", 1);
+  // sections nested deeper than this become one vertex labeled with the section symbol
+  setenv("CUDASTF_DOT_MAX_DEPTH", "1", 1);
 
   context ctx;
 
-  // one quote in a data symbol, one in a task symbol, a backslash and a quote in section symbols
+  // Quotes, a backslash next to a quote, and a trailing backslash (which would
+  // otherwise escape the closing quote of the label).
   auto lA = ctx.logical_data(shape_of<slice<char>>(64)).set_symbol("A \"quoted\"");
   ctx.task(lA.write()).set_symbol("init \"A\"")->*[](cudaStream_t, auto) {};
   {
     auto guard = ctx.dot_section("sec back\\slash");
-    ctx.task(lA.rw()).set_symbol("f1")->*[](cudaStream_t, auto) {};
+    ctx.task(lA.rw()).set_symbol("mix\\\"\"\\")->*[](cudaStream_t, auto) {};
     {
       auto guard_inner = ctx.dot_section("inner \"sec\"");
       ctx.task(lA.rw()).set_symbol("f2")->*[](cudaStream_t, auto) {};
@@ -65,27 +77,40 @@ int main()
   ss << in.rdbuf();
   const ::std::string text = ss.str();
 
-  // escaped forms are present ...
-  EXPECT(text.find("init \\\"A\\\"") != ::std::string::npos);
-  EXPECT(text.find("A \\\"quoted\\\"") != ::std::string::npos);
-  EXPECT(text.find("sec back\\\\slash") != ::std::string::npos);
-  EXPECT(text.find("inner \\\"sec\\\"") != ::std::string::npos);
-  // ... and no raw quote survives inside a label: every `"` in the file is either
-  // the delimiter of a quoted string or preceded by a backslash
-  bool in_string = false;
-  for (size_t i = 0; i < text.size(); i++)
+  // Collect the value of every label: from `label="` to the first quote that is
+  // not escaped. A well-formed label is followed by `]` (vertex) or a newline
+  // (cluster); a raw quote inside a symbol ends the value early and fails that.
+  ::std::vector<::std::string> labels;
+  const ::std::string key = "label=\"";
+  for (size_t pos = text.find(key); pos != ::std::string::npos; pos = text.find(key, pos))
   {
-    if (text[i] == '\\' && in_string)
+    pos += key.size();
+    size_t end = pos;
+    while (end < text.size() && text[end] != '"')
     {
-      i++; // skip the escaped character
-      continue;
+      end += (text[end] == '\\') ? 2 : 1;
     }
-    if (text[i] == '"')
-    {
-      in_string = !in_string;
-    }
+    EXPECT(end + 1 < text.size());
+    const bool closed = text[end + 1] == ']' || text[end + 1] == '\n';
+    EXPECT(closed);
+    labels.push_back(text.substr(pos, end - pos));
+    pos = end + 1;
   }
-  EXPECT(!in_string);
+
+  const auto has_label = [&labels](const ::std::string& expected) {
+    return ::std::find(labels.begin(), labels.end(), expected) != labels.end();
+  };
+
+  // task vertex, with the logical data it accesses
+  EXPECT(has_label("init \\\"A\\\"\\nA \\\"quoted\\\"(write)(64) "));
+  EXPECT(has_label("mix\\\\\\\"\\\"\\\\\\nA \\\"quoted\\\"(rw)(64) "));
+  // prerequisite vertices
+  EXPECT(has_label("Submittedinit \\\"A\\\""));
+  EXPECT(has_label("Submittedmix\\\\\\\"\\\"\\\\"));
+  // cluster of a section that is displayed
+  EXPECT(has_label("sec back\\\\slash"));
+  // vertex of a collapsed section
+  EXPECT(text.find("fillcolor=\"white\" label=\"inner \\\"sec\\\"\"]") != ::std::string::npos);
 
   EXPECT(unlink(filename) == 0);
 #endif // !_CCCL_COMPILER(MSVC)
