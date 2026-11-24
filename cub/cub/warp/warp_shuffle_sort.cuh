@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -111,7 +111,9 @@ class WarpShuffleSort
       }
     }
   }
-  // Precondition: keys are bitonic, i.e. keys[i] <= keys[j] for 0 < i < P and P < j < Size
+
+  // Precondition: keys form a bitonic sequence, namely a sequence that monotonically increases and then monotonically
+  // decreases
   template <int Distance, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE static void merge_within_lane(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
@@ -130,8 +132,8 @@ class WarpShuffleSort
   }
 
   // Bitonic merge
-  //   Group: size of the lanes that cooperate.
-  //   Assumption: The input is already sorted
+  //   Group: number of lanes that cooperate
+  //   Precondition: each half of the group (Group / 2 lanes) is sorted
   template <int Group, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane) const
   {
