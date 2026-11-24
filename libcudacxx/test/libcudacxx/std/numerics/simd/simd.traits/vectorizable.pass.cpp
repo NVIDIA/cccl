@@ -11,13 +11,13 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.expos] __is_vectorizable_v: true for all standard integer types,
 // character types, and float/double; false for bool, const/volatile types.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

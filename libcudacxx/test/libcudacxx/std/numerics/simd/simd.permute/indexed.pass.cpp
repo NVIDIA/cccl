@@ -13,10 +13,10 @@
 
 // [simd.subscr], [simd.mask.subscr]: SIMD indices select lanes through dynamic permute.
 
-#include <cuda/simd>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/type_traits>

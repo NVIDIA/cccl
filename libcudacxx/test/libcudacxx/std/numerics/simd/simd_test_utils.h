@@ -12,12 +12,12 @@
 #define SIMD_TEST_UTILS_H
 
 #include <cuda/functional>
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "fp_compare.h"

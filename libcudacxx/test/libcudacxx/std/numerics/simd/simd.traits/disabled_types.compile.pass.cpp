@@ -13,8 +13,8 @@
 
 // [simd.overview], [simd.mask.overview], disabled specializations
 
-#include <cuda/std/__simd_>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

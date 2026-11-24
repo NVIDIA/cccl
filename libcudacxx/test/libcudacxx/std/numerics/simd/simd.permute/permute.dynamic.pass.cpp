@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.permute.dynamic]
 //
@@ -21,11 +21,11 @@
 // template<simd-mask-type V, simd-integral I>
 // constexpr resize_t<I::size(), V> permute(const V& v, const I& indices);
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
