@@ -134,7 +134,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--items-per-thread", type=int, default=2)
     args = parser.parse_args()
-    # Each debug session reaches NVRTC; launch two reuses the compiled kernel.
+    # Each debug session reaches NVRTC. Launch two reuses the compiled kernel.
     with tempfile.TemporaryDirectory(
         prefix="cuda-coop-cutlass-debug-"
     ) as cache_dir:

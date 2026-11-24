@@ -6,14 +6,14 @@
 Adjacent Difference
 ===================
 
-:func:`cuda.coop.cutlass.adjacent_difference` subtracts a neighboring item from
-each item in a block tile. The result has the input's dtype, extent, and
-blocked ownership. The input remains unchanged.
+:func:`~cuda.coop.cutlass.adjacent_difference` subtracts a neighboring item
+from each item of a block's :term:`tile`. The neighbor may belong to another
+thread.
 
-The neighbor may belong to another thread. Choose left or right to follow
-that dependency, then change ``valid_items`` or supply a value just outside
-the tile. The explorer uses eight teaching threads and small ``int32``
-values; every subtraction fits in that dtype.
+In the explorer, choose left or right to see which neighbor each item reads,
+then change ``valid_items`` or supply the item on the other side of the
+tile's edge. The explorer uses eight teaching threads and small ``Int32``
+values, so every subtraction fits in the element type.
 
 .. coop-visualization:: adjacent-difference
 
@@ -25,8 +25,9 @@ values; every subtraction fits in that dtype.
                three items are copied unchanged.
          :width: 100%
 
-         Left differences for five valid items. The invalid suffix is copied
-         from the input into the returned payload.
+         Left differences with ``valid_items=5`` and
+         ``tile_predecessor_item=0``. The three items at or past the count
+         are copied from the input.
 
    For ``direction="left", valid_items=5, tile_predecessor_item=0``:
 
@@ -41,44 +42,36 @@ values; every subtraction fits in that dtype.
 Reading the stages
 ------------------
 
-Flatten the :ref:`blocked payloads <coop-glossary-layouts>` in thread-rank
-order. With ``K`` items per thread, slot ``i`` of thread ``t`` has position
-``t * K + i``. Left Difference computes ``input[p] - input[p - 1]``;
-Right Difference computes ``input[p] - input[p + 1]``. Both subtract the
-neighbor from the current item.
+Positions follow :ref:`blocked order <coop-glossary-layouts>`: all of
+thread 0's items, then thread 1's, and so on. With ``K`` items per thread,
+item ``i`` of thread ``t`` has position ``t * K + i``. A left difference
+computes ``input[p] - input[p - 1]``, and a right difference computes
+``input[p] - input[p + 1]``.
 
 The input row stays in place. The neighbor row shows the value each
-position reads, including reads across thread boundaries. The final row
-contains a new payload. Select any result to see its subtraction or the
-reason it copies the input.
+position reads, including reads across thread boundaries. The final row is
+the new payload. Select any result to see its subtraction or the reason it
+copies the input.
 
-At the tile edge, an omitted neighbor leaves the current input unchanged.
-``tile_predecessor_item`` supplies the missing left neighbor;
-``tile_successor_item`` supplies the missing right neighbor. Neither
-argument wraps around to the other end of the tile. These scalar boundary
-values must match the input dtype and agree across the block.
+At the edge of the tile, an item with no neighbor is copied.
+``tile_predecessor_item`` supplies the missing left neighbor, and
+``tile_successor_item`` supplies the missing right neighbor.
 
-Every thread in the complete block must call the operation, including for
-partial tiles; warp groups are unsupported. The function infers dtype and
-per-thread extent from ``ThreadData``. It accepts automatic scratch or an
-explicit :ref:`TempStorage <coop-concepts-storage>`.
+With ``valid_items``, the call treats the tile as ending at the count. The
+positions at or past the count read no neighbor and copy their input. A
+right difference with ``valid_items`` takes no ``tile_successor_item``, so
+the explorer's "Tile neighbor value" control offers only "Not supplied" for
+that combination. :ref:`Neighbor comparisons <coop-cutlass-neighbors>` in
+the API reference has the rules for each control.
 
-For a partial tile, ``valid_items`` must agree across the block. Only
-positions below that count compute a difference. Every later position
-copies its input, so those slots must also be initialized. A count of zero
-copies the entire tile. A count equal to the tile capacity processes the
-entire tile.
+Using Adjacent Difference in a kernel
+-------------------------------------
 
-Right partial tiles do not accept ``tile_successor_item``, even when the
-supplied count equals the capacity. The last valid item is copied
-unchanged. The explorer disables the boundary-value control for this
-combination, matching the API's rejection of that CUB overload.
-
-A complete neighbor example
----------------------------
-
-This CuTe example computes differences and head/tail flags while preserving
-the input. It reuses scratch with explicit synchronization policy.
+This tested kernel computes the left differences and both sets of flags of
+one tile of a block of 128 threads. The two calls share one ``TempStorage``
+created with ``auto_sync=True``, so a barrier follows each of them. No
+``tile_predecessor_item`` is given, so the first difference is a copy of the
+first item.
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_neighbors.py
    :language: python
@@ -86,7 +79,12 @@ the input. It reuses scratch with explicit synchronization policy.
    :end-before: docs: end cutlass-neighbors
    :dedent: 4
 
-An inclusive sum of left differences reconstructs the sequence when the
-first delta is the first input value. Across block tiles, supply the preceding
-tile's final source item as the left boundary. Keep global source and output
-buffers distinct so a writer cannot overwrite another block's predecessor.
+For integer items, an inclusive sum of these differences gives back the
+input, because the first difference is the first item.
+
+To continue a sequence across tiles, pass the last item of the previous tile
+as ``tile_predecessor_item``. Read that item from the input array, and write
+the differences to a separate array, so that the input keeps its values for
+a later tile or another block to read. The second example of
+:func:`~cuda.coop.cutlass.adjacent_difference` does this in a loop over
+tiles.

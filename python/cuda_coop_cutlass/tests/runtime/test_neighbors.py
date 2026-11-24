@@ -479,8 +479,9 @@ def test_documented_neighbor_composition(items_per_thread):
     """Run both neighbor operations with one reused TempStorage.
 
     Equal-value runs span thread boundaries. The host checks differences and
-    both flag arrays independently. The CUTLASS guide includes the kernel and
-    launcher between the documentation markers.
+    both flag arrays independently. The Adjacent Difference and Discontinuity
+    visualization pages include the kernel and launcher between the
+    documentation markers.
     """
 
     # docs: start cutlass-neighbors

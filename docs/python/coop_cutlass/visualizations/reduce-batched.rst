@@ -6,15 +6,13 @@
 Batched Warp Reduction
 ======================
 
-:func:`cuda.coop.cutlass.reduce_batched` reduces several independent batches across
-a warp. Each thread contributes one item to each batch: local slot zero
-belongs to batch zero, slot one to batch one, and so on. The result has
-one aggregate per batch, distributed among the threads.
+:func:`~cuda.coop.cutlass.reduce_batched` reduces several batches in one
+call, across the lanes of a warp or of a group of lanes. Item 0 of every
+lane belongs to batch 0, item 1 to batch 1, and so on. Each batch has its
+own result, and the results are spread over the lanes.
 
-This is useful when every lane holds several features for one sample and
-the kernel needs a sum, minimum, or maximum for each feature. Ordinary
-:func:`~cuda.coop.cutlass.reduce` combines a group's payload items into one
-aggregate; batched reduction retains the separate batch axis.
+A typical use: every lane holds several features of one sample, and the
+kernel needs the sum, minimum or maximum of each feature.
 
 .. coop-visualization:: reduce-batched
 
@@ -26,48 +24,46 @@ aggregate; batched reduction retains the separate batch axis.
             has no result.
          :width: 100%
 
-         Three batches across a logical warp of four lanes.
+         Three batches across a group of four lanes.
 
-   Each column below is one independent reduction. ``?`` is an unspecified
-   output slot, which the kernel must not read or store.
+   Each column below is one batch. ``?`` marks a returned item that has no
+   batch. The kernel must not read or store it.
 
    .. code-block:: text
 
-      Lane        Input slots (batches 0, 1, 2)    Returned slot
+      Lane        Input items (batches 0, 1, 2)    Returned item
       L0                     1   2   3                  16
       L1                     3   4   5                  20
       L2                     5   6   7                  24
       L3                     7   8   9                   ?
       Batch sums            16  20  24
 
-Input slots and output ownership
---------------------------------
+Batches and output layout
+-------------------------
 
-For ``B`` batches and a warp of ``W`` threads, each input payload contains
-``B`` items. Each returned payload contains ``ceil(B / W)`` slots.
-``output_layout="striped"`` assigns batch ``lane + slot * W`` to each
-result slot. ``output_layout="blocked"`` assigns batch
-``lane * ceil(B / W) + slot`` instead. The input interpretation is the
-same for both layouts.
+For ``B`` batches and a group of ``W`` lanes, each lane passes ``B`` items
+and gets ``ceil(B / W)`` items back. With ``output_layout="striped"``, item
+``i`` of the lane with rank ``r`` holds batch ``r + i * W``. With
+``output_layout="blocked"``, it holds batch ``r * ceil(B / W) + i``. Both
+layouts read the input the same way.
 
-Try ten batches with four lanes to see the distinction: striped lane
-zero receives batches 0, 4, and 8; blocked lane zero receives batches 0,
-1, and 2. The remaining two allocated output slots do not correspond to
-any batch. Guard stores by batch index, rather than assuming every slot
-in the returned payload is valid.
+Try ten batches with four lanes. With the striped layout, lane 0 receives
+batches 0, 4 and 8. With the blocked layout, it receives batches 0, 1
+and 2. Two of the twelve returned items have no batch. The explorer calls
+an item a slot and marks these two with ``?``. A kernel tests the batch
+number before it reads or stores an item.
 
-The explorer groups inputs by batch to explain the reduction axis. It
-does not imply that CUB performs a shared-memory transpose. CUB provides
-a native ``WarpReduceBatched`` collective; the diagrams describe its
-result contract, not its compiled instruction order.
+The explorer's second row groups the inputs by batch to show which values
+each reduction combines. In a kernel, ``cub::WarpReduceBatched`` combines
+the lanes' values in registers and uses no shared memory.
 
 Using batched reduction in a kernel
 -----------------------------------
 
-This tested example sums ``items_per_thread`` features across each physical
-warp. The input is laid out as 32 consecutive samples per warp, with
-``items_per_thread`` consecutive features per sample. Each warp writes one
-result per feature.
+This tested example sums ``items_per_thread`` features across each of the
+two warps of a block. The input holds 32 samples per warp, one after
+another, with ``items_per_thread`` features per sample. Each warp writes
+one result per feature.
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/examples/reduce_batched.py
    :language: python
@@ -75,16 +71,5 @@ result per feature.
    :end-before: # docs: end cutlass-reduce-batched
    :dedent: 4
 
-The API supports complete physical warps and logical warps of 1, 2, 4, 8,
-16, or 32 threads. Every member of the selected warp must participate, even if
-that member owns no result. Other logical warps may take another branch. The
-compiler manages provider storage; this operation does not accept a caller
-``TempStorage``. The CUTLASS provider needs no shared scratch allocation or
-trailing storage-reuse barrier.
-
-The batch count is a positive compile-time payload extent. The result
-uses the input dtype without accumulator promotion. Built-in operator
-strings match :func:`~cuda.coop.cutlass.reduce`. CuTe register tensors and
-immutable vectors are accepted along with ``ThreadData``. The operation
-preserves its input and returns a fresh payload. Use only the result slots
-whose batch index is in range; no temporary-storage descriptor is needed.
+:ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API reference
+has the groups, operators and element types the call takes.

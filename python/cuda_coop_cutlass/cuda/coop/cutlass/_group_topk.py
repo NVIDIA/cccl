@@ -2,14 +2,98 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Adapt readable payloads for block TopK selection.
+"""A top-k call selects the smallest or largest keys of a block's tile.
 
-Turn each input into a fixed-size ThreadData snapshot. Readable payloads,
-including read-only ones, are copied item by item; CuTe register tensors and
-TensorSSA values are converted. Selection reads only these copies and returns
-new ThreadData, so inputs remain unchanged. Keys and values keep independent
-element types and need matching extents. The selected prefix is unsorted.
+``k`` is the number of keys to select from the :term:`tile`. The call
+returns them in the first positions of the result, starting with thread 0,
+in no defined order. The inputs keep their values.
+
+.. figure:: visualizations/topk.svg
+   :alt: Eight threads hold two keys each, with a tile position from 0 to
+         15 under every key. Threads 6 and 7 are grey and marked ignored.
+         In the result, thread 0 holds keys 11 and 14 with positions 8 and
+         6, thread 1 holds keys 9 and 12 with positions 4 and 2, and every
+         item of threads 2 to 7 is a question mark.
+   :width: 100%
+
+   ``topk_max_pairs`` with ``k=4`` and ``valid_items=12`` on eight threads
+   with two items each. The value under each key is its position in the
+   tile. The four largest of the first twelve keys are 14, 12, 11 and 9.
+   They fill the first four positions of the result, here in the order 11,
+   14, 9, 12, each with its value. The last four keys, 15 and 13 among
+   them, are at or past ``valid_items`` and take no part. ``?`` marks a
+   position that holds no selected key.
+
+The four functions differ in which keys they select and in what they
+return:
+
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+   :widths: 30 30 40
+
+   * - Selects
+     - Returns the keys
+     - Returns the keys and their values
+   * - The smallest keys
+     - ``topk_min_keys``
+     - ``topk_min_pairs``
+   * - The largest keys
+     - ``topk_max_keys``
+     - ``topk_max_pairs``
+
+``topk_min_pairs`` and ``topk_max_pairs`` take a second payload with one
+value for each key. All four run on ``this_block()``, and each block of a
+launch selects from its own tile. They take these controls:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 76
+
+   * - Control
+     - What it does
+   * - ``k``
+     - Sets the number of keys to select, from zero to the whole tile.
+   * - ``valid_items``
+     - Selects from the first ``valid_items`` positions of the tile only.
+   * - ``temp_storage``
+     - Puts the call's scratch in a :ref:`TempStorage <coop-temp-storage>`.
+
+The number of keys selected is ``k``, or ``valid_items`` when that is
+smaller. Sorting the selected keys with block merge sort requires a
+power-of-two thread count, such as ``block=64``. Pass the result of
+``topk_min_keys`` or ``topk_max_keys`` to
+:func:`~cuda.coop.cutlass.merge_sort_keys` with ``valid_items`` set to that
+number and an ``oob_default`` that sorts after them. After ``topk_min_pairs`` or
+``topk_max_pairs``, pass both payloads to
+:func:`~cuda.coop.cutlass.merge_sort_pairs` in the same way, and each value
+moves with its key. This kernel stores the seven smallest keys of a block
+in ascending order:
+
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
+    :language: python
+    :start-after: # cutlass-topk-sorted-example-begin
+    :end-before: # cutlass-topk-sorted-example-end
+    :dedent: 4
 """
+
+# Implementation notes.
+#
+# Adapt readable payloads for block TopK selection.
+#
+# Turn each input into a fixed-size ThreadData snapshot. Readable payloads,
+# including read-only ones, are copied item by item; CuTe register tensors and
+# TensorSSA values are converted. Selection reads only these copies and returns
+# new ThreadData, so inputs remain unchanged. Keys and values keep independent
+# element types and need matching extents. The selected prefix is unsorted.
+#
+# A runtime k or valid_items is widened to 64 bits and compared with the tile
+# size before it is narrowed to CUB's int count, so a count such as 2**32
+# traps and does not wrap to 0. A zero count skips the CUB call.
 
 from __future__ import annotations
 
@@ -92,69 +176,99 @@ def topk_min_keys(
     valid_items: IntegralScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
-    """Select the block's smallest keys without changing the input.
-
-    Accepts readable ThreadData and CuTe register payloads. All block threads
-    participate, including those whose
-    input items are outside the valid prefix.
+    """Select the smallest keys of a block's tile.
 
     Parameters
     ----------
     group : ThreadGroup
-        Complete one-dimensional block from ``this_block()``.
-    keys : ThreadData or CuTe register payload
-        Per-thread keys in blocked order with a positive, compile-time extent.
-        Read-only payloads, CuTe register-memory tensors, and ``TensorSSA``
-        values are accepted. Supported element types are signed and unsigned 8-,
-        16-, 32-, and 64-bit integers, ``Float32``, and ``Float64``. Register
-        inputs are converted through :meth:`ThreadData.from_payload
-        <cuda.coop.cutlass.ThreadData.from_payload>`.
-    k : integer
-        Block-uniform number of requested items in ``[0, N]``, where
-        ``N = block_threads * items_per_thread``. May be static or runtime.
-    valid_items : integer, optional
-        Block-uniform length of the valid blocked input prefix, also in
-        ``[0, N]``. Omit it to use the entire tile. If ``k > valid_items``,
-        all valid items are selected.
+        ``this_block()``. The block is one-dimensional, with y and z sizes
+        of 1, as in ``launch(grid=1, block=64)``. Every thread of the block
+        makes the call, including a thread whose keys are all at or past
+        ``valid_items``.
+    keys : ThreadData, CuTe register tensor or TensorSSA
+        This thread's keys. The tile is in :term:`blocked` order: item ``i``
+        of the thread with rank ``t`` is at position
+        ``t * items_per_thread + i``. A key has one of the ten element types
+        listed under :ref:`ThreadData <coop-thread-data>`.
+
+        A register tensor or ``TensorSSA`` is read as a payload, and the
+        result is a ``ThreadData`` that ``to_register_tensor`` or
+        ``to_tensor_ssa`` converts back. An object of your own that has
+        ``items_per_thread``, ``dtype``, ``len()`` and integer indexing is
+        read as a payload too. With one key per thread, pass a payload of
+        one item, such as the one ``load`` returns with
+        ``items_per_thread=1``. A scalar such as ``keys[0]`` is rejected
+        when the kernel is compiled.
+    k : int or CuTe integer
+        The number of keys to select across the block, from 0 to ``N``,
+        where ``N`` is the block size times the item count. Zero selects
+        nothing. Every thread of the block passes the same count, and the
+        package checks only that each thread's count is in range.
+
+        A Python or NumPy integer is fixed when the kernel is compiled, and
+        one out of range is rejected then. A CuTe integer, such as a kernel
+        argument declared ``cutlass.Int32``, is read while the kernel runs,
+        and one out of range traps on the device. Its type is ``Int8`` to
+        ``Int64`` or ``Uint8`` to ``Uint32``.
+    valid_items : int or CuTe integer, optional
+        The number of keys that take part: those at the first
+        ``valid_items`` positions of the tile. The count runs across the
+        block, so with four items per thread ``valid_items=6`` covers
+        thread 0 and the first two items of thread 1. When ``k`` is at
+        least ``valid_items``, every one of those keys is selected. The
+        default, ``None``, is the whole tile.
+
+        The count takes the same forms and range as ``k``, and a count out
+        of range is handled the same way. Every thread of the block passes
+        the same ``valid_items``. One of the two counts can be a Python
+        value while the other is a CuTe value.
     temp_storage : TempStorage, optional
-        Explicit block scratch. Omit it for automatic allocation. Requested
-        alignment is a minimum. With ``auto_sync=False``, synchronize the
-        block before reusing the storage.
+        Every call needs scratch. Leave this out and the compiler provides
+        the scratch and a barrier after the call. Pass a
+        :ref:`TempStorage <coop-temp-storage>` to share the bytes with
+        other calls. A barrier then follows the call only if the
+        ``TempStorage`` was created with ``auto_sync=True``.
 
     Returns
     -------
-    ThreadData
-        Fresh selected keys with the input element type and per-thread extent,
-        including for CuTe register inputs. Only the first
-        ``min(k, valid_items)`` blocked output positions are defined; omit
-        ``valid_items`` to use ``N`` in this expression. Thread ``t`` owns
-        positions ``t * items_per_thread + i``. Remaining positions must not
-        be read or stored. The selected keys are unsorted.
+    cuda.coop.cutlass.ThreadData
+        A new payload with the element type, item count and alignment of
+        ``keys``, which keeps its values. Across the block, the selected
+        keys fill the first positions of the result in no defined order:
+        ``k`` positions, or ``valid_items`` when that is smaller. With
+        ``k=7``, four items per thread and ``valid_items`` left out, thread
+        0 holds four selected keys, thread 1 holds three and the other
+        threads hold none.
+
+        The positions after the selected keys hold unspecified values, so
+        read the selected positions only. Pass the number of keys selected
+        as ``valid_items`` to the call that reads the result, such as
+        :func:`~cuda.coop.cutlass.store`,
+        :func:`~cuda.coop.cutlass.merge_sort_keys` or another top-k call.
+        A kernel that reads the items itself reads item ``i`` of the
+        thread with rank ``t`` only when ``t * items_per_thread + i`` is
+        below that number.
 
     Notes
     -----
-    Selection and ordering among equal keys are unspecified. Positive and
-    negative floating-point zero compare equally, and selected keys retain
-    their original bits. NaNs have no guaranteed numeric ordering.
+    Several equal keys can compete for the last selected positions. The
+    call selects as many of them as there are positions left, and which
+    ones it selects is unspecified.
 
-    Runtime ``k`` and ``valid_items`` accept signed integers up to 64 bits or
-    unsigned integers up to 32 bits. Invalid static counts fail compilation;
-    invalid runtime counts trap before conversion to CUB's count type.
-    Zero ``k`` or ``valid_items`` leaves no defined output positions.
+    With ``Float32`` or ``Float64`` keys, ``-0.0`` and ``+0.0`` rank as
+    equal, and a selected zero keeps its sign. NaN keys have no defined
+    rank.
 
-    See Also
-    --------
-    cuda.coop.cutlass.topk_max_keys
-    cuda.coop.cutlass.topk_min_pairs
+    The call runs CUB's internal block top-k, which has no public class.
 
     Examples
     --------
-    Select the seven smallest and seven largest keys. All threads
-    participate, and each store writes only the seven defined positions.
-    Neither selection sorts its output.
+    ``select_extremes`` selects the seven smallest and the seven largest
+    keys of a block of 64 threads from one payload, ``keys``. Each ``store``
+    writes the seven selected positions.
 
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
@@ -185,53 +299,31 @@ def topk_max_keys(
     valid_items: IntegralScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
-    """Select the block's largest keys without changing the input.
+    """Select the largest keys of a block's tile.
 
-    Accepts the same inputs and controls as
-    :func:`cuda.coop.cutlass.topk_min_keys`, selecting
-    the largest keys. All threads in the block must participate.
-
-    Parameters
-    ----------
-    group : ThreadGroup
-        Complete one-dimensional block from ``this_block()``.
-    keys : ThreadData or CuTe register payload
-        Fixed-size per-thread keys in blocked order. Read-only payloads,
-        register-memory tensors, and ``TensorSSA`` values are accepted. The
-        element types are those supported by ``topk_min_keys``.
-    k : integer
-        Block-uniform count in ``[0, block_threads * items_per_thread]``.
-        Static and runtime counts are accepted.
-    valid_items : integer, optional
-        Block-uniform length of the valid input prefix. Defaults to the whole
-        tile and has the same range as ``k``.
-    temp_storage : TempStorage, optional
-        Explicit block scratch. Omit it for automatic allocation. Synchronize
-        before reuse if its descriptor specifies ``auto_sync=False``.
+    The same as :func:`~cuda.coop.cutlass.topk_min_keys` with the largest
+    keys selected. It takes the same parameters.
 
     Returns
     -------
-    ThreadData
-        Fresh selected keys with the input element type and extent. Only the
-        first ``min(k, valid_items)`` blocked positions are defined, or
-        ``min(k, N)`` when ``valid_items`` is omitted, where
-        ``N = block_threads * items_per_thread``. The selected keys are
-        unsorted; remaining positions must not be consumed.
-        Ties, floating-point ordering, and count validation follow
-        ``topk_min_keys``.
+    cuda.coop.cutlass.ThreadData
+        A new payload. Across the block, the selected keys fill the first
+        positions of the result in no defined order: ``k`` positions, or
+        ``valid_items`` when that is smaller. The positions after them hold
+        unspecified values. ``keys`` keeps its values.
 
-    See Also
-    --------
-    cuda.coop.cutlass.topk_min_keys
-    cuda.coop.cutlass.topk_max_pairs
+    Notes
+    -----
+    The call runs CUB's internal block top-k, which has no public class.
 
     Examples
     --------
-    Select the seven largest and seven smallest keys, storing only
-    defined output positions. The selected keys are unsorted.
+    ``high`` below holds the seven largest keys. The kernel in
+    :doc:`tensor_memory_topk` makes this call with a ``k`` that it reads
+    while it runs.
 
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
@@ -265,55 +357,50 @@ def topk_min_pairs(
     valid_items: IntegralScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData, ThreadData]:
-    """Select the smallest keys and their associated values.
+    """Select the smallest keys of a block's tile, each with its value.
 
-    Accepts readable ThreadData and CuTe register payloads for either operand.
-    Both inputs remain unchanged.
-    Participation, count validation, and key ordering follow
-    :func:`cuda.coop.cutlass.topk_min_keys`.
+    The same as :func:`~cuda.coop.cutlass.topk_min_keys` with a second
+    payload, ``values``. The other parameters are described there.
 
     Parameters
     ----------
-    group : ThreadGroup
-        Complete one-dimensional block. All block threads must participate.
-    keys, values : ThreadData or CuTe register payload
-        Fixed-size payloads in blocked order, with equal per-thread extents.
-        Either operand may be read-only or use a CuTe register representation.
-        Key and value types are independent: signed and unsigned 8-, 16-,
-        32-, and 64-bit integers, ``Float32``, and ``Float64`` are supported.
-    k : integer
-        Block-uniform count in ``[0, block_threads * items_per_thread]``.
-        Static and runtime counts are accepted.
-    valid_items : integer, optional
-        Block-uniform length of the valid blocked input prefix. Defaults to
-        the entire tile and has the same range as ``k``. If ``k`` exceeds
-        this count, all valid key/value pairs are selected.
-    temp_storage : TempStorage, optional
-        Explicit block scratch. Omit it for automatic allocation. Synchronize
-        before reuse if its descriptor specifies ``auto_sync=False``.
+    values : ThreadData, CuTe register tensor or TensorSSA
+        This thread's values, one for each key: item ``i`` of ``values``
+        belongs to item ``i`` of ``keys``. The two payloads have the same
+        item count, and a call with different counts is rejected when the
+        kernel is compiled. A value has one of the ten element types listed
+        under :ref:`ThreadData <coop-thread-data>`. The value type can
+        differ from the key type.
+
+        ``values`` takes the same forms as ``keys``, and a scalar is
+        rejected when the kernel is compiled. The two can have different
+        forms, such as a register tensor and a ``TensorSSA``.
 
     Returns
     -------
-    tuple[ThreadData, ThreadData]
-        Fresh selected keys and associated values, each retaining its input
-        element type and extent. Only the first ``min(k, valid_items)`` blocked
-        positions are defined, or ``min(k, N)`` when ``valid_items`` is omitted,
-        where ``N = block_threads * items_per_thread``. Each selected value
-        stays with its original key. Results are unsorted, with no stability
-        guarantee for ties; undefined tail positions must not be read or stored.
+    tuple of cuda.coop.cutlass.ThreadData
+        The selected keys and their values, as two new payloads. The keys
+        are placed as ``topk_min_keys`` places them, and each value is at
+        the position of its key. Each payload has the element type, item
+        count and alignment of its input. The positions after the selected
+        keys hold unspecified values in both payloads. ``keys`` and
+        ``values`` keep their values.
 
-    See Also
-    --------
-    cuda.coop.cutlass.topk_min_keys
-    cuda.coop.cutlass.topk_max_pairs
+    Notes
+    -----
+    The call runs CUB's internal block top-k, which has no public class.
 
     Examples
     --------
-    Select seven minimum and maximum key/index pairs from a partial
-    input tile. Original indices remain associated with their selected keys.
+    ``select_pairs`` gives each key its position in the tile as its value
+    and leaves the last three positions out with ``valid_items``.
+    ``low_indices`` then says where each of the seven smallest of the other
+    keys came from, and ``high_indices`` does the same for the seven
+    largest. Each of the four ``store`` calls writes the seven selected
+    positions.
 
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
@@ -349,55 +436,31 @@ def topk_max_pairs(
     valid_items: IntegralScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData, ThreadData]:
-    """Select the largest keys and their associated values.
+    """Select the largest keys of a block's tile, each with its value.
 
-    Accepts the same inputs and controls as
-    :func:`cuda.coop.cutlass.topk_min_pairs`, selecting
-    the largest keys. Both inputs remain unchanged.
-
-    Parameters
-    ----------
-    group : ThreadGroup
-        Complete one-dimensional block. All block threads must participate.
-    keys, values : ThreadData or CuTe register payload
-        Fixed-size payloads in blocked order, with equal per-thread extents.
-        Read-only payloads and CuTe register representations are accepted.
-        Each operand independently uses a numeric element type supported by
-        ``topk_min_pairs``.
-    k : integer
-        Block-uniform count in ``[0, block_threads * items_per_thread]``.
-        Static and runtime counts are accepted.
-    valid_items : integer, optional
-        Block-uniform length of the valid input prefix. Defaults to the entire
-        tile and has the same range as ``k``. If ``k`` exceeds this count,
-        all valid key/value pairs are selected.
-    temp_storage : TempStorage, optional
-        Explicit block scratch. Omit it for automatic allocation. Synchronize
-        before reuse if its descriptor specifies ``auto_sync=False``.
+    The same as :func:`~cuda.coop.cutlass.topk_min_pairs` with the largest
+    keys selected. It takes the same parameters.
 
     Returns
     -------
-    tuple[ThreadData, ThreadData]
-        Fresh selected keys and associated values, retaining each input's
-        element type and extent. Only the first ``min(k, valid_items)`` blocked
-        positions are defined, or ``min(k, N)`` when ``valid_items`` is omitted,
-        where ``N = block_threads * items_per_thread``. Associations are
-        preserved. Results are unsorted, with no stability guarantee for ties.
-        Floating-point ordering, count validation, and undefined tails follow
-        :func:`cuda.coop.cutlass.topk_min_keys`.
+    tuple of cuda.coop.cutlass.ThreadData
+        The selected keys and their values, as two new payloads. Each value
+        is at the position of its key. The positions after the selected
+        keys hold unspecified values in both payloads. ``keys`` and
+        ``values`` keep their values.
 
-    See Also
-    --------
-    cuda.coop.cutlass.topk_min_pairs
-    cuda.coop.cutlass.topk_max_keys
+    Notes
+    -----
+    The call runs CUB's internal block top-k, which has no public class.
 
     Examples
     --------
-    Select seven maximum and minimum key/index pairs from a partial
-    input tile. Stores exclude the undefined output tail.
+    ``select_pairs`` below leaves the last three positions of the tile out
+    with ``valid_items``. ``high`` and ``high_indices`` hold the seven
+    largest of the other keys and the position each one came from.
 
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py

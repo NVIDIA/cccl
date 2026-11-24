@@ -41,9 +41,9 @@
     const rows = [row("input", "Input · blocked · preserved", values.length, items)];
     const boundary_tokens = [];
     if (supplied) {
-      rows.push({ id: "boundary", label: `${boundary_name} · uniform scalar outside the tile`, count: 1 });
+      rows.push({ id: "boundary", label: `${boundary_name} · the item outside the tile`, count: 1 });
       boundary_tokens.push(token("tile-boundary", boundary, "boundary", 0, 0,
-        `${boundary_name} = ${boundary}. All block members supply the same scalar; it represents the item outside this tile.`));
+        `${boundary_name} = ${boundary}. It stands for the item outside this tile.`));
     }
     rows.push(row("neighbor", `${left ? "Left" : "Right"} neighbor · none means copy the current input`, values.length, items));
     rows.push(row("output", "Returned differences · blocked · invalid suffix copied", values.length, items));
@@ -83,7 +83,7 @@
       notes: [
         "The subtraction order is current minus neighbor for both directions. A thread boundary does not break the sequence; only the tile boundary needs an external value.",
         "With valid_items, only the first valid_items positions take part. The last valid right-difference item is copied unchanged. Right partial tiles do not accept tile_successor_item, so that control is disabled when direction is right and a count is supplied, even for a full-capacity count.",
-        "All input slots must be initialized because the invalid suffix is copied. valid_items and any boundary scalar must be uniform across the complete block. The explorer uses the supported subtraction operation.",
+        "All input slots must be initialized because the invalid suffix is copied. Every thread passes the same valid_items. The explorer uses the supported subtraction operation.",
       ],
     };
   }
@@ -111,7 +111,7 @@
       const boundary = supplied ? Number(boundaries[mode]) : null;
       const boundary_name = left ? "tile_predecessor_item" : "tile_successor_item";
       if (supplied) {
-        rows.push({ id: `${mode}-boundary`, label: `${boundary_name} · uniform scalar outside the tile`, count: 1 });
+        rows.push({ id: `${mode}-boundary`, label: `${boundary_name} · the item outside the tile`, count: 1 });
         initial.push(token(`${mode}-boundary`, boundary, `${mode}-boundary`, 0, 0, `${boundary_name} = ${boundary}.`));
       }
       rows.push(row(`${mode}-neighbor`, `${left ? "Previous" : "Next"} item · none forces the boundary flag to one`, values.length, items));
@@ -142,12 +142,12 @@
     if (tails) phases.push({ label: heads ? "Return heads and tails" : "Return tails", description: `Flag the end of each run: current != next. Without a tile successor, the last tail is one.${heads ? " Return the pair (heads, tails)." : ""}`, tokens: [...initial, ...neighbors, ...(flags.heads || []), ...flags.tails] });
     return {
       caption, rows, phases,
-      detail: `discontinuity(mode="${state.algorithm}") · full tile · default inequality predicate`,
+      detail: `discontinuity(mode="${state.algorithm}") · full tile · compared with !=`,
       summary: [heads ? `Heads: [${result.heads.join(", ")}].` : "", tails ? `Tails: [${result.tails.join(", ")}].` : "", "Flags occupy the same blocked slots as their input items. Inputs remain unchanged."].filter(Boolean).join(" "),
       notes: [
         "A head marks an item's difference from its predecessor; a tail marks its difference from its successor. A run can span several threads. Returning both produces two int32 payloads in (heads, tails) order.",
         "This operation requires a full tile. It has no valid_items argument. Padding becomes input and can change the last valid tail flag; do not treat arbitrary padding as partial-tile support.",
-        "The explorer uses !=. Head flags compare previous != current and tail flags compare current != next. Boundaries and mode must agree across the block.",
+        "The explorer uses !=. Head flags compare previous != current and tail flags compare current != next.",
       ],
     };
   }

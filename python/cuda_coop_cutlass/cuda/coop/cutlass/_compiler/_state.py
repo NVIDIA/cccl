@@ -45,10 +45,12 @@ class BundleSession:
 
     Wrapper requests form a set because identical calls share generated code.
     Scratch events retain every traced use in order: two calls to the same
-    wrapper can require distinct exclusive slices. Snapshots capture both
-    collections so a failed lowering cannot leave a stray scratch event. The
-    lock protects collection and module changes; snapshots keep their own
-    containers while sharing the immutable request descriptions.
+    wrapper can require distinct exclusive slices. Lifetime events record
+    each TempStorage creation, use, and release for the finalizer's check.
+    Snapshots capture all three collections so a failed lowering cannot
+    leave a stray event. The lock protects collection and module changes;
+    snapshots keep their own containers while sharing the immutable request
+    descriptions.
     """
 
     def __init__(self, trace_module_op=None):
@@ -462,7 +464,7 @@ def active_bundle_session() -> BundleSession:
 
 
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
-    """Save active options, the module, requests, and scratch events.
+    """Save active options, the module, requests, and recorded events.
 
     Lowerings take this snapshot before recording a wrapper request.
     If emission fails, ``restore_active_session_state_for`` removes those
