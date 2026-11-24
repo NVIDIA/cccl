@@ -84,7 +84,9 @@ a `__noinline__` function with exactly one evaluation, which `nvdisasm` lists as
 of its own, and `libcudacxx/benchmarks/fp/fp_table.py` counts its instructions from the executable and
 joins them to the CSV, merging the throughput and latency rows. The count leaves out the call
 bookkeeping, the `RET` and the one `MOV` that completes the return address before it, so that it
-is the operation itself; a standalone compilation of the same function (as the cccl-fpdev suite
+is the operation itself. When the executable holds the code of several architectures, the
+count is taken from the cubin of the GPU that ran the benchmark (the `sm_version` of the nvbench
+JSON), else from the highest one; a standalone compilation of the same function (as the cccl-fpdev suite
 does, with `-dc`) carries a `RET` and up to one ABI move of the result instead, and ptxas may pick
 a slightly different instruction sequence for the standalone function than inside a kernel.
 

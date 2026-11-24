@@ -34,6 +34,7 @@ of the cccl-fpdev ts/fpmp suite (see the README); the table carries it over.
 import argparse
 import csv
 import glob
+import json
 import os
 import re
 import shutil
@@ -80,8 +81,31 @@ def num(v):
         return None
 
 
-def sass_counts(exe):
-    """{(func, type, accuracy): instruction count} of the bare functions in `exe`.
+def run_sm(csv_path):
+    """The SM version of the GPU that produced a run, from the nvbench JSON next to its CSV
+    (890 for sm_89), or None when there is none."""
+    try:
+        with open(csv_path[:-4] + ".json") as f:
+            return int(json.load(f)["devices"][0]["sm_version"])
+    except (OSError, KeyError, IndexError, TypeError, ValueError):
+        return None
+
+
+def pick_cubins(names, sm):
+    """The cubins to count among the files cuobjdump extracted: those of the architecture `sm`
+    (890 -> sm_89) when the executable was built for it, else all of them, sorted, so that the
+    highest architecture is counted last and its counts stand."""
+    cubins = sorted(n for n in names if n.endswith(".cubin"))
+    if sm:
+        match = [n for n in cubins if f".sm_{sm // 10}." in n]
+        if match:
+            return match
+    return cubins
+
+
+def sass_counts(exe, sm=None):
+    """{(func, type, accuracy): instruction count} of the bare functions in `exe`, for the
+    architecture `sm` (the GPU that ran) when the executable holds its code.
 
     cuobjdump extracts the cubins and nvdisasm lists each kernel's section: the kernel's own code
     first, then the local functions it calls as labelled blocks (`$<kernel>$<function>:`), each
@@ -110,9 +134,7 @@ def sass_counts(exe):
             capture_output=True,
             cwd=tmp,
         )
-        for cubin in sorted(os.listdir(tmp)):
-            if not cubin.endswith(".cubin"):
-                continue
+        for cubin in pick_cubins(os.listdir(tmp), sm):
             dis = subprocess.run(
                 [os.path.join(bindir, "nvdisasm"), "-c", os.path.join(tmp, cubin)],
                 capture_output=True,
@@ -212,7 +234,7 @@ def family_of(exe):
 
 
 def merge(exe, csv_path, rows):
-    sass = sass_counts(exe)
+    sass = sass_counts(exe, run_sm(csv_path))
     fam = family_of(exe)
     with open(csv_path, newline="") as f:
         for raw in csv.DictReader(f):

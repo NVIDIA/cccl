@@ -86,7 +86,7 @@ def rows(tmp_path, monkeypatch):
         w = csv.writer(f)
         w.writerow(HEADER)
         w.writerows(ROWS)
-    monkeypatch.setattr(fp_table, "sass_counts", lambda exe: SASS)
+    monkeypatch.setattr(fp_table, "sass_counts", lambda exe, sm=None: SASS)
     merged = {}
     fp_table.merge("bin/libcudacxx.bench.fp.fpmp.arith.base", str(path), merged)
     fp_table.add_gains(merged)
@@ -157,3 +157,34 @@ def test_column_order_starts_with_the_key_and_the_family():
     assert fp_table.COLS[:4] == ["Func", "Family", "Type", "Accuracy"]
     assert fp_table.MD_COLS == fp_table.COLS[:13]
     assert "Worst at" not in fp_table.MD_COLS
+
+
+def test_cubins_of_the_gpu_that_ran(tmp_path):
+    names = [
+        "x.1.sm_86.cubin",
+        "x.2.sm_89.cubin",
+        "x.3.sm_86.cubin",
+        "x.4.sm_89.cubin",
+        "x.ptx",
+    ]
+    # the architecture of the run when the binary holds it, else every cubin (highest last)
+    assert fp_table.pick_cubins(names, 890) == ["x.2.sm_89.cubin", "x.4.sm_89.cubin"]
+    assert fp_table.pick_cubins(names, 860) == ["x.1.sm_86.cubin", "x.3.sm_86.cubin"]
+    assert fp_table.pick_cubins(names, 1200) == [
+        "x.1.sm_86.cubin",
+        "x.2.sm_89.cubin",
+        "x.3.sm_86.cubin",
+        "x.4.sm_89.cubin",
+    ]
+    assert fp_table.pick_cubins(names, None) == [
+        "x.1.sm_86.cubin",
+        "x.2.sm_89.cubin",
+        "x.3.sm_86.cubin",
+        "x.4.sm_89.cubin",
+    ]
+    # the SM version comes from the nvbench JSON next to the CSV
+    (tmp_path / "arith.json").write_text(
+        '{"devices": [{"id": 0, "name": "GPU", "sm_version": 890}]}'
+    )
+    assert fp_table.run_sm(str(tmp_path / "arith.csv")) == 890
+    assert fp_table.run_sm(str(tmp_path / "trig.csv")) is None
