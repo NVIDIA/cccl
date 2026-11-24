@@ -32,7 +32,6 @@
     "CI": "${localEnv:CI}",
     "NVCC_APPEND_FLAGS": "-t=100",
     "PARALLEL_LEVEL": "${localEnv:PARALLEL_LEVEL:0}",
-    "SCCACHE_REPOSITORY": "trxcllnt/sccache",
     "SCCACHE_VERSION": "latest",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
