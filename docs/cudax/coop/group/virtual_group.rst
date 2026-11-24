@@ -11,14 +11,14 @@
   class virtual_group : public /*group-interface-for*/<virtual_group>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
+    using unit_level      = Unit;
+    using bound_level     = typename ParentGroup::bound_level;
     using hierarchy_type  = typename ParentGroup::hierarchy_type;
 
     template <typename Mapping>
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>
     __device__ explicit virtual_group(const Unit& unit,
-                                      const ParentGroup& parent_group,
+                                      const ParentGroup& parent_group [[lifetimebound]],
                                       Mapping&& mapping);
 
     virtual_group(const virtual_group&) = delete;
@@ -31,7 +31,7 @@
   };
 
   template </*hierarchy-level-type*/ Unit, group ParentGroup, typename Mapping>
-    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_type>
+    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_level>
   virtual_group(const Unit&, const ParentGroup&, Mapping&&)
     -> virtual_group<Unit,
                       ParentGroup,
@@ -53,7 +53,7 @@ The type can be constructed by specifying what is being grouped (``unit``) withi
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

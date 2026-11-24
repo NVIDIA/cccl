@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -42,7 +42,7 @@
 
 // [bitset.syn]
 #include <cuda/std/__fwd/ios.h>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 
@@ -683,7 +683,7 @@ public:
     __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   template <class _CharT, class _Traits, class _Allocator>
   _CCCL_API constexpr explicit bitset(
     const basic_string<_CharT, _Traits, _Allocator>& __str,
@@ -807,7 +807,7 @@ public:
     return base::to_ullong();
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   template <class _CharT, class _Traits, class _Allocator>
   _CCCL_API constexpr basic_string<_CharT, _Traits, _Allocator>
   to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const

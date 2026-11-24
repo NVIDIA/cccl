@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__ranges/access.h>
@@ -35,18 +36,16 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>
-#include <cuda/experimental/coop/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
-using __interwarp_barrier_id = ::cuda::std::uint32_t;
+using __interwarp_barrier_id _CCCL_NODEBUG = ::cuda::std::uint32_t;
 
 template <::cuda::std::size_t _ThreadCount>
 class __interwarp_synchronizer_instance
@@ -94,7 +93,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -102,7 +102,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
@@ -159,7 +159,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -167,7 +168,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
@@ -189,7 +190,7 @@ class interwarp_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __make_instance(_Range& __barrier_ids, const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Bound = typename _ParentGroup::bound_level;
 
     constexpr auto __static_group_count      = _MappingResult::static_group_count();
     constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_Range>;
@@ -200,7 +201,7 @@ class interwarp_synchronizer
                     "insufficient amount of warp barrier ids were passed");
     }
 
-    static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Level, block_level>,
+    static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Bound, block_level>,
                   "interwarp_synchronizer can be only used to group warps within a single block");
 
     constexpr auto __static_unit_count = _MappingResult::static_unit_count();
@@ -242,7 +243,7 @@ class interwarp_synchronizer
 public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
+  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids) // NOLINT(bugprone-forwarding-reference-overload)
       : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
   {}
 

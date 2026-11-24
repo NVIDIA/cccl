@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -242,8 +242,8 @@ private:
     token_impl& operator=(const token_impl&) = delete;
     // NOLINTEND(modernize-use-equals-delete)
 
-    token_impl(token_impl&&)            = default;
-    token_impl& operator=(token_impl&&) = default;
+    _CCCL_HIDE_FROM_ABI token_impl(token_impl&&)            = default;
+    _CCCL_HIDE_FROM_ABI token_impl& operator=(token_impl&&) = default;
   };
 
 public:
@@ -355,7 +355,7 @@ public:
       const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
       const int head_padding_bytes = (detail::bulk_copy_min_align - align_diff) % detail::bulk_copy_min_align;
       const auto actual_dst_ptr    = dst_ptr + head_padding_bytes;
-      const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
+      const int head_peeling_bytes = (::cuda::std::min) (align_diff, num_bytes);
       const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, detail::bulk_copy_min_align);
       __copy_aligned(actual_dst_ptr + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
 

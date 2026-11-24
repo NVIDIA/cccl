@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -85,7 +85,7 @@ struct MergeSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
   {
     return os
         << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -114,7 +114,7 @@ struct policy_hub
   };
 
   // NVBug 3384810
-#if defined(_NVHPC_CUDA)
+#ifdef _NVHPC_CUDA
   using Policy520 = Policy500;
 #else
   struct Policy520 : detail::chained_policy<520, Policy520, Policy500>

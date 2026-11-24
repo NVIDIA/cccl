@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,7 +50,7 @@ _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_P
 find_if_not([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
 {
   static_assert(indirect_unary_predicate<_UnaryOp, _Iter>,
-                "cuda::std::find_if: UnaryOp must satisfy indirect_unary_predicate<Iter>");
+                "cuda::std::find_if_not: UnaryOp must satisfy indirect_unary_predicate<Iter>");
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();

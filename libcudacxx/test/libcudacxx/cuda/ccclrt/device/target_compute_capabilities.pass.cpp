@@ -35,7 +35,7 @@ TEST_FUNC constexpr bool test()
   // 2. Test that all values are present.
   const auto all_ccs = cuda::__target_compute_capabilities();
 
-#if defined(__CUDA_ARCH_LIST__)
+#ifdef __CUDA_ARCH_LIST__
   const auto all_ccs_ref = make_all_ccs_ref(cuda::std::array{__CUDA_ARCH_LIST__}, 10);
 #elif defined(NV_TARGET_SM_INTEGER_LIST)
   const auto all_ccs_ref = make_all_ccs_ref(cuda::std::array{NV_TARGET_SM_INTEGER_LIST}, 1);

@@ -5,14 +5,16 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -23,7 +25,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator merge(
+_CCCL_HOST_DEVICE_API OutputIterator merge(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -33,7 +35,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator merge(
+_CCCL_HOST_DEVICE_API OutputIterator merge(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -49,7 +51,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -68,7 +70,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -81,4 +83,4 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/merge.inl>
+#include <thrust/system/detail/generic/merge.inl> // IWYU pragma: export

@@ -23,7 +23,7 @@
 #include <cuda/std/memory>
 #include <cuda/std/random>
 #include <cuda/std/span>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
 #  include <cuda/std/vector>
 #endif // _LIBCUDACXX_HAS_VECTOR
 
@@ -156,7 +156,7 @@ struct less_by_first
   }
 };
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
 TEST_FUNC void test_PR31166()
 {
   using P  = cuda::std::pair<int, int>;
@@ -197,7 +197,7 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>(arr, randomness);))
 #endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
   test_PR31166();
 #endif // _LIBCUDACXX_HAS_VECTOR
 

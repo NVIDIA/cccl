@@ -54,7 +54,7 @@ int main(int, char**)
     test<V, 3, long double>();
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int, int&, const int&, int&&, long double>;
     test<V, 0, int>();

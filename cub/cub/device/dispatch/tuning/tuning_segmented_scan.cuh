@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,7 +56,7 @@ struct SegmentedScanBlockPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanBlockPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanBlockPolicy& policy)
   {
     return os
         << "SegmentedScanBlockPolicy { .threads_per_block = " << policy.threads_per_block
@@ -86,7 +86,7 @@ struct SegmentedScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
     return os << "SegmentedScanPolicy { .block = " << policy.block << " }";
   }

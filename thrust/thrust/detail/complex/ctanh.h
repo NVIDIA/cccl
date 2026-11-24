@@ -97,7 +97,7 @@ using thrust::complex;
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> ctanh(const complex<double>& z)
 {
   double x;
   double y;
@@ -174,7 +174,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<double> ctan(complex<double> z)
+_CCCL_HOST_DEVICE_API inline complex<double> ctan(complex<double> z)
 {
   /* ctan(z) = -I * ctanh(I * z) */
   z = ctanh(complex<double>(-z.imag(), z.real()));
@@ -183,26 +183,26 @@ _CCCL_HOST_DEVICE inline complex<double> ctan(complex<double> z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> tan(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> tan(const complex<ValueType>& z)
 {
   return sin(z) / cos(z);
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> tanh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> tanh(const complex<ValueType>& z)
 {
   // This implementation seems better than the simple sin/cos
   return (thrust::exp(ValueType(2) * z) - ValueType(1)) / (thrust::exp(ValueType(2) * z) + ValueType(1));
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> tan(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> tan(const complex<double>& z)
 {
   return detail::complex::ctan(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> tanh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> tanh(const complex<double>& z)
 {
   return detail::complex::ctanh(z);
 }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,9 +22,15 @@
 #endif // no system header
 
 #include <cuda/__device/device_ref.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/invalid_stream.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
 #include <cuda/experimental/__utility/ensure_current_device.cuh>

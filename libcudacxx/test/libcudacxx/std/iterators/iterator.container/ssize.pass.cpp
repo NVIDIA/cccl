@@ -16,7 +16,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 #endif
 #include <cuda/std/initializer_list>
@@ -84,7 +84,7 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(v))>);
 #endif // !_CCCL_TILE_COMPILATION()
 
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   cuda::std::list<int> l;
   l.push_back(2);
 #endif
@@ -92,7 +92,7 @@ int main(int, char**)
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test_container(l);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(l))>);
 #endif
@@ -101,7 +101,7 @@ int main(int, char**)
   test_container(il);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(il))>);
 
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test_const_container(l);
 #endif
   test_const_container(a);

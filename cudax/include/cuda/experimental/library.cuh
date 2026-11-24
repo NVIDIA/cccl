@@ -11,8 +11,10 @@
 #ifndef _CUDAX_LIBRARY
 #define _CUDAX_LIBRARY
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__library/library.cuh>
 #include <cuda/experimental/__library/library_ref.cuh>
+// IWYU pragma: end_exports
 
 #endif // _CUDAX_LIBRARY

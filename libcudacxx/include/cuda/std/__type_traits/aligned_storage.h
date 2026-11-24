@@ -11,7 +11,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -142,7 +142,7 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x800);
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x1000);
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x2000);
 // PE/COFF does not support alignment beyond 8192 (=0x2000)
-#if !defined(_WIN32)
+#ifndef _WIN32
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
 #endif // !defined(_WIN32)
 

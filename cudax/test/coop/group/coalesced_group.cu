@@ -31,9 +31,14 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::bound_level>);
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;
@@ -81,9 +86,14 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::bound_level>);
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;
@@ -131,9 +141,14 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::bound_level>);
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;

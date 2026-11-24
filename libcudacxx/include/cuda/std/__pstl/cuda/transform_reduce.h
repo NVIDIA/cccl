@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -117,7 +117,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
       // Copy the result back from storage
       _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
-        "__pstl_cuda_transformm_reduce: copy of result from device to host failed",
+        "__pstl_cuda_transform_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
         __storage.template __get_ptr<0>(),
         sizeof(_Tp),

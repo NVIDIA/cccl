@@ -14,8 +14,8 @@
   class generic_group : public /*group-interface-for*/<generic_group>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
+    using unit_level      = Unit;
+    using bound_level     = typename ParentGroup::bound_level;
     using hierarchy_type  = typename ParentGroup::hierarchy_type;
 
     template <typename Mapping, typename Synchronizer>
@@ -41,7 +41,7 @@
             typename Mapping,
             typename Synchronizer,
             typename MappingResult = /*mapping-result-of*/<Unit, ParentGroup, Mapping>>
-    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_type>
+    requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_level>
   generic_group(const Unit&, const ParentGroup&, Mapping&&, Synchronizer&&)
     -> generic_group<Unit,
                       ParentGroup,
@@ -58,7 +58,7 @@ Overview
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

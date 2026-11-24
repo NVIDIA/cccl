@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -34,9 +34,9 @@ template <typename InputIterator, typename OutputIterator>
 struct reference_is_assignable
 {
   template <typename OI>
-  static constexpr bool h()
+  _CCCL_HOST_API static constexpr bool h()
   {
-    if constexpr (::cuda::std::is_same_v<thrust::detail::it_reference_t<OI>, void>)
+    if constexpr (::cuda::std::is_void_v<thrust::detail::it_reference_t<OI>>)
     {
       return true;
     }
@@ -55,7 +55,7 @@ struct reference_is_assignable
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+_CCCL_HOST_DEVICE_API inline ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
 iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;
@@ -63,9 +63,9 @@ iter_assign(OutputIterator dst, InputIterator src)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE
-typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
-iter_assign(OutputIterator dst, InputIterator src)
+_CCCL_HOST_DEVICE_API inline
+  typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
+  iter_assign(OutputIterator dst, InputIterator src)
 {
   using value_type = thrust::detail::it_value_t<InputIterator>;
 
@@ -76,7 +76,7 @@ iter_assign(OutputIterator dst, InputIterator src)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_DEVICE_API OutputIterator general_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   for (; first != last; ++first, (void) ++result)
   {
@@ -88,7 +88,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, OutputIterator result)
+_CCCL_HOST_DEVICE_API OutputIterator general_copy_n(InputIterator first, Size n, OutputIterator result)
 {
   for (; n > Size(0); ++first, (void) ++result, (void) --n)
   {

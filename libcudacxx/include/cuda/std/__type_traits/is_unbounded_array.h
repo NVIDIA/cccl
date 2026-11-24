@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,7 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_UNBOUNDED_ARRAY)
+#ifdef _CCCL_BUILTIN_IS_UNBOUNDED_ARRAY
 
 template <class _Tp>
 inline constexpr bool is_unbounded_array_v = _CCCL_BUILTIN_IS_UNBOUNDED_ARRAY(_Tp);
