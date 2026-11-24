@@ -86,12 +86,15 @@ distribution. Use `release-cuda-coop-cutlass.yml` for both indexes.
 
 1. Select a reviewed commit on `main` and create a package tag of the form
    `cuda-coop-cutlass-vX.Y.ZrcN` or `cuda-coop-cutlass-vX.Y.Z`. Pushing the
-   new tag builds the sdist and builds the wheel from that sdist. The workflow
+   new tag builds the sdist and builds the wheel from that sdist. The build
    checks the tag version, bundled-header commit and archive contents, then
-   installs the wheel with `[cu13]` and runs the scan example on an L4.
+   saves both files in `cuda-coop-cutlass-candidate-<build attempt>`. The GPU
+   job downloads that artifact, installs the wheel with `[cu13]` and runs the
+   scan example on an L4.
 2. Record the successful tag workflow's run ID, source SHA and both SHA-256
-   hashes from its summary. Download the `cuda-coop-cutlass-distributions`
-   artifact for release QA and any required scans.
+   hashes from the build summary. The successful L4 job's name includes the
+   artifact ID. Use that artifact for release QA and any required scans.
+   Both index uploads retrieve the original build by that same ID.
 3. Replace the example values below with the tag from step 1 and the numeric
    run ID after `/actions/runs/` in the successful tag build's URL. Dispatch
    the workflow from `main` for TestPyPI and approve its deployment.
@@ -123,6 +126,20 @@ distribution. Use `release-cuda-coop-cutlass.yml` for both indexes.
 4. After release approval, repeat the dispatch with `-f target=pypi`, keeping
    the same tag and **original tag build run ID**. The workflow checks that
    TestPyPI serves both expected hashes, presents the production deployment
-   for approval, and checks PyPI's filenames and hashes after upload. To
-   retry an interrupted upload, dispatch again with the same inputs. Existing
-   files must match the original build.
+   for approval, and checks PyPI's filenames and hashes after upload.
+
+### Recover from an interrupted or conflicting upload
+
+If an upload stops partway through, compare the filenames and SHA-256 hashes
+on the destination index with the original tag build's summary. If every
+published file matches, repeat the dispatch with the same tag, build run ID
+and destination to upload the missing file.
+
+If either index reports an unexpected filename or a different hash, stop
+promotion. Check the files for that version on both TestPyPI and PyPI against
+the original build and notify the release owner. The project owner can yank
+the affected release on each index where needed. PyPI reserves uploaded
+filenames, even after deletion. Publish the correction under a fresh version
+and tag, starting with the tag build and TestPyPI qualification.
+[PyPI upload errors](https://docs.pypi.org/publishing/troubleshooting/) and
+[yanking a release](https://docs.pypi.org/project-management/yanking/).
