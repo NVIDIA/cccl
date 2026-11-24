@@ -131,7 +131,9 @@ universal wheel. Use `release-wheels.yml` to publish the wheel to each index.
 
 If an upload is interrupted, compare the destination index with the wheel
 filename and SHA-256 from the build summary. If the wheel is missing or
-already matches, repeat the dispatch with the same run ID and destination.
+already matches, retry only `release-wheels.yml` with the original tag
+build run ID and destination. After staging on TestPyPI, do not rerun the
+tag build. A rerun can replace the GPU-qualified wheel under the same run ID.
 
 If either index reports an unexpected filename or a different hash, stop
 promotion. Check the files for that version on both TestPyPI and PyPI against
