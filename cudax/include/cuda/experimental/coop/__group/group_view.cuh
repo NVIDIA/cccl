@@ -191,7 +191,7 @@ class group_view
 
 public:
   using unit_level                                 = _Unit;
-  using bound_level                                = typename _Group::bound_level;
+  using boundary_level                             = typename _Group::boundary_level;
   using hierarchy_type                             = typename _Group::hierarchy_type;
   using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
   using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
