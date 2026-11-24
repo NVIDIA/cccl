@@ -3,15 +3,36 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_scan.cuh>
+#include <cub/config.cuh>
 
+#include <cub/device/device_scan.cuh>
+#include <cub/util_type.cuh>
+
+#include <cuda/algorithm>
+#include <cuda/buffer>
+#include <cuda/functional>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#include <cstddef>
 #include <cstdint>
 
+#include <vector_types.h>
+
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_numeric_helpers.cuh"
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
+#include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
+#include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/device_and_stream.h>
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
+#include <c2h/utility.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -73,7 +94,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
   using output_t = typename params::output_t;
-  using offset_t = int32_t;
+  using offset_t = std::int32_t;
 
   constexpr offset_t min_items = 1;
   constexpr offset_t max_items = 10'000'000;
@@ -97,19 +118,23 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   // Input data generation to test
   const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
 
-  // Generate input data
-  c2h::device_vector<input_t> in_items(num_items);
-  if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
-  {
-    c2h::gen(C2H_SEED(2), in_items);
-  }
-  else
-  {
-    input_t default_constant{};
-    init_default_constant(default_constant);
-    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
-  }
-  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+  const auto stream     = c2h::make_current_device_stream();
+  const auto item_count = static_cast<std::size_t>(num_items);
+  auto input_buffers    = [&] {
+    if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
+    {
+      return c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
+    }
+
+    input_t value{};
+    init_default_constant(value);
+    auto host_items   = c2h::make_host_buffer<input_t>(stream, item_count, value);
+    auto device_items = c2h::make_device_buffer<input_t>(stream, host_items);
+    return c2h::device_host_buffers<input_t>{cuda::std::move(device_items), cuda::std::move(host_items)};
+  }();
+  auto& in_items         = input_buffers.d_items;
+  const auto& host_items = input_buffers.h_items;
+  auto d_in_it           = in_items.data();
 
   // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
   // types because of unbounded epsilon due to pseudo associativity of the addition operation over
@@ -122,25 +147,25 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
     compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, accum_t{});
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_inclusive_sum(d_in_it, d_out_it, num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
+    device_inclusive_sum(d_in_it, d_out_it, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_inclusive_sum(d_in_it, d_in_it, num_items);
+      device_inclusive_sum(d_in_it, d_in_it, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 
@@ -151,25 +176,25 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
     compute_exclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), accum_t{}, op_t{});
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_exclusive_sum(d_in_it, d_out_it, num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
+    device_exclusive_sum(d_in_it, d_out_it, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_exclusive_sum(d_in_it, d_in_it, num_items);
+      device_exclusive_sum(d_in_it, d_in_it, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 #endif
@@ -181,8 +206,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
     compute_inclusive_scan_reference(
       host_items.cbegin(),
       host_items.cend(),
@@ -191,20 +215,21 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
       cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
+    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
+      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 
@@ -218,29 +243,29 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
     accum_t init_value{};
     init_default_constant(init_value);
     compute_inclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, init_value);
 
-    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
+    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
+      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 
@@ -254,27 +279,27 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
     compute_exclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), accum_t{}, scan_op);
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it      = out_result.data();
     using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value_t{}, num_items);
+    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value_t{}, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value_t{}, num_items);
+      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value_t{}, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 
@@ -290,30 +315,30 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     // Prepare verification data
     accum_t init_value{};
     init_default_constant(init_value);
-    const c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items);
+    auto expected_result = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
     compute_exclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), init_value, scan_op);
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it      = out_result.data();
     using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    c2h::device_vector<init_value_t> d_initial_value(1);
-    d_initial_value[0]     = static_cast<init_value_t>(*unwrap_it(&init_value));
-    auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
-    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, future_init_value, num_items);
+    auto d_initial_value =
+      c2h::make_device_buffer<init_value_t>(stream, {static_cast<init_value_t>(*unwrap_it(&init_value))});
+    const auto future_init_value = cub::FutureValue<init_value_t>(d_initial_value.data());
+    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, future_init_value, num_items, stream);
 
     // Verify result
-    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
+    REQUIRE_THAT_QUIET(out_result, c2h::Equals(stream, expected_result));
 
     // Run test in-place
-    if constexpr (std::is_same_v<input_t, output_t>)
+    if constexpr (cuda::std::is_same_v<input_t, output_t>)
     {
-      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
+      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items, stream);
 
       // Verify result
-      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
+      REQUIRE_THAT_QUIET(in_items, c2h::Equals(stream, expected_result));
     }
   }
 }
