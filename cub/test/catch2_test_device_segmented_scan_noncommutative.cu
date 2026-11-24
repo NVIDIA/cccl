@@ -4,7 +4,6 @@
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <cuda/buffer>
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>

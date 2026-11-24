@@ -3,17 +3,23 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_segmented_scan.cuh>
+#include <cub/config.cuh>
 
-#include <cuda/__algorithm/copy.h>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh> // cub::ForceInclusive
+#include <cub/device/dispatch/dispatch_segmented_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_type.cuh> // cub::detail::InputValue, cub::NullType
+
 #include <cuda/buffer>
 #include <cuda/cmath>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
-#include <cuda/std/functional>
-#include <cuda/std/span>
 #include <cuda/std/type_traits> // std::integral_constant
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -23,8 +29,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-
-#include <cuda_runtime_api.h>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
