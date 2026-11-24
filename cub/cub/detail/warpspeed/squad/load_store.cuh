@@ -106,6 +106,7 @@ _CCCL_DEVICE_API void squadStoreBulkSync(
     // Make the generic-proxy writes to shared memory visible to the async proxy. Executed by the full warp to avoid
     // BSSY/BSYNC around the elected copies.
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
+    // both pointers point to the data, which starts ptrGmem.head_padding bytes after a 16-byte boundary
     ::cuda::device::__bulk_store_unaligned(
       const_cast<OutputT*>(ptrGmem.data()), srcSmem, bytes, squad.threadRank(), ::cuda::ptx::elect_sync(~0));
     // wait for the stores to have completed reading from shared memory

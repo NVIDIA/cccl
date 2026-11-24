@@ -750,7 +750,8 @@ struct lookahead_scan_closure
         squad.syncThreads();
 
         // Store result to global memory using TMA
-        _CUB::detail::warpspeed::squadStoreBulkSync(squad, storeInfo, storeBytes, smem_output_tile);
+        _CUB::detail::warpspeed::squadStoreBulkSync(
+          squad, storeInfo, storeBytes, smem_output_tile + storeInfo.head_padding);
 
         squad.syncThreads();
       }
@@ -773,7 +774,10 @@ struct lookahead_scan_closure
       const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
       // Blocks until the bulk store finished reading from shared memory, then refInOutS is released for the next load
       _CUB::detail::warpspeed::squadStoreBulkSync(
-        squad, storeInfo, static_cast<::cuda::std::uint32_t>(valid_items * sizeof(OutputT)), refInOutS.data().inout);
+        squad,
+        storeInfo,
+        static_cast<::cuda::std::uint32_t>(valid_items * sizeof(OutputT)),
+        refInOutS.data().inout + storeInfo.head_padding);
     }
   }
 

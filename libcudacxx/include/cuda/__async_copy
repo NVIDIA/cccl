@@ -157,6 +157,21 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
     __bar);
   return __size;
 }
+
+//! @brief Overload of `__bulk_load_unaligned_ignore_oob` taking the pointers to the data, which may be unaligned by
+//! the same amount. Derives the head padding from @p __gmem_src.
+_CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
+  void* __smem_dst, const void* __gmem_src, ::cuda::std::uint32_t __bytes, ::cuda::std::uint64_t* __bar) noexcept
+  -> ::cuda::std::uint32_t
+{
+  const int __head_padding = static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) & 15u);
+  return ::cuda::device::__bulk_load_unaligned_ignore_oob(
+    static_cast<char*>(__smem_dst) - __head_padding,
+    static_cast<const char*>(__gmem_src) - __head_padding,
+    __bytes,
+    __head_padding,
+    __bar);
+}
 #  endif // __cccl_ptx_isa >= 920
 
 //! @brief Cooperatively copies @p __bytes bytes from @p __gmem_src to @p __smem_dst, where both pointers may be
@@ -282,27 +297,44 @@ __bulk_store(void* __gmem_dst, const void* __smem_src, ::cuda::std::uint32_t __b
   ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __gmem_dst, __smem_src, __bytes);
 }
 
+//! @brief Overload of `__bulk_load_unaligned_precise` deriving the head padding from @p __gmem_src.
+template <int _TargetAlignment = 16, int _CopyUnit = 1>
+_CCCL_DEVICE_API void __bulk_load_unaligned_precise(
+  void* __smem_dst,
+  const void* __gmem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint64_t* __bar,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected,
+  ::cuda::std::uint32_t& __transaction_bytes) noexcept
+{
+  const int __head_padding =
+    static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % static_cast<unsigned>(_TargetAlignment));
+  ::cuda::device::__bulk_load_unaligned_precise<_TargetAlignment, _CopyUnit>(
+    __smem_dst, __gmem_src, __bytes, __head_padding, __bar, __thread_rank, __elected, __transaction_bytes);
+}
+
 #  if __cccl_ptx_isa >= 860
-//! @brief Warp-cooperatively copies @p __bytes bytes from shared to global memory, to the possibly unaligned
-//! @p __gmem_dst_data. The data in shared memory must sit at the same offset past the 16-byte aligned @p __smem_src
-//! as @p __gmem_dst_data past its preceding 16-byte boundary. The aligned middle goes through one
+//! @brief Warp-cooperatively copies @p __bytes bytes of data starting @p __head_padding bytes after the 16-byte aligned
+//! pointers @p __smem_src and @p __gmem_dst from shared to global memory. The aligned middle goes through one
 //! `cp.async.bulk` issued by the thread with @p __elected set; the head and tail up to the next 16-byte boundaries are
 //! stored with byte-masked 16-byte bulk copies on SM100+ (issued by the elected thread) and with plain byte stores by
 //! the threads with `__thread_rank < 16` otherwise. The bulk copies join the calling thread's current bulk async group;
 //! the caller commits and waits for the group, and issues a `fence.proxy.async` beforehand if threads wrote the
 //! shared memory. Must be called by a full warp with the same arguments except @p __thread_rank.
+//!
+//! @param __head_padding Distance in bytes from the aligned pointers to the first byte of data, in [0, 16).
 //
 // TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
 _CCCL_DEVICE_API inline void __bulk_store_unaligned(
-  void* __gmem_dst_data,
+  void* __gmem_dst,
   const void* __smem_src,
   ::cuda::std::uint32_t __bytes,
+  int __head_padding,
   ::cuda::std::uint32_t __thread_rank,
   bool __elected) noexcept
 {
-  // derive the misalignment from the global data pointer; the shared memory source is the aligned base
-  const int __head_padding = static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_dst_data) & 15u);
-  void* __gmem_dst         = static_cast<char*>(__gmem_dst_data) - __head_padding;
+  _CCCL_ASSERT(0 <= __head_padding && __head_padding < 16, "__bulk_store_unaligned: invalid head padding");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_dst),
                "__bulk_store_unaligned: destination must be 16-byte aligned");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_src),
@@ -372,6 +404,24 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
   }
 }
 
+//! @brief Overload of `__bulk_store_unaligned` taking the pointers to the data, which may be unaligned by the same
+//! amount. Derives the head padding from @p __gmem_dst.
+_CCCL_DEVICE_API inline void __bulk_store_unaligned(
+  void* __gmem_dst,
+  const void* __smem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected) noexcept
+{
+  const int __head_padding = static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_dst) & 15u);
+  ::cuda::device::__bulk_store_unaligned(
+    static_cast<char*>(__gmem_dst) - __head_padding,
+    static_cast<const char*>(__smem_src) - __head_padding,
+    __bytes,
+    __head_padding,
+    __thread_rank,
+    __elected);
+}
 #  endif // __cccl_ptx_isa >= 860
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
