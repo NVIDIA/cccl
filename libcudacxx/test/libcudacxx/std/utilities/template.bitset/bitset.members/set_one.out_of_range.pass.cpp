@@ -17,6 +17,10 @@
 
 #include "test_macros.h"
 
+#if TEST_HAS_EXCEPTIONS()
+#  include <stdexcept>
+#endif // TEST_HAS_EXCEPTIONS()
+
 int main(int, char**)
 {
 #if TEST_HAS_EXCEPTIONS()

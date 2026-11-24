@@ -23,8 +23,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/prev.h>
@@ -183,13 +182,13 @@ public:
   {
     if (__index >= ::cuda::std::ranges::distance(__derived()))
     {
-      _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      ::cuda::std::__throw_out_of_range("cuda::std::ranges::view_interface::at: out of bounds access");
     }
     if constexpr (is_signed_v<range_difference_t<_RARange>>)
     {
       if (__index < 0)
       {
-        _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+        ::cuda::std::__throw_out_of_range("cuda::std::ranges::view_interface::at: out of bounds access");
       }
     }
     return ::cuda::std::ranges::begin(__derived())[__index];
@@ -201,13 +200,13 @@ public:
   {
     if (__index >= ::cuda::std::ranges::distance(__derived()))
     {
-      _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      ::cuda::std::__throw_out_of_range("cuda::std::ranges::view_interface::at: out of bounds access");
     }
     if constexpr (is_signed_v<range_difference_t<_RARange>>)
     {
       if (__index < 0)
       {
-        _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+        ::cuda::std::__throw_out_of_range("cuda::std::ranges::view_interface::at: out of bounds access");
       }
     }
     return ::cuda::std::ranges::begin(__derived())[__index];

@@ -28,10 +28,9 @@
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__format/concepts.h>
 #include <cuda/std/__fwd/format.h>
-#include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -488,7 +487,7 @@ class __fmt_direct_iterator_buffer : public __fmt_output_buffer<_CharT>
   _CCCL_HOST_DEVICE_API static constexpr void
   __prepare_write([[maybe_unused]] __fmt_output_buffer<_CharT>& __buffer, [[maybe_unused]] size_t __size_hint)
   {
-    _CCCL_THROW(::std::length_error, "cuda::std::__fmt_direct_iterator_buffer");
+    ::cuda::std::__throw_length_error("cuda::std::__fmt_direct_iterator_buffer");
   }
 
 public:
