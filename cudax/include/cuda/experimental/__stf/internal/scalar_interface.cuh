@@ -182,14 +182,18 @@ public:
     {
       return false;
     }
-    pin_memory(s.addr, 1);
-    return true;
+    return pin_memory(s.addr, 1) == cudaSuccess;
   }
 
   void unpin_host_memory(instance_id_t instance_id) override
   {
     auto& s = this->instance(instance_id);
     unpin_memory(s.addr);
+  }
+
+  ::cuda::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
+  {
+    return cuda_try<cudaPointerGetAttributes>(this->instance(instance_id).addr).type;
   }
 };
 

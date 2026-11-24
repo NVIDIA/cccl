@@ -80,6 +80,8 @@ class frozen_logical_data;
 
 class frozen_logical_data_untyped;
 
+class data_interface;
+
 class graph_ctx;
 
 class null_partition;
@@ -102,6 +104,14 @@ class cuda_kernel_scope;
 
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
+
+struct host_registration
+{
+  ::std::shared_ptr<data_interface> dinterface;
+  instance_id_t instance_id;
+  event_list prereqs;
+};
+using host_registrations = ::std::vector<host_registration>;
 } // end namespace reserved
 
 /**
@@ -219,6 +229,14 @@ protected:
       return false;
     }
 
+    virtual bool capturing_user_stream() const
+    {
+      return false;
+    }
+
+    // Graph interfaces retain registrations for replay. Stream interfaces release them at erase.
+    virtual void wait_for_host_unpin(const event_list&) const {}
+
     void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);
@@ -275,7 +293,7 @@ protected:
      * @brief Write-back data and erase automatically created data instances
      * The implementation requires logical_data_untyped_impl to be complete
      */
-    void erase_all_logical_data();
+    void erase_all_logical_data(reserved::host_registrations* pending_unpins = nullptr);
 
     bool logical_data_stats_enabled = false;
     ::std::vector<::std::pair<::std::string, size_t>> previous_logical_data_stats;

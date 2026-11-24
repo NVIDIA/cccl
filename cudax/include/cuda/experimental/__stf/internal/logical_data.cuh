@@ -196,10 +196,25 @@ public:
 
     refcnt.store(0);
 
-    // This will automatically create a weak_ptr from the shared_ptr
-    ctx.get_state().logical_data_ids_mutex.lock();
-    ctx.get_state().logical_data_ids.emplace(get_unique_id(), *this);
-    ctx.get_state().logical_data_ids_mutex.unlock();
+    auto& st = ctx.get_state();
+    {
+      ::std::scoped_lock guard(st.logical_data_ids_mutex);
+      st.logical_data_ids.emplace(get_unique_id(), *this);
+    }
+    SCOPE(fail)
+    {
+      {
+        ::std::scoped_lock guard(st.logical_data_ids_mutex);
+        st.logical_data_ids.erase(get_unique_id());
+      }
+      if (owns_host_registration())
+      {
+        ON_THROW(notify)
+        {
+          dinterface->unpin_host_memory(reference_instance_id);
+        };
+      }
+    };
 
     // It is possible that there is no valid copy (e.g. with temporary accesses)
     if (memory_node.is_invalid())
@@ -220,8 +235,17 @@ public:
     // If this is host memory, try to pin it
     if (memory_node.is_host())
     {
-      // ret may be false if we detected that the instance was already pinned, for example
-      inst.automatically_pinned = dinterface->pin_host_memory(instance_id);
+      if (ctx.get_state().capturing_user_stream())
+      {
+        // The captured graph can replay after this context is gone. The caller owns its registrations.
+        const auto type = dinterface->get_memory_type(instance_id);
+        EXPECT((!type || *type == cudaMemoryTypeHost || *type == cudaMemoryTypeManaged),
+               "Register host buffers before stream capture and keep them registered through graph replay.");
+      }
+      else
+      {
+        inst.automatically_pinned = dinterface->pin_host_memory(instance_id);
+      }
     }
 
 #ifndef NDEBUG
@@ -268,7 +292,7 @@ public:
    * created, and stores a valid value in the reference data instance that
    * was used to create the logical data, if any.
    */
-  void erase();
+  void erase(host_registrations* pending_unpins = nullptr);
 
   // Data handle unique id : when this object is moved, it is set automatically to -1
   reserved::unique_id_t unique_id;
@@ -380,6 +404,12 @@ public:
   // mechanism when the data is destroyed, or when the context is
   // synchronized.
   instance_id_t reference_instance_id = instance_id_t::invalid;
+
+  bool owns_host_registration() const
+  {
+    return reference_instance_id != instance_id_t::invalid
+        && get_data_instance(reference_instance_id).automatically_pinned;
+  }
 
   bool enable_write_back = false;
 
@@ -1744,7 +1774,7 @@ private:
 };
 
 // This implementation is deferred because we need the logical_data_untyped type in it
-inline void reserved::logical_data_untyped_impl::erase()
+inline void reserved::logical_data_untyped_impl::erase(host_registrations* pending_unpins)
 {
   // fprintf(stderr, "ERASING ... %s - get_unique_id() %d was_erased %d\n", get_symbol().c_str(),
   // int(get_unique_id()),
@@ -1838,15 +1868,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   for (auto i : each(instance_id_t(used_instances.size())))
   {
     auto& inst_i = used_instances[size_t(i)];
-    // Unpin an instance if if was automatically pinned
-    if (inst_i.automatically_pinned)
-    {
-      _CCCL_ASSERT(inst_i.get_dplace().is_host(), "");
-      _CCCL_ASSERT(dinterface, "");
-      dinterface->unpin_host_memory(i);
-    }
-
-    if (inst_i.is_allocated() && inst_i.reclaimable)
+    if (inst_i.automatically_pinned || (inst_i.is_allocated() && inst_i.reclaimable))
     {
       // Make sure copies or reduction initiated by the erase are finished
       auto inst_prereqs = wb_prereqs;
@@ -1855,12 +1877,32 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       inst_prereqs.merge(inst_i.get_read_prereq(), inst_i.get_write_prereq());
 
-      // We now ask to deallocate that piece of data
-      deallocate(inst_i.get_dplace(), i, inst_i.get_extra_args(), inst_prereqs);
-
-      if (track_dangling_events)
+      if (inst_i.automatically_pinned)
       {
-        ctx_st.add_dangling_events(ctx, inst_prereqs);
+        _CCCL_ASSERT(inst_i.get_dplace().is_host(), "");
+        // A different GPU can still be accessing this registration, including during write-back.
+        inst_prereqs.merge(get_pending_done_prereqs(i));
+        if (pending_unpins)
+        {
+          inst_prereqs.optimize(ctx);
+          ctx_st.add_dangling_events(ctx, inst_prereqs);
+          pending_unpins->push_back({dinterface, i, inst_prereqs});
+        }
+        else
+        {
+          ctx_st.wait_for_host_unpin(inst_prereqs);
+          dinterface->unpin_host_memory(i);
+        }
+        inst_i.automatically_pinned = false;
+      }
+
+      if (inst_i.is_allocated() && inst_i.reclaimable)
+      {
+        deallocate(inst_i.get_dplace(), i, inst_i.get_extra_args(), inst_prereqs);
+        if (track_dangling_events)
+        {
+          ctx_st.add_dangling_events(ctx, inst_prereqs);
+        }
       }
     }
 
@@ -2189,7 +2231,7 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
   frozen_flag = false;
 }
 
-inline void backend_ctx_untyped::impl::erase_all_logical_data()
+inline void backend_ctx_untyped::impl::erase_all_logical_data(reserved::host_registrations* pending_unpins)
 {
   /* Since we modify the map while iterating on it, we will copy it */
   logical_data_ids_mutex.lock();
@@ -2200,7 +2242,7 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
   for (auto p : logical_data_ids_cpy)
   {
     auto& d = p.second;
-    d.erase();
+    d.erase(pending_unpins);
   }
 }
 

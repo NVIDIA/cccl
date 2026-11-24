@@ -10,12 +10,39 @@
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
-#include <iostream>
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
+void cross_device_write_back()
+{
+  if (cuda_try<cudaGetDeviceCount>() < 2)
+  {
+    return;
+  }
+
+  cuda_safe_call(cudaSetDevice(0));
+  std::vector<unsigned char> host(1 << 20);
+  stream_ctx ctx;
+  auto data = ctx.logical_data(host.data(), host.size());
+  ctx.task(exec_place::device(1), data.write())->*[&](cudaStream_t stream, auto view) {
+    cuda_safe_call(cudaMemsetAsync(view.data_handle(), 42, host.size(), stream));
+  };
+
+  // submit() queues the write-back on device 1. finalize() releases the registration on device 0.
+  cuda_safe_call(cudaSetDevice(0));
+  ctx.submit();
+  EXPECT(address_is_pinned(host.data()));
+  ctx.finalize();
+
+  EXPECT(!address_is_pinned(host.data()));
+  EXPECT(host.front() == 42);
+  EXPECT(host.back() == 42);
+}
+
 int main()
 {
+  cross_device_write_back();
   stream_ctx ctx;
 
   // Contiguous 1D
