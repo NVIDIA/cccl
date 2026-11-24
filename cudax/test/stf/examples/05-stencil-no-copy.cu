@@ -169,9 +169,9 @@ int main(int argc, char** argv)
 
   stream_ctx ctx;
 
-  int NITER         = 500;
-  size_t NBLOCKS    = 4 * ndevs;
-  size_t BLOCK_SIZE = 2048 * 1024;
+  int NITER                   = 500;
+  size_t NBLOCKS              = 4 * ndevs;
+  constexpr size_t BLOCK_SIZE = 2048 * 1024;
 
   if (argc > 1)
   {
