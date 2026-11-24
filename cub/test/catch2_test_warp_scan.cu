@@ -1,11 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
+#include <cub/util_type.cuh>
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/cmath>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
 
@@ -102,6 +106,25 @@ struct sum_op_t
     {
       scan.InclusiveSum(thread_data, thread_data);
     }
+  }
+};
+
+// Exercise the generic scan step instead of the inline-PTX cuda::std::plus<> specialization.
+struct custom_plus
+{
+  template <class T>
+  __device__ T operator()(T lhs, T rhs) const
+  {
+    return lhs + rhs;
+  }
+};
+
+struct reduce_by_key_sum_op_t
+{
+  template <class WarpScanT, class T>
+  __device__ void operator()(WarpScanT& scan, T& thread_data) const
+  {
+    scan.InclusiveScan(thread_data, thread_data, cub::ReduceByKeyOp<custom_plus>{});
   }
 };
 
@@ -346,6 +369,30 @@ struct params_t
   static constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
+
+CUB_TEST("Warp scan by key uses logical lane IDs", "[scan][warp]", CUB_SMALL)
+{
+  using pair_t                       = cub::KeyValuePair<std::int32_t, std::int32_t>;
+  constexpr int logical_warp_threads = 8;
+  constexpr int total_warps          = 4;
+  constexpr int num_items            = logical_warp_threads * total_warps;
+
+  c2h::host_vector<pair_t> h_in(num_items);
+  c2h::host_vector<pair_t> h_expected(num_items);
+  for (int tid = 0; tid < num_items; ++tid)
+  {
+    const int lane = tid % logical_warp_threads;
+    // A zero-valued first segment isolates accumulation after the key changes.
+    h_in[tid]       = pair_t{lane == 0 ? 0 : 1, lane == 0 ? 0 : 1};
+    h_expected[tid] = pair_t{lane == 0 ? 0 : 1, lane};
+  }
+
+  c2h::device_vector<pair_t> d_in = h_in;
+  c2h::device_vector<pair_t> d_out(num_items);
+  warp_scan<logical_warp_threads, total_warps>(d_in, d_out, reduce_by_key_sum_op_t{});
+
+  REQUIRE(h_expected == d_out);
+}
 
 CUB_TEST("Warp scan works with sum", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
