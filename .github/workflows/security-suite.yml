@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# CI security scanning via the NVIDIA/security-workflows suite: Pulse secret scan,
+# Pulse OSS vulnerability scan (SCA), Pulse malware scan, and CodeQL SAST.
+# Replaces secret-scan-pulse.yml. Pulse runs on Linux nv-gha-runners (OIDC/Vault).
+# Pinned by commit SHA to the security-workflows v0.6.0 release.
+
+name: Security Suite (Secret, Vulnerability, Malware, SAST)
+
+on:
+  push:
+    branches:
+      - main
+      - "pull-request/[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+# Caller permissions must cover the reusable workflow (intersection applies).
+permissions:
+  contents: read
+  id-token: write          # OIDC -> Vault -> nvcr.io image pull
+  security-events: write   # publish redacted SARIF to code scanning
+  actions: read
+
+jobs:
+  security-suite:
+    name: Security Suite
+    # Pulse needs nv-gha-runners + Vault/nvcr vars; skip on forks.
+    if: github.repository == 'NVIDIA/cccl'
+    uses: NVIDIA/security-workflows/.github/workflows/security-suite.yml@d8189f3176942de7ffe2c48bcd7bb5fbdee2dd15  # v0.6.0
+    with:
+      enable-secret-scan: true
+      # The Charon tenant authorizes only these refs; workflow_dispatch has no branch filter.
+      enable-vuln-scan: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/pull-request/') }}
+      enable-malware-scan: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/pull-request/') }}
+      enable-sast-scan: true
+      secret-runs-on: linux-amd64-cpu4
+      # Set failure_policy explicitly so enforcement can't drift with upstream defaults.
+      #   unverified: fail on verified/live secrets (183); warn on unverified (185)  [default]
+      #   strict:     fail on any finding (verified or unverified)
+      #   all:        warn only; never fail the job on findings
+      secret-failure-policy: unverified
+      # Both resolve to build-mode none, so no toolchain is needed. CodeQL never fails the job.
+      sast-languages: '["python","c-cpp"]'
+      # Must be an Actions *variable*: a reusable workflow's inputs cannot read secrets.
+      nspect-id: ${{ vars.NSPECT_ID }}
+      vuln-runs-on: linux-amd64-cpu4
+      # report-only (default): findings warn. fail-on-vulnerability: any finding fails. Errors always fail.
+      vuln-failure-policy: report-only
+      vuln-upload-report: true
+      malware-runs-on: linux-amd64-cpu4
+      # strict (default): SUSPICIOUS fails too. malicious-only: it only warns. MALICIOUS always fails.
+      malware-failure-policy: strict

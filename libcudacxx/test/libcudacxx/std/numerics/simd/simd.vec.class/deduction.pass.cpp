@@ -15,16 +15,16 @@
 
 // UNSUPPORTED: msvc
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.ctor] deduction guides
 //
 // basic_vec(Range&&, Ts...) -> basic_vec<range_value_t<Range>, deduce-abi-t<...>>;
 // basic_vec(basic_mask<Bytes, Abi>) -> basic_vec<integer-from<Bytes>, Abi>;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,7 +43,7 @@
     - exp2(x)   : Base-2 exponential (2^x) - dedicated fp32mp2
     - exp10(x)  : Base-10 exponential (10^x) - dedicated fp32mp2
     - expm1(x)  : e^x - 1 - dedicated fp32mp2
-    - logb(x)   : Extract exponent - placeholder
+    - logb(x)   : Extract exponent - exact on the limb pair
 
     Power:
     - pow(x,y)  : Power function x^y - dedicated fp32mp2
@@ -74,9 +74,9 @@
     Error Functions:
     - erf(x)    : Error function - dedicated fp32mp2
     - erfc(x)   : Complementary error function - dedicated fp32mp2
-    - erfcinv(x): Inverse complementary error function - placeholder (device only)
-    - erfinv(x) : Inverse error function - placeholder (device only)
-    - erfcx(x)  : Scaled complementary error function - placeholder (device only)
+    - erfcinv(x): Inverse complementary error function - dedicated fp32mp2
+    - erfinv(x) : Inverse error function - dedicated fp32mp2
+    - erfcx(x)  : Scaled complementary error function - dedicated fp32mp2
 
     Special Functions:
     - boys_f0(x): Boys function of zeroth order F_0(x) - dedicated fp32mp2
@@ -84,7 +84,7 @@
 
     Probability / Statistics:
     - normcdfinv(p) : Inverse normal CDF Phi^-1(p) - dedicated fp32mp2
-    - normcdf(x)    : Normal CDF Phi(x) - placeholder (host: 0.5*erfc(-x/sqrt2))
+    - normcdf(x)    : Normal CDF Phi(x) - dedicated fp32mp2
 
     Non-standard helper functions to convert integer uniform random numbers
     to Gaussian distributed random numbers:
@@ -110,23 +110,23 @@
     - floor(x)  : Round down to nearest integer - dedicated fp32mp2 optimization
     - trunc(x)  : Round toward zero - dedicated fp32mp2 optimization
     - round(x)  : Round to nearest integer - dedicated fp32mp2 optimization
-    - rint(x)   : Round using current rounding mode - placeholder
-    - nearbyint(x): Round using current rounding mode (no FE exception) - placeholder
-    - lrint(x)  : Round to long int - placeholder
-    - lround(x) : Round to long int (away from zero) - placeholder
-    - llrint(x) : Round to long long int - placeholder
-    - llround(x): Round to long long int (away from zero) - placeholder
+    - rint(x)   : Round to nearest, ties to even - exact on the limb pair
+    - nearbyint(x): Round to nearest, ties to even (no FE exception) - exact on the limb pair
+    - lrint(x)  : Round to long int - dedicated fp32mp2 (exact, over rint)
+    - lround(x) : Round to long int (away from zero) - dedicated fp32mp2 (exact, over round)
+    - llrint(x) : Round to long long int - dedicated fp32mp2 (exact, over rint)
+    - llround(x): Round to long long int (away from zero) - dedicated fp32mp2 (exact, over round)
 
     Floating-Point Manipulation:
     - fabs(x)   : Absolute value - dedicated fp32mp2 optimization (operates on (hi, lo) directly)
-    - copysign(x,y): Copy sign of y to x - placeholder
+    - copysign(x,y): Copy sign of y to x - exact on the limb pair
     - ldexp(x,n): x * 2^n - dedicated fp32mp2
     - scalbn(x,n): x * FLT_RADIX^n - dedicated fp32mp2 (forwards to ldexp)
-    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - placeholder
-    - frexp(x,*n): Extract mantissa and exponent - placeholder
-    - modf(x,*i): Split into integer and fractional parts - placeholder
-    - logb(x)   : Extract exponent - placeholder
-    - ilogb(x)  : Extract exponent as int - placeholder
+    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - exact (forwards to ldexp)
+    - frexp(x,*n): Extract mantissa and exponent - exact on the limb pair
+    - modf(x,*i): Split into integer and fractional parts - exact on the limb pair
+    - logb(x)   : Extract exponent - exact on the limb pair
+    - ilogb(x)  : Extract exponent as int - exact on the limb pair
     - nextafter(x,y): Next representable value - placeholder
 
     Min/Max/Difference:
@@ -134,28 +134,28 @@
     - fmin(x,y) : Minimum - dedicated fp32mp2 optimization (lexicographic compare on (hi, lo), NaN-aware)
     - max(x,y)  : Maximum - dedicated fp32mp2 optimization (std::max-like, first-arg tie/unordered behavior)
     - min(x,y)  : Minimum - dedicated fp32mp2 optimization (std::min-like, first-arg tie/unordered behavior)
-    - fdim(x,y) : Positive difference - placeholder
+    - fdim(x,y) : Positive difference - dedicated fp32mp2 (accurate pair subtraction)
 
     Remainder:
     - fmod(x,y) : Floating-point remainder - dedicated fp32mp2
     - remainder(x,y): IEEE remainder - dedicated fp32mp2
-    - remquo(x,y,*q): Remainder with quotient bits - placeholder
+    - remquo(x,y,*q): Remainder with quotient bits - dedicated fp32mp2 (remainder's reduction)
 
     Distance:
-    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - placeholder
-    - rhypot(x,y): Reciprocal hypotenuse - placeholder (host: 1/hypot)
+    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2
+    - rhypot(x,y): Reciprocal hypotenuse - dedicated fp32mp2
 
     Vector Norms:
-    - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - placeholder
-    - norm4d(a,b,c,d)  : 4D Euclidean norm sqrt(a^2+b^2+c^2+d^2) - placeholder
-    - rnorm3d(a,b,c)   : Reciprocal 3D norm - placeholder
-    - rnorm4d(a,b,c,d) : Reciprocal 4D norm - placeholder
+    - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - dedicated fp32mp2
+    - norm4d(a,b,c,d)  : 4D Euclidean norm sqrt(a^2+b^2+c^2+d^2) - dedicated fp32mp2
+    - rnorm3d(a,b,c)   : Reciprocal 3D norm - dedicated fp32mp2
+    - rnorm4d(a,b,c,d) : Reciprocal 4D norm - dedicated fp32mp2
 
     Classification (portable prefixed API + conditional standard overloads):
-    - fpmp_isfinite(x): Test for finite value - placeholder
-    - fpmp_isinf(x)   : Test for infinity - placeholder
-    - fpmp_isnan(x)   : Test for NaN - placeholder
-    - fpmp_signbit(x) : Test sign bit - placeholder
+    - fpmp_isfinite(x): Test for finite value - exact on the limb pair (both limbs)
+    - fpmp_isinf(x)   : Test for infinity - exact on the limb pair (both limbs)
+    - fpmp_isnan(x)   : Test for NaN - exact on the limb pair (both limbs)
+    - fpmp_signbit(x) : Test sign bit - exact on the limb pair (both limbs)
       Standard names isfinite/isinf/isnan/signbit are exposed only when the
       corresponding macro is not defined.
 
@@ -166,97 +166,180 @@
 
     Dedicated Implementation Details:
     -------------------------------------------------------------------------
-    exp(x) for fp32mp2:
-      Argument reduction: x = n*ln2 + r, |r| < ln2/2.
-      Core: 14-term Taylor series for exp(r) in fp32mp2.
-      Reconstruction: result * 2^n via IEEE-754 exponent manipulation.
-      Accuracy: ~10^-10 - 10^-11 relative error.
+    exp(x), exp2(x), exp10(x), expm1(x) for fp32mp2:
+      Table driven, on the tables of pow. x is reduced exactly to a
+      multiple k of ln2/128 (of 1/128 for exp2, of log10(2)/128 for
+      exp10) plus a pair phi, |phi| <= ln2/256, by a three-part
+      Cody-Waite step whose leading constant has 9 bits, so that the
+      error does not grow with |x|:
+        b^x = 2^n * 2^(j/128) * e^phi,   k = 128 n + j
+      2^(j/128) comes from a 128-entry table and e^phi - 1 from a
+      degree-5 polynomial; the scaling by 2^n is applied in two steps,
+      so that a subnormal result is rounded once.  exp2 of an integer
+      is the exact power of two.
+      expm1 takes j from [-64, 63], 2^(j/128) - 1 from a table of its
+      own and e^phi - 1 to full relative accuracy, and returns
+      (2^n - 1) + 2^n (2^(j/128) e^phi - 1); the sum is the result
+      itself for |x| < 0.35, where n = 0.  fpmp2_accuracy::high: below
+      2^-7 in magnitude it is the Taylor series x + x^2 P(x) in pair
+      arithmetic instead, which avoids the cancellation in the buckets
+      next to zero (there 2.4u^2 against 4.4u^2).
+      Accuracy against MPFR: within 3.2u^2 (u = 2^-24), 4.5u^2 for expm1
+      (3.9u^2 at high).
+      Special cases: NaN->NaN, overflow->+inf, underflow->+0 (-1 for
+      expm1), expm1(+-0) = +-0.
 
-    log(x) for fp32mp2:
-      Range reduction: x = m*2^e, m  in  [1, sqrt2).
-      Core: log(m) = 2*atanh((m-1)/(m+1)) via degree-8 minimax polynomial.
-      Reconstruction: log(x) = log(m) + e*ln2 with fp32mp2 ln2 constant.
-      Handles denormals via pre-scaling.
+    log(x), log2(x), log10(x), log1p(x) for fp32mp2:
+      Table driven, on the table of pow. x = 2^k z with z in
+      [0.701, 1.402); the bucket holding z, one of 128, gives 1/c with
+      9 bits, so that r = z/c - 1 is exact, and ln(c) as three floats:
+        ln(x) = k ln2 + ln(c) + r + r^2 (-1/2 + r P(r)),   |r| < 2^-7.5
+      The bucket around 1 has c = 1, which keeps the result relatively
+      accurate as x -> 1.  No division is involved.
+      log2 and log10 scale ln(z) and add k, or k log10(2), afterwards;
+      log2 of a power of two is exact.  log1p forms r from x itself
+      where 1 + x is in [0.701, 1.402), so that the result keeps the
+      relative accuracy of x as x -> 0, and otherwise takes the
+      logarithm of the pair 1 + x.  In the buckets next to zero, where
+      ln(c) and r cancel, the low limb of their sum is formed without
+      error.  fpmp2_accuracy::high: below 2^-7 in magnitude log1p is
+      the Taylor series x + x^2 P(x) in pair arithmetic instead (there
+      1.8u^2 against 3.9u^2), and the low limb is formed without error
+      over the whole domain.
+      Accuracy against MPFR: within 5u^2 for log, 6u^2 for log2, log10
+      and log1p (3u^2 for log1p at high).
+      Special cases: NaN->NaN, +-0->-inf, x<0->NaN, +inf->+inf;
+      subnormal x is scaled into the normal range; log1p(-1) = -inf,
+      log1p(x < -1) = NaN, log1p(+-0) = +-0.
 
-    log1p(x) for fp32mp2:
-      Forwards to log(1+x) after computing 1+x via fp32mp2 2-sum, which
-      preserves the small-x lo (the lo carries x exactly when |x| <= 1
-      causes float hi cancellation).  log()'s accurate sub for (m-1)
-      then recovers full fp32mp2 precision in the asinh-form Horner
-      core, yielding the a - a^2/2 + a^3/3 - ... expansion implicitly.
-      Special cases (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled
-      explicitly before forwarding.
+    pow(x, y) for fp32mp2:
+      pow(x, y) = exp(y * log|x|) with log|x| = e*ln2 + L from the shared
+      log core (|L| <= 0.35).  The product y * log|x| is never rounded
+      into a pair: an fp32mp2 t carries only 2^-48 * |t| of absolute
+      accuracy, |t| reaches 88 before the result overflows, and every
+      bit lost in t is lost in the result.  The exp kernel receives a
+      directly reduced argument instead:
+        r = (y*e - N1)*ln2 - N2*ln2 + y*L,   N = N1 + N2 = round(t/ln2)
+      with N1 = round(y_hi*e): y*e as two exact products, y_hi*e - N1
+      the exact fraction of y_hi*e, (y*e - N1)*ln2 a small pair times
+      the ln2 pair, N2*ln2 from the three-piece ln2 of the exp
+      reduction, y*L as an exact product with its exact cross terms,
+      and the pieces combined by error-free sums wherever a piece is
+      above 2^-48 * |y*L| (the products' low words are 2^-19 absolute
+      at |y*L| = 35; adding them in float cost 2^-43 each).  The kernel
+      itself (`__internal_fpmp2_exp_core` / `_exp_scales`) is exp's,
+      factored out.  What remains is the log core's relative error
+      times |y*L| <= 35 plus the kernel's own, in place of the old
+      ~9 u^2 * |t|: 44 bits on the normal dataset (was 41), mean error
+      3.4 u^2 (was 12.5) over [0.01, 100]^2.  Results below 2^-102
+      (subnormal low limb) are limited by the format itself, as for
+      exp.  Special cases (x <= 0, infinities, NaN, integer y) are
+      unchanged.
 
-    log2(x), log10(x) for fp32mp2:
-      Composition over the dedicated fp32mp2 natural log:
-        log2(x)  = log(x) * (1/ln 2)
-        log10(x) = log(x) * (1/ln 10)
-      with the reciprocal stored as a single fp32mp2 (hi+lo) constant.
-      The one ff-multiply costs ~1 ulp on the lo limb; combined with
-      the ~46-bit precision of __fpmp2_log this still leaves >44
-      bits of accuracy across the whole representable input range,
-      matching the fp32mp2 noise floor.  All domain special cases
-      (x<=0, +-inf, NaN) are handled inside __fpmp2_log.
+    cbrt(x), rcbrt(x) for fp32mp2:
+      x = r * 2^(3n), r in [1/4, 2) (denormals pre-scaled by 2^24).  Seed
+      from the SFU lg2/ex2 pair (~2^-22), polished by one Newton step in
+      float so that it sits within an ulp of the root; then one Halley
+      step in which the residual (r - s^3, or 1 - r s^3) is an error-free
+      pair and the correction is formed without a rounding of its own
+      above 2^-47 (cbrt: pair denominator and a quotient corrected from
+      its remainder; rcbrt: u s/3 as exact products with 1/3 as a pair).
+      Every 2^-23-sized piece enters the high word of the correction
+      through an error-free sum; left for the low word it costs 2^-47 in
+      the final addition.  Host model against binary128: 1.5 / 1.4 u^2
+      worst, independent of the seed.  Accuracy: 47 bits (cbrt was 45:
+      its fp32mp2 Halley step rounded a 2^-22 correction through the
+      1-ulp rcp.approx; rcbrt was 46).  The 2^n scaling is exact; the
+      sign is restored at the end.
 
-    exp2(x), exp10(x) for fp32mp2:
-      Dedicated implementations following a "single base-2
-      split" strategy.  Pseudocode:
-        t      = x * log2(base)        [exp2: t = x; exp10: t = x * log2 10]
-        n      = round(t.hi)           [exact integer = binary exponent]
-        r      = t - n                 [|r.hi| <= 0.5]
-        2^r    via the inlined base-2 Taylor kernel
-               `__internal_fpmp2_exp2_kernel` with coefficients
-               a_k = (ln 2)^k / k!     [no r * ln 2 detour, no
-                                        natural-log reduction inside]
-        result = 2^n * 2^r             [via split-exponent helper]
-      The single integer split happens in *base-2* units, so the 2^n
-      factor drops out exactly and the kernel never touches a value
-      outside [-0.5, 0.5].  Compared to the earlier composition
-      exp(x * ln base) -- which forced __fpmp2_exp to re-derive
-      n_internal from the already-amplified product, stacking two
-      reduction errors -- the dedicated path keeps only one __ffloat
-      multiplication on the input side (and zero for exp2).  Net:
-      `exp2` matches the composed path within 1 bit on the `work`
-      dataset while cutting fp32mp2 call cost; `exp10` matches the
-      composed path's 39-bit `work` accuracy at lower instruction
-      count.  Overflow / underflow shortcuts (|x| at the float
-      exponent boundary) avoid the wasted polynomial / scaling work
-      when the result is already a rounded +-inf / 0.
-
-    expm1(x) for fp32mp2:
-      Strategy mirrors log1p:
-        |x_hi| < 1/2:  direct Taylor series
-                       expm1(x) = x + x^2 * (1/2 + x/6 + x^2/24 + ...)
-                       evaluated as 12 mixed-precision Horner terms
-                       (M = 4 split, top 4 plain float, bottom 8 ff).
-        |x_hi| >= 1/2: exp(x) - 1 via fp32mp2 accurate sub against
-                       the constant 1.0; the subtraction loses <= 1
-                       bit because |exp(x) - 1| >= 0.4 in this band.
-      The polynomial branch covers ~25 % of a normal-around-0 input
-      distribution; warp divergence cost stays modest.  Truncation
-      noise at the branch point: omitted x^13 term ~= 0.5^13/13!
-      ~= 1.96*10^-14, well below fp32mp2 ulp at expm1(1/2).
-      Special cases: NaN->NaN, +inf->+inf, -inf->-1, x=0->0.
+    sinh(x), cosh(x), tanh(x) for fp32mp2:
+      On the reduction and tables of exp and expm1: |x| is reduced to a
+      multiple k of ln2/128 plus a pair phi, |phi| <= ln2/256, and none
+      of the three evaluates a polynomial in x.
+        sinh: e^(k ln2/128) = 2^n (1 + A) and its reciprocal
+              2^n' (1 + B) from the table of expm1, combined with
+              sinh(phi) and cosh(phi) without a division; for
+              |x| < 0.34 the leading term is A - B, which keeps the
+              relative accuracy down to x = 0.
+        cosh: 2^(n-1) (y + 4^-n / y) with e^|x| = 2^n y from the tail
+              of exp: one reciprocal.
+        tanh: ((1 - z) + s) / ((1 + z) + s) with e^(2|x|) = 2^n (1 + s),
+              z = 2^-n, below 3/4; 1 - 2 z / (y + z) above; and
+              x - x^3/3 + 2 x^5/15 below 2^-12.
+      sinh and cosh scale by 2^(n-1) at the end, so they stay finite up
+      to their own overflow threshold ln(2^129) = 89.416, past the
+      threshold 88.72 of exp.
+      Accuracy against MPFR: within 6.2u^2 (sinh), 3.5u^2 (cosh) and
+      7.4u^2 (tanh), u = 2^-24.
+      fpmp2_accuracy::high types get a second kernel for sinh and tanh
+      (the default and low levels share the one above): a polynomial
+      in x next to zero (|x| < 1.25 for sinh, 0.655 for tanh) and
+      (e - 1/e)/2 or 1 - 2/(e^(2|x|) + 1) with a refined division
+      beyond, within 3.8u^2 (sinh) and 2.3u^2 (tanh), and slower past
+      the polynomial's range.  cosh has one kernel for every level.
+      Special cases: sinh(+-0) = +-0, sinh(+-inf) = +-inf,
+      cosh(+-inf) = +inf, tanh(+-0) = +-0, tanh(+-inf) = +-1, NaN->NaN.
 
     asinh(x), acosh(x), atanh(x) for fp32mp2:
-      Inverse hyperbolic family -- all three reduce to a single log1p
-      call with cancellation-safe arithmetic forms:
-        asinh(x) = sign(x)*log1p(|x| + x^2/(sqrt(x^2+1)+1))
-        acosh(x) = log1p((x-1) + sqrt((x-1)*(x+1)))     for x >= 1
-        atanh(x) = 0.5*sign(x)*log1p(2|x|/(1-|x|))      for |x| >= 0.25
-        atanh(x) = x*(1 + y*P(y)),  y = x^2,             for |x| < 0.25
-                   P(y) = 1/3 + y/5 + y^2/7 + ... + y^11/25
-      The rationalized arguments avoid the (1 - cos)-style cancellation
-      that breaks the textbook formulas around x = 0 (asinh, atanh)
-      and x = 1 (acosh).  acosh's `(x-1)*(x+1)` factorization sidesteps
-      the catastrophic cancellation that `x^2-1` would suffer near 1.
-      atanh's polynomial branch covers ~25 % of the typical work range:
-      it bypasses the divide-driven precision loss in the log1p form
-      around 0 while keeping warp divergence small.  Large-|x| paths
-      (asinh, acosh) switch to log(2|x|) above 2^25 -- early enough
-      that the lo-limb ulp accumulation in the (x^2+1)/(x-1)(x+1) chain
-      doesn't degrade precision, and the dropped 1/(4x^2) correction
-      sits below fp32mp2 ulp throughout the asymptotic region.
+      Each forms the argument of one logarithm from the limbs, with
+      every sum that can cancel taken exactly:
+        asinh(|x|) = log1p(|x| + x^2/(1 + r)), r = sqrt(1 + x^2), |x| < 3/4
+                   = log(|x| + r)                              up to 2^25
+                   = log(|x|) + ln2                            beyond
+        acosh(x)   = log1p(d + r), d = x - 1, r = sqrt(d (d + 2)), x < 5/4
+                   = log(x + r)                                up to 2^25
+                   = log(x) + ln2                              beyond
+        atanh(|x|) = |x| + |x|^3 P(x^2)                        for |x| < 1/4
+                   = log1p(2|x|/(1 - |x|))/2                   up to 1
+      The log1p forms keep the relative accuracy of the result where it
+      is small (x near 0, or near 1 for acosh); where the result is
+      above 0.69 the logarithm of the sum itself is as accurate.  For
+      x - 1 < 2^-60 acosh is sqrt(2 (x - 1)).
+      Accuracy against MPFR: within 5.5u^2 (asinh), 5u^2 (acosh) and
+      8.5u^2 (atanh).
+      fpmp2_accuracy::high types get a second kernel for atanh, which
+      splits the exact 2|x| off the argument of log1p and refines the
+      division of the rest: within 3u^2.  asinh and acosh have one
+      kernel for every level.
+      Special cases: asinh(+-0) = +-0, asinh(+-inf) = +-inf,
+      acosh(1) = +0, acosh(+inf) = +inf, acosh(x < 1) = NaN,
+      atanh(+-0) = +-0, atanh(+-1) = +-inf, atanh(|x| > 1) = NaN,
+      NaN->NaN.  The domains of acosh and atanh are decided on both
+      limbs.
+
+    hypot(x, y) for fp32mp2:
+      Both inputs scaled by one power of two chosen from the larger
+      magnitude (exact; no overflow or underflow of the squares); x^2 +
+      y^2 formed as a normalized pair from the two error-free squares
+      with their cross terms 2 x_hi x_lo folded in by one fma each, the
+      pieces joined by Fast2Sums in magnitude order; then the sqrt
+      core and the exact back-scaling by 2^k.  An infinite argument
+      gives +inf even when the other is NaN, a NaN otherwise gives NaN
+      in both limbs, and a norm past FLT_MAX is +inf with a zero low
+      limb.  Host model against binary128: 2.6 u^2 worst, 0.3 mean (the
+      sqrt core alone is 2.5).
+
+    rhypot, norm3d, norm4d, rnorm3d, rnorm4d for fp32mp2:
+      One kernel for the Euclidean norm of 2, 3 or 4 pairs and its
+      reciprocal.  The operands are scaled by a power of two taken from
+      the largest high limb, so that no square overflows or loses its
+      rounding error to underflow; the squares are formed and summed as
+      pairs, and the sum goes through the pair square root, or the pair
+      reciprocal square root.  No double-precision arithmetic is used.
+      At fpmp2_accuracy::low an operand with a zero high limb is first
+      taken for its low limb.
+      Accuracy against MPFR: see fpmp_math_impl_pow.h.
+      Special cases: an infinite operand gives +inf (+0 for the
+      reciprocal) even next to a NaN, otherwise NaN->NaN; all operands
+      zero give +0 (+inf); overflow gives +inf.
+      fpmp2_accuracy::high, fp32mp2: norm3d, norm4d, rnorm3d and
+      rnorm4d convert the operands to double and take the norm in
+      double (CUDA's norm3d etc. on the device).  The conversion is
+      exact for a pair whose limbs span at most 53 bits and rounds any
+      other pair by at most 2^-53 of its value (0.03 u^2).  Measured:
+      within 0.6 u^2 against 5 u^2 for the norms and 8 u^2 for
+      the reciprocals of the pair kernel, at the price of FP64
+      arithmetic.  Same special cases, answered on entry.
 
     ldexp(x, n) for fp32mp2:
       result = x * 2^n built directly in fp32 via bit-cast of the
@@ -286,7 +369,25 @@
       the former ::fmod(double,double) round-trip bit-for-bit - but
       without any fp64 instructions.  (A 48-bit window rounded away the
       bottom of lo, which fmod's inherent cancellation then amplified to
-      ~27-bit results.)  remainder adds the round-to-
+      ~27-bit results.)  A sparse pair - a tail more than 29 binades below
+      the head, as arithmetic leaves it when a head lands on a power of
+      two - carries more than 53 bits, and rounding it would move the
+      remainder by the whole amount dropped; such an operand takes an
+      exact reduction instead: the divisor and the running remainder on
+      two 64-bit words in the frame of the finer operand (the divisor
+      fits 126 bits there for tails down to 2^-102 ulp(hi); beyond that
+      the 53-bit window applies), the dividend limb by limb in 64-bit
+      arithmetic.  Dense pairs never take that path.  In that level every
+      result is the nearest pair (head and tail each rounded to nearest
+      even), so a result whose head has few bits keeps the tail bits the
+      pair can hold.  fmod, remainder and remquo take the exact path in
+      fpmp2_accuracy::high only; mid and low round the operands to the
+      53-bit window and the result to 48 bits as before, which keeps
+      their size (fmod 277 against 1087 SASS lines, 22 against 32
+      registers) and speed (remainder 210 against 239 clk/ev) where they
+      were - the exact block weighs on a caller's register budget even
+      when it is never entered.
+      remainder adds the round-to-
       nearest-even step (compare 2*ia vs My, ties broken by the parity of
       the accumulated quotient) and the |x| < |y| short-circuit.  Special
       cases: NaN or x = +-inf or y = 0 -> NaN; y = +-inf -> x.
@@ -297,22 +398,69 @@
       expm1 via argument reduction + polynomial, all in fp32mp2.
 
     erfc(x) for fp32mp2:
-      erfc(x) = erfcx(|x|)*exp(-x^2).
-      Core: erfcx approximated by a degree-22 Chebyshev polynomial in
-      the transformed variable t = 1/(1+|x|), combined with a dedicated
-      exp(-x^2) evaluation using a degree-8 polynomial, all in fp32mp2.
+      |x| < 1/2: 1 - x Q(x^2), the small erf (no cancellation).
+      |x| >= 1/2: erfc(x) = erfcx(|x|)*exp(-x^2).
+      Core: erfcx(|x|) = s*R(s - 9/16) with s = 4/(|x|+4), from one reciprocal
+      and a degree-18 minimax polynomial R, combined with a dedicated
+      exp(-x^2) evaluation using a degree-11 polynomial, all in fp32mp2.
       Uses the identity erfc(-x) = 2 - erfc(x) for negative arguments.
+      The result is 0 (or 2) for |x| > 10.0546875, where erfc(|x|) < 2^-150.
+      fpmp2_accuracy::high: the erfcx kernel below in place of the
+      one-reciprocal kernel for |x| >= 1/2 (about half its error, in more
+      operations), with the same cut-off.  fp64mp2 has one erfc for every level.
+
+    erfcx kernel (a >= 1/2), the basis of the inverse error functions, and
+    of erfc, erfcx and normcdf at fpmp2_accuracy::high (at the other levels
+    these three use the one-reciprocal kernel of erfc, above, up to
+    a = 10.0546875, where its fit ends):
+      (1 + 2a) e^{a^2} erfc(a) ~ P(t), t = (a - 4)/(a + 4), P of degree 22,
+      both divisions refined with the exact remainder.
+
+    erfcx(x) for fp32mp2:
+      |x| < 1/2: exp(x^2) (1 - x Q(x^2)).  x >= 1/2: a kernel up to 40 (the
+      one-reciprocal kernel up to 10.0546875 and the erfcx kernel beyond it;
+      the erfcx kernel throughout at fpmp2_accuracy::high), then the
+      asymptotic series (1/(x sqrt pi)) sum (-1)^k (2k-1)!!/(2x^2)^k,
+      8 terms.  x <= -1/2: 2 exp(x^2) - erfcx(|x|); +inf below -9.3824.
+
+    normcdf(x) for fp32mp2:
+      y = |x|/sqrt 2 < 1/2: (1 +- y Q(y^2))/2; otherwise h = erfcx(y)
+      exp(-x^2/2)/2 with the exact-argument exp applied to x itself, h for
+      x < 0 and 1 - h for x > 0; erfcx(y) by the one-reciprocal kernel, or by
+      the erfcx kernel at fpmp2_accuracy::high.  One from 8.4 on; zero below
+      -14.5 at fpmp2_accuracy::high and below -14.219 at the other levels,
+      where the result is under 2^-151.
+
+    erfinv(x), erfcinv(q) for fp32mp2:
+      Giles' single-precision erfinv as the seed (2^-22 up to
+      w = -log(q(2 - q)) = 16, the Abramowitz-Stegun normal quantile 26.2.23
+      below q = 1.1e-7), then one Halley step on erf(y) - x or erfc(y) - q
+      with the small erf y Q(y^2) or the erfc tail and f' = -+ (2/sqrt pi)
+      exp(-y^2) from the exact-argument exp.  erfinv(x) for |x| > 1/2 is erfcinv(1 - |x|)
+      with 1 - |x| exact; erfcinv(q) for q in [1/2, 3/2] is erfinv(1 - q);
+      q > 1 mirrors to -erfcinv(2 - q).  Below q = erfc(8) ~ 1e-29, where
+      erfc's low limb is denormal, the equation ln erfcx(y) - y^2 = ln q is
+      solved on the kernel instead.  erfinv(+-1) = +-inf, erfcinv(0) = +inf,
+      erfcinv(2) = -inf, NaN outside, both limbs read.
 
     normcdfinv(p) for fp32mp2:
-      Rational approximation (Mike Giles coefficients).
-      Variable: w = -log(4p(1-p)), computed via fp32mp2 log.
-      Central branch (w < 6.125): degree-22 Horner polynomial in (w - 3.125).
-      Tail 1 branch (6.125 <= w < 16): degree-18 Horner polynomial in (sqrtw - 3.25).
-      Tail 2 branch (w >= 16): degree-24 Horner polynomial in (sqrtw - 7.25),
-        covering all representable float inputs including denormals,
-        with full fp32mp2 precision (~46+ bits) across the entire range.
-      Returns +-infinity for p <= 0 or p >= 1 (standard mathematical convention).
-      The icdf() wrappers clamp to +-FLT_MAX for safe Gaussian variate generation.
+      Giles' polynomials with sqrt 2 folded into the coefficients, z = a R(w),
+      a = 2p - 1, w = -log(4p(1-p)) from the fp32mp2 log.
+      Central branch (w < 6.25): degree 22 in (w - 3.125).
+      Tail 1 branch (6.25 <= w < 16): degree 18 in (sqrt w - 3.25).
+      Tail 2 branch (w >= 16): degree 24 in (sqrt w - 7.25).
+      Mixed Horner with 4 / 4 / 13 leading float coefficients, sized for a
+      Gaussian sampler: 45-46 bits in the central region and tail 1, 41 bits
+      in tail 2 (p < 5.6e-8), covering all float inputs including denormals.
+      Returns +-infinity for p <= 0 or p >= 1, both limbs read: (1, -tiny) is
+      inside the domain.  The icdf() wrappers clamp to +-FLT_MAX for safe
+      Gaussian variate generation.
+
+    boys_f0(x) for fp32mp2:
+      Five ranges: degree 16 in (3 - x) below 4; degree 14 in (x - 5.65) and
+      in (x - 9.38) up to 11.46; rsqrt(x) G(1/x) with G of degree 16 up to
+      34.38; (sqrt pi / 2) rsqrt(x) beyond.  Mixed Horner (compensated for G),
+      no erf, no sqrt.
 
     icdf(uint32_t x) for fp32mp2:
       Converts a 32-bit integer uniform RNG output to a Gaussian sample.
@@ -326,37 +474,102 @@
       two 24-bit halves, then calls normcdfinv(p).
 
     sin(x), cos(x), sincos(x) for fp32mp2:
-      Argument reduction: x = n*(pi/2) + r, |r| <= pi/4.
+      Argument reduction: x = n*(pi/2) + r, |r| <= 0.908.
       Three paths based on |x|:
         Tiny (|x| < pi/4):  no reduction needed.
-        Fast (|x| < 2^20):  Cody-Waite with 3-piece pi/2 (~70 bits),
-          error-tracked via two_mult_fma + two_sum.
-        Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table (160 bits),
-          returning fp32mp2 via extended-precision fixed-point conversion
-          without any fp64 operations.
-      Core: sin(r) via 8-term Taylor (x through x^15),
-            cos(r) via 9-term Taylor (1 through x^16),
-            both evaluated in fp32mp2 Horner form.
-      sincos computes both kernels; sin/cos call sincos internally.
+        Fast (|x| < 2^20):  Cody-Waite with a 4-piece pi/2 (94 bits);
+          x_hi - n*c_1 is one exact fma, n*c_2 and n*c_3 are split exactly,
+          and the third-order terms are added as an exact triple, so r
+          keeps 46 bits down to |r| ~ 2^-47 |x|.  |r| <= 0.908.
+        Large (|x| >= 2^20): Payne-Hanek with a 256-bit 2/pi table and a
+          96-bit fixed-point fraction (x_hi and x_lo combined before the
+          pi/2 multiply), no fp64 operations; 46 bits down to |r| ~ 2^-46.
+      Core: sin(r) = r (1 + r^2 S(r^2)) and cos(r) = 1 + r^2 C(r^2), S and C
+            minimax polynomials of degree 6 on |r| <= 0.91 with three
+            coefficients as float-float and four as floats; the rounding
+            error of the single-precision part is carried into the ff
+            Horner steps, which use Fast2Sum.
+      sincos and tan evaluate both kernels; sin and cos evaluate one, its
+      coefficients selected by the parity of n.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
+      sin(-0), tan(-0) and the sine of sincos(-0) are -0.
+      fpmp2_accuracy::high: the fast path accumulates x_hi - n*c_1 (an exact
+      product and a TwoSum) and the remaining terms in fp32mp2_high, and the
+      core is one shared Taylor kernel, sin(r) via 8 terms (r through r^15)
+      and cos(r) via 9 terms (1 through r^16) with r^2 shared, coefficients
+      down to 1/9! (sin) and 1/10! (cos) as float-float; sin and cos call
+      sincos.  About 1 u^2 less at the worst argument, in more operations.
+      The tiny and Payne-Hanek paths, the quadrant mapping and the special
+      values are those of the other levels.  fp64mp2 has one sin, cos, tan
+      and sincos for every level.
+      Accuracy: 46 bits (sin, cos), 45 bits (tan, the quotient of the two).
 
     sinpi(x), cospi(x), sincospi(x) for fp32mp2:
       The argument is already in units of pi, so reduction is an integer/fraction
       split rather than a radian Payne-Hanek or Cody-Waite reduction.
       x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
-      by a 3-piece pi. sin(r) and cos(r) reuse the sincos Taylor kernels.
-      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
+      by the 4-piece pi with exact products and error-free sums.  |x| < 2^-64 is
+      evaluated as sinpi(x) = pi*x on a scaled argument, so denormal inputs keep
+      their precision.  sin(r) and cos(r) reuse the sincos kernels: the
+      Taylor kernel at fpmp2_accuracy::high, the minimax kernels otherwise.
+      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision
+      fallback, the same at every level.
+      Accuracy: 46 bits.
+
+    asin(x), acos(x), atan(x), atan2(y, x) for fp32mp2:
+      Two kernels behind one entry code, selected by the accuracy level of
+      the type.  fpmp2_accuracy::low and the default level take the angle
+      of a point (M, m), 0 <= m <= M, from a table of atan(i/16):
+      atan(m/M) = atan(c) + atan(t), c = i/16, t = (m - c M)/(M + c m),
+      |t| < 3/64, with a 4-coefficient kernel; asin and acos enter as the
+      unit-circle point (x, sqrt((1 - |x|)(1 + |x|))), where the division
+      becomes a product by a tabulated cosine.  At most 4 (atan) to 7.2
+      (acos) u^2, 45 to 46 bits.
+      fpmp2_accuracy::high evaluates 13-coefficient polynomials in
+      fp32mp2 arithmetic: atan and atan2 after one fold and a refined
+      division, asin and acos in x^2 below 0.575 and in 1 - |x| above.
+      At most 1.9 (atan) to 3.4 (acos, atan2) u^2, 46 to 47 bits, for two
+      to three times the instructions.
+      The entry code is shared, so every level returns the C99 Annex F
+      special values, keeps the sign of a zero argument (asin, atan,
+      atan2), decides the domain of asin and acos on both limbs, returns
+      NaN in both limbs, and scales the operands of atan2 by a common
+      power of two.  fp64mp2 has one implementation for every level.
 
     Placeholder functions:
     - Delegate to standard double-precision system functions
     - Intended as API stubs; they do not provide full multi-precision accuracy yet
 
+    fdim, remquo, lrint, lround, llrint, llround for fp32mp2:
+      Exact on the limb pair, no FP64.  fdim compares the pairs
+      lexicographically and takes the accurate difference (+0 when
+      x <= y, NaN propagated, +inf when the difference overflows).
+      remquo's remainder is remainder's, bit for bit at every level
+      (same core, see above); its quotient is the low bits of
+      rint(x / y) with the sign of x / y, modulo what the platform's
+      own remquo uses (2^3 on the device as CUDA's, 2^31 on the host as
+      glibc's), so that the fp32mp2 and the scalar / fp64mp2 results
+      agree on each platform.  The four integer roundings convert the
+      exact rint / round of the pair limb by limb; NaN, infinities and
+      |x| >= 2^63 go to the platform's conversion of the high limb, as
+      the scalar functions do.  The classification predicates,
+      copysign, frexp, modf, ilogb and logb test the float limbs
+      directly instead of widening them to double, and the predicates
+      classify both limbs and combine the answers by logic alone (no
+      arithmetic): a loose pair out of a low-accuracy operation can
+      carry an infinity or a NaN in lo alone, or be (+inf, -inf), which
+      is a NaN.  isnan: a NaN limb or two infinities of opposite sign;
+      isinf: no NaN limb and one infinite limb or two of the same sign;
+      isfinite: both limbs finite; signbit: hi's sign when the limbs
+      agree or lo is zero (-0 is kept), else the sign of the larger
+      limb, +0 when they cancel.
+
     fp64mp2 implementations:
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=1, route through __float128 (libquadmath
       on host, CUDA fp128 intrinsics on device) for ~113-bit accuracy.
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=0, fall back to double-precision math.
-    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 polynomial
-      on host (no standard erfcinv available).
+    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 code on
+      host (no standard erfcinv available).
 
     Configuration Macros:
     -------------------------------------------------------------------------
@@ -390,7 +603,7 @@
 // headers below (see docs/libcudacxx/fp/fpmp_spec.rst, "Function Families").
 // In library mode (_CCCL_FPMP_USE_LIB) the kernels come from the compiled
 // library and only the declarations in the #else branch below are used.
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 #  include <cuda/__fp/fpmp_math_impl.h>
 #  include <cuda/__fp/fpmp_math_impl_classify.h>
 #  include <cuda/__fp/fpmp_math_impl_exp.h>
@@ -420,7 +633,7 @@
 #  undef _CCCL_FPMP_MATH_DISPATCH_2A_QUO
 #endif // !_CCCL_FPMP_USE_LIB
 
-#if (defined _CCCL_FPMP_USE_LIB)
+#ifdef _CCCL_FPMP_USE_LIB
 #  include <cuda/__fp/fpmp_math_impl_lib.h>
 #endif // _CCCL_FPMP_USE_LIB
 
@@ -436,6 +649,79 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * big to GCC to inline into the loops that call them, and those loops are then not vectorized.
  */
 
+/*
+ * The argument of expm1, log, log2, log10, log1p, sinh, tanh, asinh, acosh and atanh. Their
+ * fp32mp2 kernels take the size of the argument, and with it the domain test, the table entry
+ * and the tiny-argument result f(x) = x, from the high limb alone. A low-accuracy operation can
+ * leave a pair whose high limb does not carry it: (2^24, 0.25) - 2^24 is (0, 0.25), whose
+ * logarithm would be -inf. At fpmp2_accuracy::low a pair with |lo| > 2^-20 |hi| is therefore
+ * renormalized first. A normalized pair, a zero of either sign and a limb that is not
+ * finite pass through unchanged; the other levels keep their operands normalized.
+ *
+ * exp, exp2, exp10 and cosh need no such step: they take the size of the argument (cosh also its
+ * sign) and the multiple of their reduction from x_hi + x_lo and add the limbs without assuming
+ * an order between them. The limbs still have to be in order of magnitude or to overlap:
+ * exp2((2^-30, 1)) drops the high limb.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_math_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const _FpType __abs_lo = ::cuda::__fpmp_internal_fabs(__x.lo());
+    if (__abs_lo > _FpType(0x1p-20f) * ::cuda::__fpmp_internal_fabs(__x.hi())
+        && __abs_lo <= (::cuda::std::numeric_limits<_FpType>::max)())
+    {
+      *__x_hi = ::cuda::__fpmp_two_sum(__x.hi(), __x.lo(), __x_lo);
+    }
+  }
+}
+
+/*
+ * The argument of sin, cos, tan, sincos, sinpi, cospi, sincospi, asin, acos and atan. Their
+ * fp32mp2 kernels read the size of the argument from its high limb too, but are too short for
+ * the test above: at fpmp2_accuracy::low an argument with a zero high limb over a nonzero low
+ * limb, which a cancellation leaves, is taken for its low limb, without a branch. A zero keeps
+ * its sign. atan2 does the same for its operands at every level; for rhypot and the norms see
+ * __fpmp2_norm_arg. sqrt, rsqrt, cbrt, rcbrt, hypot, pow and fmod read the high limb alone.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_math_arg_zero_high(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const bool __loose = __x.hi() == _FpType(0) && __x.lo() != _FpType(0);
+    *__x_hi            = __loose ? __x.lo() : __x.hi();
+    *__x_lo            = __loose ? _FpType(0) : __x.lo();
+  }
+}
+
+/*
+ * An operand of rhypot, norm3d, norm4d, rnorm3d and rnorm4d. Their fp32mp2 pair kernel chooses
+ * its scale from the high limbs. For fp32mp2 at fpmp2_accuracy::low an operand with a zero high
+ * limb is taken for its low limb, so that the scale sees its size next to operands that have a
+ * high limb. The sign of a zero does not matter to a norm.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_norm_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const bool __loose = __x.hi() == _FpType(0);
+    *__x_hi            = __loose ? __x.lo() : __x.hi();
+    *__x_lo            = __loose ? _FpType(0) : __x.lo();
+  }
+}
+
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
@@ -447,32 +733,43 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp(const fpmp2
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log2(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log2(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log2(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log10(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log10(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_log10(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log1p(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_log1p(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_log1p(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -496,16 +793,34 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cbrt(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sin(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sin(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_cos(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_cos(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -513,8 +828,17 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincos(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
-  ::cuda::__fpmp2_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sincos(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sincos(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);
 }
@@ -522,24 +846,51 @@ sincos(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_asin(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_asin(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_acos(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_acos(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atan(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atan(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -548,15 +899,30 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 atan2(const fpmp2<_FpType, _TypeAcc>& __y, const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -571,8 +937,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cosh(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_tanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_tanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -588,7 +962,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> erfc(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -632,24 +1013,34 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<float, _TypeAcc> icdf(uint64_t __x
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acosh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_acosh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_acosh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asinh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_asinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_asinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -657,8 +1048,17 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atanh(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_tan(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_tan(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -682,8 +1082,16 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp10(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> expm1(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_expm1(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_expm1(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -843,16 +1251,34 @@ cyl_bessel_i1(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinpi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sinpi(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sinpi(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cospi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_cospi(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_cospi(__x_hi, __x_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -860,8 +1286,17 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincospi(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
+  _FpType __x_hi, __x_lo;
+  ::cuda::__fpmp2_math_arg_zero_high(__x, &__x_hi, &__x_lo);
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
-  ::cuda::__fpmp2_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sincospi(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sincospi(__x_hi, __x_lo, &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);
 }
@@ -871,7 +1306,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> normcdf(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -903,7 +1345,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> erfcx(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -914,7 +1363,18 @@ norm3d(const fpmp2<_FpType, _TypeAcc>& __a,
        const fpmp2<_FpType, _TypeAcc>& __c) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm3d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -926,8 +1386,20 @@ norm4d(const fpmp2<_FpType, _TypeAcc>& __a,
        const fpmp2<_FpType, _TypeAcc>& __d) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_norm4d(
-    __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_norm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm_arg(__d, &__d_hi, &__d_lo);
+    ::cuda::__fpmp2_norm4d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -938,7 +1410,18 @@ rnorm3d(const fpmp2<_FpType, _TypeAcc>& __a,
         const fpmp2<_FpType, _TypeAcc>& __c) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_rnorm3d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -950,8 +1433,20 @@ rnorm4d(const fpmp2<_FpType, _TypeAcc>& __a,
         const fpmp2<_FpType, _TypeAcc>& __d) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rnorm4d(
-    __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_rnorm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    _FpType __a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo;
+    ::cuda::__fpmp2_norm_arg(__a, &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_norm_arg(__b, &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_norm_arg(__c, &__c_hi, &__c_lo);
+    ::cuda::__fpmp2_norm_arg(__d, &__d_hi, &__d_lo);
+    ::cuda::__fpmp2_rnorm4d(__a_hi, __a_lo, __b_hi, __b_lo, __c_hi, __c_lo, __d_hi, __d_lo, &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -997,7 +1492,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 fmod(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1006,7 +1508,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remainder(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1051,7 +1560,10 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 rhypot(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rhypot(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __y_hi, __y_lo;
+  ::cuda::__fpmp2_norm_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_norm_arg(__y, &__y_hi, &__y_lo);
+  ::cuda::__fpmp2_rhypot(__x_hi, __x_lo, __y_hi, __y_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1061,7 +1573,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remquo(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y, int* __quo) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

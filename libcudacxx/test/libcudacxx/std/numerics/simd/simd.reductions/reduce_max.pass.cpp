@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.reductions], reduce_max
 //
@@ -22,10 +22,10 @@
 //   constexpr T reduce_max(const basic_vec<T, Abi>&,
 //                          const typename basic_vec<T, Abi>::mask_type&) noexcept;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

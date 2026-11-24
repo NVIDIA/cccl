@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -300,14 +300,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
     }
 
     const auto num_segments_per_invocation =
-      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+      static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<::cuda::std::int32_t>::max)());
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const auto current_seg_offset = invocation_index * num_segments_per_invocation;
       const auto num_current_segments =
-        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+        (::cuda::std::min) (num_segments_per_invocation, num_segments - current_seg_offset);
 
       // Log device_reduce_sweep_kernel configuration
       _CUB_LOG_KERNEL_LAUNCH(
@@ -598,13 +598,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const auto num_segments_per_invocation =
-    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+    static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<::cuda::std::int32_t>::max)());
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
   for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {
-    const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
-    const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+    const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+    const auto num_current_segments =
+      (::cuda::std::min) (num_segments_per_invocation, num_segments - current_seg_offset);
 
     // Log device_reduce_sweep_kernel configuration
     _CUB_LOG_KERNEL_LAUNCH(
@@ -669,12 +670,12 @@ private:
   int segment_size;
 
 public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
       : it(it)
       , segment_size(segment_size)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
   {
     return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
   }
@@ -792,14 +793,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
     }
 
     constexpr auto num_segments_per_invocation =
-      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+      static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<::cuda::std::int32_t>::max)());
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const auto current_seg_offset = invocation_index * num_segments_per_invocation;
       const auto num_current_segments =
-        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+        (::cuda::std::min) (num_segments_per_invocation, num_segments - current_seg_offset);
       const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
       if (const auto error = CubDebug(
@@ -842,10 +843,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   const auto tiles_per_segment = static_cast<int>(::cuda::ceil_div(segment_size, tile_size));
 
   const auto max_tiles_per_invocation =
-    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+    static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<::cuda::std::int32_t>::max)());
   const auto max_segments_per_invocation = max_tiles_per_invocation / tiles_per_segment;
   const auto num_invocations             = ::cuda::ceil_div(num_segments, max_segments_per_invocation);
-  const auto num_segments_per_invocation = ::cuda::std::min(max_segments_per_invocation, num_segments);
+  const auto num_segments_per_invocation = (::cuda::std::min) (max_segments_per_invocation, num_segments);
   const auto tiles_per_invocation        = num_segments_per_invocation * tiles_per_segment;
 
   // Temporary storage allocation requirements
@@ -867,9 +868,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
 
   for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {
-    const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
-    const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
-    const auto num_current_blocks   = static_cast<::cuda::std::int32_t>(num_current_segments * tiles_per_segment);
+    const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+    const auto num_current_segments =
+      (::cuda::std::min) (num_segments_per_invocation, num_segments - current_seg_offset);
+    const auto num_current_blocks = static_cast<::cuda::std::int32_t>(num_current_segments * tiles_per_segment);
 
     // Phase 1: partial reductions
     if (const auto error = CubDebug(

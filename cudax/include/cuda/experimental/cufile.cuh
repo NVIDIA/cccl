@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,11 +32,13 @@
 #  error "<cuda/cufile> requires at least CUDA 12.9"
 #endif // _CCCL_CTK_BELOW(12, 9)
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__cufile/cufile.cuh>
 #include <cuda/experimental/__cufile/cufile_ref.cuh>
 #include <cuda/experimental/__cufile/driver.cuh>
 #include <cuda/experimental/__cufile/driver_attributes.cuh>
 #include <cuda/experimental/__cufile/exception.cuh>
 #include <cuda/experimental/__cufile/open_mode.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_CUFILE_CUH

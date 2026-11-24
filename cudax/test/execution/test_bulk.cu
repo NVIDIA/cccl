@@ -362,7 +362,7 @@ void bulk_unchunked_can_be_used_with_a_function_object()
   }
 }
 
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 void bulk_can_be_used_with_a_lambda()
 {
   constexpr int n = 9;
@@ -927,7 +927,7 @@ C2H_TEST("bulk_unchunked can be used with a function object", "[adaptors][bulk]"
   bulk_unchunked_can_be_used_with_a_function_object();
 }
 
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 C2H_TEST("bulk can be used with a lambda", "[adaptors][bulk]")
 {
   bulk_can_be_used_with_a_lambda();
@@ -1061,7 +1061,7 @@ C2H_TEST("default bulk_unchunked works with non_default constructible types", "[
   default_bulk_unchunked_works_with_non_default_constructible_types();
 }
 
-#if !defined(__CUDA_ARCH__)
+#ifndef __CUDA_ARCH__
 // TODO: modify these tests to work on device as well
 struct my_domain
 {};

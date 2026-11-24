@@ -11,17 +11,17 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.creation], chunk (basic_mask)
 //
 // template<class T, class Abi> constexpr auto chunk(const basic_mask<mask-element-size<T>, Abi>&);
 // template<simd-size-type N, size_t Bytes, class Abi> constexpr auto chunk(const basic_mask<Bytes, Abi>&);
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
   return __ret;
 }
 
-[[nodiscard]] inline ::cuda::std::span<const device_ref> __devices()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> __devices()
 {
   static const auto __devices = ::cuda::__make_devices();
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};

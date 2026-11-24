@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,6 +19,7 @@
 #include <cub/device/dispatch/tuning/structural_inplace_vector.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__cstddef/types.h>
@@ -49,7 +50,7 @@ struct epilogue_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const epilogue_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const epilogue_policy& p)
   {
     return os
         << "epilogue_policy { .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -82,7 +83,7 @@ struct worker_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
     return os << "worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -109,7 +110,7 @@ struct multi_worker_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
   {
     return os << "multi_worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << " }";
@@ -163,7 +164,7 @@ struct baseline_topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const baseline_topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const baseline_topk_policy& p)
   {
     os << "baseline_topk_policy { .worker_per_segment_policies = { ";
     for (::cuda::std::size_t i = 0; i < p.worker_per_segment_policies.size(); ++i)
@@ -210,10 +211,7 @@ baseline_max_covered_segment_size(const baseline_topk_policy& policy)
   for (const auto& worker : policy.worker_per_segment_policies)
   {
     const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{worker.threads_per_block} * worker.items_per_thread;
-    if (tile_size > max_tile_size)
-    {
-      max_tile_size = tile_size;
-    }
+    max_tile_size                        = (::cuda::max) (max_tile_size, tile_size);
   }
   return max_tile_size;
 }
@@ -253,8 +251,10 @@ struct cluster_topk_policy
   // at any cap: a segment that no longer fits resident simply streams the remainder from global memory.
   int max_blocks_per_cluster; //!< Upper bound on the launched cluster width (CTAs per segment); 0 = unrestricted (the
                               //!< hardware cluster-width ceiling, queried from the runtime). Non-zero is additionally
-                              //!< clamped to that same ceiling. A cap narrower than a segment needs pushes it into the
-                              //!< streaming fallback (cap 1 -> single-CTA streaming).
+                              //!< clamped to that same ceiling and so that the per-pass histogram fold fits one
+                              //!< mbarrier transaction count (see
+                              //!< `batched_topk_cluster::effective_max_cluster_blocks`). A cap narrower than a segment
+                              //!< needs pushes it into the streaming fallback (cap 1 -> single-CTA streaming).
   int max_chunk_slots_per_block; //!< Upper bound on resident chunk slots per block; 0 = unrestricted (the full
                                  //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
                                  //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller
@@ -280,7 +280,7 @@ struct cluster_topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const cluster_topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const cluster_topk_policy& p)
   {
     return os
         << "cluster_topk_policy { .threads_per_block = " << p.threads_per_block
@@ -2000,7 +2000,7 @@ enum class topk_algorithm
 };
 
 #if _CCCL_HOSTED()
-[[nodiscard]] inline ::std::ostream& operator<<(::std::ostream& os, topk_algorithm backend)
+[[nodiscard]] _CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, topk_algorithm backend)
 {
   switch (backend)
   {
@@ -2037,7 +2037,7 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
     return os << "topk_policy { .backend = " << p.backend << ", .baseline = " << p.baseline
               << ", .cluster = " << p.cluster << " }";

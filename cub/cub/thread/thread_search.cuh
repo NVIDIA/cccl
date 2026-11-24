@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,14 +37,14 @@ CUB_NAMESPACE_BEGIN
  * Deprecated [Since 3.0]
  */
 template <typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
-CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
+CCCL_DEPRECATED _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {
   /// The value type of the input iterator
   using T = cub::detail::it_value_t<AIteratorT>;
 
-  OffsetT split_min = ::cuda::std::max(diagonal - b_len, 0);
-  OffsetT split_max = ::cuda::std::min(diagonal, a_len);
+  OffsetT split_min = (::cuda::std::max) (diagonal - b_len, 0);
+  OffsetT split_max = (::cuda::std::min) (diagonal, a_len);
 
   while (split_min < split_max)
   {
@@ -61,7 +61,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     }
   }
 
-  path_coordinate.x = ::cuda::std::min(split_min, a_len);
+  path_coordinate.x = (::cuda::std::min) (split_min, a_len);
   path_coordinate.y = diagonal - split_min;
 }
 
@@ -80,7 +80,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
  */
 // TODO(bgruber): deprecate once ::cuda::std::lower_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
   OffsetT retval = 0;
   while (num_items > 0)
@@ -115,7 +115,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT 
  */
 // TODO(bgruber): deprecate once ::cuda::std::upper_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
   OffsetT retval = 0;
   while (num_items > 0)

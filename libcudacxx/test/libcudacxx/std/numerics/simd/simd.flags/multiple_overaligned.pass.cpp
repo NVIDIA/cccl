@@ -13,8 +13,8 @@
 
 // [simd.flags.oper], repeated and combined overalignment flags
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cstddef>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

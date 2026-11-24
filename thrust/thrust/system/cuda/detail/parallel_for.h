@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,7 @@ namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class F, class Size>
-void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size count)
+void _CCCL_HOST_DEVICE_API parallel_for(execution_policy<Derived>& policy, F f, Size count)
 {
   if (count == 0)
   {

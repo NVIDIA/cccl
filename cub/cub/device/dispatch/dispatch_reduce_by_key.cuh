@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -68,47 +68,47 @@ struct streaming_context
   GlobalOffsetT* d_num_previous_uniques_in;
   GlobalOffsetT* d_num_accumulated_uniques_out;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
   {
     return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
   };
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API bool is_first_partition() const
   {
     return first_partition;
   }
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API bool is_last_partition() const
   {
     return last_partition;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE auto predecessor_key() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API auto predecessor_key() const
   {
     return *preceding_key_it;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API AccumT prefix() const
   {
     return *preceding_prefix;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API void write_prefix(AccumT prefix) const
   {
     *prefix_out = prefix;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
   {
     return d_num_previous_uniques_in;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT num_uniques() const
   {
     return num_accumulated_uniques_out();
   }
 
   template <typename NumUniquesT>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 
@@ -470,7 +470,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Log init_kernel configuration
-      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
       _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
@@ -518,7 +518,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+      const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
         // Log reduce_by_key_kernel configuration
@@ -775,7 +775,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
@@ -833,7 +833,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       _CUB_LOG_KERNEL_LAUNCH(

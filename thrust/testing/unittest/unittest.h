@@ -79,7 +79,7 @@ struct has_value_type<T, ::cuda::std::void_t<typename T::value_type>> : ::cuda::
 
 // device_vector: copy to host first
 template <class T, class Alloc>
-std::vector<T> to_vec(thrust::device_vector<T, Alloc> const& vec)
+_CCCL_HOST_API std::vector<T> to_vec(thrust::device_vector<T, Alloc> const& vec)
 {
   thrust::host_vector<T> temp = vec;
   return std::vector<T>{temp.begin(), temp.end()};
@@ -87,14 +87,14 @@ std::vector<T> to_vec(thrust::device_vector<T, Alloc> const& vec)
 
 // any other host-accessible container (host_vector, universal_vector, std::vector, vector_base, ...)
 template <class C, ::cuda::std::enable_if_t<has_value_type<C>::value, int> = 0>
-std::vector<typename C::value_type> to_vec(C const& c)
+_CCCL_HOST_API std::vector<typename C::value_type> to_vec(C const& c)
 {
   return std::vector<typename C::value_type>{c.begin(), c.end()};
 }
 
 // scalar: wrap into a one-element vector
 template <class T, ::cuda::std::enable_if_t<!has_value_type<T>::value, int> = 0>
-std::vector<T> to_vec(T const& x)
+_CCCL_HOST_API std::vector<T> to_vec(T const& x)
 {
   return std::vector<T>{x};
 }
@@ -102,13 +102,13 @@ std::vector<T> to_vec(T const& x)
 // Catch2's Approx matcher only understands arithmetic element types. For complex numbers we flatten the vector into
 // its interleaved real/imaginary components so the matcher can compare them component-wise.
 template <class T>
-std::vector<T> to_approx(std::vector<T> v)
+_CCCL_HOST_API std::vector<T> to_approx(std::vector<T> v)
 {
   return v;
 }
 
 template <template <class> class Complex, class T>
-std::vector<T> to_approx(std::vector<Complex<T>> const& v)
+_CCCL_HOST_API std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 {
   std::vector<T> out;
   out.reserve(2 * v.size());
@@ -278,7 +278,7 @@ using generic_list =
 namespace unittest::detail
 {
 template <template <typename> typename TestFunc, template <typename...> typename L, typename... Ts, typename... Args>
-void for_each_type(L<Ts...>, Args&&... args)
+_CCCL_HOST_API void for_each_type(L<Ts...>, Args&&... args)
 {
   // don't forward args, since the arguments are passed multiple times
 #if _CCCL_COMPILER(MSVC, <=, 19, 50)
@@ -328,7 +328,7 @@ template <template <typename> typename TestFunc,
           template <typename> typename Alloc,
           template <typename...> typename L,
           typename... Ts>
-void invoke_vector_unittest(L<Ts...>)
+_CCCL_HOST_API void invoke_vector_unittest(L<Ts...>)
 {
 #if _CCCL_COMPILER(MSVC, <=, 19, 50)
   // MSVC crashes with a C1001 internal compiler error on the fold-expression below, so expand into an initializer list
@@ -353,7 +353,7 @@ void invoke_vector_unittest(L<Ts...>)
 
 namespace unittest
 {
-inline std::string demangle(const char* name)
+_CCCL_HOST_API inline std::string demangle(const char* name)
 {
   // for demangling the result of type_info.name() with msvc, type_info.name() is already demangled
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
@@ -367,7 +367,7 @@ inline std::string demangle(const char* name)
 }
 
 template <typename T>
-std::string type_name()
+_CCCL_HOST_API std::string type_name()
 {
   return demangle(typeid(T).name());
 } // end type_name()
@@ -375,7 +375,7 @@ std::string type_name()
 // Use this with counting_iterator to avoid generating a range larger than we can represent.
 // TODO: This probably won't work for `half`.
 template <typename T>
-T truncate_to_max_representable(::cuda::std::size_t n)
+_CCCL_HOST_API T truncate_to_max_representable(::cuda::std::size_t n)
 {
   if constexpr (::cuda::std::is_floating_point_v<T>)
   {

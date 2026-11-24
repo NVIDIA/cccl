@@ -61,7 +61,7 @@ int mkstemp(char*);
 
 inline std::string get_temp_file_name()
 {
-#if defined(__MINGW32__)
+#ifdef __MINGW32__
   char Path[MAX_PATH + 1];
   char FN[MAX_PATH + 1];
   do

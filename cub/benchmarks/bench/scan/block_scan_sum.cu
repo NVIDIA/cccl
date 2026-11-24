@@ -64,8 +64,8 @@ void run_block_scan(nvbench::state& state)
     return;
   }
   const int grid_size = max_blocks_per_SM * num_SMs;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, BlockSize>>>(benchmark_op_t<BlockSize>{});
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<grid_size, BlockSize, 0, launch.get_stream()>>>(benchmark_op_t<BlockSize>{});
   });
 }
 

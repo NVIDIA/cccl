@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -65,6 +65,13 @@ enum class address_space
     (_CCCL_CUDA_COMPILER(NVCC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
       || (_CCCL_CUDA_COMPILER(NVRTC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
 
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE.
+#  ifdef noinline
+#    pragma push_macro("noinline")
+#    undef noinline
+#    define _LIBCUDACXX_POP_MACRO_noinline
+#  endif // defined(noinline)
+
 #  if _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED
 
 // NVCC/NVRTC 12.9-13.1 pass typed pointers to the i8* __isShared intrinsic after inlining, which breaks the LLVM
@@ -86,6 +93,11 @@ template <typename = void>
   return static_cast<bool>(::__isLocal(__ptr));
 }
 #  endif // _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED
+
+#  ifdef _LIBCUDACXX_POP_MACRO_noinline
+#    pragma pop_macro("noinline")
+#    undef _LIBCUDACXX_POP_MACRO_noinline
+#  endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 //! @brief Checks if the given pointer is from the specified address state space.
 //! @param __ptr The address to check.

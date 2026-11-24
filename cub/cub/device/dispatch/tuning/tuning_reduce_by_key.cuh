@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,7 +56,7 @@ struct ReduceByKeyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
   {
     return os
         << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -86,7 +86,7 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -112,7 +112,7 @@ struct ReduceByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
   {
     return os << "ReduceByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -1196,6 +1196,31 @@ private:
       // no tuning found (e.g. 16-byte keys), fall through to the SM100 tunings
     }
 
+    // thrust::reduce_by_key accumulates 1- and 2-byte values without promotion. Those, as well as some 8-byte
+    // accumulators, are faster on SM100 with the following policies. SM120 still falls through to the SM100 tunings
+    // below.
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (key_size == 8 && accum_size == 1)
+      {
+        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      if (((key_size == 2 || key_size == 4) && accum_size == 2)
+          || (key_size == 4 && accum_size == 4 && accum_t == type_t::float32))
+      {
+        return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      // F32 or I64 with 8-byte keys, and F64 with 2- or 4-byte keys on SM100 (but not SM103), keep the SM100 tunings
+      // below
+      if ((key_size == 8 && accum_size == 8 && accum_t != type_t::int64)
+          || ((key_size == 2 || key_size == 4) && accum_size == 8
+              && (accum_t != type_t::float64 || cc >= ::cuda::compute_capability{10, 3}))
+          || (key_size == 8 && accum_size == 4 && accum_t != type_t::float32))
+      {
+        return get_lookback_policy(::cuda::compute_capability{9, 0});
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0}) // if we don't have a tuning, fall back to SM90
     {
       if (key_size == 1 && accum_size == 1)
@@ -1383,6 +1408,11 @@ private:
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
                 {LookbackDelayAlgorithm::no_delay, 0, 735}};
+      }
+      // F64 uses more registers with the shuffle-add warp reduction and would lose a block per SM with the row below
+      if (key_size == 1 && accum_size == 8 && accum_t == type_t::float64)
+      {
+        return __make_thrust_policy(11);
       }
       if (key_size == 1 && accum_size == 8)
       {

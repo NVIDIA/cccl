@@ -211,7 +211,7 @@ consumption and system instability.
     cd build
     cmake .. --preset cudax
     cd cudax
-    ninja cudax.examples.stf -j4
+    ninja cudax.example.stf -j4
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
@@ -219,7 +219,7 @@ example:
 
 .. code:: bash
 
-    ./bin/cudax.cpp17.example.stf.01-axpy
+    ./bin/cudax.example.stf.01-axpy
 
 Backends and contexts
 -------------------------------

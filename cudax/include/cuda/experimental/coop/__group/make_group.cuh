@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -46,7 +47,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -78,7 +79,7 @@ _CCCL_TEMPLATE(
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>,
   class _Group                = _GroupTempl<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>)
 _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hierarchy_level_v<_Unit> _CCCL_AND
-                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Group> make_group(
   const non_exhaustive_t& __non_exhaustive,
   const _Unit& __unit,
@@ -143,7 +144,7 @@ make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier
   return this_grid{__hier_like};
 }
 
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
@@ -178,7 +179,7 @@ _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
 make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like)
 {
-  if constexpr (_Size == 1 && ::cuda::std::is_same_v<_ParentT, void>)
+  if constexpr (_Size == 1 && ::cuda::std::is_void_v<_ParentT>)
   {
     return this_thread{__hier_like};
   }

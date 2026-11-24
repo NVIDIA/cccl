@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,38 +70,38 @@ struct streaming_context
   GlobalOffsetT* d_num_previous_uniques_in;
   GlobalOffsetT* d_num_accumulated_uniques_out;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
   {
     return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
   };
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE RunLengthT prefix() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API RunLengthT prefix() const
   {
     return *preceding_length;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(RunLengthT prefix) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API void write_prefix(RunLengthT prefix) const
   {
     *length_out = prefix;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
   {
     return d_num_previous_uniques_in;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT num_uniques() const
   {
     return num_accumulated_uniques_out();
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT base_offset() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT base_offset() const
   {
     return current_base_offset;
   }
 
   template <typename NumUniquesT>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 
@@ -297,8 +297,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
-                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = (::cuda::std::numeric_limits<OffsetT>::max)()
+                                                 > (::cuda::std::numeric_limits<local_offset_t>::max)();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -383,14 +383,14 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     if constexpr (use_streaming_invocation)
     {
       capped_num_items_per_invocation =
-        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+        static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -447,7 +447,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Log init_kernel configuration
-      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
       _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
@@ -663,7 +663,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
   static constexpr bool use_streaming_invocation =
-    ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
+    (::cuda::std::numeric_limits<OffsetT>::max)() > (::cuda::std::numeric_limits<local_offset_t>::max)();
   using streaming_context_t = ::cuda::std::
     conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, LengthT, global_offset_t>, NullType>;
   using ScanTileStateT                     = ReduceByKeyScanTileState<LengthT, local_offset_t>;
@@ -686,12 +686,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
   {
-    capped_num_items_per_invocation = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+    capped_num_items_per_invocation =
+      static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
     capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
   }
 
   const auto max_num_items_per_invocation =
-    use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+    use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
   const auto num_partitions =
     (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
@@ -730,7 +731,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)

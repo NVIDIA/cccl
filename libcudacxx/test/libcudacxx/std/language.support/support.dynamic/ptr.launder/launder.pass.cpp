@@ -37,7 +37,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_LAUNDER)
+#ifdef _CCCL_BUILTIN_LAUNDER
   static_assert(test());
 #endif // _CCCL_BUILTIN_LAUNDER
 

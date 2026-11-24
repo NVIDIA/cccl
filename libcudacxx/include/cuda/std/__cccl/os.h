@@ -31,7 +31,7 @@
 #  define _CCCL_OS_LINUX_() 0
 #endif
 
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
 #  define _CCCL_OS_ANDROID_() 1
 #else
 #  define _CCCL_OS_ANDROID_() 0
