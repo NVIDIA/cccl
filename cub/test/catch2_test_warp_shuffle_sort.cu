@@ -11,7 +11,6 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <random>
 #include <vector>
 
 #include "cub_test_macros.h"
@@ -86,45 +85,57 @@ __global__ void shuffle_sort_kernel(const Key* input, Key* output, bool descendi
 }
 
 template <typename Key>
-Key make_key(int rank, int size, input_pattern pattern)
+c2h::host_vector<Key> make_input(int num_items, int tile_size, input_pattern pattern)
 {
+  c2h::host_vector<Key> input(num_items);
   if constexpr (cuda::std::is_same_v<Key, record_key>)
   {
-    return {make_key<int>(rank, size, pattern), static_cast<unsigned>(rank)};
+    const auto orders = make_input<int>(num_items, tile_size, pattern);
+    for (int i = 0; i < num_items; ++i)
+    {
+      input[i] = {orders[i], static_cast<unsigned>(i % tile_size)};
+    }
+  }
+  else if (pattern == input_pattern::random)
+  {
+    c2h::device_vector<Key> values(num_items);
+    c2h::gen(C2H_SEED(1), values);
+    input = values;
+  }
+  else if (pattern == input_pattern::duplicate_heavy)
+  {
+    // Generate integers so that floating-point keys also have only five possible values.
+    c2h::device_vector<int> values(num_items);
+    c2h::gen(C2H_SEED(1), values, 0, 4);
+    const c2h::host_vector<int> orders(values);
+    std::transform(orders.begin(), orders.end(), input.begin(), [](int order) {
+      return static_cast<Key>(order);
+    });
   }
   else
   {
-    static std::mt19937 generator;
-    switch (pattern)
+    for (int i = 0; i < num_items; ++i)
     {
-      case input_pattern::random:
-        if constexpr (cuda::std::is_floating_point_v<Key>)
-        {
-          std::uniform_real_distribution<Key> distribution(-256, 256);
-          return distribution(generator);
-        }
-        else
-        {
-          return static_cast<Key>(generator());
-        }
-      case input_pattern::ordered:
-        return static_cast<Key>(rank);
-      case input_pattern::reversed:
-        return static_cast<Key>(size - rank);
-      case input_pattern::duplicate_heavy:
-        return static_cast<Key>(generator() % 5);
-      case input_pattern::alternating_zeros:
-        if constexpr (cuda::std::is_floating_point_v<Key>)
-        {
-          return rank % 2 ? Key{-0.0} : Key{0.0};
-        }
-        else
-        {
-          return static_cast<Key>(rank % 2);
-        }
+      const int rank = i % tile_size;
+      if (pattern == input_pattern::ordered)
+      {
+        input[i] = static_cast<Key>(rank);
+      }
+      else if (pattern == input_pattern::reversed)
+      {
+        input[i] = static_cast<Key>(tile_size - rank);
+      }
+      else if constexpr (cuda::std::is_floating_point_v<Key>)
+      {
+        input[i] = rank % 2 ? Key{-0.0} : Key{0.0};
+      }
+      else
+      {
+        input[i] = static_cast<Key>(rank % 2);
+      }
     }
-    return Key{};
   }
+  return input;
 }
 
 // byte-level comparison for +-0 and structures
@@ -173,16 +184,8 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
   };
   CAPTURE(items, logical_warp_threads, all_lanes_active, pattern, descending, skip_odd_warps);
 
-  c2h::host_vector<key_t> input(shuffle_sort_tiles * tile_size);
-  for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
-  {
-    for (int rank = 0; rank < tile_size; ++rank)
-    {
-      input[(tile * tile_size) + rank] = make_key<key_t>(rank, tile_size, pattern);
-    }
-  }
-
-  auto reference = input;
+  const auto input = make_input<key_t>(shuffle_sort_tiles * tile_size, tile_size, pattern);
+  auto reference   = input;
   for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
     if (is_active_tile(tile))
