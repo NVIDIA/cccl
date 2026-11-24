@@ -53,10 +53,12 @@ int main()
 
   context ctx;
 
-  // Quotes, a backslash next to a quote, and a trailing backslash (which would
-  // otherwise escape the closing quote of the label).
+  // Quotes, a backslash next to a quote, a backslash followed by `n`, and a trailing
+  // backslash (which would otherwise escape the closing quote of the label).
   auto lA = ctx.logical_data(shape_of<slice<char>>(64)).set_symbol("A \"quoted\"");
   ctx.task(lA.write()).set_symbol("init \"A\"")->*[](cudaStream_t, auto) {};
+  // a backslash followed by `n` in a symbol is two characters, not the line break the writer puts between fields
+  ctx.task(lA.rw()).set_symbol("two\\nchars")->*[](cudaStream_t, auto) {};
   {
     auto guard = ctx.dot_section("sec back\\slash");
     ctx.task(lA.rw()).set_symbol("mix\\\"\"\\")->*[](cudaStream_t, auto) {};
@@ -104,9 +106,11 @@ int main()
   // task vertex, with the logical data it accesses
   EXPECT(has_label("init \\\"A\\\"\\nA \\\"quoted\\\"(write)(64) "));
   EXPECT(has_label("mix\\\\\\\"\\\"\\\\\\nA \\\"quoted\\\"(rw)(64) "));
+  EXPECT(has_label("two\\\\nchars\\nA \\\"quoted\\\"(rw)(64) "));
   // prerequisite vertices
   EXPECT(has_label("Submittedinit \\\"A\\\""));
   EXPECT(has_label("Submittedmix\\\\\\\"\\\"\\\\"));
+  EXPECT(has_label("Submittedtwo\\\\nchars"));
   // cluster of a section that is displayed
   EXPECT(has_label("sec back\\\\slash"));
   // vertex of a collapsed section
