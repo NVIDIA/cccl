@@ -29,6 +29,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -79,7 +80,6 @@ struct agent_batched_topk_worker_per_segment
   using key_t   = it_value_t<key_it_t>;
   using value_t = it_value_t<value_it_t>;
 
-  using segment_size_val_t = typename ::cuda::args::__traits<SegmentSizeParameterT>::element_type;
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   using counters_t         = batched_topk_counters<num_segments_val_t>;
 
@@ -126,15 +126,28 @@ struct agent_batched_topk_worker_per_segment
   using block_store_keys_t = BlockStore<key_t, threads_per_block, items_per_thread, active_policy.store_algorithm>;
   using block_store_vals_t = BlockStore<value_t, threads_per_block, items_per_thread, active_policy.store_algorithm>;
 
+  // The epilogue works on the queued tile counts in their own type. The segment-size type is too narrow: it bounds the
+  // tile count of one segment, but not the sum over all queued segments.
   using block_load_epilogue_t =
-    BlockLoad<segment_size_val_t, threads_per_block, epilogue_items_per_thread, active_policy.epilogue.load_algorithm>;
-  using block_scan_epilogue_t = BlockScan<int, threads_per_block, active_policy.epilogue.scan_algorithm>;
+    BlockLoad<LargeSegmentTileOffsetT,
+              threads_per_block,
+              epilogue_items_per_thread,
+              active_policy.epilogue.load_algorithm>;
+  using block_scan_epilogue_t =
+    BlockScan<LargeSegmentTileOffsetT, threads_per_block, active_policy.epilogue.scan_algorithm>;
   using block_store_epilogue_t =
-    BlockStore<segment_size_val_t, threads_per_block, epilogue_items_per_thread, active_policy.epilogue.store_algorithm>;
+    BlockStore<LargeSegmentTileOffsetT,
+               threads_per_block,
+               epilogue_items_per_thread,
+               active_policy.epilogue.store_algorithm>;
 
   // -------------------------------------------------------------------------
   // Shared Memory Storage
   // -------------------------------------------------------------------------
+  // The epilogue only runs if there may be large segments. Otherwise it must not add to the shared memory of the block.
+  template <typename StorageT>
+  using epilogue_storage_t = ::cuda::std::conditional_t<only_small_segments, cub::NullType, StorageT>;
+
   struct TempStorage_
   {
     union
@@ -144,9 +157,9 @@ struct agent_batched_topk_worker_per_segment
       typename block_topk_t::TempStorage topk;
       typename block_store_keys_t::TempStorage store_keys;
       typename block_store_vals_t::TempStorage store_vals;
-      typename block_load_epilogue_t::TempStorage load_epilogue;
-      typename block_scan_epilogue_t::TempStorage scan_epilogue;
-      typename block_store_epilogue_t::TempStorage store_epilogue;
+      epilogue_storage_t<typename block_load_epilogue_t::TempStorage> load_epilogue;
+      epilogue_storage_t<typename block_scan_epilogue_t::TempStorage> scan_epilogue;
+      epilogue_storage_t<typename block_store_epilogue_t::TempStorage> store_epilogue;
     };
   };
 
@@ -164,6 +177,12 @@ struct agent_batched_topk_worker_per_segment
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
+  // Large-segment work queue, only accessed if there may be large segments. With Q = `large_segments_count` once all
+  // blocks have retired:
+  // - `d_large_segments_ids[q]`, q in [0, Q): id of the q-th queued segment. The queue order is unspecified.
+  // - `d_large_segments_tile_offsets[q]`, q in [0, Q]: number of tiles of all segments queued before q, counted in
+  //   tiles of the multi-worker-per-segment policy. The entry at Q is therefore the total number of tiles, so the array
+  //   must provide `num_segments + 1` entries.
   counters_t* d_counters;
   num_segments_val_t* d_large_segments_ids;
   LargeSegmentTileOffsetT* d_large_segments_tile_offsets;
@@ -346,7 +365,7 @@ struct agent_batched_topk_worker_per_segment
     }
 
     // Epilogue: Scan queued large segment sizes (in tiles not elements) for load balancing search in the large segment
-    // agent
+    // agent. The scan covers one entry more than there are queued segments, which receives the total number of tiles.
     if constexpr (!only_small_segments)
     {
       // Determine last block trying to retire.
@@ -363,34 +382,40 @@ struct agent_batched_topk_worker_per_segment
       {
         return;
       }
-      const auto num_large_segments = d_counters->large_segments_count;
+      using segment_count_t                    = typename counters_t::segment_count_t;
+      constexpr auto epilogue_tile_items       = static_cast<segment_count_t>(epilogue_tile_size);
+      const segment_count_t num_large_segments = d_counters->large_segments_count;
+      const segment_count_t num_tile_offsets   = num_large_segments + segment_count_t{1};
       // For tracking the running total across tiles (loop iterations).
       // Caution: The functor is only invoked by the first warp in the block, and the value returned by lane 0 in that
       // warp is used as the initial value.
-      const auto prefix_callback_op =
-        [running_total = segment_size_val_t{0}](segment_size_val_t block_aggregate) mutable {
-          auto old_running_total = running_total;
+      auto prefix_callback_op =
+        [running_total = LargeSegmentTileOffsetT{0}](LargeSegmentTileOffsetT block_aggregate) mutable {
+          const auto old_running_total = running_total;
           running_total += block_aggregate;
           return old_running_total;
         };
       _CCCL_PRAGMA_NOUNROLL()
-      for (int large_segment_offset = 0; large_segment_offset < num_large_segments;
-           large_segment_offset += epilogue_tile_size)
+      for (segment_count_t large_segment_offset = 0; large_segment_offset < num_tile_offsets;
+           large_segment_offset += epilogue_tile_items)
       {
-        segment_size_val_t segment_tile_offsets[epilogue_items_per_thread];
+        // Only the entries of queued segments hold a tile count. The entry after them is read as zero.
+        const auto num_loaded_items =
+          static_cast<int>((::cuda::std::min) (num_large_segments - large_segment_offset, epilogue_tile_items));
+        const auto num_stored_items =
+          static_cast<int>((::cuda::std::min) (num_tile_offsets - large_segment_offset, epilogue_tile_items));
+        LargeSegmentTileOffsetT segment_tile_offsets[epilogue_items_per_thread];
         block_load_epilogue_t(temp_storage.load_epilogue)
           .Load(d_large_segments_tile_offsets + large_segment_offset,
                 segment_tile_offsets,
-                num_large_segments - large_segment_offset,
-                0);
+                num_loaded_items,
+                LargeSegmentTileOffsetT{0});
         __syncthreads();
         block_scan_epilogue_t(temp_storage.scan_epilogue)
           .ExclusiveSum(segment_tile_offsets, segment_tile_offsets, prefix_callback_op);
         __syncthreads();
         block_store_epilogue_t(temp_storage.store_epilogue)
-          .Store(d_large_segments_tile_offsets + large_segment_offset,
-                 segment_tile_offsets,
-                 num_large_segments - large_segment_offset);
+          .Store(d_large_segments_tile_offsets + large_segment_offset, segment_tile_offsets, num_stored_items);
         __syncthreads();
       }
     }
