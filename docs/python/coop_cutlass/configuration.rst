@@ -67,7 +67,13 @@ For example, run these commands from a checkout with the package installed:
    example=python/cuda_coop_cutlass/examples/block_storage.py
    CUTE_DSL_NO_CACHE=1 cuda-coop-aot capture --output providers -- python "$example"
    cuda-coop-aot inspect providers
-   cuda-coop-aot run --pack providers --mode required -- python "$example"
+   CUTE_DSL_NO_CACHE=1 cuda-coop-aot run --pack providers --mode required -- python "$example"
+
+The capture and replay commands disable CuTe's kernel cache so that each run
+recompiles the enclosing kernel. During replay, ``required`` mode checks the
+pack for each provider requested during tracing. A kernel reused without
+tracing makes no provider requests. In deployment, CuTe can keep its
+kernel cache enabled.
 
 You can copy the entire directory to another location before running the last
 command. It contains a manifest, provider LTO-IR, and the scratch sizes and
