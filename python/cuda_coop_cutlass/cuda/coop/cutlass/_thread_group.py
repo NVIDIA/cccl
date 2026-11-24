@@ -2,13 +2,163 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe groups and lower their methods during CuTe tracing.
+"""A thread group names the threads that make a call together.
 
-Factories describe the calling thread, warp, block, cluster, or grid.
-Construction records intent without querying a device or synchronizing
-threads. Group methods emit device queries or barriers during tracing.
-Queries and primitives resolve the launch dimensions that each operation needs.
+Every primitive takes a group as its first argument. ``this_block()`` is the
+calling thread's block, ``this_warp()`` is its warp of 32 threads, and
+``this_warp().group_by(8)`` is its group of eight neighboring lanes. A lane
+is one thread of a warp. This kernel sums the same values over each of the
+three:
+
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+    :language: python
+    :start-after: # cutlass-concept-groups-begin
+    :end-before: # cutlass-concept-groups-end
+
+.. figure:: visualizations/concept-thread-groups.svg
+   :alt: Five boxes from grid to thread, each named by its this_ function,
+         with block and warp filled. Below them, one block of 128 threads
+         is drawn as one group, as four warps, and as sixteen groups of
+         eight lanes. A dot marks rank 0 of each group.
+   :width: 100%
+
+   The three groups of the kernel above, on its block of 128 threads.
+
+The group selects the CUB class that runs. The primitives in the first five
+rows take a block or a warp, ``reduce_batched`` takes a warp only, and the
+rest take a block only:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * - Primitive
+     - ``this_block()``
+     - ``this_warp()``, ``this_warp().group_by(n)``
+   * - ``load``, ``store``
+     - ``cub::BlockLoad``, ``cub::BlockStore``
+     - ``cub::WarpLoad``, ``cub::WarpStore``
+   * - ``reduce``, ``sum``
+     - ``cub::BlockReduce``
+     - ``cub::WarpReduce``
+   * - ``scan`` and its four helpers
+     - ``cub::BlockScan``
+     - ``cub::WarpScan``
+   * - ``exchange``
+     - ``cub::BlockExchange``
+     - ``cub::WarpExchange``
+   * - ``merge_sort_keys``, ``merge_sort_pairs``
+     - ``cub::BlockMergeSort``
+     - ``cub::WarpMergeSort``
+   * - ``reduce_batched``
+     -
+     - ``cub::WarpReduceBatched``
+   * - ``shuffle``
+     - ``cub::BlockShuffle``
+     -
+   * - ``radix_sort_keys``, ``radix_sort_pairs``, ``radix_rank_keys``
+     - ``cub::BlockRadixSort``, ``cub::BlockRadixRank``
+     -
+   * - The four ``topk`` functions
+     - CUB's block top-k
+     -
+   * - ``adjacent_difference``, ``discontinuity``
+     - ``cub::BlockAdjacentDifference``, ``cub::BlockDiscontinuity``
+     -
+   * - ``histogram``
+     - ``cub::BlockHistogram``
+     -
+   * - ``run_length_decode``, ``run_length_decode_into``
+     - ``cub::BlockRunLengthDecode``
+     -
+
+These rules hold for every primitive:
+
+* Every thread of the group makes the call, including the threads that do
+  not use its result. A warp call involves that warp only, so another warp
+  of the block can skip it.
+* The launch states the block size with constants, as in
+  ``kernel.launch(grid=1, block=128)``. Each call is compiled for that size,
+  and a kernel whose block size is known only at run time is rejected. When
+  the ``@cute.jit`` function that launches the kernel receives the block
+  size as an argument, it declares that argument ``cutlass.Constexpr``. A
+  plain integer argument reaches the launch as a CuTe value, and the block
+  size is then known only at run time.
+* A block can have one, two or three dimensions, and its threads are ranked
+  x first, then y, then z. ``histogram``, the four ``topk`` functions and
+  the two ``run_length_decode`` functions take one-dimensional blocks only.
+* A warp group needs a block whose size is a multiple of 32, so that every
+  warp is complete.
+* Each group works on its own :term:`tile`. Load and Store place the tiles
+  of a block's warps, or of its groups of lanes, one after another. In a
+  kernel with more than one block, pass Load and Store an ``offset``
+  computed from ``cute.arch.block_idx()``.
+
+``this_thread()``, ``this_cluster()`` and ``this_grid()`` name the other
+levels of a launch, and ``this_block().group_by(n)`` names ``n`` whole warps.
+No primitive takes these four. Like every group, they answer queries, which
+tell a thread where it is. Here a block, a warp and a group of lanes answer
+them:
+
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/6f19aae6219ec490a0a6a203d1f51947df25bc32/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+    :language: python
+    :start-after: # cutlass-concept-group-queries-begin
+    :end-before: # cutlass-concept-group-queries-end
+    :dedent: 4
+
+``rank`` and ``count`` take a level: ``"thread"`` (the default), ``"warp"``,
+``"block"``, ``"cluster"`` or ``"grid"``. For a level inside the group,
+``rank`` is where this thread, or its warp, sits in the group, and ``count``
+is how many the group holds. For a level outside the group, ``rank`` is
+where the group sits in that level, and ``count`` is how many such groups
+the level holds. A group made with ``group_by`` takes the levels up to the
+group it splits: ``"thread"`` and ``"warp"`` for a group of lanes. A query
+at the ``"grid"`` level needs a launch that states the grid size with
+constants, as it does the block size.
+
+The results are CuTe scalars, so a kernel can use them in
+arithmetic, as an index, or in a condition. A query emits no barrier and
+uses no shared memory, and only the threads that want the answer need to
+ask.
+
+``sync()`` is a barrier for the threads of the group:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Group
+     - ``sync()``
+   * - ``this_block()``
+     - Block barrier
+   * - ``this_warp()``
+     - Warp barrier, ``__syncwarp()``
+   * - ``this_warp().group_by(n)``
+     - Warp barrier for the lanes of that group
+   * - ``this_cluster()``
+     - Cluster barrier on targets that have one, from ``sm_90``. Block
+       barrier on older targets.
+   * - ``this_thread()``
+     - Nothing
+
+``this_grid()`` and ``this_block().group_by(n)`` have no barrier.
 """
+
+# Implementation notes.
+#
+# Factories describe the calling thread, warp, block, cluster, or grid.
+# Construction records intent without querying a device or synchronizing
+# threads. Group methods emit device queries or barriers during tracing.
+# Queries and primitives resolve the launch dimensions that each operation
+# needs.
 
 from __future__ import annotations
 
@@ -27,38 +177,86 @@ Hierarchy = ThreadHierarchy
 
 
 class ThreadGroup(PlanningThreadGroup):
-    """Describe a group and emit CuTe hierarchy queries on demand.
+    """The threads that make a call together.
 
-    Construction and group_by create descriptors. Rank, count,
-    membership, and synchronization methods emit device operations when
-    called during tracing. Query results are CuTe scalar values. See
-    :ref:`thread groups <coop-thread-groups>` for hierarchy and participation.
+    A kernel gets one from :func:`cuda.coop.cutlass.this_block`,
+    :func:`cuda.coop.cutlass.this_warp` or another ``this_`` function, and
+    splits a warp or a block with
+    :meth:`~cuda.coop.cutlass.ThreadGroup.group_by`. Creating a group emits
+    no code. A primitive or one of the methods below does.
     """
 
     def rank(self, level="thread"):
-        """Query rank with the default unsigned CuTe result type.
+        """Return where this thread, or this group, sits.
 
-        The optional ``level`` selects the queried hierarchy level. Queries
-        involving the grid return Uint64; other queries return Uint32. See
-        :ref:`thread groups <coop-thread-groups>` for the hierarchy.
+        Parameters
+        ----------
+        level : str, optional
+            ``"thread"`` (the default), ``"warp"``, ``"block"``,
+            ``"cluster"`` or ``"grid"``. ``"gpu_thread"`` also means
+            ``"thread"``. ``"grid"`` needs a launch that states the grid
+            size with constants.
+
+        Returns
+        -------
+        cutlass.Uint32 or cutlass.Uint64
+            For a level inside the group, where this thread, or the warp,
+            block or cluster that holds it, sits in the group.
+            ``this_block().rank()`` is the thread's position in its block,
+            and ``this_block().rank("warp")`` is its warp's. For a level
+            outside the group, the group's position in that level:
+            ``this_block().rank("grid")`` is the block's position in the
+            grid. The result is ``Uint64`` when the group or the level is
+            the grid.
+
+        Notes
+        -----
+        In a block with more than one dimension, threads are ranked x first:
+        ``x + block_x * (y + block_y * z)``.
         """
         return self.rank_as(None, level)
 
     def count(self, level="thread"):
-        """Query count with the default unsigned CuTe result type.
+        """Return the size of the group, or how many such groups there are.
 
-        The optional ``level`` selects the queried hierarchy level. Queries
-        involving the grid return Uint64; other queries return Uint32. See
-        :ref:`thread groups <coop-thread-groups>` for the hierarchy.
+        Parameters
+        ----------
+        level : str, optional
+            A level name, as for
+            :meth:`~cuda.coop.cutlass.ThreadGroup.rank`.
+
+        Returns
+        -------
+        cutlass.Uint32 or cutlass.Uint64
+            For a level inside the group, how many threads, warps, blocks or
+            clusters the group holds: ``this_block().count()`` is the
+            block's thread count and
+            ``this_block().count("warp")`` is its warp count. For a level
+            outside the group, the number of such groups in that level:
+            ``this_block().count("grid")`` is the number of blocks in the
+            grid. The result is ``Uint64`` when the group or the level is
+            the grid.
         """
         return self.count_as(None, level)
 
     def rank_as(self, dtype=None, level="thread"):
-        """Query rank using an optional integer dtype selector.
+        """Return the rank as the integer type you name.
 
-        The result remains a CuTe scalar even when dtype is a Python or NumPy
-        type. None keeps the default unsigned width. ``level`` has the same
-        meaning as in :meth:`cuda.coop.cutlass.ThreadGroup.rank`.
+        Parameters
+        ----------
+        dtype : type, optional
+            A signed or unsigned integer type of 8, 16, 32 or 64 bits: a
+            CUTLASS type such as ``cutlass.Int32``, a NumPy integer type, or
+            Python ``int``, which means ``Int32``. ``None`` keeps the
+            default of :meth:`~cuda.coop.cutlass.ThreadGroup.rank`.
+        level : str, optional
+            A level name, as for
+            :meth:`~cuda.coop.cutlass.ThreadGroup.rank`.
+
+        Returns
+        -------
+        CuTe integer scalar
+            The rank, cast to the requested type without a range check.
         """
 
         from ._lowering._thread_group import provider_group_query
@@ -68,11 +266,21 @@ class ThreadGroup(PlanningThreadGroup):
         )
 
     def count_as(self, dtype=None, level="thread"):
-        """Query count using an optional integer dtype selector.
+        """Return the count as the integer type you name.
 
-        The result remains a CuTe scalar even when dtype is a Python or NumPy
-        type. None keeps the default unsigned width. ``level`` has the same
-        meaning as in :meth:`cuda.coop.cutlass.ThreadGroup.count`.
+        Parameters
+        ----------
+        dtype : type, optional
+            An integer type, as for
+            :meth:`~cuda.coop.cutlass.ThreadGroup.rank_as`.
+        level : str, optional
+            A level name, as for
+            :meth:`~cuda.coop.cutlass.ThreadGroup.rank`.
+
+        Returns
+        -------
+        CuTe integer scalar
+            The count, cast to the requested type without a range check.
         """
 
         from ._lowering._thread_group import provider_group_query
@@ -82,23 +290,48 @@ class ThreadGroup(PlanningThreadGroup):
         )
 
     def sync(self):
-        """Synchronize the participating members of this group."""
+        """Wait until every thread of the group arrives.
+
+        A block waits at a block barrier and a warp at ``__syncwarp()``. A
+        group of lanes waits for its own lanes only. A cluster waits at a
+        cluster barrier on targets from ``sm_90``, and at a block barrier
+        on older ones. ``this_thread().sync()`` emits nothing. The grid and
+        groups of warps have no barrier, and calling ``sync`` on them is
+        rejected when the kernel is compiled.
+        """
         from ._lowering._thread_group import provider_group_sync
 
         provider_group_sync(group=self, aligned=False)
 
     def sync_aligned(self):
-        """Synchronize a converged group with aligned participation."""
+        """Wait at the aligned form of the group's barrier.
+
+        For a block this is ``__syncthreads()``, and a cluster has an
+        aligned barrier as well. Use it only where every thread of the
+        group executes this same call. In a branch whose condition differs
+        between threads, use :meth:`~cuda.coop.cutlass.ThreadGroup.sync`.
+        For a warp or a group of lanes the two methods are the same.
+        """
         from ._lowering._thread_group import provider_group_sync
 
         provider_group_sync(group=self, aligned=True)
 
     def is_member(self):
-        """Return a CuTe Uint8 flag for membership in this group.
+        """Return whether the calling thread belongs to this group.
 
-        Check membership before using a mapped rank. Primitive
-        participation rules still apply; a membership guard alone cannot
-        make a divergent collective valid.
+        Returns
+        -------
+        cutlass.Uint8
+            One for every thread, except in a group made with
+            ``group_by(count, exhaustive=False)``, where the lanes or warps
+            left over get zero.
+
+        Notes
+        -----
+        For a group made with ``exhaustive=False``, call its primitives
+        inside ``if group.is_member():``, so that the threads left over skip
+        them. A left-over thread's ``rank`` in the group means nothing.
+        :meth:`~cuda.coop.cutlass.ThreadGroup.group_by` has an example.
         """
         from ._lowering._thread_group import provider_group_membership
 
@@ -165,7 +398,11 @@ def _require_complete_warp_partition(
 
 
 def this_block() -> ThreadGroup:
-    """Describe the current CUDA thread block for a CUTLASS primitive."""
+    """Return the calling thread's block.
+
+    Block primitives take it as their first argument. Its size comes from
+    the ``block`` argument of the launch.
+    """
 
     return make_thread_group(
         "block", group_type=ThreadGroup, scope="cuda.coop.cutlass"
@@ -173,11 +410,12 @@ def this_block() -> ThreadGroup:
 
 
 def this_warp() -> ThreadGroup:
-    """Describe the calling physical 32-thread warp.
+    """Return the calling thread's warp of 32 threads.
 
-    Construction does not inspect active lanes or synchronize threads. A
-    consuming query or primitive resolves the required launch facts and
-    applies that operation's participation rules.
+    Warp primitives take it as their first argument. The block size must be
+    a multiple of 32, so that every warp is complete.
+    :meth:`ThreadGroup.group_by <cuda.coop.cutlass.ThreadGroup.group_by>`
+    splits it into smaller groups.
     """
 
     return make_thread_group(
@@ -186,17 +424,17 @@ def this_warp() -> ThreadGroup:
 
 
 def this_thread() -> ThreadGroup:
-    """Describe the calling CUDA thread."""
+    """Return the calling thread as a group of one, for queries."""
     return make_thread_group(
         "thread", group_type=ThreadGroup, scope="cuda.coop.cutlass"
     )
 
 
 def this_cluster() -> ThreadGroup:
-    """Describe the cluster of the current kernel launch.
+    """Return the calling thread's cluster of blocks, for queries and ``sync``.
 
-    The consuming query or primitive resolves launch facts. Constructing this
-    descriptor does not configure cluster scheduling.
+    The ``cluster`` argument of the launch sets how many blocks a cluster
+    has. Without it, each block is a cluster by itself.
     """
     return make_thread_group(
         "cluster", group_type=ThreadGroup, scope="cuda.coop.cutlass"
@@ -204,10 +442,10 @@ def this_cluster() -> ThreadGroup:
 
 
 def this_grid() -> ThreadGroup:
-    """Describe the current grid for supported hierarchy queries.
+    """Return every thread of the launch as one group, for queries.
 
-    Queries resolve the launch dimensions when consumed. This descriptor does
-    not enable grid synchronization or reductions.
+    Its ``rank`` and ``count`` return ``Uint64``. The launch states the grid
+    size with constants, as it does the block size. The grid has no barrier.
     """
     return make_thread_group(
         "grid", group_type=ThreadGroup, scope="cuda.coop.cutlass"

@@ -98,7 +98,7 @@
     );
     return {
       detail: option.detail, rows, phases,
-      notes: [option.note, "Transpose Store algorithms may rearrange the input payload in place. Copy values before Store if they are needed later.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
+      notes: [option.note, "The three transpose algorithms leave the input payload undefined. Copy values before Store if they are needed later.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
       summary: `Memory receives values 0–${count - 1} in order. ${option.exchange ? "The exchange changes which thread writes each value." : "Each thread writes directly from the illustrated input ownership."}`,
       caption: "Eight illustrative threads; warp variants use two four-lane teaching warps. CUDA physical warps have 32 lanes. Timeslicing serializes exchange scratch use, not the subsequent global-memory store instruction stream.",
     };

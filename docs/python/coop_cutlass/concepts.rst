@@ -3,245 +3,227 @@
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 .. _coop-programming-concepts:
+.. _coop-api-namespaces:
+.. _kernel-api:
 
 Programming concepts
 ====================
 
-Cooperative operations let a group of threads work on data together. This
-page explains how threads divide a tile, which threads must participate,
-and how to use results and temporary storage. The :doc:`Programming Guide
-<programming_guide>` provides complete CuTe kernels and launch examples.
+A cooperative primitive is one call that a group of threads makes together.
+Four ideas cover any kernel that uses one: the single-phase call, the thread
+group, each thread's data, and the scratch space in shared memory that some
+primitives need. This page introduces each with an example. The
+:doc:`API reference <api>` has the complete rules.
 
-.. _coop-api-namespaces:
-.. _kernel-api:
+.. _coop-concepts-single-phase:
 
-Kernel API
+Single-phase calls
+------------------
+
+A primitive is called in one step, inside the kernel:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
+   :language: python
+   :start-after: docs: start cutlass-prefix-sum
+   :end-before: docs: end cutlass-prefix-sum
+
+CUB's C++ classes take two steps. The same kernel first specializes a class
+for each primitive, repeating the element type, the block size and the items
+per thread, and declares the scratch the scan needs. Then it calls them:
+
+.. code-block:: cpp
+
+   __global__ void prefix_sum(const int* source, int* destination)
+   {
+     using BlockLoad  = cub::BlockLoad<int, 128, 4>;
+     using BlockScan  = cub::BlockScan<int, 128>;
+     using BlockStore = cub::BlockStore<int, 128, 4>;
+     __shared__ typename BlockScan::TempStorage temp_storage;
+
+     int values[4];
+     BlockLoad().Load(source, values);
+     BlockScan(temp_storage).InclusiveSum(values, values);
+     BlockStore().Store(destination, values);
+   }
+
+In the Python kernel, each of those facts has one source:
+
+* The block size, 128, comes from ``kernel.launch(grid=1, block=128)``.
+* The element type comes from the pointer the host passes as ``source``. The
+  :ref:`first program <coop-cutlass-load-store>` makes it with
+  ``make_ptr(cutlass.Int32, ...)``.
+* The four items per thread come from ``items_per_thread``.
+* The scratch comes from the compiler.
+
+:ref:`The top of the API reference <cuda_coop-module>` describes how every
+primitive is called.
+
+.. _coop-concepts-groups:
+.. _groups-and-thread-data:
+
+Thread groups
+-------------
+
+The first argument of a primitive names the threads that make the call
+together. Here one ``sum`` works on a block, on each warp, and on each group
+of eight lanes. A lane is one thread of a warp.
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-groups-begin
+   :end-before: # cutlass-concept-groups-end
+
+.. figure:: visualizations/concept-thread-groups.svg
+   :alt: Five boxes from grid to thread, each named by its this_ function,
+         with block and warp filled. Below them, one block of 128 threads
+         is drawn as one group, as four warps, and as sixteen groups of
+         eight lanes. A dot marks rank 0 of each group.
+   :width: 100%
+
+   The three groups of the kernel above, on its block of 128 threads.
+
+A thread's rank is its position in its group. ``rank`` returns it,
+``count`` returns the size of the group, and ``sync`` is the group's
+barrier. :ref:`Thread groups <coop-thread-groups>` in the API reference
+lists the groups each primitive takes.
+
+.. _coop-concepts-payloads:
+
+ThreadData
 ----------
 
-Use ``import cuda.coop.cutlass as coop``. Calls inside a CuTe kernel are
-compiler markers; compilation turns them into device operations. The
-``cuda.coop`` parent is a namespace package. The standalone distribution
-installs its public operations only under ``cuda.coop.cutlass``.
+A ``ThreadData`` is one thread's payload: a fixed number of items held in
+registers. ``load`` returns one in each thread:
 
-Built-in operators and their documented aliases are supported. Reduce and
-Scan also accept :ref:`compiled scalar device operators
-<coop-cutlass-device-operators>`. Prepare these operators on the host before
-kernel tracing. Stateful Scan prefix callbacks are unsupported.
+.. figure:: visualizations/concept-thread-data.svg
+   :alt: An array named source with 512 numbered cells. An arrow leads from
+         each run of four cells to a card for one thread, from thread 0 to
+         thread 127. Each card holds those four numbers as items 0 to 3.
+   :width: 100%
+
+   ``values = coop.load(block, source, items_per_thread=4)`` on a block of
+   128 threads.
+
+A block scan or a sort reads a payload and returns a new one, ``reduce`` and
+``sum`` return one value, and ``store`` writes a payload to memory. A kernel
+can also fill a payload itself. This kernel squares the items it loaded and
+sums the squares:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-thread-data-begin
+   :end-before: # cutlass-concept-thread-data-end
+
+The number of items is fixed when the kernel is compiled, so an index is a
+Python integer or a ``cutlass.range_constexpr`` variable. :ref:`ThreadData
+<coop-thread-data>` in the API reference covers element types, ``from_fn``,
+and conversion to and from CuTe register tensors.
+
+.. _coop-concepts-storage:
+.. _temporary-storage:
+
+TempStorage
+-----------
+
+Some primitives need scratch space in shared memory. Leave ``temp_storage``
+out and the compiler provides it, with a barrier after each call. Pass a
+``TempStorage`` to choose which calls share bytes. This prefix sum shares one
+region among its three calls. Load and Store ask for ``algorithm="transpose"``
+because their default algorithm uses no scratch:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-temp-storage-begin
+   :end-before: # cutlass-concept-temp-storage-end
+
+.. figure:: visualizations/concept-temp-storage.svg
+   :alt: Three rows of bars on one byte axis. With temp_storage left out,
+         Load, Scan and Store each have their own region. With a shared
+         TempStorage, all three start at offset 0 of one region as large as
+         the largest call. With an exclusive TempStorage, they sit end to
+         end in one region.
+   :width: 100%
+
+   Scratch for the three calls above, to scale, on a block of 128 threads
+   with four ``Int32`` items each: 4,784 bytes with ``temp_storage`` left
+   out, 2,064 with a shared ``TempStorage``, 4,784 with an exclusive one.
+   Sizes vary with the block shape, the element type and the CUB version.
+
+The kernel above is the middle row: one region the size of its largest call.
+Its ``auto_sync=True`` adds a barrier after each call. Without it you place
+the barriers yourself with ``scratch.sync()``. Without the three
+``temp_storage`` arguments the kernel is the top row.
+``sharing="exclusive"`` gives the bottom row, where no call reuses another
+call's bytes, so no barrier is needed between them.
+:ref:`TempStorage <coop-temp-storage>` in the API reference shows each of
+these, and covers ``reserve`` and ``release``.
 
 .. _coop-concepts-calling-conventions:
 
 Calling conventions
 -------------------
 
-A primitive's group and input/output operands precede ``/`` in its
-signature and are passed positionally. Controls after ``*`` are keyword-only:
+The group and the operands are passed by position, and controls by keyword.
+Signatures in the API reference mark the split with ``/`` and ``*``:
 
 .. code-block:: python
 
    items = coop.load(
-       group, source, items_per_thread=items_per_thread,
-       valid_items=count, offset=offset,
+       group, source, items_per_thread=items_per_thread, offset=offset
    )
    result = coop.reduce(group, items, binary_op="max")
 
-Load always returns a fresh ``ThreadData`` payload. An operation that
-returns a new value leaves its input payload unchanged unless its contract
-says otherwise. Check :doc:`api` for each operation's accepted operands,
-controls, and ownership rules.
+``items_per_thread`` and ``binary_op`` select code, so they are Python
+values, fixed when the kernel is compiled. ``offset`` describes data and can
+also be a CuTe value computed while the kernel runs. The call can sit in the
+kernel or in a ``@cute.jit`` function that the kernel calls.
 
-Shared execution model
-----------------------
-
-.. _coop-concepts-groups:
-.. _coop-thread-groups:
-.. _groups-and-thread-data:
-
-Groups and tiles
-^^^^^^^^^^^^^^^^
-
-A group identifies the threads working together. ``this_block()`` selects
-the current block; ``this_warp()`` selects a physical 32-thread warp.
-``this_warp().group_by(width)`` partitions it into consecutive logical
-warps of 1, 2, 4, 8, 16, or 32 threads. A group processing ``K`` items per
-thread has a tile of ``group_size * K`` items. Each block or warp group
-processes its own tile.
-
-The hierarchy also describes individual threads, clusters, the grid, and mapped
-groups of physical warps. These descriptors support queries such as rank,
-count, and membership. Their availability does not make every primitive valid
-for that group: Reduce, Load/Store, and Scan use block or warp groups, and grid
-primitives are unavailable. Consult the backend guide for the supported query
-levels and synchronization operations.
-
-A multidimensional block uses x-major linear thread rank:
-``x + block_x * (y + block_y * z)``. Warp primitives require an enclosing
-block made of complete physical warps. For warp Load/Store, the compiler
-adds the group's within-block tile origin to the memory address. A caller's
-``offset`` supplies the remaining element offset, such as the block's tile
-origin in a larger array; do not add the within-block group origin again.
+Rules every kernel follows
+--------------------------
 
 .. _coop-concepts-participation:
-.. _coop-participation:
 .. _load-and-store-semantics:
 
-Participation and valid prefixes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Participation
+^^^^^^^^^^^^^
 
-Every required participant must reach the same primitive invocation.
-A short tile does not reduce the number of threads that must participate.
-For example, ``valid_items=45`` limits a 64-item Load to its first 45 tile
-positions; all threads in the group still call Load. Complete sibling
-logical warps may take different paths where the operation's contract
-permits it.
+Every thread of the group makes the call. ``valid_items`` shortens the data
+and leaves the group whole: with ``valid_items=45``, a Load of 64 elements
+reads the first 45, and every thread of the group still calls ``load``.
 
-For Load and Store, ``valid_items`` counts tile elements, not items per
-thread. It must be uniform within the group and lie between zero and the tile
-capacity. Clamp a tail count before passing it. Invalid static counts are
-rejected during compilation; invalid runtime counts trap on the device.
-``offset`` is a nonnegative element offset, also uniform within the group.
-It is independent of the valid count. Other families define their own
-valid-prefix controls; for example, reduction counts contributing threads.
-
-Load leaves invalid payload slots unspecified unless ``oob_default`` is
-provided, even if those slots were initialized before Load. Store leaves
-destination elements outside the valid prefix untouched. A valid prefix
-controls data access; it does not make it safe to skip a required participant
-or a reuse barrier.
-
-.. _coop-concepts-payloads:
-
-Per-thread payloads
-^^^^^^^^^^^^^^^^^^^
-
-Prefer ``coop.load(group, source, items_per_thread=items_per_thread)`` for each
-participating thread's fixed-size ``ThreadData`` payload. Its element type
-comes from ``source``. Pass the positive compile-time count as a kernel
-argument declared ``items_per_thread: cutlass.Constexpr`` in both the CuTe
-kernel and its launcher. A count of one still returns ``ThreadData``.
-
-Use ``coop.ThreadData(items_per_thread)`` to construct a payload for computed
-values or writable auxiliary outputs. Dtype-free construction remains
-supported: initialize every consumed item with a compatible typed value.
-Load's ``items_per_thread`` and ``alignment`` are keyword-only controls.
-
-Global and shared arrays can supply Load's source and receive Store's output.
-Those arrays hold a group tile; a ``ThreadData`` holds one thread's values.
-Use native CuTe copies to stage a tile directly in shared memory, then
-synchronize before another thread consumes it. See
-:ref:`shared-memory staging <coop-shared-load-store>`.
-
-Supported payload dtypes are signed and unsigned 8-, 16-, 32-, and 64-bit
-integers and 32- and 64-bit floating-point values. An explicit alignment is
-a positive power of two in bytes and sets a minimum when payload storage
-is materialized. It does not assert alignment of an input or output array.
-For example,
-``coop.load(group, source, items_per_thread=items_per_thread, alignment=16)``
-requests at least 16-byte alignment for the returned payload, as does
-``coop.ThreadData(items_per_thread, alignment=16)`` for a directly constructed
-payload. ``None`` lets the compiler choose; it may use stronger alignment.
-
-The payload extent is a compile-time value available as
-``items.items_per_thread``. Directly constructed slots start uninitialized.
-Initialize every item an operation will read; Load without
-``oob_default`` leaves invalid slots unspecified. Assign those slots after
-Load before reading them, or supply a default. As in CUB, transpose Store
-algorithms may rearrange the input payload in place. Copy values before
-Store if they are needed later.
-
-Typing protocols describe the supported payload interfaces; protocol
-compatibility alone does not make an arbitrary Python object a kernel value.
-CuTe register tensors and immutable ``TensorSSA`` values have explicit
-adapters. Typed assignments and supported producers can establish the element
-type. See :ref:`element-type inference <coop-faq-thread-data-dtype>` and
-:ref:`register and producer conversions <coop-cutlass-register-payloads>`
-for ownership, lifetime, and runtime-control-flow rules.
+The count is the same for every thread of the group. For Load and Store it
+is in elements of the group's :term:`tile`, from zero to the tile's size.
+With ``valid_items``, ``reduce``, ``sum`` and a warp scan take a scalar
+from each thread, such as ``values[0]``, and the count is in threads, from
+one to the group's size. A Python count outside the range is rejected when
+the kernel is compiled. A runtime count outside it traps on the device.
 
 .. _coop-concepts-layouts:
 .. _exchange-semantics:
 .. _shuffle-semantics:
 .. _scan-semantics:
 
-Layouts and operation order
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Layouts
+^^^^^^^
 
-In a :term:`blocked` layout, each thread owns consecutive tile positions.
-In a :term:`striped` layout, consecutive threads own consecutive positions
-at each item slot. The :ref:`layout glossary <coop-glossary-layouts>` gives
-the formulas and an ownership table.
+A payload has a layout, set by the call that made it. In a :term:`blocked`
+layout each thread holds neighboring elements of the tile. In a
+:term:`striped` layout, neighboring threads hold neighboring elements. The
+:ref:`glossary <coop-glossary-layouts>` has a table of both.
 
-Load/Store's ``direct`` and ``vectorize`` algorithms expose blocked
-payloads. ``striped`` exposes striped payloads. Transpose algorithms use
-striped memory accesses and present blocked payloads to the caller.
-Exchange converts between supported layouts. ``ThreadData`` does not carry
-a layout tag that automatically fixes a mismatched Load/Store pair.
-Shuffle shifts values within a block's tile. The
-:doc:`Exchange <visualizations/exchange>` and
-:doc:`Shuffle <visualizations/shuffle>` visualizations show the
-supported rearrangements.
-
-Scan traverses the group's values in blocked tile order. A striped Load
-must therefore be converted before a Scan intended to follow the array's
-original order. Choosing a memory-access algorithm and choosing the order
-of values seen by an operation are related but distinct decisions.
+A payload keeps no record of its layout. Load and Store with the same
+``algorithm`` agree on it, and :doc:`Exchange <visualizations/exchange>`
+converts one layout into the other. A
+scan reads values in blocked order, so a kernel that loads with
+``algorithm="striped"`` converts the payload before it scans.
 
 .. _coop-concepts-results:
 
-Result ownership
-^^^^^^^^^^^^^^^^
+Results
+^^^^^^^
 
-A primitive's return type does not say which threads may use its result.
-Reduce/Sum define their result only at group rank zero. Scan returns each
-thread's part of the prefix sequence. Check the operation's group and algorithm
-contract before consuming a result.
-
-Sorting and selection operate on one group's tile. Sorting each block does not
-sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. See the :doc:`API reference <api>`
-for sorting and selection operations.
-
-.. _coop-concepts-storage:
-.. _coop-temp-storage:
-.. _temporary-storage:
-
-Scratch allocation and reuse
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The compiler allocates temporary shared storage for operations that need
-it. Direct, striped, and vectorized Load/Store are storage-free: they add
-no scratch pointer, shared allocation, or reuse barrier. Other algorithms
-use the concrete CUB specialization's required size and alignment.
-
-For operations that accept an explicit descriptor, construct ``TempStorage``
-inside the kernel. A descriptor lets several calls reuse one region or request
-capacity and minimum alignment. An undersized request is an error.
-``sharing="shared"`` overlaps the uses of one descriptor;
-``sharing="exclusive"`` assigns distinct call sites separate slices. With
-automatic synchronization disabled, separate slices avoid barriers needed
-solely for cross-call scratch reuse, at the cost of more shared memory.
-Independent descriptors do not alias. See :ref:`the exclusive-storage FAQ
-<coop-faq-exclusive-storage>`.
-
-Explicit descriptors default to ``auto_sync=False`` for both sharing modes.
-The kernel must provide the required barrier before reuse, including across
-iterations: a call site inside a loop reuses its slice even with exclusive
-storage. Set ``auto_sync=True`` to insert a trailing reuse barrier after each
-storage-using call. Compiler-managed scratch, used when no descriptor is
-supplied, synchronizes automatically. A scratch reuse barrier does not replace
-synchronization for the kernel's own shared data.
-
-Warp operations that need scratch keep independent storage per physical or
-logical group and use the appropriate warp mask. Each primitive documents
-whether it accepts explicit storage. See :ref:`CUTLASS storage
-<coop-cutlass-storage>` and :ref:`the storage FAQ <coop-faq-temp-storage>`
-for examples and limits.
-
-``reserve(num_elems, dtype, alignment=...)`` returns a typed shared view
-from a descriptor. Shared policy may alias primitive scratch; exclusive policy
-assigns slices. A reservation is application data, so a scratch-reuse barrier
-alone does not establish that another thread can consume its contents.
-
-``release()`` consumes the descriptor and its aliases on the executing path
-and exposes the entire existing region, including padding and exclusive
-slices. It inserts no barrier or wait. Finish outstanding uses and synchronize
-as required before release; subsequent descriptor or stale-alias use is an
-error. Conditional and repeated execution must respect the same lifetime.
+A result belongs to particular threads. ``reduce`` and ``sum`` leave their
+result in the thread with rank 0. A scan gives each thread its own part of
+the running result. A sort orders one group's tile, so sorting each block of
+a grid leaves the array as a whole unsorted. Each entry in the
+:doc:`API reference <api>` says where its result is defined.

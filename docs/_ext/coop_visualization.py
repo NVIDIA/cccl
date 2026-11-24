@@ -30,7 +30,7 @@ _EXPLORERS = {
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
-    "radix": "Radix Rank/Sort",
+    "radix": "Radix Sort and Rank",
     "topk": "TopK",
     "adjacent-difference": "Adjacent Difference",
     "discontinuity": "Discontinuity",

@@ -95,8 +95,8 @@ _CCCL_HOST_API void run_benchmark(nvbench::state& state)
   const int grid_size = max_blocks_per_sm * num_sms;
 
   state.add_element_count(static_cast<size_t>(grid_size) * block_size * ItemsPerThread * num_iterations);
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, block_size>>>(num_iterations, op_t{});
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<grid_size, block_size, 0, launch.get_stream()>>>(num_iterations, op_t{});
   });
 }
 
