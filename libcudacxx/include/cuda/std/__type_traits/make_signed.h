@@ -31,9 +31,11 @@
 #endif // _CCCL_CHECK_BUILTIN(make_signed)
 
 // __make_signed doesn't work with clang < 20 or clang + nvcc
-#if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+#if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)) \
+  || (_CCCL_COMPILER(CLANG) && defined(_GLIBCXX_TYPE_TRAITS))
 #  undef _CCCL_BUILTIN_MAKE_SIGNED
-#endif // _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+#endif // _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)) || (_CCCL_COMPILER(CLANG)
+       // && defined(_GLIBCXX_TYPE_TRAITS))
 
 // nvrtc doesn't handle enums properly, see nvbug 5554624
 #if _CCCL_COMPILER(NVRTC, <, 13, 3)
