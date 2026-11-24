@@ -61,7 +61,7 @@ int main()
   ctx.task(lA.rw()).set_symbol("two\\nchars")->*[](cudaStream_t, auto) {};
   {
     auto guard = ctx.dot_section("sec back\\slash");
-    ctx.task(lA.rw()).set_symbol("mix\\\"\"\\")->*[](cudaStream_t, auto) {};
+    ctx.task(lA.rw()).set_symbol(R"(mix\""\)")->*[](cudaStream_t, auto) {};
     {
       auto guard_inner = ctx.dot_section("inner \"sec\"");
       ctx.task(lA.rw()).set_symbol("f2")->*[](cudaStream_t, auto) {};
@@ -74,7 +74,7 @@ int main()
 
   EXPECT(access(filename, F_OK) != -1);
 
-  ::std::ifstream in(filename);
+  const ::std::ifstream in(filename);
   ::std::stringstream ss;
   ss << in.rdbuf();
   const ::std::string text = ss.str();
