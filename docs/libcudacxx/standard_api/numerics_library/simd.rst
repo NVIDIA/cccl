@@ -62,7 +62,7 @@ The implementation exploits CUDA SIMD instructions for the following element typ
    * - 8-bit integers
      - Addition, subtraction, negation, increment, decrement, minimum, maximum
      - ``add.u8x4``
-     - ``SM120`` family feature, CUDA 13.2 or later
+     - Fixed-size vectors with at least two elements. Requires ``SM107f`` with CUDA 13.4 or later, or ``SM120f`` with CUDA 13.2 or later.
    * - 16-bit and 32-bit integers
      - Nested minimum or maximum, such as ``min(min(a, b), c)``
      - ``min.s16x2``
