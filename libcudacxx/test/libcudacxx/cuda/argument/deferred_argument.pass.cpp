@@ -47,7 +47,7 @@ TEST_FUNC constexpr bool test()
   // Deferred single value with runtime bounds
   {
     int val      = 42;
-    auto def     = cuda::args::deferred{&val, cuda::args::bounds(0, 100)};
+    auto def     = cuda::args::deferred{&val, cuda::args::bounds(short{0}, short{100})};
     using traits = cuda::args::__traits<decltype(def)>;
     static_assert(!traits::has_static_bounds);
     static_assert(traits::has_bounds);
@@ -133,7 +133,7 @@ TEST_FUNC constexpr bool test()
   // Deferred sequence with runtime bounds
   {
     int arr[3]   = {10, 20, 30};
-    auto def     = cuda::args::deferred_sequence{+arr, cuda::args::bounds(0, 100)};
+    auto def     = cuda::args::deferred_sequence{+arr, cuda::args::bounds(short{0}, short{100})};
     using traits = cuda::args::__traits<decltype(def)>;
     static_assert(!traits::has_static_bounds);
     static_assert(traits::has_bounds);

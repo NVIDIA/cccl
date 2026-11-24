@@ -164,8 +164,8 @@ inline constexpr bool __valid_bounds_v = false;
 template <class _ElementType>
 inline constexpr bool __valid_bounds_v<_ElementType, no_bounds> = true;
 
-template <class _ElementType, class _BoundsTp>
-inline constexpr bool __valid_bounds_v<_ElementType, runtime_bounds<_BoundsTp>> = true;
+template <class _ElementType>
+inline constexpr bool __valid_bounds_v<_ElementType, runtime_bounds<_ElementType>> = true;
 
 template <class _ElementType, auto _Lowest, auto _Highest>
 inline constexpr bool __valid_bounds_v<_ElementType, static_bounds<_Lowest, _Highest>> =
@@ -222,9 +222,8 @@ template <class _ElementType, class _Bounds>
 _CCCL_API constexpr void __validate_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
   static_assert(__valid_bounds_v<_ElementType, _Bounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds, or "
-                "cuda::args::static_bounds with "
-                "values representable by the element type");
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
   _CCCL_VERIFY((__has_bounds_intersection<_ElementType, _Bounds>(__runtime_bounds)),
                "static and runtime argument bounds do not intersect");
 }
@@ -418,9 +417,8 @@ public:
   using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
   static_assert(__valid_bounds_v<__element_type, _Bounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds, or "
-                "cuda::args::static_bounds with "
-                "values representable by the element type");
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
 private:
   friend struct __access;
@@ -474,7 +472,7 @@ public:
 
 //! @brief Wraps a reference to a single value that becomes available in stream order.
 //!
-//! @tparam _Bounds @c no_bounds, @c runtime_bounds<T>, or @c static_bounds<Low,High>.
+//! @tparam _Bounds @c no_bounds, @c runtime_bounds<element_type>, or @c static_bounds<Low,High>.
 //!
 //! Deduction records runtime-only bounds or, when supplied, static bounds. Effective bounds intersect both ranges:
 //! the larger lower bound and the smaller upper bound. Runtime bounds require a bounds type other than @c no_bounds.
@@ -497,7 +495,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>
   -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>) -> deferred<_Arg, runtime_bounds<_Tp>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>)
+  -> deferred<_Arg, runtime_bounds<__element_type_of_t<_Arg>>>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
@@ -531,7 +530,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, 
 
 template <class _Arg, class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, runtime_bounds<_Tp>)
-  -> deferred_sequence<_Arg, runtime_bounds<_Tp>>;
+  -> deferred_sequence<_Arg, runtime_bounds<__element_type_of_t<_Arg>>>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
@@ -791,29 +790,36 @@ _CCCL_API constexpr auto __constant_sequence_compute_highest() noexcept
 //! @brief Traits for argument wrappers and plain argument values.
 //!
 //! Models @c numeric_limits for bounds: @c lowest is the lower bound, @c highest is the upper bound.
-//! Use in @c if @c constexpr for compile-time dispatch based on bounds.
+//! @c has_bounds is true when the argument type guarantees bounds. @c has_static_bounds is true when those bounds
+//! are known at compile time. A plain item count has both flags set to false because it carries the count itself.
+//! An immediate sequence can store runtime bounds even when its type has @c has_bounds set to false.
+//! To require bounds only for deferred counts, check <tt>!traits::is_deferred || traits::has_bounds</tt>.
 template <class _Tp>
 struct __traits_impl
 {
-  using value_type                      = _Tp;
-  using element_type                    = __element_type_of_t<_Tp>;
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __type_lowest<element_type>();
-  static constexpr element_type highest = __type_highest<element_type>();
+  using value_type                        = _Tp;
+  using element_type                      = __element_type_of_t<_Tp>;
+  static constexpr bool has_static_bounds = false;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __type_lowest<element_type>();
+  static constexpr element_type highest   = __type_highest<element_type>();
 };
 
 template <auto _Value, class _Tp>
 struct __traits_impl<constant<_Value, _Tp>>
 {
-  using value_type                      = typename constant<_Value, _Tp>::value_type;
-  using element_type                    = value_type;
-  static constexpr bool is_constant     = true;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value, _Tp>();
-  static constexpr element_type highest = __constant_compute_highest<_Value, _Tp>();
+  using value_type                        = typename constant<_Value, _Tp>::value_type;
+  using element_type                      = value_type;
+  static constexpr bool has_static_bounds = true;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = true;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __constant_compute_lowest<_Value, _Tp>();
+  static constexpr element_type highest   = __constant_compute_highest<_Value, _Tp>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -825,11 +831,13 @@ struct __traits_impl<immediate<_Arg, _StaticBounds>>
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_StaticBounds>;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _StaticBounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _StaticBounds>();
 };
 
 template <auto _Value>
@@ -838,11 +846,13 @@ struct __traits_impl<__constant_sequence<_Value>>
   using value_type   = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using element_type = __element_type_of_t<value_type>;
   static_assert(__is_sequence_v<value_type>, "The value type of __constant_sequence must be a sequence");
-  static constexpr bool is_constant     = true;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __constant_sequence_compute_lowest<_Value>();
-  static constexpr element_type highest = __constant_sequence_compute_highest<_Value>();
+  static constexpr bool has_static_bounds = true;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = true;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = false;
+  static constexpr element_type lowest    = __constant_sequence_compute_lowest<_Value>();
+  static constexpr element_type highest   = __constant_sequence_compute_highest<_Value>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -855,11 +865,13 @@ struct __traits_impl<__immediate_sequence<_Arg, _StaticBounds>>
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_StaticBounds>;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = false;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _StaticBounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _StaticBounds>();
 };
 
 // Flags classify _Bounds, not stored values. Runtime-only tags have has_bounds && !has_static_bounds.
@@ -869,9 +881,8 @@ struct __traits_impl<deferred<_Arg, _Bounds>>
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__valid_bounds_v<element_type, _Bounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds, or "
-                "cuda::args::static_bounds with "
-                "values representable by the element type");
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
   static constexpr bool has_bounds        = !::cuda::std::is_same_v<_Bounds, no_bounds>;
   static constexpr bool has_static_bounds = __is_static_bounds_v<_Bounds>;
@@ -889,9 +900,8 @@ struct __traits_impl<deferred_sequence<_Arg, _Bounds>>
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__is_sequence_v<value_type>, "deferred sequence arguments must have a distinct element type");
   static_assert(__valid_bounds_v<element_type, _Bounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds, or "
-                "cuda::args::static_bounds with "
-                "values representable by the element type");
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
   static constexpr bool has_bounds        = !::cuda::std::is_same_v<_Bounds, no_bounds>;
   static constexpr bool has_static_bounds = __is_static_bounds_v<_Bounds>;

@@ -106,6 +106,29 @@ TEST_FUNC void test()
   static_assert(!cuda::args::__is_deferred_v<cuda::args::deferred_sequence<int*>>);
   static_assert(!cuda::args::__is_deferred_v<cuda::args::deferred_sequence<int*, cuda::args::runtime_bounds<int>>>);
 
+  // --- argument_traits: has_bounds and has_static_bounds ---
+
+  using plain = cuda::args::__traits<int>;
+  static_assert(!plain::has_bounds && !plain::has_static_bounds);
+
+  using constant = cuda::args::__traits<cuda::args::constant<42>>;
+  static_assert(constant::has_bounds && constant::has_static_bounds);
+#if TEST_HAS_CLASS_NTTP
+  using constant_sequence = cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>;
+  static_assert(constant_sequence::has_bounds && constant_sequence::has_static_bounds);
+#endif // TEST_HAS_CLASS_NTTP
+
+  using bounds            = cuda::args::static_bounds<0, 10>;
+  using immediate         = cuda::args::__traits<cuda::args::immediate<int>>;
+  using bounded_immediate = cuda::args::__traits<cuda::args::immediate<int, bounds>>;
+  static_assert(!immediate::has_bounds && !immediate::has_static_bounds);
+  static_assert(bounded_immediate::has_bounds && bounded_immediate::has_static_bounds);
+
+  using sequence         = cuda::args::__traits<cuda::args::__immediate_sequence<int*>>;
+  using bounded_sequence = cuda::args::__traits<cuda::args::__immediate_sequence<int*, bounds>>;
+  static_assert(!sequence::has_bounds && !sequence::has_static_bounds);
+  static_assert(bounded_sequence::has_bounds && bounded_sequence::has_static_bounds);
+
   // --- argument_traits: is_deferred ---
 
   static_assert(!cuda::args::__traits<int>::is_deferred);

@@ -192,6 +192,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::args::__valid_bounds_v<int, cuda::args::no_bounds>);
     static_assert(cuda::args::__valid_bounds_v<int, cuda::args::static_bounds<1, 8>>);
     static_assert(cuda::args::__valid_bounds_v<int, cuda::args::runtime_bounds<int>>);
+    static_assert(!cuda::args::__valid_bounds_v<int, cuda::args::runtime_bounds<short>>);
     static_assert(!cuda::args::__valid_bounds_v<int, int>);
   }
 
