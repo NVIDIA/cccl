@@ -1512,7 +1512,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> sqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __rhi, __rlo;
-  ::cuda::__fpmp2_sqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 
@@ -1520,7 +1527,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> rsqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __rhi, __rlo;
-  ::cuda::__fpmp2_rsqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_rsqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_rsqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 
