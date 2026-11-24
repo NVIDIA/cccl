@@ -35,7 +35,6 @@
 #include <cuda/std/__string/literal.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
@@ -47,10 +46,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _CharT, class _Tuple, class _Void, class... _Args>
-class __fmt_formatter_tuple : public __fmt_disabled_formatter
-{};
-
 template <class _CharT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_parser<_CharT> __fmt_formatter_tuple_make_parser() noexcept
 {
@@ -59,11 +54,15 @@ template <class _CharT>
   return __parser;
 }
 
-template <class _CharT, class _Tuple, class... _Args>
-class __fmt_formatter_tuple<_CharT,
-                            _Tuple,
-                            enable_if_t<__fmt_char_type<_CharT> && __fold_and_v<formattable<_Args, _CharT>...>>,
-                            _Args...>
+template <class _CharT, class _Tuple, class = void>
+class __fmt_formatter_tuple : public __fmt_disabled_formatter
+{};
+
+template <class _CharT, class... _Args>
+inline constexpr bool __fmt_enable_tuple_formatter_v = __fmt_char_type<_CharT> && (formattable<_Args, _CharT> && ...);
+
+template <class _CharT, template <class...> class _Tuple, class... _Args>
+class __fmt_formatter_tuple<_CharT, _Tuple<_Args...>, enable_if_t<__fmt_enable_tuple_formatter_v<_CharT, _Args...>>>
 {
   tuple<formatter<remove_cvref_t<_Args>, _CharT>...> __underlying_;
   basic_string_view<_CharT> __separator_       = _CCCL_STRLIT(_CharT, ", ");
@@ -165,7 +164,7 @@ public:
 
   template <class _FormatContext>
   _CCCL_HOST_DEVICE_API typename _FormatContext::iterator
-  format(conditional_t<(formattable<const _Args, _CharT> && ...), const _Tuple&, _Tuple&> __tuple,
+  format(conditional_t<(formattable<const _Args, _CharT> && ...), const _Tuple<_Args...>&, _Tuple<_Args...>&> __tuple,
          _FormatContext& __ctx) const
   {
     const auto __specs = __parser_.__get_parsed_std_spec(__ctx);
@@ -187,7 +186,7 @@ public:
     // characters. Which means there will be
     //   (n - 1) * 2 + 1 + 1 = n * 2 character
     // So estimate 8 times the range size as buffer.
-    __fmt_retarget_buffer<_CharT> __buffer{8 * tuple_size_v<_Tuple>};
+    __fmt_retarget_buffer<_CharT> __buffer{8 * sizeof...(_Args)};
     basic_format_context<typename __fmt_retarget_buffer<_CharT>::__iterator, _CharT> __c{
       __buffer.__make_output_iterator(), __ctx};
 
@@ -197,20 +196,20 @@ public:
 };
 
 template <class _CharT, class... _Args>
-struct formatter<pair<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, pair<_Args...>, void, _Args...>
+struct formatter<pair<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, pair<_Args...>>
 {};
 
 template <class _CharT, class... _Args>
-struct formatter<tuple<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, tuple<_Args...>, void, _Args...>
+struct formatter<tuple<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, tuple<_Args...>>
 {};
 
 #if _CCCL_HAS_HOST_STD_LIB()
 template <class _CharT, class... _Args>
-struct formatter<::std::pair<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, ::std::pair<_Args...>, void, _Args...>
+struct formatter<::std::pair<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, ::std::pair<_Args...>>
 {};
 
 template <class _CharT, class... _Args>
-struct formatter<::std::tuple<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, ::std::tuple<_Args...>, void, _Args...>
+struct formatter<::std::tuple<_Args...>, _CharT> : __fmt_formatter_tuple<_CharT, ::std::tuple<_Args...>>
 {};
 #endif // _CCCL_HAS_HOST_STD_LIB()
 

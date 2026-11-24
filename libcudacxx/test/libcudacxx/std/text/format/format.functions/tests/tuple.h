@@ -158,8 +158,8 @@ TEST_HOST_DEVICE_FUNC void test_escaping(TupleOrPair&& input)
 
   // String
   cuda::std::get<0>(input) = CharT('*');
-  cuda::std::get<1>(input) = SV("hellö");
-  assert(check(SV("('*', \"hellö\")"), SV("{}"), input));
+  cuda::std::get<1>(input) = SV("hell\u00f6");
+  assert(check(SV("('*', \"hell\u00f6\")"), SV("{}"), input));
 }
 
 //

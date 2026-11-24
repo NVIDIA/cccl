@@ -26,11 +26,22 @@
 
 #include "literal.h"
 
-#define SV(S)                         \
-  cuda::std::basic_string_view<CharT> \
-  {                                   \
-    TEST_STRLIT(CharT, S)             \
+// Formatting uses char and wchar_t. NVCC can rewrite an unused u8 literal into byte escapes that MSVC diagnoses.
+template <class CharT>
+TEST_HOST_DEVICE_FUNC constexpr cuda::std::basic_string_view<CharT>
+format_string_view(const char* narrow, [[maybe_unused]] const wchar_t* wide)
+{
+  if constexpr (cuda::std::is_same_v<CharT, char>)
+  {
+    return narrow;
   }
+  else
+  {
+    return wide;
+  }
+}
+
+#define SV(S)   format_string_view<CharT>(S, L##S)
 #define CSTR(S) TEST_STRLIT(CharT, S)
 
 template <class T>
