@@ -7,15 +7,20 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: clang && !nvcc
 
-// <cuda/ptx>
+// <cuda/ptxs/shfl_sync.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/shfl_sync.h>
 
-__host__ __device__ void test_shfl_full_mask()
+#include "test_macros.h"
+
+TEST_HOST_DEVICE_FUNC void test_shfl_full_mask()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -49,7 +54,7 @@ __host__ __device__ void test_shfl_full_mask()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-__host__ __device__ void test_shfl_full_mask_no_pred()
+TEST_HOST_DEVICE_FUNC void test_shfl_full_mask_no_pred()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -82,7 +87,7 @@ __host__ __device__ void test_shfl_full_mask_no_pred()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-__host__ __device__ void test_shfl_partial_mask()
+TEST_HOST_DEVICE_FUNC void test_shfl_partial_mask()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned PartialMask = 0b1111;
@@ -93,10 +98,15 @@ __host__ __device__ void test_shfl_partial_mask()
     auto res1 = cuda::ptx::shfl_sync_idx(data, pred1, 2 /*idx*/, 0b11111 /*clamp*/, PartialMask);
     assert(res1 == 2 && pred1);
   }
+  if (threadIdx.x == 1)
+  {
+    auto res2 = cuda::ptx::shfl_sync_up(7u, 2 /*offset*/, 0 /*clamp*/, 0b10u);
+    assert(res2 == 7u);
+  }
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-__host__ __device__ void test_shfl_partial_warp()
+TEST_HOST_DEVICE_FUNC void test_shfl_partial_warp()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -140,7 +150,7 @@ __host__ __device__ void test_shfl_partial_warp()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-__host__ __device__ void test_shfl_divergence()
+TEST_HOST_DEVICE_FUNC void test_shfl_divergence()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   if (threadIdx.x == 0)

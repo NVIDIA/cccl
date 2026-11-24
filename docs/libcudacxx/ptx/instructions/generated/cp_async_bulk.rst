@@ -33,6 +33,22 @@ cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
      const uint32_t& size,
      uint64_t* smem_bar);
 
+cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // PTX ISA 80, SM_90
+   // .dst       = { .shared::cluster }
+   // .src       = { .shared::cta }
+   template <typename = void>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_cluster_t,
+     cuda::ptx::space_shared_t,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* rdsmem_bar);
+
 cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code-block:: cuda
@@ -50,22 +66,6 @@ cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob
      const uint32_t& ignoreBytesLeft,
      const uint32_t& ignoreBytesRight,
      uint64_t* smem_bar);
-
-cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
-
-   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // PTX ISA 80, SM_90
-   // .dst       = { .shared::cluster }
-   // .src       = { .shared::cta }
-   template <typename = void>
-   __device__ static inline void cp_async_bulk(
-     cuda::ptx::space_cluster_t,
-     cuda::ptx::space_shared_t,
-     void* dstMem,
-     const void* srcMem,
-     const uint32_t& size,
-     uint64_t* rdsmem_bar);
 
 cp.async.bulk.global.shared::cta.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,3 +97,183 @@ cp.async.bulk.global.shared::cta.bulk_group.cp_mask
      const void* srcMem,
      const uint32_t& size,
      const uint16_t& byteMask);
+
+cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::80000000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::8000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::80
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_element::ff
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::80000000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::8000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::80
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_16bytes::8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);
+
+cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.mbarrier::report::validity::per_element::ff
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.report_mechanism [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+   // .dst       = { .shared::cta, .shared::cluster }
+   // .src       = { .global }
+   // .report_mechanism = { .mbarrier::report::validity::per_16bytes::80000000, .mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80, .mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff }
+   template <cuda::ptx::dot_space Space, cuda::ptx::dot_report_mechanism Report_Mechanism>
+   __device__ static inline void cp_async_bulk(
+     cuda::ptx::space_t<Space> space,
+     cuda::ptx::space_global_t,
+     cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+     void* dstMem,
+     const void* srcMem,
+     const uint32_t& size,
+     uint64_t* smem_bar);

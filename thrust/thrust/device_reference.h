@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A reference to an object which resides in memory associated with the
@@ -23,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -79,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *    thrust::device_reference<int> ref_to_thirteen = vec[0];
  *
- *    std::cout << ref_to_thirteen << std::endl;
+ *    std::cout << ref_to_thirteen << '\n';
  *
  *    // 13 is printed
  *
@@ -99,7 +86,7 @@ THRUST_NAMESPACE_BEGIN
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
- *    std::cout << vec[0] << std::endl;
+ *    std::cout << vec[0] << '\n';
  *
  *    // 13 is printed
  *
@@ -195,7 +182,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
 {
-private:
   using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
 
 public:
@@ -207,7 +193,7 @@ public:
    */
   using pointer = typename super_t::pointer;
 
-  device_reference(const device_reference& other) = default;
+  _CCCL_HIDE_FROM_ABI device_reference(const device_reference& other) = default;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
@@ -244,9 +230,9 @@ public:
    *  \endverbatim
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE
-  device_reference(const device_reference<OtherT>& other,
-                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
+  _CCCL_HOST_DEVICE_API device_reference(
+    const device_reference<OtherT>& other,
+    thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = nullptr)
       : super_t(other)
   {}
 
@@ -283,11 +269,15 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE explicit device_reference(const pointer& ptr)
+  _CCCL_HOST_DEVICE_API explicit device_reference(const pointer& ptr)
       : super_t(ptr)
   {}
 
-  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
+  // A device_reference refers to an object in device memory, so assigning through a const
+  // reference writes the referent and not the proxy. This mirrors
+  // std::vector<bool>::reference and is what `*it = x` needs for output iterators.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const device_reference& other) const
   {
     return super_t::operator=(other);
   }
@@ -303,11 +293,13 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <typename OtherT>
-  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const device_reference<OtherT>& other) const
   {
     return super_t::operator=(other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assignment operator assigns the value of the given value to the
    *  value referenced by this \p device_reference.
@@ -319,7 +311,8 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const value_type& x) const
   {
     return super_t::operator=(x);
   }
@@ -338,7 +331,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE pointer operator&(void) const;
+  _CCCL_HOST_DEVICE_API pointer operator&(void) const;
 
   /*! Conversion operator converts this \p device_reference to T
    *  by returning a copy of the object referenced by this
@@ -350,7 +343,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE operator value_type(void) const;
+  _CCCL_HOST_DEVICE_API operator value_type(void) const;
 
   /*! swaps the value this \p device_reference references with another.
    *  \p other The other \p device_reference with which to swap.
@@ -359,7 +352,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE void swap(device_reference other);
+  _CCCL_HOST_DEVICE_API void swap(device_reference other);
 
   /*! Prefix increment operator increments the object referenced by this
    *  \p device_reference.
@@ -995,7 +988,7 @@ public:
  */
 // note: this is not a hidden friend, because nvcc 12.0 will miscompile with: error: incomplete type is not allowed
 template <typename T>
-_CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
+_CCCL_HOST_DEVICE_API void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }
@@ -1013,8 +1006,8 @@ _CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexce
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-template <typename T, typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const device_reference<T>& y);
+template <typename T, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const device_reference<T>& y);
 #endif
 
 /*! \} // memory_management

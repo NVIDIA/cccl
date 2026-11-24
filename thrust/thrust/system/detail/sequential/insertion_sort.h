@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,12 +17,14 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/copy_backward.h>
 
+#include <cuda/std/__utility/move.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+_CCCL_HOST_DEVICE_API void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
@@ -45,7 +34,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   for (RandomAccessIterator i = first + 1; i != last; ++i)
   {
@@ -56,7 +45,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
       // tmp is the smallest value encountered so far
       sequential::copy_backward(first, i, i + 1);
 
-      *first = tmp;
+      *first = ::cuda::std::move(tmp);
     }
     else
     {
@@ -71,14 +60,14 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
         --k;
       }
 
-      *j = tmp;
+      *j = ::cuda::std::move(tmp);
     }
   }
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void insertion_sort_by_key(
+_CCCL_HOST_DEVICE_API void insertion_sort_by_key(
   RandomAccessIterator1 first1, RandomAccessIterator1 last1, RandomAccessIterator2 first2, StrictWeakOrdering comp)
 {
   using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
@@ -90,7 +79,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   RandomAccessIterator1 i1 = first1 + 1;
   RandomAccessIterator2 i2 = first2 + 1;
@@ -98,7 +87,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   for (; i1 != last1; ++i1, ++i2)
   {
     value_type1 tmp1 = *i1;
-    value_type2 tmp2 = *i2;
+    value_type2 tmp2 = *i2; // NOLINT(performance-unnecessary-copy-initialization)
 
     if (wrapped_comp(tmp1, *first1))
     {
@@ -106,8 +95,8 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
       sequential::copy_backward(first1, i1, i1 + 1);
       sequential::copy_backward(first2, i2, i2 + 1);
 
-      *first1 = tmp1;
-      *first2 = tmp2;
+      *first1 = ::cuda::std::move(tmp1);
+      *first2 = ::cuda::std::move(tmp2);
     }
     else
     {
@@ -130,8 +119,8 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
         --k2;
       }
 
-      *j1 = tmp1;
-      *j2 = tmp2;
+      *j1 = ::cuda::std::move(tmp1);
+      *j2 = ::cuda::std::move(tmp2);
     }
   }
 }

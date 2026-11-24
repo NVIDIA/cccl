@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file set_operations.h
  *  \brief Sequential implementation of set operation functions.
@@ -22,16 +9,20 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/copy.h>
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__algorithm/set_difference.h>
+#include <cuda/std/__algorithm/set_intersection.h>
+#include <cuda/std/__algorithm/set_symmetric_difference.h>
+#include <cuda/std/__algorithm/set_union.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -42,47 +33,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
-  sequential::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  InputIterator2 last2,
-  OutputIterator result,
-  StrictWeakOrdering comp)
-{
-  // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-      ++result;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      ++first2;
-    } // end else if
-    else
-    {
-      ++first1;
-      ++first2;
-    } // end else
-  } // end while
-
-  return thrust::copy(exec, first1, last1, result);
-} // end set_difference()
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -91,29 +42,27 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  return ::cuda::std::set_difference(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
+} // end set_difference()
 
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      ++first1;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      ++first2;
-    } // end else if
-    else
-    {
-      *result = *first1;
-      ++first1;
-      ++first2;
-      ++result;
-    } // end else
-  } // end while
-
-  return result;
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  OutputIterator result,
+  StrictWeakOrdering comp)
+{
+  return ::cuda::std::set_intersection(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_intersection()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -122,8 +71,8 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
-  sequential::execution_policy<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -131,31 +80,8 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-      ++result;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      *result = *first2;
-      ++first2;
-      ++result;
-    } // end else if
-    else
-    {
-      ++first1;
-      ++first2;
-    } // end else
-  } // end while
-
-  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+  return ::cuda::std::set_symmetric_difference(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_symmetric_difference()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -164,8 +90,8 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_union(
-  sequential::execution_policy<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -173,32 +99,8 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      *result = *first2;
-      ++first2;
-    } // end else if
-    else
-    {
-      *result = *first1;
-      ++first1;
-      ++first2;
-    } // end else
-
-    ++result;
-  } // end while
-
-  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+  return ::cuda::std::set_union(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_union()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

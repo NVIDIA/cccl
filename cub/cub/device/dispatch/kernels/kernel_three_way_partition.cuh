@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,6 +14,16 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/util_arch.cuh>
+
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/cstdint>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -24,13 +34,12 @@ namespace detail::three_way_partition
 using per_partition_offset_t = ::cuda::std::int32_t;
 
 using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
-using AccumPackT       = typename AccumPackHelperT::pack_t;
+using AccumPackT       = AccumPackHelperT::pack_t;
 using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
 template <typename TotalNumItemsT>
 class streaming_context_t
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
   TotalNumItemsT total_previous_num_items{};
@@ -40,14 +49,14 @@ private:
   TotalNumItemsT* d_num_selected_out = nullptr;
 
 public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   streaming_context_t(TotalNumItemsT* d_num_selected_in, TotalNumItemsT* d_num_selected_out, bool is_last_partition)
       : last_partition(is_last_partition)
       , d_num_selected_in(d_num_selected_in)
       , d_num_selected_out(d_num_selected_out)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
     ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
     first_partition = false;
@@ -55,29 +64,29 @@ public:
     total_previous_num_items += num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[0];
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[1];
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[2];
     ;
   };
 
   template <typename NumSelectedIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void update_num_selected(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void update_num_selected(
     NumSelectedIteratorT user_num_selected_out_it,
     TotalNumItemsT num_selected_first,
     TotalNumItemsT num_selected_second,
@@ -85,8 +94,10 @@ public:
   {
     if (last_partition)
     {
-      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
-      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+      user_num_selected_out_it[0] =
+        num_previously_selected_first() + num_selected_first; // NOLINT(bugprone-misplaced-widening-cast)
+      user_num_selected_out_it[1] =
+        num_previously_selected_second() + num_selected_second; // NOLINT(bugprone-misplaced-widening-cast)
     }
     else
     {
@@ -101,7 +112,7 @@ public:
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
           typename SecondOutputIteratorT,
@@ -112,21 +123,33 @@ template <typename ChainedPolicyT,
           typename SelectSecondPartOp,
           typename OffsetT,
           typename StreamingContextT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
+#if _CCCL_HAS_CONCEPTS()
+  requires three_way_partition_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
+    const InputIteratorT d_in,
+    const FirstOutputIteratorT d_first_part_out,
+    const SecondOutputIteratorT d_second_part_out,
+    const UnselectedOutputIteratorT d_unselected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    OffsetT num_items,
-    int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
-  using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
+  static constexpr auto active_policy = _CUB::detail::current_policy<PolicySelector>();
+  using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
+    active_policy.lookback.threads_per_block,
+    active_policy.lookback.items_per_thread,
+    active_policy.lookback.load_algorithm,
+    active_policy.lookback.load_modifier,
+    active_policy.lookback.scan_algorithm,
+    delay_constructor_t<active_policy.lookback.lookback_delay.kind,
+                        active_policy.lookback.lookback_delay.delay,
+                        active_policy.lookback.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<
@@ -180,8 +203,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
+_CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+  ScanTileStateT tile_state, const int num_tiles, const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

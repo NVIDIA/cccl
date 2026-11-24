@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ constexpr VType get_val()
+TEST_FUNC constexpr VType get_val()
 {
   BaseType vals[4]{};
 
@@ -55,7 +55,7 @@ __host__ __device__ constexpr VType get_val()
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index>
-__host__ __device__ constexpr BaseType get_expected()
+TEST_FUNC constexpr BaseType get_expected()
 {
   const auto val = get_val<VType, BaseType, VSize>();
   if constexpr (Index == 0)
@@ -77,20 +77,29 @@ __host__ __device__ constexpr BaseType get_expected()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_eq(const T& lhs, const T& rhs)
+TEST_FUNC constexpr bool test_eq(const T& lhs, const T& rhs)
 {
-  if constexpr (cuda::std::is_same_v<T, __half> || cuda::std::is_same_v<T, __nv_bfloat16>)
+#if _CCCL_HAS_NVFP16()
+  if constexpr (cuda::std::is_same_v<T, __half>)
   {
     return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
   }
   else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
   {
     return lhs == rhs;
   }
 }
 
 template <class BaseType, class VType1, class VType2, class VType3, class VType4>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // & overload
     if constexpr (!cuda::std::is_void_v<VType1>)
@@ -295,7 +304,7 @@ __host__ __device__ constexpr void test()
 #define EXPAND_VECTOR_TYPE(Type, BaseType)         test<BaseType, Type##1, Type##2, Type##3, Type##4>();
 #define EXPAND_VECTOR_TYPE_NO_VEC4(Type, BaseType) test<BaseType, Type##1, Type##2, Type##3, void>();
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -334,7 +343,7 @@ __host__ __device__ constexpr bool test_constexpr()
   return true;
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_constexpr();
 

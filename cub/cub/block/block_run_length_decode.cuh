@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,13 +14,14 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
-#include <cub/thread/thread_search.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -135,7 +136,6 @@ class BlockRunLengthDecode
   // CONFIGS & TYPE ALIASES
   //---------------------------------------------------------------------
 
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -162,7 +162,7 @@ private:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// Internal storage allocator (used when the user does not provide pre-allocated shared memory)
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -175,8 +175,7 @@ private:
   uint32_t linear_tid;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // CONSTRUCTOR
@@ -185,14 +184,19 @@ public:
   //! @brief Constructor specialised for user-provided temporary storage, initializing using the runs' lengths.
   //!        The algorithm's temporary storage may not be repurposed between the constructor call and subsequent
   //!        `RunLengthDecode` calls.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage,
     ItemT (&run_values)[RunsPerThread],
     RunLengthT (&run_lengths)[RunsPerThread],
     TotalDecodedSizeT& total_decoded_size)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
@@ -200,35 +204,50 @@ public:
   //! @brief Constructor specialised for user-provided temporary storage, initializing using the runs' offsets.
   //!        The algorithm's temporary storage may not be repurposed between the constructor call and subsequent
   //!        `RunLengthDecode` calls.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   template <typename UserRunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
 
   /**
    * \brief Constructor specialised for static temporary storage, initializing using the runs' lengths.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
 
   /**
    * \brief Constructor specialised for static temporary storage, initializing using the runs' offsets.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename UserRunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE
   BlockRunLengthDecode(ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
@@ -236,7 +255,7 @@ public:
 private:
   /**
    * @brief Returns the offset of the first value within @p input which compares greater than
-   * @p val. This version takes @p MAX_NUM_ITEMS, an upper bound of the array size, which will
+   * @p val. This version takes @p MaxNumItems, an upper bound of the array size, which will
    * be used to determine the number of binary search iterations at compile time.
    *
    * @param[in] input
@@ -248,16 +267,17 @@ private:
    * @param[in] val
    *   Search key
    */
-  template <int MAX_NUM_ITEMS, typename InputIteratorT, typename OffsetT, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
+  template <int MaxNumItems, typename InputIteratorT, typename OffsetT, typename T>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;
 
+    constexpr int log2_max_num_items = ::cuda::ceil_ilog2(MaxNumItems);
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
+    for (int i = 0; i <= log2_max_num_items; i++)
     {
-      OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
+      OffsetT mid = _CUB::MidPoint<OffsetT>(lower_bound, upper_bound);
       mid         = (::cuda::std::min) (mid, num_items - 1);
 
       if (val < input[mid])
@@ -274,7 +294,7 @@ private:
   }
 
   template <typename RunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InitWithRunOffsets(ItemT (&run_values)[RunsPerThread], RunOffsetT (&run_offsets)[RunsPerThread])
   {
     // Keep the runs' items and the offsets of each run's beginning in the temporary storage
@@ -293,7 +313,7 @@ private:
   }
 
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitWithRunLengths(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitWithRunLengths(
     ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
   {
     // Compute the offset for the beginning of each run
@@ -327,13 +347,18 @@ public:
    * decoded array of `3, 3, 1, 4, 4, 4` with the relative offsets of `0, 1, 0, 0, 1, 2`.
    * \smemreuse
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * \param[out] decoded_items The run-length decoded items to be returned in a blocked arrangement
    * \param[out] item_offsets The run-length decoded items' relative offset within the run they belong to
    * \param[in] from_decoded_offset If invoked with from_decoded_offset that is larger than total_decoded_size results
    * in undefined behavior.
    */
   template <typename RelativeOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void RunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void RunLengthDecode(
     ItemT (&decoded_items)[DecodedItemsPerThread],
     RelativeOffsetT (&item_offsets)[DecodedItemsPerThread],
     DecodedOffsetT from_decoded_offset = 0)
@@ -391,11 +416,16 @@ public:
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * \param[out] decoded_items The run-length decoded items to be returned in a blocked arrangement
    * \param[in] from_decoded_offset If invoked with from_decoded_offset that is larger than total_decoded_size results
    * in undefined behavior.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   RunLengthDecode(ItemT (&decoded_items)[DecodedItemsPerThread], DecodedOffsetT from_decoded_offset = 0)
   {
     DecodedOffsetT item_offsets[DecodedItemsPerThread];

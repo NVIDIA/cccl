@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // constexpr W operator[](difference_type n) const
 //   requires advanceable<W>;
 
@@ -17,7 +20,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // taken from fake_bijection
   constexpr int random_indices[] = {4, 1, 2, 0, 3};

@@ -11,7 +11,7 @@
 
 #include <cuda/std/__format_>
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // [format.parse.ctx]/11
   // Remarks: Call expressions where id >= num_args_ are not
@@ -24,7 +24,7 @@ __host__ __device__ constexpr bool test()
 
 void f()
 {
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   static_assert(test());
 #else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
   static_assert(false);

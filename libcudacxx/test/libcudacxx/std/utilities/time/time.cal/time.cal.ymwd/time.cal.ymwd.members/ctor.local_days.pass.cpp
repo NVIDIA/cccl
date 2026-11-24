@@ -48,13 +48,13 @@ int main(int, char**)
     constexpr year_month_weekday ymwd{sd};
     auto constexpr Thursday = cuda::std::chrono::Thursday;
 
-    static_assert(ymwd.ok(), "");
-    static_assert(ymwd.year() == year{1970}, "");
-    static_assert(ymwd.month() == January, "");
-    static_assert(ymwd.weekday() == Thursday, "");
-    static_assert(ymwd.index() == 1, "");
-    static_assert(ymwd.weekday_indexed() == weekday_indexed{Thursday, 1}, "");
-    static_assert(ymwd == year_month_weekday{local_days{ymwd}}, ""); // round trip
+    static_assert(ymwd.ok());
+    static_assert(ymwd.year() == year{1970});
+    static_assert(ymwd.month() == January);
+    static_assert(ymwd.weekday() == Thursday);
+    static_assert(ymwd.index() == 1);
+    static_assert(ymwd.weekday_indexed() == weekday_indexed{Thursday, 1});
+    static_assert(ymwd == year_month_weekday{local_days{ymwd}}); // round trip
   }
 
   {
@@ -64,13 +64,13 @@ int main(int, char**)
     auto constexpr February  = cuda::std::chrono::February;
     auto constexpr Wednesday = cuda::std::chrono::Wednesday;
 
-    static_assert(ymwd.ok(), "");
-    static_assert(ymwd.year() == year{2000}, "");
-    static_assert(ymwd.month() == February, "");
-    static_assert(ymwd.weekday() == Wednesday, "");
-    static_assert(ymwd.index() == 1, "");
-    static_assert(ymwd.weekday_indexed() == weekday_indexed{Wednesday, 1}, "");
-    static_assert(ymwd == year_month_weekday{local_days{ymwd}}, ""); // round trip
+    static_assert(ymwd.ok());
+    static_assert(ymwd.year() == year{2000});
+    static_assert(ymwd.month() == February);
+    static_assert(ymwd.weekday() == Wednesday);
+    static_assert(ymwd.index() == 1);
+    static_assert(ymwd.weekday_indexed() == weekday_indexed{Wednesday, 1});
+    static_assert(ymwd == year_month_weekday{local_days{ymwd}}); // round trip
   }
 
   {
@@ -79,13 +79,13 @@ int main(int, char**)
 
     auto constexpr Tuesday = cuda::std::chrono::Tuesday;
 
-    static_assert(ymwd.ok(), "");
-    static_assert(ymwd.year() == year{1940}, "");
-    static_assert(ymwd.month() == January, "");
-    static_assert(ymwd.weekday() == Tuesday, "");
-    static_assert(ymwd.index() == 1, "");
-    static_assert(ymwd.weekday_indexed() == weekday_indexed{Tuesday, 1}, "");
-    static_assert(ymwd == year_month_weekday{local_days{ymwd}}, ""); // round trip
+    static_assert(ymwd.ok());
+    static_assert(ymwd.year() == year{1940});
+    static_assert(ymwd.month() == January);
+    static_assert(ymwd.weekday() == Tuesday);
+    static_assert(ymwd.index() == 1);
+    static_assert(ymwd.weekday_indexed() == weekday_indexed{Tuesday, 1});
+    static_assert(ymwd == year_month_weekday{local_days{ymwd}}); // round trip
   }
 
   {

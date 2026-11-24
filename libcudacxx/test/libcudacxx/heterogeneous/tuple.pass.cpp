@@ -29,7 +29,7 @@ struct Write
   using async = cuda::std::false_type;
 
   template <typename Tuple>
-  __host__ __device__ static void perform(Tuple& t)
+  TEST_FUNC static void perform(Tuple& t)
   {
     cuda::std::get<0>(t)        = N;
     cuda::std::get<1>(t).val[0] = N;
@@ -43,7 +43,7 @@ struct Read
   using async = cuda::std::false_type;
 
   template <typename Tuple>
-  __host__ __device__ static void perform(Tuple& t)
+  TEST_FUNC static void perform(Tuple& t)
   {
     assert(cuda::std::get<0>(t) == N);
     assert(cuda::std::get<1>(t).val[0] == N);

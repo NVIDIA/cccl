@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the rle dispatcher
+
+// disable deprecation warnings for DeviceRleDispatch and AgentRlePolicy
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_rle.cuh>
@@ -9,16 +14,14 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the rle dispatcher after publishing the tuning API
 
 template <typename LengthT, typename KeyT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using RleSweepPolicyT =
       AgentRlePolicy<96,
@@ -31,7 +34,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_encode]")
+CUB_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_encode]", CUB_SMALL)
 {
   using input_t  = int;
   using offset_t = int;
@@ -52,27 +55,31 @@ C2H_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_
   using dispatch_t   = DeviceRleDispatch<input_t*, offset_t*, length_t*, offset_t*, equal_t, offset_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_offsets.data()),
-    thrust::raw_pointer_cast(d_lengths.data()),
-    thrust::raw_pointer_cast(d_num_runs.data()),
-    equal_t{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_offsets.data()),
+      thrust::raw_pointer_cast(d_lengths.data()),
+      thrust::raw_pointer_cast(d_num_runs.data()),
+      equal_t{},
+      num_items,
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_offsets.data()),
-    thrust::raw_pointer_cast(d_lengths.data()),
-    thrust::raw_pointer_cast(d_num_runs.data()),
-    equal_t{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_offsets.data()),
+      thrust::raw_pointer_cast(d_lengths.data()),
+      thrust::raw_pointer_cast(d_num_runs.data()),
+      equal_t{},
+      num_items,
+      /* stream */ nullptr));
 
   const offset_t num_runs = d_num_runs[0];
   CHECK(num_runs == static_cast<offset_t>(expected_offsets.size()));

@@ -15,7 +15,7 @@
 #include "../types.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOne> transformView{};
   auto iter = cuda::std::move(transformView).begin();
@@ -42,8 +42,8 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+#ifdef _CCCL_BUILTIN_ADDRESSOF
+  static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;

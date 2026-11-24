@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_destructible.h>
+#include <cuda/std/__type_traits/is_destructible.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,7 +35,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE)
+#ifdef _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE
 
 template <class _Tp>
 inline constexpr bool is_trivially_destructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp);

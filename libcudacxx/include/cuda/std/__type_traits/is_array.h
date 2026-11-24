@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,10 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(is_array)
+#  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_array)
+
+// clang prior to clang-19 gives wrong results for __is_array of _Tp[0]
+#if _CCCL_COMPILER(CLANG, <, 19)
+#  undef _CCCL_BUILTIN_IS_ARRAY
+#endif // clang < 19
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

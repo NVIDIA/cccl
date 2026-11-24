@@ -20,7 +20,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Iter        = cpp17_input_iterator<int*>;

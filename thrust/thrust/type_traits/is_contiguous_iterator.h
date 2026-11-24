@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An extensible type trait for determining if an iterator satisfies the
@@ -24,7 +11,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,8 +22,11 @@
 
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+
+#if _CCCL_HOST_STD_LIB(STL)
+#  include <cuda/std/__type_traits/is_pointer.h>
+#endif // _CCCL_HOST_STD_LIB(STL)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -143,7 +133,8 @@ using is_contiguous_iterator =
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-constexpr bool is_contiguous_iterator_v = detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
+inline constexpr bool is_contiguous_iterator_v =
+  detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

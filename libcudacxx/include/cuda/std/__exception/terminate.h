@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,9 +22,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_TILE_COMPILATION()
+#  include <cuda/std/cassert>
+#endif // !_CCCL_TILE_COMPILATION()
+
+#if _CCCL_HOSTED()
 #  include <stdlib.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,10 +41,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning na
 
 [[noreturn]] _CCCL_API inline void __cccl_terminate() noexcept
 {
+#if _CCCL_TILE_COMPILATION()
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (assert(false);))
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (::__trap();))
+#endif // !_CCCL_TILE_COMPILATION()
   _CCCL_UNREACHABLE();
 }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // Expose once atomic is universally available
 
 using terminate_handler = void (*)();

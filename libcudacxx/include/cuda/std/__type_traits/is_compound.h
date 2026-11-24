@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_fundamental.h>
+#include <cuda/std/__type_traits/is_fundamental.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -31,7 +31,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_COMPOUND)
+#ifdef _CCCL_BUILTIN_IS_COMPOUND
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : bool_constant<_CCCL_BUILTIN_IS_COMPOUND(_Tp)>

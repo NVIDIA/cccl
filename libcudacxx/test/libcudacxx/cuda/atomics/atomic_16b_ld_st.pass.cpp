@@ -9,6 +9,9 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: windows
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/atomic>
 
 #include <cuda/atomic>
@@ -19,17 +22,17 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr T combine_literal(uint64_t lower, uint64_t upper)
+TEST_HOST_DEVICE_FUNC constexpr T combine_literal(uint64_t lower, uint64_t upper)
 {
   return T(lower) | (T(upper) << 64);
 }
 
 template <template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   {
     using T = __int128_t;
-    typedef cuda::atomic_ref<T, ThreadScope> A;
+    using A = cuda::atomic_ref<T, ThreadScope>;
     Selector<T, constructor_initializer> sel;
     T& t = *sel.construct();
     t    = T(0);
@@ -40,7 +43,7 @@ __host__ __device__ void test()
   }
   {
     using T = __uint128_t;
-    typedef cuda::atomic_ref<T, ThreadScope> A;
+    using A = cuda::atomic_ref<T, ThreadScope>;
     Selector<T, constructor_initializer> sel;
     T& t = *sel.construct();
     t    = T(0);
@@ -57,8 +60,10 @@ int main(int, char**)
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70,
     (test<local_memory_selector, cuda::thread_scope_thread>(); test<shared_memory_selector, cuda::thread_scope_block>();
+     test<shared_memory_selector, cuda::thread_scope_cluster>();
      test<global_memory_selector, cuda::thread_scope_block>();
-     test<global_memory_selector, cuda::thread_scope_device>();))
+     test<global_memory_selector, cuda::thread_scope_device>();
+     test<global_memory_selector, cuda::thread_scope_cluster>();))
 #endif
   return 0;
 }

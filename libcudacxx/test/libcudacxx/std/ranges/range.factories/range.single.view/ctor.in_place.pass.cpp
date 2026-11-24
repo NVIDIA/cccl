@@ -21,13 +21,13 @@
 struct TakesTwoInts
 {
   int a_, b_;
-  __host__ __device__ constexpr TakesTwoInts(int a, int b)
+  TEST_FUNC constexpr TakesTwoInts(int a, int b)
       : a_(a)
       , b_(b)
   {}
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::single_view<TakesTwoInts> sv(cuda::std::in_place, 1, 2);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 

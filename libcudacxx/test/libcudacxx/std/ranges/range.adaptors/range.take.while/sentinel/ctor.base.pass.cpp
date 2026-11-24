@@ -19,20 +19,20 @@ struct Sent
 {
   int i;
 
-  __host__ __device__ friend constexpr bool operator==(int* iter, const Sent& s)
+  TEST_FUNC friend constexpr bool operator==(int* iter, const Sent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator==(const Sent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const Sent& s)
+  TEST_FUNC friend constexpr bool operator!=(int* iter, const Sent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator!=(const Sent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -41,11 +41,11 @@ struct Sent
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   };
-  __host__ __device__ Sent end()
+  TEST_FUNC Sent end()
   {
     return Sent{42};
   };
@@ -54,12 +54,12 @@ static_assert(cuda::std::ranges::range<Range>);
 
 struct Pred
 {
-  __host__ __device__ bool operator()(int i) const;
+  TEST_FUNC bool operator()(int i) const;
 };
 
 // Test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_FUNC void conversion_test(T);
 
 template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible =
@@ -75,7 +75,7 @@ static_assert(!ImplicitlyConstructible<cuda::std::ranges::sentinel_t<cuda::std::
                                        cuda::std::ranges::sentinel_t<Range>,
                                        const Pred*>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // base is init correctly
   {
@@ -111,7 +111,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

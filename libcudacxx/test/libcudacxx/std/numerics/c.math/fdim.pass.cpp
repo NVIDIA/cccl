@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cmath>
 
 #include <cuda/std/__floating_point/fp.h>
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T val)
+TEST_HOST_DEVICE_FUNC void test(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::fdim(val, T())), ret>);
@@ -41,9 +44,18 @@ __host__ __device__ void test(T val)
     assert(eq(cuda::std::fdim(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::min()),
               cuda::std::numeric_limits<T>::max()));
 
-    // If a range error due to underflow occurs, the correct value (after rounding) is returned.
-    assert(
-      eq(cuda::std::fdim(cuda::std::numeric_limits<T>::denorm_min(), T()), cuda::std::numeric_limits<T>::denorm_min()));
+    // Fast device math flushes float subnormals, including bfloat16 values promoted to float, to zero.
+    T expected = cuda::std::numeric_limits<T>::denorm_min();
+    if constexpr (TEST_HAS_CUDA_FAST_MATH
+                  && (cuda::std::is_same_v<T, float>
+#if _LIBCUDACXX_HAS_NVBF16()
+                      || cuda::std::is_same_v<T, __nv_bfloat16>
+#endif // _LIBCUDACXX_HAS_NVBF16()
+                      ) )
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (expected = T(0);))
+    }
+    assert(eq(cuda::std::fdim(cuda::std::numeric_limits<T>::denorm_min(), T()), expected));
   }
 
   if constexpr (cuda::std::is_same_v<T, float>)
@@ -61,9 +73,12 @@ __host__ __device__ void test(T val)
     assert(eq(cuda::std::fdimf(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::min()),
               cuda::std::numeric_limits<T>::max()));
 
-    // If a range error due to underflow occurs, the correct value (after rounding) is returned.
-    assert(eq(cuda::std::fdimf(cuda::std::numeric_limits<T>::denorm_min(), T()),
-              cuda::std::numeric_limits<T>::denorm_min()));
+    T expected = cuda::std::numeric_limits<T>::denorm_min();
+    if constexpr (TEST_HAS_CUDA_FAST_MATH)
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (expected = T(0);))
+    }
+    assert(eq(cuda::std::fdimf(cuda::std::numeric_limits<T>::denorm_min(), T()), expected));
   }
 
 #if _CCCL_HAS_LONG_DOUBLE()
@@ -89,7 +104,7 @@ __host__ __device__ void test(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-__host__ __device__ bool test(float val)
+TEST_HOST_DEVICE_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);

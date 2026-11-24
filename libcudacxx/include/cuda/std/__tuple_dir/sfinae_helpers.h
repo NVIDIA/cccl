@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,21 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <bool... _Preds>
-struct __all_dummy;
-
-template <bool... _Pred>
-using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
 enum class __smf_availability
 {
@@ -66,34 +64,39 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper
 template <class _Impl>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, false, true>
 {
-  __tuple_impl_sfinae_helper()                                             = default;
-  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
-  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
-  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = delete;
-  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper()                                        = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)       = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)            = default;
+  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&)                = delete;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&) = default;
 };
 
 template <class _Impl>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, true, false>
 {
-  __tuple_impl_sfinae_helper()                                             = default;
-  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
-  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
-  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = default;
-  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = delete;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper()                                             = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = default;
+  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)                          = delete;
 };
 
 template <class _Impl>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, false, false>
 {
-  __tuple_impl_sfinae_helper()                                             = default;
-  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
-  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
-  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = delete;
-  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = delete;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper()                                  = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)      = default;
+  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&)          = delete;
+  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)               = delete;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

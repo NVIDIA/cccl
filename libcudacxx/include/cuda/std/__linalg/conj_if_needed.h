@@ -21,7 +21,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,10 +45,10 @@ _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 template <class _Type>
 _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
-struct __conj_if_needed
+struct __fn
 {
   template <class _Type>
-  _CCCL_API constexpr auto operator()(const _Type& __t) const
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Type& __t)
   {
     if constexpr (is_arithmetic_v<_Type> || !_HasConj<_Type>)
     {
@@ -65,7 +65,7 @@ _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{};
+_CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__fn{};
 } // namespace __cpo
 } // end namespace linalg
 

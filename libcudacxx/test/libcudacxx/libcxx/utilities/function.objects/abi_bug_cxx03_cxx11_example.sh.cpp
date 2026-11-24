@@ -21,7 +21,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
-typedef cuda::std::function<void(int)> Func;
+using Func = cuda::std::function<void(int)>;
 
 Func CreateFunc();
 

@@ -14,7 +14,7 @@
 // bool failed() const throw();
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_SSTREAM)
+#ifdef _LIBCUDACXX_HAS_SSTREAM
 #  include <cuda/std/cassert>
 #  include <cuda/std/sstream>
 
@@ -23,8 +23,8 @@
 template <typename Char, typename Traits = cuda::std::char_traits<Char>>
 struct my_streambuf : public cuda::std::basic_streambuf<Char, Traits>
 {
-  typedef typename cuda::std::basic_streambuf<Char, Traits>::int_type int_type;
-  typedef typename cuda::std::basic_streambuf<Char, Traits>::char_type char_type;
+  using int_type  = typename cuda::std::basic_streambuf<Char, Traits>::int_type;
+  using char_type = typename cuda::std::basic_streambuf<Char, Traits>::char_type;
 
   my_streambuf() {}
   int_type sputc(char_type)

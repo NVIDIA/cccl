@@ -11,8 +11,11 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,9 +23,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -73,6 +90,17 @@ public:
 
   logical_data_untyped get_data() const;
 
+  //! @brief Whether this dependency refers to a logical data at all.
+  //!
+  //! A dependency built from a default-constructed handle packs an empty state, and
+  //! get_data() asserts on it.
+  //!
+  //! @return `true` if a logical data is attached, `false` for an empty state
+  bool has_data() const
+  {
+    return data != nullptr;
+  }
+
   instance_id_t get_instance_id() const
   {
     return instance_id;
@@ -87,6 +115,13 @@ public:
   }
 
   // We should only assign it once
+  //! Replace the dependency's data place (used when a deferred replicated
+  //! place is materialized against the task's execution place at acquire)
+  void set_dplace(data_place d)
+  {
+    dplace = mv(d);
+  }
+
   void set_instance_id(instance_id_t id)
   {
     EXPECT(instance_id == instance_id_t::invalid);
@@ -193,8 +228,8 @@ class task_dep<T, void, false> : public task_dep_untyped
 public:
   using data_t      = T;
   using dep_type    = T;
-  using op_and_init = ::std::pair<::std::monostate, ::std::bool_constant<false>>;
-  using op_type     = ::std::monostate;
+  using op_and_init = ::std::pair<::cuda::std::monostate, ::std::bool_constant<false>>;
+  using op_type     = ::cuda::std::monostate;
   enum : bool
   {
     does_work = false
@@ -214,7 +249,7 @@ public:
 
   template <typename... Pack>
   task_dep(Pack&&... pack)
-      : task_dep_untyped(::std::forward<Pack>(pack)...)
+      : task_dep_untyped(::cuda::std::forward<Pack>(pack)...)
   {
     static_assert(sizeof(task_dep<T>) == sizeof(task_dep_untyped),
                   "Cannot add state here because it would be lost through slicing");
@@ -236,7 +271,11 @@ public:
 };
 
 template <typename T, typename reduce_op, bool initialize>
-class task_dep : public task_dep<T, void, false>
+class task_dep
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public task_dep<T, void, false>
+#endif
 {
 public:
   using base        = task_dep<T, void, false>;
@@ -245,12 +284,12 @@ public:
   using op_type     = reduce_op;
   enum : bool
   {
-    does_work = !::std::is_same_v<reduce_op, ::std::monostate>
+    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
   };
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(::std::forward<Args>(args)...)
+      : base(::cuda::std::forward<Args>(args)...)
   {}
 };
 
@@ -280,7 +319,7 @@ public:
   {
     static_assert(sizeof(task_dep_vector) == sizeof(task_dep_vector_untyped));
     static_assert(sizeof...(Data) == 1);
-    static_assert(::std::is_same_v<T, Data...>);
+    static_assert(::cuda::std::is_same_v<T, Data...>);
   }
 
   /**
@@ -316,9 +355,9 @@ public:
   }
 
   /**
-   * @brief Extracts physical data from this object to an `::std::tuple<Data...>` object.
+   * @brief Extracts physical data from this object to a ``std::tuple<Data...>`` object.
    *
-   * @return ::std::tuple<Data...>
+   * @return ``std::tuple<Data...>``
    *
    * The physical data extracted is usable only after the dependencies have been satisfied.
    */
@@ -338,7 +377,7 @@ public:
   {
     // Note that make_tuple_indexwise will remove ::std::ignore entries
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
-      if constexpr (::std::is_same_v<type_at<i>, void_interface>)
+      if constexpr (::cuda::std::is_same_v<type_at<i>, void_interface>)
       {
         return ::std::ignore;
       }

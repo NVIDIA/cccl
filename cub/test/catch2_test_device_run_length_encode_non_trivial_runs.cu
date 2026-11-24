@@ -16,7 +16,8 @@
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
@@ -51,11 +52,9 @@ struct index_to_item_op
       // Even number (once)
       return (OffsetT{2} * group);
     }
-    else
-    {
-      // Odd number (repeated twice)
-      return OffsetT{2} * group + OffsetT{1};
-    }
+
+    // Odd number (repeated twice)
+    return OffsetT{2} * group + OffsetT{1};
   }
 };
 
@@ -68,7 +67,7 @@ struct run_index_to_offset_op
   }
 };
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> out_num_runs(1, 42);
@@ -84,7 +83,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[devic
   REQUIRE(out_num_runs.front() == 0);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> out_num_runs(1, 42);
@@ -100,7 +99,9 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
   REQUIRE(out_num_runs.front() == 0);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types",
+         "[device][run_length_encode]",
+         CUB_SMALL)
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -118,7 +119,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting ty
   REQUIRE(out_num_runs.front() == 0);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -135,7 +136,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device
   REQUIRE(out_num_runs.front() == 0);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -204,7 +205,8 @@ bool validate_results(
   return true;
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device][run_length_encode]", all_types)
+CUB_TEST(
+  "DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device][run_length_encode]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -222,7 +224,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
   REQUIRE(validate_results(in, out_offsets, out_lengths, out_num_runs, num_items));
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -247,18 +249,16 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 
 // Guard against #293
 template <bool TimeSlicing>
-struct device_rle_policy_hub
+struct device_rle_policy_selector
 {
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
   {
-    using RleSweepPolicyT = cub::
-      AgentRlePolicy<threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {cub::RleNonTrivialRunsAlgorithm::lookback,
+            {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS}};
+  }
 };
 
 struct CustomDeviceRunLengthEncode
@@ -275,28 +275,20 @@ struct CustomDeviceRunLengthEncode
     OffsetsOutputIteratorT d_offsets_out,
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream = 0)
+    int num_items, // Signed integer type for global offsets
+    cudaStream_t stream = nullptr)
   {
-    using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cuda::std::equal_to<>; // Default == operator
-
-    return cub::DeviceRleDispatch<InputIteratorT,
-                                  OffsetsOutputIteratorT,
-                                  LengthsOutputIteratorT,
-                                  NumRunsOutputIteratorT,
-                                  EqualityOp,
-                                  OffsetT,
-                                  device_rle_policy_hub<TimeSlicing>>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_in,
-               d_offsets_out,
-               d_lengths_out,
-               d_num_runs_out,
-               EqualityOp(),
-               num_items,
-               stream);
+    return cub::detail::rle::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      cuda::std::equal_to<>{}, // Default == operator
+      num_items,
+      stream,
+      device_rle_policy_selector<TimeSlicing>{});
   }
 };
 
@@ -305,12 +297,15 @@ DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_l
 
 using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[device][run_length_encode]", time_slicing)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         time_slicing)
 {
   using type         = typename c2h::get<0, TestType>;
-  using policy_hub_t = device_rle_policy_hub<type::value>;
+  using policy_sel_t = device_rle_policy_selector<type::value>;
 
-  constexpr int tile_size    = policy_hub_t::threads * policy_hub_t::items;
+  constexpr int tile_size    = policy_sel_t::threads * policy_sel_t::items;
   constexpr int num_items    = 2 * tile_size;
   constexpr int magic_number = num_items + 1;
 
@@ -319,13 +314,13 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
 
   int expected_non_trivial_runs = 0;
   int value                     = tile_size;
-  int large_group_size          = 3;
+  const int large_group_size    = 3;
   for (int i = 0; i < tile_size; i++)
   {
     int j = 0;
     for (; j < large_group_size && i < tile_size; ++j, ++i)
     {
-      h_keys[tile_size + i] = value;
+      h_keys[tile_size + i] = value; // NOLINT(bugprone-misplaced-widening-cast)
     }
     if (j == large_group_size)
     {
@@ -335,7 +330,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
 
     if (i < tile_size)
     {
-      h_keys[tile_size + i] = value;
+      h_keys[tile_size + i] = value; // NOLINT(bugprone-misplaced-widening-cast)
     }
     ++value;
   }
@@ -365,8 +360,9 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
   REQUIRE(out_offsets.front() == magic_number);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for a large number of items",
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for a large number of items",
          "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -405,13 +401,14 @@ try
   check_offset_out_helper.check_all_results_correct();
   check_run_length_out_helper.check_all_results_correct();
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  c2h::skip_if_allocation_failure();
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
          "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -449,15 +446,15 @@ try
     static_cast<offset_type>(num_items));
 
   // Expected results
-  c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
-  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+  const c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
+  const c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
 
   // Verify result
   CHECK(out_num_runs[0] == num_uniques);
   CHECK(expected_uniques == offsets_out);
   CHECK(expected_run_lengths == run_lengths_out);
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  c2h::skip_if_allocation_failure();
 }

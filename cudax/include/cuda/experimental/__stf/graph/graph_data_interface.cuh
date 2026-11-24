@@ -18,7 +18,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,9 +26,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+
+#include <tuple>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -59,7 +68,7 @@ public:
     size_t input_cnt) = 0;
 
   // Returns prereq
-  void data_copy(backend_ctx_untyped& ctx_,
+  void data_copy(backend_ctx_untyped& ctx,
                  const data_place& dst_memory_node,
                  instance_id_t dst_instance_id,
                  const data_place& src_memory_node,
@@ -70,18 +79,18 @@ public:
     ::std::ignore = dst_memory_node;
     assert(src_memory_node != dst_memory_node);
 
-    cudaGraph_t graph  = ctx_.graph();
-    size_t graph_stage = ctx_.stage();
+    cudaGraph_t graph  = ctx.graph();
+    size_t graph_stage = ctx.stage();
     assert(graph && graph_stage != size_t(-1));
 
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx_, prereqs, graph_stage);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    reserved::fork_from_graph_node(ctx_, out, graph, graph_stage, prereqs, "copy");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "copy");
   }
 };
 } // end namespace cuda::experimental::stf

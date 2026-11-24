@@ -30,10 +30,10 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const year_month_day_last>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const year_month_day_last>().ok())>);
 
-  static_assert(!year_month_day_last{year{-32768}, month_day_last{month{}}}.ok(), ""); // both bad
-  static_assert(!year_month_day_last{year{-32768}, month_day_last{January}}.ok(), ""); // Bad year
-  static_assert(!year_month_day_last{year{2019}, month_day_last{month{}}}.ok(), ""); // Bad month
-  static_assert(year_month_day_last{year{2019}, month_day_last{January}}.ok(), ""); // All OK
+  static_assert(!year_month_day_last{year{-32768}, month_day_last{month{}}}.ok()); // both bad
+  static_assert(!year_month_day_last{year{-32768}, month_day_last{January}}.ok()); // Bad year
+  static_assert(!year_month_day_last{year{2019}, month_day_last{month{}}}.ok()); // Bad month
+  static_assert(year_month_day_last{year{2019}, month_day_last{January}}.ok()); // All OK
 
   for (unsigned i = 0; i <= 50; ++i)
   {

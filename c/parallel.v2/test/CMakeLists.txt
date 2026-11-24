@@ -1,0 +1,128 @@
+cccl_get_c2h()
+
+# v2 reuses the same test sources as v1 from c/parallel/test/, compiled with
+# CCCL_C_PARALLEL_V2 defined. The shared source files contain a small number
+# of #ifdef CCCL_C_PARALLEL_V2 branches that select v2's backend (hostjit
+# bitcode vs nvrtc LTO-IR) and skip v1-only test variants.
+set(v1_test_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../parallel/test")
+
+function(cccl_c_parallel_v2_add_test target_name_var source)
+  get_filename_component(target_name "${source}" NAME_WE)
+  string(
+    REGEX REPLACE
+    "test_([^.]*)"
+    "cccl.c.parallel.v2.test.\\1"
+    target_name
+    "${target_name}"
+  )
+  set(${target_name_var} ${target_name} PARENT_SCOPE)
+
+  add_executable(
+    ${target_name}
+    "${source}"
+    "${v1_test_dir}/support/crash_report.cpp"
+  )
+  cccl_configure_target(${target_name} DIALECT 20)
+
+  set_target_properties(${target_name} PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
+  target_link_libraries(
+    ${target_name}
+    PRIVATE
+      cccl.compiler_interface
+      cccl.c.parallel.v2
+      cccl.c.parallel.v2.hostjit_lib
+      CUDA::cudart_static
+      CUDA::nvrtc
+      cccl.c2h.main
+  )
+
+  if (WIN32)
+    # crash_report.cpp symbolizes the faulting stack via dbghelp.
+    target_link_libraries(${target_name} PRIVATE dbghelp)
+    # Sources are already compiled with /Z7, but without /DEBUG the linker emits
+    # no PDB and a crash report can only show module+offset. ~19 MB per test.
+    target_link_options(${target_name} PRIVATE /DEBUG)
+  endif()
+
+  target_include_directories(
+    ${target_name}
+    PRIVATE
+      "${v1_test_dir}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../src/hostjit/include"
+  )
+
+  list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
+  target_compile_definitions(
+    ${target_name}
+    PRIVATE
+      CCCL_C_PARALLEL_V2=1
+      TEST_CUB_PATH="-I${CCCL_SOURCE_DIR}/cub"
+      TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
+      TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
+      TEST_CTK_PATH="-I${CUDA_FIRST_INCLUDE_DIR}"
+      TEST_INCLUDE_PATH="${v1_test_dir}"
+  )
+
+  add_test(NAME ${target_name} COMMAND ${target_name})
+endfunction()
+
+file(
+  GLOB test_srcs
+  RELATIVE "${v1_test_dir}"
+  CONFIGURE_DEPENDS
+  "${v1_test_dir}/*.cu"
+  "${v1_test_dir}/*.cpp"
+)
+
+foreach (test_src IN LISTS test_srcs)
+  cccl_c_parallel_v2_add_test(test_target "${v1_test_dir}/${test_src}")
+endforeach()
+
+# AoT (compile/load/serialize/deserialize) coverage. Not part of the
+# v1-shared test_srcs glob above (it exercises v2-only C API surface:
+# cccl_device_reduce_compile/_load/_serialize/_deserialize).
+add_executable(cccl.c.parallel.v2.test.aot_reduce aot/test_aot_reduce.cpp)
+cccl_configure_target(cccl.c.parallel.v2.test.aot_reduce DIALECT 20)
+set_target_properties(
+  cccl.c.parallel.v2.test.aot_reduce
+  PROPERTIES CUDA_RUNTIME_LIBRARY STATIC
+)
+target_link_libraries(
+  cccl.c.parallel.v2.test.aot_reduce
+  PRIVATE
+    cccl.compiler_interface
+    cccl.c.parallel.v2
+    cccl.c.parallel.v2.hostjit_lib
+    CUDA::cudart_static
+)
+# The shared CUDA runtime library _load preloads (CUDA::cudart's location is
+# the import library on Windows, so find the DLL itself there).
+if (WIN32)
+  file(
+    GLOB test_cudart_dll
+    "${CUDAToolkit_BIN_DIR}/x64/cudart64_*.dll"
+    "${CUDAToolkit_BIN_DIR}/cudart64_*.dll"
+  )
+  if (NOT test_cudart_dll)
+    message(FATAL_ERROR "cudart64_*.dll not found under ${CUDAToolkit_BIN_DIR}")
+  endif()
+  list(GET test_cudart_dll 0 test_cudart_path)
+else()
+  set(test_cudart_path "$<TARGET_FILE:CUDA::cudart>")
+endif()
+list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
+target_compile_definitions(
+  cccl.c.parallel.v2.test.aot_reduce
+  PRIVATE
+    TEST_CUB_PATH="-I${CCCL_SOURCE_DIR}/cub"
+    TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
+    TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
+    TEST_CTK_PATH="-I${CUDA_FIRST_INCLUDE_DIR}"
+    TEST_CUDART_PATH="${test_cudart_path}"
+)
+add_test(
+  NAME cccl.c.parallel.v2.test.aot_reduce
+  COMMAND cccl.c.parallel.v2.test.aot_reduce
+)
+
+add_subdirectory(freestanding)

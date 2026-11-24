@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -56,7 +55,7 @@ struct layout_right
 // Layout policy with a unique mapping where strides are arbitrary
 struct layout_stride
 {
-  template <class Extents>
+  template <class _Extents>
   class mapping;
 };
 
@@ -106,14 +105,6 @@ inline constexpr bool __is_cuda_std_layout_left_or_right_mapping_v =
 
 // template<>
 // inline constexpr bool __is_cuda_std_layout_left_mapping_v<layout_left_padded> = true;
-
-template <class _IndexType, size_t... _Extents>
-class extents;
-
-template <class _Tp>
-inline constexpr bool __is_cuda_std_extents_v = false;
-template <class _IndexType, size_t... _Extents>
-inline constexpr bool __is_cuda_std_extents_v<extents<_IndexType, _Extents...>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

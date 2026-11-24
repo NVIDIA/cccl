@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,31 +13,35 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/random/detail/random_core_access.h>
+#include <thrust/random/detail/urng_traits.h>
 #include <thrust/random/uniform_real_distribution.h>
 
 #include <cuda/std/__cmath/lerp.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
 template <typename RealType>
-_CCCL_HOST_DEVICE uniform_real_distribution<RealType>::uniform_real_distribution(RealType a, RealType b)
+_CCCL_HOST_DEVICE_API uniform_real_distribution<RealType>::uniform_real_distribution(RealType a, RealType b)
     : m_param(a, b)
 {} // end uniform_real_distribution::uniform_real_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE uniform_real_distribution<RealType>::uniform_real_distribution(const param_type& parm)
+_CCCL_HOST_DEVICE_API uniform_real_distribution<RealType>::uniform_real_distribution(const param_type& parm)
     : m_param(parm)
 {} // end uniform_real_distribution::uniform_real_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::reset()
+_CCCL_HOST_DEVICE_API void uniform_real_distribution<RealType>::reset()
 {} // end uniform_real_distribution::reset()
 
 template <typename RealType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type
 uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng)
 {
   return operator()(urng, m_param);
@@ -58,39 +49,40 @@ uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& ur
 
 template <typename RealType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type
 uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng, const param_type& parm)
 {
+  using traits = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
+
   // call the urng & map its result to [0,1)
-  result_type result = static_cast<result_type>(urng() - UniformRandomNumberGenerator::min);
+  result_type result = static_cast<result_type>(urng() - (traits::min) ());
 
   // adding one to the denominator ensures that the interval is half-open at 1.0
   // XXX adding 1.0 to a potentially large floating point number seems like a bad idea
   // XXX OTOH adding 1 to what is potentially UINT_MAX also seems like a bad idea
   // XXX we could statically check if 1u + (max - min) is representable and do that, otherwise use the current
   // implementation
-  result /=
-    (result_type(1) + static_cast<result_type>(UniformRandomNumberGenerator::max - UniformRandomNumberGenerator::min));
+  result /= (result_type(1) + static_cast<result_type>((traits::max) () - (traits::min) ()));
 
   return ::cuda::std::lerp(parm.first, parm.second, result);
 } // end uniform_real::operator()()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type
 uniform_real_distribution<RealType>::a() const
 {
   return m_param.first;
 } // end uniform_real::a()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type
 uniform_real_distribution<RealType>::b() const
 {
   return m_param.second;
 } // end uniform_real_distribution::b()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::param_type
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::param_type
 uniform_real_distribution<RealType>::param() const
 {
   return m_param;
@@ -98,34 +90,34 @@ uniform_real_distribution<RealType>::param() const
 } // end uniform_real_distribution::param()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::param(const param_type& parm)
+_CCCL_HOST_DEVICE_API void uniform_real_distribution<RealType>::param(const param_type& parm)
 {
   m_param = parm;
 } // end uniform_real_distribution::param()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::min
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::min
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return a();
 } // end uniform_real_distribution::min()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::max
+_CCCL_HOST_DEVICE_API typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return b();
 } // end uniform_real_distribution::max()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool uniform_real_distribution<RealType>::equal(const uniform_real_distribution& rhs) const
+_CCCL_HOST_DEVICE_API bool uniform_real_distribution<RealType>::equal(const uniform_real_distribution& rhs) const
 {
   return m_param == rhs.param();
 }
 
 template <typename RealType>
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 uniform_real_distribution<RealType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
@@ -149,7 +141,8 @@ uniform_real_distribution<RealType>::stream_out(std::basic_ostream<CharT, Traits
 
 template <typename RealType>
 template <typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& uniform_real_distribution<RealType>::stream_in(std::basic_istream<CharT, Traits>& is)
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+uniform_real_distribution<RealType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -167,28 +160,28 @@ std::basic_istream<CharT, Traits>& uniform_real_distribution<RealType>::stream_i
 }
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator==(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator!=(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename RealType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_real_distribution<RealType>& d)
 {
   return thrust::random::detail::random_core_access::stream_out(os, d);
 }
 
 template <typename RealType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, uniform_real_distribution<RealType>& d)
 {
   return thrust::random::detail::random_core_access::stream_in(is, d);

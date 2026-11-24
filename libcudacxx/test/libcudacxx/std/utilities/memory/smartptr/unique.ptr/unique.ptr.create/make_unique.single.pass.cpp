@@ -8,15 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/__memory_>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     cuda::std::unique_ptr<int> p1 = cuda::std::make_unique<int>(1);
@@ -25,7 +28,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     assert(*p1 == 0);
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     cuda::std::unique_ptr<cuda::std::string> p2 = cuda::std::make_unique<cuda::std::string>("Meow!");
     assert(*p2 == "Meow!");

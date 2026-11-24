@@ -103,8 +103,7 @@ void run()
   auto B_handle = ctx.logical_data(h_B, numElements);
   auto C_handle = ctx.logical_data(h_C, numElements);
 
-  auto t = ctx.task(A_handle.read(), B_handle.read(), C_handle.rw());
-  t->*[&](cudaStream_t stream, auto d_A, auto d_B, auto d_C) {
+  ctx.task(A_handle.read(), B_handle.read(), C_handle.write())->*[&](cudaStream_t stream, auto d_A, auto d_B, auto d_C) {
     // Launch the Vector Add CUDA Kernel
     int threadsPerBlock = 256;
     int blocksPerGrid   = (numElements + threadsPerBlock - 1) / threadsPerBlock;
@@ -120,12 +119,11 @@ void run()
     }
   };
 
-  auto t_host = ctx.host_launch(A_handle.read(), B_handle.read(), C_handle.read());
-  t_host->*[&](auto, auto, auto) {
+  ctx.host_launch(A_handle.read(), B_handle.read(), C_handle.read())->*[](auto hA, auto hB, auto hC) {
     // Verify that the result vector is correct
-    for (int i = 0; i < numElements; ++i)
+    for (int i = 0; i < hC.extent(0); ++i)
     {
-      if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)
+      if (::std::abs(hA[i] + hB[i] - hC[i]) > 1e-5)
       {
         fprintf(stderr, "Result verification failed at element %d!\n", i);
         exit(EXIT_FAILURE);

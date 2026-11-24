@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -39,7 +39,7 @@ namespace __variant_detail
 struct __no_narrowing_check
 {
   template <class _Dest, class _Source>
-  using _Apply = type_identity<_Dest>;
+  using _Apply _CCCL_NODEBUG = type_identity<_Dest>;
 };
 
 struct __narrowing_check
@@ -51,15 +51,15 @@ struct __narrowing_check
   template <class _Dest, class _Source>
   struct __narrowing_check_impl<_Dest, _Source, true>
   {
-    using type = type_identity<_Dest>;
+    using type _CCCL_NODEBUG = type_identity<_Dest>;
   };
 
   template <class _Dest, class _Source>
-  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
+using __check_for_narrowing _CCCL_NODEBUG = typename conditional_t<
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
@@ -71,14 +71,15 @@ template <class _Tp, size_t _Idx>
 struct __overload
 {
   template <class _Up>
-  _CCCL_API inline auto operator()(_Tp, _Up&&) const -> __check_for_narrowing<_Tp, _Up>;
+  _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(_Tp, _Up&&) -> __check_for_narrowing<_Tp, _Up>;
 };
 
 template <class _Tp, size_t>
 struct __overload_bool
 {
   template <class _Up, class _Ap = remove_cvref_t<_Up>>
-  _CCCL_API inline auto operator()(bool, _Up&&) const -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
+  _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(bool, _Up&&)
+    -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -101,22 +102,22 @@ struct __all_overloads : _Bases...
   using _Bases::operator()...;
 };
 
-template <class IdxSeq>
+template <class _IdxSeq>
 struct __make_overloads_imp;
 
 template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _CCCL_NODEBUG_ALIAS =
+using _MakeOverloads _CCCL_NODEBUG =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>
-using __best_match_t = typename invoke_result_t<_MakeOverloads<_Types...>, _Tp, _Tp>::type;
+using __best_match_t _CCCL_NODEBUG = typename invoke_result_t<_MakeOverloads<_Types...>, _Tp, _Tp>::type;
 } // namespace __variant_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

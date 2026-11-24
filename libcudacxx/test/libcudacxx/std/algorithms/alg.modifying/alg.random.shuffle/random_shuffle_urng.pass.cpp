@@ -6,15 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <algorithm>
 
 // template<class RandomAccessIterator, class UniformRandomNumberGenerator>
 //     void shuffle(RandomAccessIterator first, RandomAccessIterator last,
 //                  UniformRandomNumberGenerator& g);
 
-#include <cuda/std/__random_>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

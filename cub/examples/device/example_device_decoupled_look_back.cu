@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_scan.cuh>
+#include <cub/util_debug.cuh>
 
 #include <thrust/device_vector.h>
 
@@ -95,7 +96,7 @@ void decoupled_look_back_example(int blocks_in_grid)
   decoupled_look_back_kernel<<<blocks_in_grid, threads_in_block>>>(tile_status);
 
   // Wait for kernel to finish
-  cudaDeviceSynchronize();
+  CubDebugExit(cudaDeviceSynchronize());
 }
 
 int main()

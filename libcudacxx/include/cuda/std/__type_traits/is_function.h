@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,40 +21,43 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_const.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
+#if _CCCL_CHECK_BUILTIN(is_function)
+#  define _CCCL_BUILTIN_IS_FUNCTION(...) __is_function(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_function)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
+#ifdef _CCCL_BUILTIN_IS_FUNCTION
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function : integral_constant<bool, _CCCL_BUILTIN_IS_FUNCTION(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function : bool_constant<_CCCL_BUILTIN_IS_FUNCTION(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_function_v = _CCCL_BUILTIN_IS_FUNCTION(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_IS_FUNCTION ^^^ / vvv !_CCCL_BUILTIN_IS_FUNCTION vvv
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_function : public integral_constant<bool, !(is_reference_v<_Tp> || is_const_v<const _Tp>)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function : bool_constant<!(is_reference_v<_Tp> || is_const_v<const _Tp>)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_function_v = is_function<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
-
-_CCCL_END_NAMESPACE_CUDA_STD
+inline constexpr bool is_function_v = !(is_reference_v<_Tp> || is_const_v<const _Tp>);
 
 _CCCL_DIAG_POP
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_FUNCTION ^^^
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

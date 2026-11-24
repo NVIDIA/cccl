@@ -27,9 +27,9 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
   int id;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 explicit A(int i = 0)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 explicit A(int i = 0)
       : id(i)
   {}
 };
@@ -37,20 +37,20 @@ struct A
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
   int id;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 explicit B(int i = 0)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 explicit B(int i = 0)
       : id(i)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 B select_on_container_copy_construction() const
+  TEST_FUNC TEST_CONSTEXPR_CXX20 B select_on_container_copy_construction() const
   {
     return B(100);
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A<int> a;
@@ -61,8 +61,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(cuda::std::allocator_traits<A<int>>::select_on_container_copy_construction(a).id == 0);
   }
   {
-    typedef IncompleteHolder* VT;
-    typedef A<VT> Alloc;
+    using VT    = IncompleteHolder*;
+    using Alloc = A<VT>;
     Alloc a;
     assert(cuda::std::allocator_traits<Alloc>::select_on_container_copy_construction(a).id == 0);
   }

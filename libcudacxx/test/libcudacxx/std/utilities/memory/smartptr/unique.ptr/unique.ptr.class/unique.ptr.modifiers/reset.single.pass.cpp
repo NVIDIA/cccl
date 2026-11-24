@@ -7,6 +7,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: assertion failed
+
 // <memory>
 
 // unique_ptr
@@ -19,7 +26,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     cuda::std::unique_ptr<A> p(new A);

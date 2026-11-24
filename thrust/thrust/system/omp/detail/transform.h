@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// omp inherits transform
-#include <thrust/system/cpp/detail/transform.h>
+// omp system inherits transform
+#include <thrust/system/cpp/detail/transform.h> // IWYU pragma: export

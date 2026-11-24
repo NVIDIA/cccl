@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,7 +22,12 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/any_resource.h>
+#include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -137,7 +142,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_buffer(__resource __mr, const size_t __count)
       : __mr_(::cuda::std::move(__mr))
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_sync(__get_allocation_size(__count_)))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_sync(__get_allocation_size(__count_), alignof(_Tp)))
   {}
 
   _CCCL_HIDE_FROM_ABI uninitialized_buffer(const uninitialized_buffer&)            = delete;
@@ -175,7 +180,7 @@ public:
 
     if (__buf_)
     {
-      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_));
+      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_), alignof(_Tp));
     }
 
     __mr_    = ::cuda::std::move(__other.__mr_);
@@ -191,7 +196,7 @@ public:
   {
     if (__buf_)
     {
-      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_));
+      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_), alignof(_Tp));
       __buf_   = nullptr;
       __count_ = 0;
     }

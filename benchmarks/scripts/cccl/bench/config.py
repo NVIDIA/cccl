@@ -8,7 +8,7 @@ def randomized_cartesian_product(list_of_lists):
     for lst in list_of_lists:
         length *= len(lst)
 
-    visited = set()
+    visited: set[tuple] = set()
     while len(visited) < length:
         variant = tuple(map(random.choice, list_of_lists))
         if variant not in visited:
@@ -72,9 +72,9 @@ def parse_ranges(columns):
     return ranges
 
 
-def parse_meta():
-    if not os.path.isfile("cccl_meta_bench.csv"):
-        print("cccl_meta_bench.csv not found", file=sys.stderr)
+def parse_meta(path="cccl_meta_bench.csv"):
+    if not os.path.isfile(path):
+        print("{} not found".format(path), file=sys.stderr)
         print(
             "make sure to run the script from the CUB build directory", file=sys.stderr
         )
@@ -82,7 +82,7 @@ def parse_meta():
     benchmarks = {}
     ctk_version = "0.0.0"
     cccl_revision = "0.0-0-0000"
-    with open("cccl_meta_bench.csv", "r") as f:
+    with open(path, "r") as f:
         lines = f.readlines()
         for line in lines:
             if "," in line:
@@ -107,12 +107,15 @@ def parse_meta():
 
 class Config:
     _instance = None
+    ctk: str
+    cccl: str
+    benchmarks: dict[str, list[Range]]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, path="cccl_meta_bench.csv"):
         if cls._instance is None:
-            cls._instance = super().__new__(cls, *args, **kwargs)
+            cls._instance = super().__new__(cls)
             cls._instance.ctk, cls._instance.cccl, cls._instance.benchmarks = (
-                parse_meta()
+                parse_meta(path)
             )
         return cls._instance
 
@@ -132,7 +135,7 @@ class Config:
         return VariantPoint(points)
 
     def variant_space(self, algname):
-        variants = []
+        variants: list[list[RangePoint]] = []
         for param_space in self.benchmarks[algname]:
             variants.append([])
             for value in range(param_space.low, param_space.high, param_space.step):

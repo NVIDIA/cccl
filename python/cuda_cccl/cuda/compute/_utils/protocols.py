@@ -1,37 +1,73 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+
+import numpy as np
 
 """
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import List, Optional, Tuple
+if TYPE_CHECKING:
+    from ..typing import DeviceArrayLike, GpuStruct
 
-import numpy as np
 
-from ..typing import DeviceArrayLike, GpuStruct
+def is_device_array(obj: object) -> bool:
+    """Check if an object implements the `__cuda_array_interface__` protocol."""
+    return hasattr(obj, "__cuda_array_interface__")
+
+
+# Perf: This cache holds the pointer accessor functions for all types we have seen.
+# This avoids try..except chains or repeated attribute lookups for the same type.
+_DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    try:
+        accessor = _DATA_POINTER_ACCESSOR_CACHE[type(arr)]
+    except KeyError:
+        pass
+    else:
+        try:
+            return accessor(arr)
+        except AttributeError:
+            # If a cached accessor fails for this instance, evict it and fall back to full
+            # re-selection, so one inconsistent instance can't permanently break
+            # every other instance of the same type.
+            _DATA_POINTER_ACCESSOR_CACHE.pop(type(arr), None)
+
     # TODO: these are fast paths for CuPy and PyTorch until
     # we have a more general solution.
 
     # Fast path for PyTorch (arr.data_ptr())
     try:
-        return arr.data_ptr()  # type: ignore
+        ptr = arr.data_ptr()  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data_ptr()  # type: ignore
+        return ptr
 
     # Fast path for CuPy (arr.data.ptr)
     try:
-        return arr.data.ptr  # type: ignore
+        ptr = arr.data.ptr  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data.ptr  # type: ignore
+        return ptr
 
     # Fall back to __cuda_array_interface__
-    return arr.__cuda_array_interface__["data"][0]
+    ptr = arr.__cuda_array_interface__["data"][0]
+    _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.__cuda_array_interface__[
+        "data"
+    ][0]
+    return ptr
 
 
 def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
@@ -40,6 +76,19 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
         return np.dtype(arr.dtype)  # type: ignore
     except (AttributeError, TypeError):
         pass
+
+    # Framework-specific dtypes NumPy can't interpret: PyTorch's bfloat16.
+    # Its __cuda_array_interface__ reports an opaque "<V2" typestr (CAI has no
+    # bfloat16 spelling), which would silently demote the array to a storage
+    # type; map it to the ml_dtypes bfloat16 dtype instead.
+    if str(getattr(arr, "dtype", None)) == "torch.bfloat16":
+        from ..types import bfloat16
+
+        if bfloat16.dtype is None:
+            raise TypeError(
+                "bfloat16 arrays require the ml_dtypes package to be installed"
+            )
+        return bfloat16.dtype
 
     # Fall back to __cuda_array_interface__ for DeviceArrayLike
     cai = arr.__cuda_array_interface__  # type: ignore
@@ -60,6 +109,21 @@ def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
         return arr.shape  # type: ignore
     except AttributeError:
         return arr.__cuda_array_interface__["shape"]
+
+
+def get_size(arr: DeviceArrayLike) -> int:
+    """Get the total number of elements in an array."""
+    # Try fast path via .size attribute
+    try:
+        return int(arr.size)  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fall back to computing from shape
+    shape = get_shape(arr)
+    import math
+
+    return math.prod(shape)
 
 
 def is_contiguous(arr: DeviceArrayLike) -> bool:
@@ -101,6 +165,39 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
     else:
         # not contiguous
         return False
+
+
+def is_c_contiguous(arr: DeviceArrayLike) -> bool:
+    """Whether ``arr`` is contiguous in C (row-major) order.
+
+    ``is_contiguous`` also accepts Fortran order, which is only equivalent to C
+    order for arrays of at most one dimension.  Callers that address the data
+    with C-order strides need this stricter check.
+    """
+    cai = arr.__cuda_array_interface__
+
+    strides = cai["strides"]
+
+    if strides is None:
+        return True
+
+    shape = cai["shape"]
+
+    if any(dim == 0 for dim in shape):
+        # array has no elements
+        return True
+
+    if all(dim == 1 for dim in shape):
+        # there is a single element
+        return True
+
+    itemsize = get_dtype(arr).itemsize
+    expected_stride = itemsize
+    for dim, stride in zip(reversed(shape), reversed(strides)):
+        if stride != expected_stride:
+            return False
+        expected_stride *= dim
+    return True
 
 
 def compute_c_contiguous_strides_in_bytes(

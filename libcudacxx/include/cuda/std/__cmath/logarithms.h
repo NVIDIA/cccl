@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,11 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/abs.h> // IWYU pragma: keep
 #include <cuda/std/__cmath/fpclassify.h>
-#include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -33,10 +35,6 @@
 #include <cuda/std/limits>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -59,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float log(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOGF)
+#ifdef _CCCL_BUILTIN_LOGF
   return _CCCL_BUILTIN_LOGF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOGF ^^^ / vvv !_CCCL_BUILTIN_LOGF vvv
   return ::logf(__x);
@@ -68,7 +66,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float logf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOGF)
+#ifdef _CCCL_BUILTIN_LOGF
   return _CCCL_BUILTIN_LOGF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOGF ^^^ / vvv !_CCCL_BUILTIN_LOGF vvv
   return ::logf(__x);
@@ -77,7 +75,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double log(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG)
+#ifdef _CCCL_BUILTIN_LOG
   return _CCCL_BUILTIN_LOG(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG ^^^ / vvv !_CCCL_BUILTIN_LOG vvv
   return ::log(__x);
@@ -87,7 +85,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double log(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOGL)
+#  ifdef _CCCL_BUILTIN_LOGL
   return _CCCL_BUILTIN_LOGL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOGL ^^^ / vvv !_CCCL_BUILTIN_LOGL vvv
   return ::logl(__x);
@@ -96,7 +94,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double logl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOGL)
+#  ifdef _CCCL_BUILTIN_LOGL
   return _CCCL_BUILTIN_LOGL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOGL ^^^ / vvv !_CCCL_BUILTIN_LOGL vvv
   return ::logl(__x);
@@ -113,13 +111,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
                       ::cuda::std::uint16_t __repr = ::cuda::std::__fp_get_storage(__x);
-                      switch (__repr)
+                      if (__repr == 7544)
                       {
-                        case 7544:
-                          __ret_repr.x -= 1;
-                          break;
-
-                        default:;
+                        __ret_repr.x -= 1;
                       }
 
                       return __ret_repr;
@@ -138,7 +132,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log(_Integer __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG)
+#ifdef _CCCL_BUILTIN_LOG
   return _CCCL_BUILTIN_LOG((double) __x);
 #else // ^^^ _CCCL_BUILTIN_LOG ^^^ / vvv !_CCCL_BUILTIN_LOG vvv
   return ::log((double) __x);
@@ -162,7 +156,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float log10(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG10F)
+#ifdef _CCCL_BUILTIN_LOG10F
   return _CCCL_BUILTIN_LOG10F(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG10F ^^^ / vvv !_CCCL_BUILTIN_LOG10F vvv
   return ::log10f(__x);
@@ -171,7 +165,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float log10f(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG10F)
+#ifdef _CCCL_BUILTIN_LOG10F
   return _CCCL_BUILTIN_LOG10F(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG10F ^^^ / vvv !_CCCL_BUILTIN_LOG10F vvv
   return ::log10f(__x);
@@ -180,7 +174,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double log10(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG10)
+#ifdef _CCCL_BUILTIN_LOG10
   return _CCCL_BUILTIN_LOG10(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG10 ^^^ / vvv !_CCCL_BUILTIN_LOG10 vvv
   return ::log10(__x);
@@ -190,7 +184,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double log10(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG10L)
+#  ifdef _CCCL_BUILTIN_LOG10L
   return _CCCL_BUILTIN_LOG10L(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG10L ^^^ / vvv !_CCCL_BUILTIN_LOG10L vvv
   return ::log10l(__x);
@@ -199,7 +193,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double log10l(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG10L)
+#  ifdef _CCCL_BUILTIN_LOG10L
   return _CCCL_BUILTIN_LOG10L(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG10L ^^^ / vvv !_CCCL_BUILTIN_LOG10L vvv
   return ::log10l(__x);
@@ -208,7 +202,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half log10(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(::cuda::std::log10f(__half2float(__x)));))
@@ -216,7 +210,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(::cuda::std::log10f(__bfloat162float(__x)));))
@@ -226,7 +220,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log10(_Integer __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG10)
+#ifdef _CCCL_BUILTIN_LOG10
   return _CCCL_BUILTIN_LOG10((double) __x);
 #else // ^^^ _CCCL_BUILTIN_LOG10 ^^^ / vvv !_CCCL_BUILTIN_LOG10 vvv
   return ::log10((double) __x);
@@ -238,14 +232,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
 {
-  switch (::cuda::std::fpclassify(__x))
+  const auto __fp = ::cuda::std::fpclassify(__x);
+  // FP_ILOGB0 and FP_ILOGBNAN may have the same value, but the cases are semantically distinct.
+  // NOLINTBEGIN(bugprone-branch-clone)
+  if (__fp == FP_ZERO)
   {
-    case FP_ZERO:
-      return FP_ILOGB0;
-    case FP_NAN:
-      return FP_ILOGBNAN;
-    case FP_INFINITE:
-      return numeric_limits<int>::max();
+    return FP_ILOGB0;
+  }
+  if (__fp == FP_NAN)
+  {
+    return FP_ILOGBNAN;
+  }
+  // NOLINTEND(bugprone-branch-clone)
+  if (__fp == FP_INFINITE)
+  {
+    return numeric_limits<int>::max();
   }
 
   constexpr auto __fmt = __fp_format_of_v<_Tp>;
@@ -254,17 +255,15 @@ template <class _Tp>
   {
     return numeric_limits<int>::max();
   }
-  else if (__exp < __fp_exp_min_v<__fmt>)
+  if (__exp < __fp_exp_min_v<__fmt>)
   {
     return numeric_limits<int>::min();
   }
-  else
-  {
-    return __exp;
-  }
+  return __exp;
 }
 
-template <class _Tp>
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API inline constexpr int ilogb(_Tp __x) noexcept
 {
   if constexpr (is_integral_v<_Tp>)
@@ -306,7 +305,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API inline float log1p(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG1PF)
+#ifdef _CCCL_BUILTIN_LOG1PF
   return _CCCL_BUILTIN_LOG1PF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG1PF ^^^ / vvv !_CCCL_BUILTIN_LOG1PF vvv
   return ::log1pf(__x);
@@ -315,7 +314,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API inline float log1pf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG1PF)
+#ifdef _CCCL_BUILTIN_LOG1PF
   return _CCCL_BUILTIN_LOG1PF(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG1PF ^^^ / vvv !_CCCL_BUILTIN_LOG1PF vvv
   return ::log1pf(__x);
@@ -324,7 +323,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API inline double log1p(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG1P)
+#ifdef _CCCL_BUILTIN_LOG1P
   return _CCCL_BUILTIN_LOG1P(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG1P ^^^ / vvv !_CCCL_BUILTIN_LOG1P vvv
   return ::log1p(__x);
@@ -334,7 +333,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double log1p(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG1PL)
+#  ifdef _CCCL_BUILTIN_LOG1PL
   return _CCCL_BUILTIN_LOG1PL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG1PL ^^^ / vvv !_CCCL_BUILTIN_LOG1PL vvv
   return ::log1pl(__x);
@@ -343,7 +342,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API inline long double log1pl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG1PL)
+#  ifdef _CCCL_BUILTIN_LOG1PL
   return _CCCL_BUILTIN_LOG1PL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG1PL ^^^ / vvv !_CCCL_BUILTIN_LOG1PL vvv
   return ::log1pl(__x);
@@ -368,7 +367,7 @@ template <class _Tp>
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log1p(_Integer __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG1P)
+#ifdef _CCCL_BUILTIN_LOG1P
   return _CCCL_BUILTIN_LOG1P((double) __x);
 #else // ^^^ _CCCL_BUILTIN_LOG1P ^^^ / vvv !_CCCL_BUILTIN_LOG1P vvv
   return ::log1p((double) __x);
@@ -392,7 +391,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float log2(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG2F)
+#ifdef _CCCL_BUILTIN_LOG2F
   return _CCCL_BUILTIN_LOG2F(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG2F ^^^ / vvv !_CCCL_BUILTIN_LOG2F vvv
   return ::log2f(__x);
@@ -401,7 +400,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float log2f(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG2F)
+#ifdef _CCCL_BUILTIN_LOG2F
   return _CCCL_BUILTIN_LOG2F(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG2F ^^^ / vvv !_CCCL_BUILTIN_LOG2F vvv
   return ::log2f(__x);
@@ -410,7 +409,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double log2(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG2)
+#ifdef _CCCL_BUILTIN_LOG2
   return _CCCL_BUILTIN_LOG2(__x);
 #else // ^^^ _CCCL_BUILTIN_LOG2 ^^^ / vvv !_CCCL_BUILTIN_LOG2 vvv
   return ::log2(__x);
@@ -420,7 +419,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double log2(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG2L)
+#  ifdef _CCCL_BUILTIN_LOG2L
   return _CCCL_BUILTIN_LOG2L(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG2L ^^^ / vvv !_CCCL_BUILTIN_LOG2L vvv
   return ::log2l(__x);
@@ -429,7 +428,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double log2l(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOG2L)
+#  ifdef _CCCL_BUILTIN_LOG2L
   return _CCCL_BUILTIN_LOG2L(__x);
 #  else // ^^^ _CCCL_BUILTIN_LOG2L ^^^ / vvv !_CCCL_BUILTIN_LOG2L vvv
   return ::log2l(__x);
@@ -456,7 +455,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log2(_Integer __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOG2)
+#ifdef _CCCL_BUILTIN_LOG2
   return _CCCL_BUILTIN_LOG2((double) __x);
 #else // ^^^ _CCCL_BUILTIN_LOG2 ^^^ / vvv !_CCCL_BUILTIN_LOG2 vvv
   return ::log2((double) __x);
@@ -468,17 +467,20 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr _Tp __logb_impl(_Tp __x) noexcept
 {
-  switch (::cuda::std::fpclassify(__x))
+  const auto __fp = ::cuda::std::fpclassify(__x);
+  if (__fp == FP_ZERO)
   {
-    case FP_ZERO:
-      return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
-    case FP_NAN:
-      return ::cuda::std::__fp_nan<_Tp>();
-    case FP_INFINITE:
-      return ::cuda::std::__fp_inf<_Tp>();
-    default:
-      break;
+    return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
   }
+  if (__fp == FP_NAN)
+  {
+    return ::cuda::std::__fp_nan<_Tp>();
+  }
+  if (__fp == FP_INFINITE)
+  {
+    return ::cuda::std::__fp_inf<_Tp>();
+  }
+
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv

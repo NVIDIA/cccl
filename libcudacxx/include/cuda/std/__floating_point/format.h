@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,10 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/fp.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cfloat>
+#include <cuda/std/cfloat> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,6 +39,7 @@ enum class __fp_format
   __fp80_x86, // x86 80-bit extended precision
   __fp8_nv_e4m3, // NVIDIA's __nv_fp8_e4m3
   __fp8_nv_e5m2, // NVIDIA's __nv_fp8_e5m2
+  __fp8_nv_ue5m3, // NVIDIA's __nv_fp8_ue5m3
   __fp8_nv_e8m0, // NVIDIA's __nv_fp8_e8m0
   __fp6_nv_e2m3, // NVIDIA's __nv_fp6_e2m3
   __fp6_nv_e3m2, // NVIDIA's __nv_fp6_e3m2
@@ -62,22 +62,18 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (is_same_v<_Tp, long double>)
   {
-    if (LDBL_MIN_EXP == -1021 && LDBL_MAX_EXP == 1024 && LDBL_MANT_DIG == 53)
-    {
-      return __fp_format::__binary64;
-    }
-    else if (LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64 && sizeof(long double) == 16)
-    {
-      return __fp_format::__fp80_x86;
-    }
-    else if (LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113)
-    {
-      return __fp_format::__binary128;
-    }
-    else // Unsupported long double format
-    {
-      return __fp_format::__invalid;
-    }
+#  if LDBL_MIN_EXP == -1021 && LDBL_MAX_EXP == 1024 && LDBL_MANT_DIG == 53
+    return __fp_format::__binary64;
+#  elif LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64
+    static_assert(sizeof(long double) == 16,
+                  "When the long double format is x86 80-bit extended floating point, CCCL requires the size of long "
+                  "double to be 16 bytes.");
+    return __fp_format::__fp80_x86;
+#  elif LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
+    return __fp_format::__binary128;
+#  else
+#    error "Unknown long double format. Define CCCL_DISABLE_LONG_DOUBLE to disable long double support in CCCL."
+#  endif
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
@@ -104,6 +100,12 @@ template <class _Tp>
     return __fp_format::__fp8_nv_e5m2;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (is_same_v<_Tp, __nv_fp8_ue5m3>)
+  {
+    return __fp_format::__fp8_nv_ue5m3;
+  }
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {

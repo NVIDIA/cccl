@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__stf/places/place_partition.cuh>
+#include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -25,11 +26,11 @@ int main()
   auto lX = ctx.logical_data<int>(size_t(32 * 1024 * 1024));
 
   ctx.parallel_for(lX.shape(), lX.write())->*[] __device__(size_t i, auto x) {
-    x(i) = 3 * i - 7;
+    x(i) = (3 * i) - 7;
   };
 
   for (auto& sub_place :
-       place_partition(ctx.async_resources(), exec_place::current_device(), place_partition_scope::green_context))
+       place_partition(exec_place::current_device(), ctx.async_resources(), place_partition_scope::green_context))
   {
     for (size_t i = 0; i < 4; i++)
     {

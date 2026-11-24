@@ -25,7 +25,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void not_extents()
+TEST_FUNC void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}layout_right::mapping template argument
   // must be a specialization of extents}}
@@ -33,11 +33,11 @@ __host__ __device__ void not_extents()
   unused(mapping);
 }
 
-__host__ __device__ void representable()
+TEST_FUNC void representable()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}layout_right::mapping product of static
   // extents must be representable as index_type.}}
-  cuda::std::layout_right::mapping<cuda::std::extents<char, 20, 20>> mapping;
+  cuda::std::layout_right::mapping<cuda::std::extents<signed char, 20, 20>> mapping;
   unused(mapping)
 }
 

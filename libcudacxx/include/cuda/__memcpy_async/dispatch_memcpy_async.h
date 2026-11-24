@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 #include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
@@ -50,7 +50,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  ***********************************************************************/
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
+[[nodiscard]] _CCCL_DEVICE_API __completion_mechanism __dispatch_memcpy_async_any_to_any(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -63,7 +63,7 @@ template <::cuda::std::size_t _Align, typename _Group>
 }
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
+[[nodiscard]] _CCCL_DEVICE_API __completion_mechanism __dispatch_memcpy_async_global_to_shared(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -109,7 +109,7 @@ template <::cuda::std::size_t _Align, typename _Group>
 
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_API inline __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _CCCL_HOST_DEVICE_API __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -133,10 +133,9 @@ template <::cuda::std::size_t _Align, typename _Group>
           && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared)) {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      } else {
-        return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
-          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      }),
+      } return ::cuda::
+        __dispatch_memcpy_async_any_to_any<_Align>(
+          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);),
     (
       // Host code path:
       if (__group.thread_rank() == 0) {
@@ -145,7 +144,7 @@ template <::cuda::std::size_t _Align, typename _Group>
 }
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_API inline __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _CCCL_HOST_DEVICE_API __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,

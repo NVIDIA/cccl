@@ -17,7 +17,7 @@
 //    a constexpr default constructor and a trivial destructor.
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_SSTREAM)
+#ifdef _LIBCUDACXX_HAS_SSTREAM
 #  include <cuda/std/cassert>
 #  include <cuda/std/sstream>
 
@@ -26,13 +26,13 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::istreambuf_iterator<char> T;
+    using T = cuda::std::istreambuf_iterator<char>;
     T it;
     assert(it == T());
     [[maybe_unused]] constexpr T it2;
   }
   {
-    typedef cuda::std::istreambuf_iterator<wchar_t> T;
+    using T = cuda::std::istreambuf_iterator<wchar_t>;
     T it;
     assert(it == T());
     [[maybe_unused]] constexpr T it2;

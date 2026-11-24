@@ -1,34 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,19 +17,17 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
-#  include <cub/util_type.cuh>
+#  include <cub/device/dispatch/dispatch_scan_by_key.cuh> // IWYU pragma: keep
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -70,7 +45,7 @@ template <typename Derived,
           typename EqualityOpT,
           typename ScanOpT,
           typename SizeT>
-_CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
+_CCCL_HOST_DEVICE_API ValuesOutIt inclusive_scan_by_key_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   KeysInIt keys,
   ValuesInIt values,
@@ -84,34 +59,15 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     return result;
   }
 
-  // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-  using AccumT            = thrust::detail::it_value_t<ValuesInUnwrapIt>;
+  // FIXME(bgruber): We must override CUB's accumulator type for backward compatibility until CCCL 4.0. Then we should
+  // switch to calling the CUB public API, which uses __accumulator_t. See also:
+  // https://github.com/NVIDIA/cccl/issues/3993
+  using accum_t = thrust::detail::it_value_t<ValuesInIt>;
 
+  // Convert to raw pointers if possible:
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
-
-  using Dispatch32 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    cub::NullType,
-    std::uint32_t,
-    AccumT>;
-  using Dispatch64 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    cub::NullType,
-    std::uint64_t,
-    AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status{};
@@ -119,10 +75,9 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
       num_items,
       (nullptr,
        tmp_size,
@@ -145,10 +100,9 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
       num_items,
       (tmp.data().get(),
        tmp_size,
@@ -179,7 +133,7 @@ template <typename Derived,
           typename EqualityOpT,
           typename ScanOpT,
           typename SizeT>
-_CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
+_CCCL_HOST_DEVICE_API ValuesOutIt exclusive_scan_by_key_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   KeysInIt keys,
   ValuesInIt values,
@@ -195,32 +149,9 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
-
-  using Dispatch32 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    InitValueT,
-    std::uint32_t,
-    InitValueT>;
-  using Dispatch64 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    InitValueT,
-    std::uint64_t,
-    InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status{};
@@ -228,10 +159,9 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
       num_items,
       (nullptr,
        tmp_size,
@@ -254,10 +184,9 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
       num_items,
       (tmp.data().get(),
        tmp_size,
@@ -290,7 +219,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class BinaryPred, class ScanOp>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -310,7 +239,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class BinaryPred>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -323,7 +252,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -340,7 +269,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init, class BinaryPred, class ScanOp>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -367,7 +296,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init, class BinaryPred>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -381,7 +310,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -394,7 +323,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -407,6 +336,6 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/scan.h>
+#  include <thrust/scan.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

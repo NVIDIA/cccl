@@ -19,11 +19,15 @@
 
 #include "test_macros.h"
 
+#if TEST_COMPILER(GCC, >=, 16)
+TEST_DIAG_SUPPRESS_GCC("-Wsfinae-incomplete") // defining X, which previously failed to be complete in a SFINAE context
+#endif // TEST_COMPILER(GCC, >=, 16)
+
 struct Foo;
 
-__host__ __device__ Foo& get_foo();
+TEST_FUNC Foo& get_foo();
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Foo& foo = get_foo();
   cuda::std::reference_wrapper<Foo> ref{foo};
@@ -33,7 +37,7 @@ __host__ __device__ void test()
 struct Foo
 {};
 
-__host__ __device__ Foo& get_foo()
+TEST_FUNC Foo& get_foo()
 {
   static Foo foo;
   return foo;

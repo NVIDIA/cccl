@@ -85,13 +85,13 @@ static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t ite
 #define _USER_OP {1}
 #define _USER_OP_INPUT_T {2}
 
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
 extern "C" __device__ void _USER_OP(void*, _USER_OP_INPUT_T*);
 #else
 extern "C" __device__ void _USER_OP(_USER_OP_INPUT_T*);
 #endif
 
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
 struct __align__({3}) user_op_t {{
   char data[{4}];
 #else
@@ -99,7 +99,7 @@ struct user_op_t {{
 #endif
 
   __device__ void operator()(_USER_OP_INPUT_T* input) {{
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
     _USER_OP(&data, input);
 #else
     _USER_OP(input);
@@ -130,6 +130,7 @@ std::string get_for_kernel(cccl_op_t user_op, cccl_iterator_t iter)
 #include <cuda/std/iterator>
 #include <cub/agent/agent_for.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 
 struct __align__({2}) storage_t {{
   char data[{3}];
@@ -152,15 +153,7 @@ struct for_each_wrapper
   }}
 }};
 
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
-
-struct device_for_policy
-{{
-  struct ActivePolicy
-  {{
-    using for_policy_t = policy_dim_t;
-  }};
-}};
+using device_for_policy_selector = cub::detail::for_each::policy_selector;
 )XXX",
     get_for_kernel_iterator(iter), // 0 - Iterator definition
     get_for_kernel_user_op(user_op, iter), // 1 - User op wrapper definition,

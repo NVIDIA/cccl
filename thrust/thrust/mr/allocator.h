@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief Allocator types usable with \ref memory_resources "Memory Resources".
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,14 +17,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
-#include <thrust/detail/config/memory_resource.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -66,24 +53,24 @@ public:
   /*! The value type allocated by this allocator. Equivalent to \p T. */
   using value_type = T;
   /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
-  using pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other;
+  using pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<T>;
   /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
-  using const_pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other;
+  using const_pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<const T>;
   /*! The reference to the type allocated by this allocator. Supports smart references. */
-  using reference = typename thrust::detail::pointer_traits<pointer>::reference;
+  using reference = typename ::cuda::std::iterator_traits<pointer>::reference;
   /*! The const reference to the type allocated by this allocator. Supports smart references. */
-  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
+  using const_reference = typename ::cuda::std::iterator_traits<const_pointer>::reference;
   /*! The size type of this allocator. Always \p std::size_t. */
   using size_type = std::size_t;
   /*! The difference type between pointers allocated by this allocator. */
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   /*! Specifies that the allocator shall be propagated on container copy assignment. */
-  using propagate_on_container_copy_assignment = detail::true_type;
+  using propagate_on_container_copy_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container move assignment. */
-  using propagate_on_container_move_assignment = detail::true_type;
+  using propagate_on_container_move_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container swap. */
-  using propagate_on_container_swap = detail::true_type;
+  using propagate_on_container_swap = ::cuda::std::true_type;
 
   /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
    *
@@ -102,22 +89,25 @@ public:
    *  \return the maximum value of \p std::size_t, divided by the size of \p T.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE size_type max_size() const
+  template <class SizeType = size_type>
+  _CCCL_HOST_DEVICE_API size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+    // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+    return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
   /*! Constructor.
    *
    *  \param resource the resource to be used to allocate raw memory.
    */
-  _CCCL_HOST_DEVICE allocator(MR* resource)
+  _CCCL_HOST_DEVICE_API allocator(MR* resource)
       : mem_res(resource)
   {}
 
   /*! Copy constructor. Copies the resource pointer. */
   template <typename U>
-  _CCCL_HOST_DEVICE allocator(const allocator<U, MR>& other)
+  _CCCL_HOST_DEVICE_API allocator(const allocator<U, MR>& other)
       : mem_res(other.resource())
   {}
 
@@ -126,7 +116,7 @@ public:
    *  \param n number of elements to allocate
    *  \return a pointer to the newly allocated storage.
    */
-  [[nodiscard]] _CCCL_HOST pointer allocate(size_type n)
+  [[nodiscard]] _CCCL_HOST_API pointer allocate(size_type n)
   {
     return static_cast<pointer>(mem_res->do_allocate(n * sizeof(T), alignof(T)));
   }
@@ -136,7 +126,7 @@ public:
    *  \param p pointer returned by a previous call to \p allocate
    *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
    */
-  _CCCL_HOST void deallocate(pointer p, size_type n) noexcept
+  _CCCL_HOST_API void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
   }
@@ -145,7 +135,7 @@ public:
    *
    *  \return the memory resource used by this allocator.
    */
-  _CCCL_HOST_DEVICE MR* resource() const
+  _CCCL_HOST_DEVICE_API MR* resource() const
   {
     return mem_res;
   }
@@ -156,14 +146,14 @@ private:
 
 /*! Compares the allocators for equality by comparing the underlying memory resources. */
 template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator==(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator==(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
 {
   return *lhs.resource() == *rhs.resource();
 }
 
 /*! Compares the allocators for inequality by comparing the underlying memory resources. */
 template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator!=(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator!=(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
 {
   return !(lhs == rhs);
 }
@@ -200,25 +190,25 @@ public:
    *      \p allocator base subobject with that resource.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE stateless_resource_allocator()
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator()
       : base(get_global_resource<Upstream>())
   {}
 
   /*! Copy constructor. Copies the memory resource pointer. */
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator& other)
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator(const stateless_resource_allocator& other)
       : base(other)
   {}
 
   /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
   template <typename U>
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator<U, Upstream>& other)
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator(const stateless_resource_allocator<U, Upstream>& other)
       : base(other)
   {}
 
-  stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
 
   /*! Destructor. */
-  _CCCL_HOST_DEVICE ~stateless_resource_allocator() {}
+  _CCCL_HIDE_FROM_ABI ~stateless_resource_allocator() = default;
 };
 
 /*! \} // allocators

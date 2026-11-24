@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/transform.h
  *  \brief Transforms input ranges using a function object
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,13 +24,15 @@
 #include <cuda/std/__iterator/incrementable_traits.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/transform.h>
 #include <thrust/system/detail/sequential/transform.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/transform.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/omp/detail/transform.h>
@@ -116,7 +105,7 @@ THRUST_NAMESPACE_BEGIN
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
+_CCCL_HOST_DEVICE_API OutputIterator transform(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -176,7 +165,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  */
 //!  \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
+_CCCL_HOST_API OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::select_system;
@@ -257,7 +246,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
+_CCCL_HOST_DEVICE_API OutputIterator transform(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -325,7 +314,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  */
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
@@ -418,7 +407,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -496,7 +485,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \endverbatim
  */
 template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
@@ -586,7 +575,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -667,7 +656,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-ForwardIterator transform_if(
+_CCCL_HOST_API ForwardIterator transform_if(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -770,7 +759,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -866,7 +855,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-ForwardIterator transform_if(
+_CCCL_HOST_API ForwardIterator transform_if(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -898,7 +887,7 @@ ForwardIterator transform_if(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_n(
+_CCCL_HOST_DEVICE_API OutputIterator transform_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   ::cuda::std::iter_difference_t<InputIterator> count,
@@ -916,7 +905,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform_n(
+_CCCL_HOST_API OutputIterator transform_n(
   InputIterator first, ::cuda::std::iter_difference_t<InputIterator> count, OutputIterator result, UnaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
@@ -936,7 +925,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_n(
+_CCCL_HOST_DEVICE_API OutputIterator transform_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
@@ -955,7 +944,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator transform_n(
+_CCCL_HOST_API OutputIterator transform_n(
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
@@ -980,7 +969,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   ::cuda::std::iter_difference_t<InputIterator> count,
@@ -999,7 +988,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_API ForwardIterator transform_if_n(
   InputIterator first,
   ::cuda::std::iter_difference_t<InputIterator> count,
   ForwardIterator result,
@@ -1024,7 +1013,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   ::cuda::std::iter_difference_t<InputIterator1> count,
@@ -1049,7 +1038,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_API ForwardIterator transform_if_n(
   InputIterator1 first,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 stencil,
@@ -1077,7 +1066,7 @@ template <typename DerivedPolicy,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+_CCCL_HOST_DEVICE_API ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
@@ -1111,7 +1100,7 @@ template <typename InputIterator1,
           typename ForwardIterator,
           typename BinaryFunction,
           typename Predicate>
-ForwardIterator transform_if_n(
+_CCCL_HOST_API ForwardIterator transform_if_n(
   InputIterator1 first1,
   ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,

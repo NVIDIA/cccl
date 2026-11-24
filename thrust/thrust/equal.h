@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file equal.h
  *  \brief Equality between ranges
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -87,7 +74,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -135,7 +122,7 @@ equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
+_CCCL_HOST_API bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 /*! \p equal returns \c true if the two ranges <tt>[first1, last1)</tt>
  *  and <tt>[first2, first2 + (last1 - first1))</tt> are identical when
@@ -194,7 +181,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -252,7 +239,8 @@ equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
+_CCCL_HOST_API bool
+equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
 
 /*! \} // end comparisons
  *  \} // end reductions
@@ -260,4 +248,4 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, B
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/equal.inl>
+#include <thrust/detail/equal.inl> // IWYU pragma: export

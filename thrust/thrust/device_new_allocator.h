@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An allocator which allocates storage with \p device_new.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,9 +21,12 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -103,17 +93,17 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_new_allocator() {}
+  _CCCL_HOST_DEVICE_API inline device_new_allocator() {}
 
   /*! No-argument destructor has no effect. */
-  _CCCL_HOST_DEVICE inline ~device_new_allocator() {}
+  _CCCL_HOST_DEVICE_API inline ~device_new_allocator() {}
 
   /*! Copy constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_new_allocator(device_new_allocator const&) {}
+  _CCCL_HOST_DEVICE_API inline device_new_allocator(device_new_allocator const&) {}
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>
-  _CCCL_HOST_DEVICE inline device_new_allocator(device_new_allocator<U> const&)
+  _CCCL_HOST_DEVICE_API inline device_new_allocator(device_new_allocator<U> const&)
   {}
 
   /*! Returns the address of an allocated object.
@@ -123,7 +113,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline pointer address(reference r)
+  _CCCL_HOST_DEVICE_API inline pointer address(reference r)
   {
     return &r;
   }
@@ -135,7 +125,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline const_pointer address(const_reference r)
+  _CCCL_HOST_DEVICE_API inline const_pointer address(const_reference r)
   {
     return &r;
   }
@@ -149,11 +139,11 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(0)))
+  _CCCL_HOST_API inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(0)))
   {
     if (cnt > this->max_size())
     {
-      ::cuda::std::__throw_bad_alloc();
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     // use "::operator new" rather than keyword new
@@ -170,7 +160,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
+  _CCCL_HOST_API inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     // use "::operator delete" rather than keyword delete
     device_delete(p);
@@ -183,7 +173,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline size_type max_size() const
+  _CCCL_HOST_DEVICE_API inline size_type max_size() const
   {
     return ::cuda::std::numeric_limits<size_type>::max THRUST_PREVENT_MACRO_SUBSTITUTION() / sizeof(T);
   } // end max_size()
@@ -195,7 +185,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator==(device_new_allocator const&)
+  _CCCL_HOST_DEVICE_API inline bool operator==(device_new_allocator const&)
   {
     return true;
   }
@@ -207,7 +197,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator!=(device_new_allocator const& a)
+  _CCCL_HOST_DEVICE_API inline bool operator!=(device_new_allocator const& a)
   {
     return !operator==(a);
   }

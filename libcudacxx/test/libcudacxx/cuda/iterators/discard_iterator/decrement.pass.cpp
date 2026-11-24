@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   const int index = 3;
   cuda::discard_iterator iter(index);

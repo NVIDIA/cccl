@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the unique by key dispatcher
+
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
@@ -9,18 +13,15 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the unique by key dispatcher after publishing the
-// tuning API
 
 template <class KeyT, class ValueT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB unique-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using UniqueByKeyPolicyT =
       AgentUniqueByKeyPolicy<128,
@@ -32,7 +33,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_key][device]")
+CUB_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_key][device]", CUB_SMALL)
 {
   using key_t    = int;
   using value_t  = int;
@@ -63,29 +64,33 @@ C2H_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_
     DispatchUniqueByKey<key_t*, value_t*, key_t*, value_t*, offset_t*, eq_op_t, offset_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_keys_in.data()),
-    thrust::raw_pointer_cast(d_vals_in.data()),
-    thrust::raw_pointer_cast(d_keys_out.data()),
-    thrust::raw_pointer_cast(d_vals_out.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    eq_op_t{},
-    static_cast<offset_t>(h_keys_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_keys_in.data()),
+      thrust::raw_pointer_cast(d_vals_in.data()),
+      thrust::raw_pointer_cast(d_keys_out.data()),
+      thrust::raw_pointer_cast(d_vals_out.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      eq_op_t{},
+      static_cast<offset_t>(h_keys_in.size()),
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_keys_in.data()),
-    thrust::raw_pointer_cast(d_vals_in.data()),
-    thrust::raw_pointer_cast(d_keys_out.data()),
-    thrust::raw_pointer_cast(d_vals_out.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    eq_op_t{},
-    static_cast<offset_t>(h_keys_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_keys_in.data()),
+      thrust::raw_pointer_cast(d_vals_in.data()),
+      thrust::raw_pointer_cast(d_keys_out.data()),
+      thrust::raw_pointer_cast(d_vals_out.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      eq_op_t{},
+      static_cast<offset_t>(h_keys_in.size()),
+      /* stream */ nullptr));
 
   const auto num_selected = static_cast<std::size_t>(d_num_selected[0]);
   d_keys_out.resize(num_selected);

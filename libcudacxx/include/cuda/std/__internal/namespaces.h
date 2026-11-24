@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===---------------------------------------------------------------------===//
 
@@ -12,7 +12,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,7 @@
 #include <cuda/std/__internal/version.h>
 
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
-#if defined(_CCCL_HEADER_TEST)
+#ifdef _CCCL_HEADER_TEST
 #  define _CCCL_PROLOGUE_INCLUDE_CHECK() \
     static_assert(_CCCL_PROLOGUE_INCLUDED(), "missing #include <cuda/std/__cccl/prologue.h>");
 #else // ^^^ defined(_CCCL_HEADER_TEST) ^^^ / vvv !defined(_CCCL_HEADER_TEST) vvv
@@ -47,6 +47,16 @@
   }                              \
   _CCCL_END_NAMESPACE_NOVERSION(_NS)
 
+// Open a namespace for APIs that were version bumped in a minor release
+// Version bump namespace should be removed from the APIs at the next major release
+#define _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP                                           \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  inline namespace __version_bump_ver4_                                               \
+  {
+#define _CCCL_END_NAMESPACE_ABI_VER4_BUMP                                             \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  }
+
 // Standard namespaces with or without versioning
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION _CCCL_BEGIN_NAMESPACE_NOVERSION(cuda::std)
 #define _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION   _CCCL_END_NAMESPACE_NOVERSION(cuda::std)
@@ -56,6 +66,8 @@
 // cuda specific namespaces
 #define _CCCL_BEGIN_NAMESPACE_CUDA                     _CCCL_BEGIN_NAMESPACE(cuda)
 #define _CCCL_END_NAMESPACE_CUDA                       _CCCL_END_NAMESPACE(cuda)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC              _CCCL_BEGIN_NAMESPACE(cuda::fabric)
+#define _CCCL_END_NAMESPACE_CUDA_FABRIC                _CCCL_END_NAMESPACE(cuda::fabric)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_MR                  _CCCL_BEGIN_NAMESPACE(cuda::mr)
 #define _CCCL_END_NAMESPACE_CUDA_MR                    _CCCL_END_NAMESPACE(cuda::mr)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE              _CCCL_BEGIN_NAMESPACE(cuda::device)
@@ -66,6 +78,12 @@
 #define _CCCL_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL   _CCCL_END_NAMESPACE(cuda::device::experimental)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER              _CCCL_BEGIN_NAMESPACE(cuda::__driver)
 #define _CCCL_END_NAMESPACE_CUDA_DRIVER                _CCCL_END_NAMESPACE(cuda::__driver)
+
+// Namespaces related to <simd>
+#define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
+#define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_SIMD     _CCCL_BEGIN_NAMESPACE(cuda::simd)
+#define _CCCL_END_NAMESPACE_CUDA_SIMD       _CCCL_END_NAMESPACE(cuda::simd)
 
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
@@ -101,8 +119,16 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION _CCCL_BEGIN_NAMESPACE(cuda::execution)
 #define _CCCL_END_NAMESPACE_CUDA_EXECUTION   _CCCL_END_NAMESPACE(cuda::execution)
 
-// Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
-#if _CCCL_COMPILER(CLANG, <=, 16)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::args)
+#define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::args)
+
+#define _CCCL_BEGIN_NAMESPACE_CUDA_MGMN _CCCL_BEGIN_NAMESPACE(cuda::experimental::mgmn)
+#define _CCCL_END_NAMESPACE_CUDA_MGMN   _CCCL_END_NAMESPACE(cuda::experimental::mgmn)
+
+// Namespace to avoid name collisions with CPOs on clang-16 (see
+// https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with
+// __cccl_true in the main iter_move template.
+#if _CCCL_COMPILER(CLANG, <=, 16) || _CCCL_COMPILER(MSVC)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE \
     namespace __hidden                              \
     {
@@ -114,7 +140,7 @@
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
 #endif // !_CCCL_COMPILER(CLANG, >, 16)
 
-#if defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+#ifdef CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE
 #  define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 #  define _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 #else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)

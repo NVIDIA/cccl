@@ -18,22 +18,22 @@
 
 struct Container
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct View : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Pred
 {
-  __host__ __device__ bool operator()(int i) const;
+  TEST_FUNC bool operator()(int i) const;
 };
 
-__host__ __device__ bool pred(int);
+TEST_FUNC bool pred(int);
 
 using owning_result = cuda::std::ranges::take_while_view<cuda::std::ranges::owning_view<Container>, Pred>;
 static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::take_while_view(Container{}, Pred{})), owning_result>);
@@ -44,7 +44,7 @@ static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::take_while_view(V
 using view_result = cuda::std::ranges::take_while_view<View, Pred>;
 static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::take_while_view(View{}, Pred{})), view_result>);
 
-__host__ __device__ void testRef()
+TEST_FUNC void testRef()
 {
   Container c{};
   Pred p{};

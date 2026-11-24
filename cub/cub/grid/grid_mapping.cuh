@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,7 +30,7 @@ CUB_NAMESPACE_BEGIN
  * \brief cub::GridMappingStrategy enumerates alternative strategies for mapping constant-sized tiles of device-wide
  * data onto a grid of CUDA thread blocks.
  */
-enum GridMappingStrategy
+enum GridMappingStrategy // NOLINT(cppcoreguidelines-use-enum-class)
 {
   /**
    * \brief An a "raking" access pattern in which each thread block is

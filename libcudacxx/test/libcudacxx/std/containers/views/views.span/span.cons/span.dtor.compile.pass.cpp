@@ -14,15 +14,17 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr bool testDestructor()
+TEST_FUNC constexpr bool testDestructor()
 {
-  static_assert(cuda::std::is_nothrow_destructible<T>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<T>::value, "");
+  static_assert(cuda::std::is_nothrow_destructible<T>::value);
+  static_assert(cuda::std::is_trivially_destructible<T>::value);
   return true;
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   testDestructor<cuda::std::span<int, 1>>();
   testDestructor<cuda::std::span<int>>();

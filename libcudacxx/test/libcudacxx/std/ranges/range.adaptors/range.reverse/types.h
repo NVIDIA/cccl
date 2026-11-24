@@ -18,24 +18,24 @@ struct BidirRange : cuda::std::ranges::view_base
   int* begin_;
   int* end_;
 
-  __host__ __device__ constexpr BidirRange(int* b, int* e)
+  TEST_FUNC constexpr BidirRange(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
 
-  __host__ __device__ constexpr bidirectional_iterator<int*> begin()
+  TEST_FUNC constexpr bidirectional_iterator<int*> begin()
   {
     return bidirectional_iterator<int*>{begin_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> begin() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> begin() const
   {
     return bidirectional_iterator<const int*>{begin_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<int*> end()
+  TEST_FUNC constexpr bidirectional_iterator<int*> end()
   {
     return bidirectional_iterator<int*>{end_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> end() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> end() const
   {
     return bidirectional_iterator<const int*>{end_};
   }
@@ -56,7 +56,7 @@ struct BidirSentRangeBase
   int* begin_;
   int* end_;
 
-  __host__ __device__ constexpr BidirSentRangeBase(int* b, int* e)
+  TEST_FUNC constexpr BidirSentRangeBase(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
@@ -70,7 +70,7 @@ struct BidirSentRangeBase<MoveOnly>
   int* begin_;
   int* end_;
 
-  __host__ __device__ constexpr BidirSentRangeBase(int* b, int* e)
+  TEST_FUNC constexpr BidirSentRangeBase(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
@@ -89,19 +89,19 @@ struct BidirSentRange
   using Base = BidirSentRangeBase<CC>;
   using Base::Base;
 
-  __host__ __device__ constexpr bidirectional_iterator<int*> begin()
+  TEST_FUNC constexpr bidirectional_iterator<int*> begin()
   {
     return bidirectional_iterator<int*>{this->begin_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> begin() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> begin() const
   {
     return bidirectional_iterator<const int*>{this->begin_};
   }
-  __host__ __device__ constexpr sent_t end()
+  TEST_FUNC constexpr sent_t end()
   {
     return sent_t{bidirectional_iterator<int*>{this->end_}};
   }
-  __host__ __device__ constexpr sent_const_t end() const
+  TEST_FUNC constexpr sent_const_t end() const
   {
     return sent_const_t{bidirectional_iterator<const int*>{this->end_}};
   }

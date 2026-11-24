@@ -11,6 +11,9 @@
 // trivially_copyable not supported on gcc4.8
 // UNSUPPORTED: gcc-4.8
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/atomic>
 
 // template <class T>
@@ -56,17 +59,17 @@
 
 struct NotTriviallyCopyable
 {
-  __host__ __device__ NotTriviallyCopyable(int i)
+  TEST_HOST_DEVICE_FUNC NotTriviallyCopyable(int i)
       : i_(i)
   {}
-  __host__ __device__ NotTriviallyCopyable(const NotTriviallyCopyable& rhs)
+  TEST_HOST_DEVICE_FUNC NotTriviallyCopyable(const NotTriviallyCopyable& rhs)
       : i_(rhs.i_)
   {}
   int i_;
 };
 
 template <class T>
-__host__ __device__ void test(T t)
+TEST_HOST_DEVICE_FUNC void test(T t)
 {
   cuda::std::atomic<T> t0(t);
 }

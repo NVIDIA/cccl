@@ -1,0 +1,337 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___CONTAINER_RESIZABLE_BUFFER_H
+#define _CUDA___CONTAINER_RESIZABLE_BUFFER_H
+
+#include <cuda/std/detail/__config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/__container/allocation_info.h>
+#  include <cuda/__container/buffer.h>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__utility/exchange.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/swap.h>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+template <class _Tp, class... _Properties>
+class __resizable_buffer;
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+  -> ::cuda::__resizable_buffer<_Tp, _Properties...>;
+
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
+//! @brief Internal buffer adapter that tracks allocation capacity separately
+//! from logical size.
+//!
+//! `cuda::__resizable_buffer` preserves the `cuda::buffer` interface through
+//! public inheritance. The inherited `size()` remains the logical number of
+//! elements, while `capacity()` is the number of elements that can be addressed
+//! without reallocating.
+template <class _Tp, class... _Properties>
+class __resizable_buffer : public buffer<_Tp, _Properties...>
+{
+  using __base_t _CCCL_NODEBUG = buffer<_Tp, _Properties...>;
+
+public:
+  using size_type = typename __base_t::size_type;
+
+private:
+  size_type __capacity_ = static_cast<const __base_t&>(*this).size();
+
+  _CCCL_HOST_API void __replace_allocation(::cuda::stream_ref __stream, size_type __new_capacity)
+  {
+    const auto __old_size     = this->size();
+    const auto __old_capacity = __capacity_;
+    _CCCL_ASSERT(__old_size <= __new_capacity,
+                 "cuda::__resizable_buffer reallocation capacity must be at least the current size");
+
+    auto __old_buffer = __base_t::__replace_allocation(__stream, __new_capacity);
+    __capacity_       = __new_capacity;
+    __old_buffer.__set_size_unsynchronized(__old_capacity);
+
+    if (__old_size != 0)
+    {
+      ::cuda::__copy_cross_buffers(__stream, *this, __old_buffer, __old_size);
+      // Free on the copy stream so the stream-ordered deallocation happens
+      // after the read from the old allocation.
+      __old_buffer.destroy(__stream);
+    }
+    else
+    {
+      __old_buffer.destroy();
+    }
+
+    __base_t::__set_size_unsynchronized(__old_size);
+  }
+
+  _CCCL_HOST_API void __replace_allocation_discard(::cuda::stream_ref __stream, size_type __new_capacity)
+  {
+    const auto __old_capacity = ::cuda::std::exchange(__capacity_, 0);
+    __base_t::__replace_allocation_discard(__stream, __new_capacity, __old_capacity);
+    __capacity_ = __new_capacity;
+  }
+
+  template <class _Up>
+  [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> __as_type() &&
+  {
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    _CCCL_TRY
+    {
+      return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    _CCCL_CATCH_ALL
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      _CCCL_RETHROW;
+    }
+  }
+
+public:
+  using __base_t::__base_t;
+
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
+  _CCCL_HOST_API __resizable_buffer(::cuda::stream_ref __stream, _Resource&& __resource, const _Env& __env = {})
+      : __base_t(__stream, ::cuda::std::forward<_Resource>(__resource), __env)
+  {}
+
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
+  _CCCL_HOST_API explicit __resizable_buffer(
+    ::cuda::stream_ref __stream,
+    _Resource&& __resource,
+    const size_type __size,
+    ::cuda::no_init_t,
+    const _Env& __env = {})
+      : __base_t(__stream, ::cuda::std::forward<_Resource>(__resource), __size, ::cuda::no_init, __env)
+  {}
+
+  //! @brief Constructs a resizable buffer by taking over an existing
+  //! `cuda::buffer` allocation.
+  //!
+  //! The initial capacity is the source buffer size.
+  _CCCL_HOST_API explicit __resizable_buffer(__base_t&& __buffer) noexcept
+      : __base_t(::cuda::std::move(__buffer))
+  {}
+
+  __resizable_buffer(const __resizable_buffer&)            = delete;
+  __resizable_buffer& operator=(const __resizable_buffer&) = delete;
+
+  _CCCL_HOST_API __resizable_buffer(__resizable_buffer&& __other) noexcept
+      : __base_t(::cuda::std::move(__other))
+      , __capacity_(::cuda::std::exchange(__other.__capacity_, 0))
+  {}
+
+  _CCCL_HOST_API __resizable_buffer& operator=(__resizable_buffer&& __other) noexcept
+  {
+    if (this != ::cuda::std::addressof(__other))
+    { // This cannot throw because in other we already checked that capacity is sufficient
+      __base_t::__set_size_unsynchronized(__capacity_);
+      __base_t::operator=(::cuda::std::move(__other));
+      __capacity_ = ::cuda::std::exchange(__other.__capacity_, 0);
+    }
+    return *this;
+  }
+
+  _CCCL_HOST_API ~__resizable_buffer() noexcept
+  {
+    __base_t::__set_size_unsynchronized(__capacity_);
+  }
+
+  //! @brief Releases ownership of the allocation without deallocating it.
+  //!
+  //! @return The stream, memory resource, pointer, capacity, logical size and
+  //! alignment. The caller must deallocate using `capacity * sizeof(T)` rounded
+  //! up to a multiple of the alignment.
+  //!
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  [[nodiscard]] _CCCL_HOST_API typename __base_t::__allocation_info_t __release_allocation() && noexcept
+  {
+    auto __alloc     = ::cuda::std::move(static_cast<__base_t&>(*this)).__release_allocation();
+    __alloc.capacity = ::cuda::std::exchange(__capacity_, 0);
+    return __alloc;
+  }
+
+  //! @brief Converts to a byte buffer owning the same allocation, preserving
+  //! the stream, resource and alignment and scaling size and capacity to bytes.
+  //!
+  //! @tparam _Byte One of `std::byte`, `cuda::std::byte`, `char` or `unsigned char`.
+  //!
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  _CCCL_TEMPLATE(class _Byte)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
+  [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Byte, _Properties...> as_bytes() && noexcept
+  {
+    return ::cuda::std::move(*this).template __as_type<_Byte>();
+  }
+
+  //! @brief Converts a byte buffer to a typed buffer owning the same allocation,
+  //! preserving the stream, resource and alignment and scaling size and capacity.
+  //! Only available if `T` is one of `std::byte`, `cuda::std::byte`, `char` or
+  //! `unsigned char`. The resulting size and capacity are divided by `sizeof(_Up)`.
+  //!
+  //! @throw std::invalid_argument if size or capacity is not a multiple of
+  //! `sizeof(_Up)`, or alignment is less than `alignof(_Up)`. The buffer is left
+  //! unchanged in that case.
+  //!
+  //! @warning After a successful call, the buffer can only be assigned to or destroyed.
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp, _Up>)
+  [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> as_type() &&
+  {
+    if ((this->size() * sizeof(_Tp)) % sizeof(_Up) != 0 || capacity_bytes() % sizeof(_Up) != 0
+        || this->alignment() < alignof(_Up))
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "cuda::__resizable_buffer::as_type: size, capacity or alignment is incompatible with _Up");
+    }
+    return ::cuda::std::move(*this).template __as_type<_Up>();
+  }
+
+  //! @brief Returns the number of elements that fit in the current allocation
+  //! without reallocating.
+  [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept
+  {
+    return __capacity_;
+  }
+
+  //! @brief Returns `capacity() * sizeof(value_type)`.
+  [[nodiscard]] _CCCL_HOST_API size_type capacity_bytes() const noexcept
+  {
+    return __capacity_ * sizeof(_Tp);
+  }
+
+  //! @brief Changes the logical size without stream ordering or reallocating.
+  //!
+  //! This member only updates the host-side logical size. It can shrink or grow
+  //! within `capacity()`, and throws if growth would require reallocation.
+  _CCCL_HOST_API void resize_unsynchronized(size_type __new_size, ::cuda::no_init_t)
+  {
+    if (__new_size > __capacity_)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "cuda::__resizable_buffer::resize_unsynchronized cannot grow beyond capacity");
+    }
+    __base_t::__set_size_unsynchronized(__new_size);
+  }
+
+  //! @brief Changes the logical size, reallocating on \p __stream if needed.
+  //!
+  //! If reallocation is needed, existing logical elements are copied to the new
+  //! allocation and newly exposed elements are left uninitialized.
+  _CCCL_HOST_API void resize(::cuda::stream_ref __stream, size_type __new_size, ::cuda::no_init_t)
+  {
+    if (__new_size > __capacity_)
+    {
+      __replace_allocation(__stream, __new_size);
+    }
+    __base_t::__set_size_unsynchronized(__new_size);
+  }
+
+  //! @brief Changes the logical size, reallocating on \p __stream if needed,
+  //! without preserving existing contents.
+  //!
+  //! All elements in the resulting logical range are left uninitialized.
+  _CCCL_HOST_API void resize_discard(::cuda::stream_ref __stream, size_type __new_size, ::cuda::no_init_t)
+  {
+    if (__new_size > __capacity_)
+    {
+      __replace_allocation_discard(__stream, __new_size);
+    }
+    __base_t::__set_size_unsynchronized(__new_size);
+  }
+
+  //! @brief Swaps the allocation, logical size, stream, memory resource, and
+  //! capacity with \p __other.
+  _CCCL_HOST_API void swap(__resizable_buffer& __other) noexcept
+  {
+    __base_t::swap(__other);
+    ::cuda::std::swap(__capacity_, __other.__capacity_);
+  }
+
+  _CCCL_HOST_API friend void swap(__resizable_buffer& __lhs, __resizable_buffer& __rhs) noexcept
+  {
+    __lhs.swap(__rhs);
+  }
+
+  //! @brief Destroys the allocation using capacity rather than logical size.
+  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
+  {
+    __base_t::__set_size_unsynchronized(__capacity_);
+    __base_t::destroy(__stream);
+    __capacity_ = 0;
+  }
+
+  _CCCL_HOST_API void destroy() noexcept
+  {
+    destroy(this->stream());
+  }
+};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
+//! @brief Creates a resizable buffer taking ownership of an existing allocation.
+//! @pre The pointer is not owned by anything else and can be deallocated with
+//! `__info.mr.deallocate(__info.stream, __info.ptr, bytes, __info.alignment)`, where
+//! `bytes` is `__info.capacity * sizeof(T)` rounded up to a multiple of the alignment.
+//! @throw std::invalid_argument if size exceeds capacity, alignment is invalid,
+//! the pointer is misaligned or null with nonzero capacity, or capacity overflows.
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+  -> ::cuda::__resizable_buffer<_Tp, _Properties...>
+{
+  if (__info.size > __info.capacity)
+  {
+    _CCCL_THROW(::std::invalid_argument, "cuda::__acquire_resizable_buffer: size must not exceed capacity");
+  }
+  ::cuda::__resizable_buffer<_Tp, _Properties...> __ret{::cuda::__acquire_buffer<_Tp, _Properties...>(
+    {__info.stream, ::cuda::std::move(__info.mr), __info.ptr, __info.capacity, __info.capacity, __info.alignment})};
+  __ret.resize_unsynchronized(__info.size, ::cuda::no_init);
+  return __ret;
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
+
+#endif // _CUDA___CONTAINER_RESIZABLE_BUFFER_H

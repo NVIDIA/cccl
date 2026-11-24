@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,15 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float cos(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COSF)
+#ifdef _CCCL_BUILTIN_COSF
   return _CCCL_BUILTIN_COSF(__x);
 #else // ^^^ _CCCL_BUILTIN_COSF ^^^ / vvv !_CCCL_BUILTIN_COSF vvv
   return ::cosf(__x);
@@ -61,7 +58,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float cosf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COSF)
+#ifdef _CCCL_BUILTIN_COSF
   return _CCCL_BUILTIN_COSF(__x);
 #else // ^^^ _CCCL_BUILTIN_COSF ^^^ / vvv !_CCCL_BUILTIN_COSF vvv
   return ::cosf(__x);
@@ -70,7 +67,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double cos(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COS)
+#ifdef _CCCL_BUILTIN_COS
   return _CCCL_BUILTIN_COS(__x);
 #else // ^^^ _CCCL_BUILTIN_COS ^^^ / vvv !_CCCL_BUILTIN_COS vvv
   return ::cos(__x);
@@ -80,7 +77,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double cos(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_COSL)
+#  ifdef _CCCL_BUILTIN_COSL
   return _CCCL_BUILTIN_COSL(__x);
 #  else // ^^^ _CCCL_BUILTIN_COSL ^^^ / vvv !_CCCL_BUILTIN_COSL vvv
   return ::cosl(__x);
@@ -89,7 +86,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double cosl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_COSL)
+#  ifdef _CCCL_BUILTIN_COSL
   return _CCCL_BUILTIN_COSL(__x);
 #  else // ^^^ _CCCL_BUILTIN_COSL ^^^ / vvv !_CCCL_BUILTIN_COSL vvv
   return ::cosl(__x);
@@ -151,7 +148,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float sin(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SINF)
+#ifdef _CCCL_BUILTIN_SINF
   return _CCCL_BUILTIN_SINF(__x);
 #else // ^^^ _CCCL_BUILTIN_SINF ^^^ / vvv !_CCCL_BUILTIN_SINF vvv
   return ::sinf(__x);
@@ -160,7 +157,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float sinf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SINF)
+#ifdef _CCCL_BUILTIN_SINF
   return _CCCL_BUILTIN_SINF(__x);
 #else // ^^^ _CCCL_BUILTIN_SINF ^^^ / vvv !_CCCL_BUILTIN_SINF vvv
   return ::sinf(__x);
@@ -169,7 +166,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double sin(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SIN)
+#ifdef _CCCL_BUILTIN_SIN
   return _CCCL_BUILTIN_SIN(__x);
 #else // ^^^ _CCCL_BUILTIN_SIN ^^^ / vvv !_CCCL_BUILTIN_SIN vvv
   return ::sin(__x);
@@ -179,7 +176,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double sin(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SINL)
+#  ifdef _CCCL_BUILTIN_SINL
   return _CCCL_BUILTIN_SINL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SINL ^^^ / vvv !_CCCL_BUILTIN_SINL vvv
   return ::sinl(__x);
@@ -188,7 +185,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double sinl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SINL)
+#  ifdef _CCCL_BUILTIN_SINL
   return _CCCL_BUILTIN_SINL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SINL ^^^ / vvv !_CCCL_BUILTIN_SINL vvv
   return ::sinl(__x);
@@ -255,7 +252,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float tan(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TANF)
+#ifdef _CCCL_BUILTIN_TANF
   return _CCCL_BUILTIN_TANF(__x);
 #else // ^^^ _CCCL_BUILTIN_TANF ^^^ / vvv !_CCCL_BUILTIN_TANF vvv
   return ::tanf(__x);
@@ -264,7 +261,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float tanf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TANF)
+#ifdef _CCCL_BUILTIN_TANF
   return _CCCL_BUILTIN_TANF(__x);
 #else // ^^^ _CCCL_BUILTIN_TANF ^^^ / vvv !_CCCL_BUILTIN_TANF vvv
   return ::tanf(__x);
@@ -273,7 +270,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double tan(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TAN)
+#ifdef _CCCL_BUILTIN_TAN
   return _CCCL_BUILTIN_TAN(__x);
 #else // ^^^ _CCCL_BUILTIN_TAN ^^^ / vvv !_CCCL_BUILTIN_TAN vvv
   return ::tan(__x);
@@ -283,7 +280,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double tan(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TANL)
+#  ifdef _CCCL_BUILTIN_TANL
   return _CCCL_BUILTIN_TANL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TANL ^^^ / vvv !_CCCL_BUILTIN_TANL vvv
   return ::tanl(__x);
@@ -292,7 +289,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double tanl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TANL)
+#  ifdef _CCCL_BUILTIN_TANL
   return _CCCL_BUILTIN_TANL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TANL ^^^ / vvv !_CCCL_BUILTIN_TANL vvv
   return ::tanl(__x);

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file uninitialized_copy.h
  *  \brief Copy construction into a range of uninitialized elements from a source range
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -104,7 +91,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -171,7 +158,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
  *  \endverbatim
  */
 template <typename InputIterator, typename ForwardIterator>
-ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result);
+_CCCL_HOST_API ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
  *  an object and then creates an object at that location by calling a constructor.
@@ -241,7 +228,7 @@ ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, Forw
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, ForwardIterator result);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
@@ -306,11 +293,11 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename ForwardIterator>
-ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result);
+_CCCL_HOST_API ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result);
 
 /*! \} // copying
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/uninitialized_copy.inl>
+#include <thrust/detail/uninitialized_copy.inl> // IWYU pragma: export

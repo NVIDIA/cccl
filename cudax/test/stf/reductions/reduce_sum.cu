@@ -19,20 +19,27 @@
 
 using namespace cuda::experimental::stf;
 
-int main()
+template <typename context_t>
+void run()
 {
-  context ctx;
+  context_t ctx;
   auto lsum = ctx.logical_data(shape_of<scalar_view<size_t>>());
 
-  size_t N = 100000;
+  const size_t N = 100000;
 
   ctx.parallel_for(box(N), lsum.reduce(reducer::sum<size_t>{}))->*[] __device__(size_t i, auto& sum) {
     sum++;
   };
 
-  size_t res_sum = ctx.wait(lsum);
+  const size_t res_sum = ctx.wait(lsum);
 
   ctx.finalize();
 
   _CCCL_ASSERT(res_sum == N, "Invalid result");
+}
+
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

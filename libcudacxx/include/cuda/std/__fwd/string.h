@@ -12,17 +12,13 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <cuda/std/__fwd/allocator.h>
-#include <cuda/std/__fwd/char_traits.h>
-#include <cuda/std/__fwd/memory_resource.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -32,16 +28,16 @@
 _CCCL_BEGIN_NAMESPACE_STD
 
 // libstdc++ puts basic_string to inline cxx11 namespace
-#  if _GLIBCXX_USE_CXX11_ABI
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 inline _GLIBCXX_BEGIN_NAMESPACE_CXX11
-#  endif // _GLIBCXX_USE_CXX11_ABI
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 
   template <class _CharT, class _Traits, class _Alloc>
   class basic_string;
 
-#  if _GLIBCXX_USE_CXX11_ABI
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 _GLIBCXX_END_NAMESPACE_CXX11
-#  endif // _GLIBCXX_USE_CXX11_ABI
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 
 _CCCL_END_NAMESPACE_STD
 #endif // _CCCL_HAS_HOST_STD_LIB()
@@ -50,6 +46,7 @@ _CCCL_END_NAMESPACE_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // we don't support these features
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string;

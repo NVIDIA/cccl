@@ -30,7 +30,7 @@ class X
 public:
   STATIC_MEMBER_VAR(dtor_called, bool)
   X() = default;
-  __host__ __device__ ~X()
+  TEST_FUNC ~X()
   {
     dtor_called() = true;
   }
@@ -39,36 +39,28 @@ public:
 int main(int, char**)
 {
   {
-    typedef int T;
-    static_assert(cuda::std::is_trivially_destructible<T>::value, "");
-    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value, "");
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value, "");
-#endif // CCCL_ENABLE_OPTIONAL_REF
+    using T = int;
+    static_assert(cuda::std::is_trivially_destructible<T>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value);
   }
   {
-    typedef double T;
-    static_assert(cuda::std::is_trivially_destructible<T>::value, "");
-    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value, "");
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value, "");
-#endif // CCCL_ENABLE_OPTIONAL_REF
+    using T = double;
+    static_assert(cuda::std::is_trivially_destructible<T>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value);
   }
   {
-    typedef PODType T;
-    static_assert(cuda::std::is_trivially_destructible<T>::value, "");
-    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value, "");
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value, "");
-#endif // CCCL_ENABLE_OPTIONAL_REF
+    using T = PODType;
+    static_assert(cuda::std::is_trivially_destructible<T>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T>>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value);
   }
   {
-    typedef X T;
-    static_assert(!cuda::std::is_trivially_destructible<T>::value, "");
-    static_assert(!cuda::std::is_trivially_destructible<optional<T>>::value, "");
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value, "");
-#endif // CCCL_ENABLE_OPTIONAL_REF
+    using T = X;
+    static_assert(!cuda::std::is_trivially_destructible<T>::value);
+    static_assert(!cuda::std::is_trivially_destructible<optional<T>>::value);
+    static_assert(cuda::std::is_trivially_destructible<optional<T&>>::value);
     {
       X x;
       optional<X> opt{x};

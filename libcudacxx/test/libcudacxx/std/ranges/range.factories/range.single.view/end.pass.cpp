@@ -23,7 +23,7 @@ struct BigType
   char buffer[64] = {10};
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     auto sv = cuda::std::ranges::single_view<int>(42);
@@ -72,7 +72,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 

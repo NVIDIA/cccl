@@ -12,15 +12,13 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -80,7 +78,7 @@ struct __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
 };
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
-using __variant_base = __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
+using __variant_base _CCCL_NODEBUG = __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

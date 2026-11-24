@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "type": "string",
+            "enum": [
+              "benign",
+              "significant",
+              "unclear"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "pattern": "^\\S[^\\n]{0,118}\\S$"
+          },
+          "explanation": {
+            "type": "string",
+            "pattern": "^\\S[^\\n]{0,598}\\S$"
+          },
+          "diffs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+\\.[A-Za-z0-9_]+$"
+            }
+          }
+        },
+        "required": [
+          "classification",
+          "title",
+          "explanation",
+          "diffs"
+        ]
+      }
+    }
+  },
+  "required": [
+    "groups"
+  ]
+}

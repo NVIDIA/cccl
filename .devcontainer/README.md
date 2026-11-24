@@ -53,7 +53,7 @@ VSCode offers the most convenient experience with Dev Containers due to its tigh
 
 7. Once initialized, the local `cccl/` directory is mirrored into the container to ensure any changes are persistent.
 
-8. Done! See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
+8. Done! See the [contributing guide](https://nvidia.github.io/cccl/unstable/contributors/index.html) for instructions on how to build and run tests.
 
 ### (Optional) Authenticate with GitHub for `sccache` <a name="sccache"></a>
 
@@ -79,9 +79,10 @@ Apart from the initial setup of WSL, the process for using CCCL's Dev Containers
 - Windows OS that supports WSL 2 (Windows 11 or newer)
 - [Windows Subsystem for Linux v2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Visual Studio Code](https://code.visualstudio.com/) (installed on Windows host)
+- [Docker](https://docs.docker.com/desktop/setup/install/windows-install/)
+    - Required for [VSCode / Dev Container integration](https://code.visualstudio.com/docs/devcontainers/containers#_installation)
 - [VSCode Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) (installed on Windows host)
     - Includes [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extensions
-- [Docker](https://docs.docker.com/engine/install/) - (Will be installed automatically by the Remote Development extension)
 
 #### GPU Prerequisites (only needed for executing tests that require a GPU)
 - Supported NVIDIA GPU
@@ -189,7 +190,7 @@ $ nvidia-smi
     ```
     See `./.devcontainer/launch.sh --help` for more information.
 
-2. Done. See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
+2. Done. See the [contributing guide](https://nvidia.github.io/cccl/unstable/contributors/index.html) for instructions on how to build and run tests.
 
 ## Available Environments
 

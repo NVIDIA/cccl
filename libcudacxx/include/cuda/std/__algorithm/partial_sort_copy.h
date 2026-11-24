@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -91,7 +91,7 @@ _CCCL_API constexpr _RandomAccessIterator partial_sort_copy(
   _RandomAccessIterator __result_last,
   _Compare __comp)
 {
-  static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__result_first)>::value,
+  static_assert(__is_callable_v<_Compare, decltype(*__first), decltype(*__result_first)>,
                 "Comparator has to be callable");
 
   auto __result = ::cuda::std::__partial_sort_copy<_ClassicAlgPolicy>(

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,13 +23,10 @@
 
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_const.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_pointer.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -41,17 +38,34 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+template <class _Ty>
+_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Ty))(typename(typename _Ty::difference_type));
+
+// Pointers to void or functions have no valid subtraction, but nvcc 13.6 accepts that arithmetic
+// inside SFINAE. This also covers the C++17 `void*` case. Spelled out with partial specializations
+// because NVRTC in C++17 breaks range concepts if this uses `remove_pointer_t<remove_reference_t<_Tp>>`.
 template <class _Tp>
-_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::difference_type));
+inline constexpr bool __is_valid_minus_operand = true;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp&> = __is_valid_minus_operand<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp&&> = __is_valid_minus_operand<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp*> = is_object_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp* const> = is_object_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp* volatile> = is_object_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_valid_minus_operand<_Tp* const volatile> = is_object_v<_Tp>;
 
 template <class _Tp, class = void, class = void>
 inline constexpr bool __has_integral_minus_impl = false;
 
-// In C++17 we get issues trying to bind void* to a const& so special case it here
 template <class _Tp>
 inline constexpr bool
   __has_integral_minus_impl<_Tp,
-                            enable_if_t<!same_as<_Tp, void*>>,
+                            enable_if_t<__is_valid_minus_operand<_Tp>>,
                             void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
     integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
 

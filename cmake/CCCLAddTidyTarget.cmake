@@ -1,0 +1,246 @@
+include_guard(GLOBAL)
+
+#[=======================================================================[.rst:
+cccl_tidy_init
+--------------
+
+Initialize ``clang-tidy`` support and define the global ``cccl.tidy`` target. It must be
+called before adding any CCCL ``clang-tidy`` targets.
+
+Subsequent calls to this functions are no-ops.
+
+Result Variables
+^^^^^^^^^^^^^^^^
+
+  ``CCCL_TIDY_INITIALIZED`` set to true in the parent scope.
+
+#]=======================================================================]
+function(cccl_tidy_init)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "tidy_init")
+
+  if (CCCL_TIDY_INITIALIZED)
+    return()
+  endif()
+
+  find_program(CCCL_CLANG_TIDY clang-tidy REQUIRED)
+
+  execute_process(
+    COMMAND ${CCCL_CLANG_TIDY} --version
+    OUTPUT_VARIABLE version
+    ERROR_VARIABLE version
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY
+  )
+
+  message(STATUS "Found clang-tidy: ${CCCL_CLANG_TIDY} (${version})")
+
+  if (NOT TARGET cccl_clang_tidy)
+    # clang-tidy registers custom checks (or any check for that matter) in a "registry". This
+    # registry is executable-local so we need to make sure that when clang-tidy loads our
+    # plugin that we are registering our checks to the right plugin.
+    #
+    # This is why we explicitly do NOT link against libClangTidy! If we do, then we get our
+    # own (private) copy of the registry while the clang-tidy executable has it's own. The
+    # whole module loading process will succeed, but our check is silently dropped.
+    #
+    # The following is exactly what the Clang config module will create, but we do it
+    # ourselves because our clang-tidy executable may be different than the one bundled with
+    # clang itself.
+    add_executable(cccl_clang_tidy IMPORTED GLOBAL)
+    set_target_properties(
+      cccl_clang_tidy
+      PROPERTIES
+        IMPORTED_LOCATION "${CCCL_CLANG_TIDY}"
+        # This option is what allows us to "link" against the executable
+        ENABLE_EXPORTS TRUE
+    )
+    if (APPLE)
+      # Resolve symbols from clang-tidy and its loaded libraries without duplicating registries.
+      target_link_options(
+        cccl_clang_tidy
+        INTERFACE "LINKER:-undefined,dynamic_lookup"
+      )
+    endif()
+    add_executable(cccl::clang-tidy ALIAS cccl_clang_tidy)
+  endif()
+
+  add_custom_target(cccl.tidy COMMENT "clang-tidy CCCL")
+
+  set(
+    CCCL_RUN_CLANG_TIDY_SCRIPT
+    "${CMAKE_CURRENT_BINARY_DIR}/run_clang_tidy.sh"
+  )
+  set(CCCL_RUN_CLANG_TIDY_SCRIPT "${CCCL_RUN_CLANG_TIDY_SCRIPT}" PARENT_SCOPE)
+
+  # Use an absolute path for binary directory because we are not certain where this
+  # function will be called from the first time. Also, because we need to pass the path to
+  # the plugins directly to clang-tidy, we need a stable directory where they will be
+  # output.
+  add_subdirectory(
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang_tidy_plugins"
+    "${CCCL_BINARY_DIR}/cccl_clang_tidy_plugins"
+  )
+  set(CCCL_CLANG_TIDY_PLUGINS "--load='$<TARGET_FILE:cccl.tidy.plugins>'")
+
+  # configure_file alone does not support generator expressions (which are needed for the
+  # clang-tidy plugins), while file(GENERATE) does not support @VAR@ substitutions. So we
+  # need to do it ourselves
+  configure_file(
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
+    "${CCCL_RUN_CLANG_TIDY_SCRIPT}.tmp"
+    @ONLY
+  )
+  file(
+    GENERATE OUTPUT "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
+    INPUT "${CCCL_RUN_CLANG_TIDY_SCRIPT}.tmp"
+  )
+
+  # Do not set to cache; multiple separate instances of CCCL in a build should not
+  # conflict.
+  set(CCCL_TIDY_INITIALIZED TRUE)
+  set(CCCL_TIDY_INITIALIZED TRUE PARENT_SCOPE)
+endfunction()
+
+#[=======================================================================[.rst:
+cccl_tidy_make_subproject_target
+--------------------------------
+
+Create a meta target per sub-project that depends on all the targets for that
+subproject. It itself will depend on the ``cccl.tidy target``. For example, this will
+create:
+
+- cub.tidy
+- libcudacxx.tidy
+- thrust.tidy
+
+etc. This allows running clang-tidy over just a subset of the repository.
+
+The generated target name depends on the current value of ``PROJECT_NAME``.
+
+Arguments
+^^^^^^^^^
+
+``result_var``
+  The variable in which to store the created target name.
+
+#]=======================================================================]
+function(cccl_tidy_make_subproject_target result_var)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "tidy_make_subproject_target")
+
+  if (NOT CCCL_TIDY_INITIALIZED)
+    # For the cccl.tidy target
+    message(FATAL_ERROR "Must call cccl_tidy_init() first")
+  endif()
+
+  string(TOLOWER "${PROJECT_NAME}.tidy" target_name)
+
+  if (NOT TARGET "${target_name}")
+    add_custom_target("${target_name}" COMMENT "clang-tidy ${PROJECT_NAME}")
+    add_dependencies(cccl.tidy "${target_name}")
+  endif()
+  set(${result_var} "${target_name}" PARENT_SCOPE)
+endfunction()
+
+#[=======================================================================[.rst:
+cccl_tidy_add_target
+--------------------
+
+Create per-source ``clang-tidy`` targets and attach them to both the global ``cccl.tidy``
+target and per sub-project target (e.g. ``cub.tidy``)
+
+.. note::
+
+  :command:`cccl_tidy_init` must be called before using this function to establish the
+  global ``cccl.tidy`` target.
+
+If ``CCCL_ENABLE_CLANG_TIDY`` is false, this does nothing (except error-check the function
+call signature).
+
+Passing the same source file multiple times is allowed. A target is created for it only
+once.
+
+If ``SOURCES`` is empty, this function does nothing.
+
+Arguments
+^^^^^^^^^
+
+``SOURCES``
+  List of source files to analyze. Paths may be absolute or relative. Relative paths are
+  resolved against ``CMAKE_CURRENT_SOURCE_DIR``.
+
+#]=======================================================================]
+function(cccl_tidy_add_target)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "tidy_add_target")
+
+  set(options)
+  set(one_value_args DIALECT)
+  set(multi_value_args SOURCES)
+
+  cmake_parse_arguments(
+    _cccl
+    "${options}"
+    "${one_value_args}"
+    "${multi_value_args}"
+    ${ARGN}
+  )
+
+  if (_cccl_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unrecognized arguments: ${_cccl_UNPARSED_ARGUMENTS}")
+  endif()
+
+  # It is still possible to call this function even if clang-tidy has not been
+  # disabled. We handle this gracefully to avoid complicating the callsite.
+  #
+  # This must come before the CCCL_TIDY_INITIALIZED check because that is only called when
+  # CCCL_ENABLE_CLANG_TIDY is true.
+  if (NOT CCCL_ENABLE_CLANG_TIDY)
+    return()
+  endif()
+
+  if (NOT CCCL_TIDY_INITIALIZED)
+    message(FATAL_ERROR "Must call cccl_tidy_init() first")
+  endif()
+
+  cccl_tidy_make_subproject_target(subproject_target)
+
+  set(tidy_args)
+  if (_cccl_DIALECT GREATER_EQUAL 20)
+    # This is kind of a special hack. readability-redundant-typename suggests removing
+    # typename for a TON of places in C++20 mode (which is enabled by some targets like
+    # c/parallel), but since the generic headers must support C++17 still this ends up
+    # with a staggering amount of // NOLINT.
+    list(APPEND tidy_args "--checks=-readability-redundant-typename")
+  endif()
+  list(JOIN tidy_args " " tidy_args)
+
+  foreach (src IN LISTS _cccl_SOURCES)
+    cmake_path(SET src NORMALIZE "${src}")
+    if (NOT IS_ABSOLUTE "${src}")
+      cmake_path(SET src NORMALIZE "${CMAKE_CURRENT_SOURCE_DIR}/${src}")
+    endif()
+
+    cmake_path(
+      RELATIVE_PATH src
+      BASE_DIRECTORY "${CCCL_SOURCE_DIR}"
+      OUTPUT_VARIABLE rel_src
+    )
+    string(MAKE_C_IDENTIFIER "${rel_src}" tidy_target)
+    set(tidy_target "${tidy_target}.tidy")
+
+    if (TARGET "${tidy_target}")
+      # We have seen this file before
+      continue()
+    endif()
+
+    add_custom_target(
+      "${tidy_target}"
+      DEPENDS "${src}" "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
+      COMMAND ${CCCL_RUN_CLANG_TIDY_SCRIPT} ${tidy_args} "${src}"
+      COMMENT "clang-tidy ${rel_src}"
+    )
+
+    # We need to ensure the plugins have actually built before running clang-tidy.
+    add_dependencies("${tidy_target}" cccl.tidy.plugins)
+    add_dependencies("${subproject_target}" "${tidy_target}")
+  endforeach()
+endfunction()

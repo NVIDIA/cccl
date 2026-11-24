@@ -17,7 +17,7 @@
 
 #if TEST_STD_VER > 2017
 #  ifndef __cccl_lib_is_constant_evaluated
-#    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#    ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #      error __cccl_lib_is_constant_evaluated should be defined
 #    endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  endif // __cccl_lib_is_constant_evaluated
@@ -29,7 +29,7 @@ struct InTemplate
 
 int main(int, char**)
 {
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   // Test the signature
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::is_constant_evaluated()), bool>);
@@ -40,7 +40,7 @@ int main(int, char**)
   // Test the return value of the builtin for basic sanity only. It's the
   // compilers job to test tho builtin for correctness.
   {
-    static_assert(cuda::std::is_constant_evaluated(), "");
+    static_assert(cuda::std::is_constant_evaluated());
     bool p = cuda::std::is_constant_evaluated();
     assert(!p);
     static_assert(cuda::std::is_same_v<InTemplate<cuda::std::is_constant_evaluated()>, InTemplate<true>>);

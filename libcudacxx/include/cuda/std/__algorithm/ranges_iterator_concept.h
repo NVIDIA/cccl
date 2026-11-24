@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,7 +56,7 @@ _CCCL_API constexpr auto __get_iterator_concept()
 }
 
 template <class _Iter>
-using __iterator_concept = decltype(__get_iterator_concept<_Iter>());
+using __iterator_concept _CCCL_NODEBUG = decltype(__get_iterator_concept<_Iter>());
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

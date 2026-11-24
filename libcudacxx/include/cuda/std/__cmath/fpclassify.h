@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,21 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 #  ifndef FP_NAN
 #    define FP_NAN 0
 #  endif // ! FP_NAN
@@ -51,9 +48,7 @@
 #  ifndef FP_NORMAL
 #    define FP_NORMAL 4
 #  endif // ! FP_NORMAL
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ ^/  vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 #ifndef FP_ILOGB0
 #  define FP_ILOGB0 (-INT_MAX - 1)
@@ -84,7 +79,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
 {
-  static_assert(numeric_limits<_Tp>::has_denorm, "The type must have denorm support");
+  static_assert(__fp_has_denorm_v<__fp_format_of_v<_Tp>>, "The type must have denorm support");
 
   if constexpr (numeric_limits<_Tp>::has_quiet_NaN || numeric_limits<_Tp>::has_signaling_NaN)
   {
@@ -100,7 +95,8 @@ template <class _Tp>
       return FP_INFINITE;
     }
   }
-  if constexpr (is_floating_point_v<_Tp>)
+  // comparison based classification keeps this path constexpr for types whose storage would need bit_cast
+  if constexpr (is_floating_point_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
@@ -121,7 +117,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr int fpclassify(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FPCLASSIFY)
+#ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -132,9 +128,32 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
+[[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // The exponent is in the upper 32 bits, so check it there
+  constexpr auto __exp_mask_hi = static_cast<uint32_t>(__fp_exp_mask_of_v<double> >> 32);
+  const auto __exp             = static_cast<uint32_t>(__storage >> 32) & __exp_mask_hi;
+  const bool __mant            = (__storage & __fp_mant_mask_of_v<double>) != 0;
+  if (__exp == __exp_mask_hi)
+  {
+    return __mant ? FP_NAN : FP_INFINITE;
+  }
+  if (__exp == 0)
+  {
+    return __mant ? FP_SUBNORMAL : FP_ZERO;
+  }
+  return FP_NORMAL;
+}
+
 [[nodiscard]] _CCCL_API constexpr int fpclassify(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FPCLASSIFY)
+  // See isnan(double): use integer comparisons on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fpclassify_storage(__x);)
+  }
+#ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -148,7 +167,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FPCLASSIFY)
+#  ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -188,10 +207,17 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_ue5m3 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
-  return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
+  return (__x.__x == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
@@ -215,6 +241,13 @@ template <class _Tp>
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__float128 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

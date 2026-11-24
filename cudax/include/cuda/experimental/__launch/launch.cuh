@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,24 +24,32 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__stream/invalid_stream.h>
 #include <cuda/__stream/launch_transform.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/path_builder.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -110,9 +118,8 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
                 "Can't launch a configuration without hierarchy dimensions");
   using _Hierarchy = typename _Config::hierarchy_type;
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level = _Hierarchy::has_level(cluster);
-  constexpr unsigned int __num_attrs_needed =
-    ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
+  constexpr bool __has_cluster_level        = _Hierarchy::has_level(cluster);
+  constexpr unsigned int __num_attrs_needed = _Config::__num_attrs + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
@@ -120,7 +127,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   ::cudaError_t __status = cuda::__detail::apply_kernel_config(__conf, __config, __kernel);
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
   }
 
   __config.gridDimX  = block.dims(grid, __conf).x;
@@ -178,16 +185,16 @@ _CCCL_CONCEPT work_submitter =
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel functor to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
 _CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
@@ -199,32 +206,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_device __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
-  if constexpr (::cuda::std::is_invocable_v<_Kernel,
-                                            kernel_config<_Dimensions, _Config...>,
-                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
-  {
-    auto __launcher = ::cuda::
-      __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return ::cuda::experimental::__launch_impl(
-      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
-      __combined,
-      ::cuda::__get_cufunction_of(__launcher),
-      __combined,
-      __kernel,
-      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
-  }
-  else
-  {
-    static_assert(::cuda::std::is_invocable_v<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>);
-    auto __launcher =
-      ::cuda::__kernel_launcher_no_config<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return ::cuda::experimental::__launch_impl(
-      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
-      __combined,
-      ::cuda::__get_cufunction_of(__launcher),
-      __kernel,
-      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
-  }
+  auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
+                                                  decltype(__combined),
+                                                  ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
+  return ::cuda::experimental::__launch_impl(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    __combined,
+    ::cuda::__get_cufunction_of(__launcher),
+    __combined,
+    __kernel,
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -254,16 +245,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel function to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel function
 //!
 _CCCL_TEMPLATE(
@@ -278,7 +269,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   return ::cuda::experimental::__launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     __conf,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
@@ -310,16 +301,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel
 //!
 _CCCL_TEMPLATE(
@@ -366,7 +357,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf
@@ -389,7 +380,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   return ::cuda::experimental::__launch_impl<_ExpArgs...>(
     ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
@@ -420,7 +411,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf
@@ -462,7 +453,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
   using sender_concept = execution::sender_t;
 
   template <class _Self>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr auto get_completion_signatures() noexcept
   {
     return execution::completion_signatures<execution::set_value_t(), execution::set_error_t(cudaError_t)>();
   }
@@ -472,17 +463,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
 };
 
 template <class _Dimensions, class... _Config, class _Fn, class... _Args>
-_CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
+_CCCL_HOST_DEVICE_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
   -> __kernel_t::__sndr_t<kernel_config<_Dimensions, _Config...>, _Fn, _Args...>
 {
   return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};
 }
 
+// Hide from Doxygen — uses internal __kernel_t::__sndr_t types excluded by EXCLUDE_SYMBOLS.
+#ifndef _CCCL_DOXYGEN_INVOKED
 namespace execution
 {
 template <class _Config, class _Fn, class... _Args>
 inline constexpr int structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
+#endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -19,7 +19,7 @@
 #include "../../rep.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::microseconds us1(11);
   cuda::std::chrono::microseconds us2(3);

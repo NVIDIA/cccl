@@ -12,6 +12,7 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
 #include "types.h"
 
 struct Decrementable
@@ -21,19 +22,19 @@ struct Decrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Decrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Decrementable&) const;
-  __host__ __device__ bool operator!=(const Decrementable&) const;
+  TEST_FUNC bool operator==(const Decrementable&) const;
+  TEST_FUNC bool operator!=(const Decrementable&) const;
 
-  __host__ __device__ bool operator<(const Decrementable&) const;
-  __host__ __device__ bool operator<=(const Decrementable&) const;
-  __host__ __device__ bool operator>(const Decrementable&) const;
-  __host__ __device__ bool operator>=(const Decrementable&) const;
+  TEST_FUNC bool operator<(const Decrementable&) const;
+  TEST_FUNC bool operator<=(const Decrementable&) const;
+  TEST_FUNC bool operator>(const Decrementable&) const;
+  TEST_FUNC bool operator>=(const Decrementable&) const;
 #endif
 
-  __host__ __device__ Decrementable& operator++();
-  __host__ __device__ Decrementable operator++(int);
-  __host__ __device__ Decrementable& operator--();
-  __host__ __device__ Decrementable operator--(int);
+  TEST_FUNC Decrementable& operator++();
+  TEST_FUNC Decrementable operator++(int);
+  TEST_FUNC Decrementable& operator--();
+  TEST_FUNC Decrementable operator--(int);
 };
 
 struct Incrementable
@@ -43,17 +44,17 @@ struct Incrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Incrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Incrementable&) const;
-  __host__ __device__ bool operator!=(const Incrementable&) const;
+  TEST_FUNC bool operator==(const Incrementable&) const;
+  TEST_FUNC bool operator!=(const Incrementable&) const;
 
-  __host__ __device__ bool operator<(const Incrementable&) const;
-  __host__ __device__ bool operator<=(const Incrementable&) const;
-  __host__ __device__ bool operator>(const Incrementable&) const;
-  __host__ __device__ bool operator>=(const Incrementable&) const;
+  TEST_FUNC bool operator<(const Incrementable&) const;
+  TEST_FUNC bool operator<=(const Incrementable&) const;
+  TEST_FUNC bool operator>(const Incrementable&) const;
+  TEST_FUNC bool operator>=(const Incrementable&) const;
 #endif
 
-  __host__ __device__ Incrementable& operator++();
-  __host__ __device__ Incrementable operator++(int);
+  TEST_FUNC Incrementable& operator++();
+  TEST_FUNC Incrementable operator++(int);
 };
 
 static_assert(cuda::std::ranges::random_access_range<cuda::std::ranges::iota_view<int>>);

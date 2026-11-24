@@ -1,35 +1,22 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/allocator/tagged_allocator.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -42,10 +29,10 @@ class tagged_allocator<void, Tag, Pointer>
 {
 public:
   using value_type      = void;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<void>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const void>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<void>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const void>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<Pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<Pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>
@@ -60,12 +47,12 @@ class tagged_allocator
 {
 public:
   using value_type      = T;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<T>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const T>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<T>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const T>;
   using reference       = thrust::detail::it_reference_t<pointer>;
   using const_reference = thrust::detail::it_reference_t<const_pointer>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>
@@ -74,37 +61,40 @@ public:
     using other = tagged_allocator<U, Tag, Pointer>;
   }; // end rebind
 
-  tagged_allocator() = default;
+  _CCCL_HIDE_FROM_ABI tagged_allocator() = default;
 
-  tagged_allocator(const tagged_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI tagged_allocator(const tagged_allocator&) = default;
 
   template <typename U, typename OtherPointer>
-  _CCCL_HOST_DEVICE tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
+  _CCCL_HOST_DEVICE_API tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
   {}
 
-  ~tagged_allocator() = default;
+  _CCCL_HIDE_FROM_ABI ~tagged_allocator() = default;
 
-  _CCCL_HOST_DEVICE pointer address(reference x) const
+  _CCCL_HOST_DEVICE_API pointer address(reference x) const
   {
     return &x;
   }
 
-  _CCCL_HOST_DEVICE const_pointer address(const_reference x) const
+  _CCCL_HOST_DEVICE_API const_pointer address(const_reference x) const
   {
     return &x;
   }
 
-  size_type max_size() const
+  // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+  // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+  template <class SizeType = size_type>
+  _CCCL_HOST_API size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const tagged_allocator&, const tagged_allocator&)
+  _CCCL_HOST_DEVICE_API friend bool operator==(const tagged_allocator&, const tagged_allocator&)
   {
     return true;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(const tagged_allocator&, const tagged_allocator&)
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const tagged_allocator&, const tagged_allocator&)
   {
     return false;
   }

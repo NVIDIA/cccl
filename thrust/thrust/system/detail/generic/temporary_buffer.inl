@@ -1,46 +1,35 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/system/detail/generic/temporary_buffer.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
-                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                        typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
-  thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
+  const thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
 
   // check for a failed malloc
   if (!ptr.get())
@@ -53,7 +42,8 @@ get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t)
+_CCCL_HOST_DEVICE_API void
+return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t)
 {
   // If we are here, no user customization of the three-argument signature with
   // a size parameter of `return_temporary_buffer` was found. There may be an
@@ -70,7 +60,7 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedP
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p)
+_CCCL_HOST_DEVICE_API void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p)
 {
   // If we are here, no user customization of either the old two-argument
   // signature or the new three-argument signature with a size parameter of

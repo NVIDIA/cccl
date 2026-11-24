@@ -16,7 +16,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::pair<int, short> T;
+  using T = cuda::std::pair<int, short>;
   cuda::std::tuple_element<2, T>::type foo; // expected-error@__utility/pair.h:* {{Index out of bounds in
                                             // cuda::std::tuple_element<cuda::std::pair<T1, T2>>}}
 

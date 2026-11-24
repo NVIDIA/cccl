@@ -2,7 +2,7 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(17, 20)]
+    [ValidateSet(17, 20, 23)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
@@ -21,7 +21,10 @@ Param(
     [switch]$LID2_SWITCH = $false,
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,22 +35,27 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cub"
 $artifactTag = ""
+$variantArg = ""
 if ($NO_LID_SWITCH) {
     $artifactTag = "no_lid"
     $PRESET = "cub-nolid"
+    $variantArg = "-no-lid"
 } elseif ($LID0_SWITCH) {
     $artifactTag = "lid_0"
     $PRESET = "cub-lid0"
+    $variantArg = "-lid0"
 } elseif ($LID1_SWITCH) {
     $artifactTag = "lid_1"
     $PRESET = "cub-lid1"
+    $variantArg = "-lid1"
 } elseif ($LID2_SWITCH) {
     $artifactTag = "lid_2"
     $PRESET = "cub-lid2"
+    $variantArg = "-lid2"
 }
 
 if ($env:GITHUB_ACTIONS -and $artifactTag) {
@@ -56,9 +64,7 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $buildCmd = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
-    Write-Host "Running: $buildCmd"
-    Invoke-Expression $buildCmd
+    & "$PSScriptRoot/build_cub.ps1" @PSBoundParameters
 }
 
 test_preset "CUB ($PRESET)" "$PRESET"

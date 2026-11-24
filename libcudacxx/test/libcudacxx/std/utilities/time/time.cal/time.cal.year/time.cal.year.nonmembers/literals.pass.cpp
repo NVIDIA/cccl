@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
 #if _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
   {
     using namespace cuda::std::chrono;
     static_assert(noexcept(4y));
 
-    static_assert(2017y == year(2017), "");
+    static_assert(2017y == year(2017));
     year y1 = 2018y;
     assert(y1 == year(2018));
   }
@@ -34,7 +34,7 @@ __host__ __device__ constexpr bool test()
     using namespace cuda::std::literals;
     static_assert(noexcept(4d));
 
-    static_assert(2017y == cuda::std::chrono::year(2017), "");
+    static_assert(2017y == cuda::std::chrono::year(2017));
 
     cuda::std::chrono::year y1 = 2020y;
     assert(y1 == cuda::std::chrono::year(2020));

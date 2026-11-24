@@ -11,8 +11,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,9 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <atomic>
+#include <functional>
 
 namespace cuda::experimental::stf
 {
@@ -37,7 +42,7 @@ class unique_id
 public:
   unique_id() = default;
   constexpr unique_id(unique_id&& other) noexcept
-      : _value(::std::exchange(other._value, -1))
+      : _value(::cuda::std::exchange(other._value, -1))
   {
     assert(_value >= 0 && "Reading a dead unique_id is not allowed.");
   }
@@ -55,7 +60,7 @@ public:
   constexpr unique_id& operator=(unique_id&& rhs)
   {
     assert(rhs._value >= 0 && "Reading a dead uniwue_id is not allowed.");
-    _value = ::std::exchange(rhs._value, -1);
+    _value = ::cuda::std::exchange(rhs._value, -1);
     return *this;
   }
 

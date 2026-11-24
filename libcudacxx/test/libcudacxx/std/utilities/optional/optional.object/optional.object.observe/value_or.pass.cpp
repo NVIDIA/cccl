@@ -25,7 +25,7 @@ struct Y
 {
   int i_;
 
-  __host__ __device__ constexpr Y(int i)
+  TEST_FUNC constexpr Y(int i)
       : i_(i)
   {}
 };
@@ -34,27 +34,27 @@ struct X
 {
   int i_;
 
-  __host__ __device__ constexpr X(int i)
+  TEST_FUNC constexpr X(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr X(X&& x)
+  TEST_FUNC constexpr X(X&& x)
       : i_(x.i_)
   {
     x.i_ = 0;
   }
-  __host__ __device__ constexpr X(const Y& y)
+  TEST_FUNC constexpr X(const Y& y)
       : i_(y.i_)
   {}
-  __host__ __device__ constexpr X(Y&& y)
+  TEST_FUNC constexpr X(Y&& y)
       : i_(y.i_ + 1)
   {}
-  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
+  TEST_FUNC friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
 };
 
-__host__ __device__ constexpr int test()
+TEST_FUNC constexpr int test()
 {
   {
     optional<X> opt(in_place, 2);

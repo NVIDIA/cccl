@@ -26,7 +26,7 @@ struct B
 struct A1
 {
   mutable B b_;
-  __host__ __device__ constexpr operator B&() const
+  TEST_FUNC constexpr operator B&() const
   {
     return b_;
   }
@@ -35,15 +35,15 @@ struct A1
 struct A2
 {
   mutable B b_;
-  __host__ __device__ constexpr operator B&() const noexcept
+  TEST_FUNC constexpr operator B&() const noexcept
   {
     return b_;
   }
 };
 
-__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) noexcept;
+TEST_FUNC void implicitly_convert(cuda::std::reference_wrapper<B>) noexcept;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     A1 a{};

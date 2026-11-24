@@ -25,14 +25,14 @@ _CCCL_CONCEPT HasIterCategory = _CCCL_REQUIRES_EXPR((T))(typename(typename T::it
 
 struct Foo
 {
-  __host__ __device__ constexpr operator int() const noexcept
+  TEST_FUNC constexpr operator int() const noexcept
   {
     return 42;
   }
 };
 
 template <template <class...> class Traits>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Iter       = cuda::zip_transform_iterator<TimesTwo, int*>;
@@ -112,7 +112,7 @@ __host__ __device__ void test()
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<cuda::std::iterator_traits>();
 #if !TEST_COMPILER(NVRTC)

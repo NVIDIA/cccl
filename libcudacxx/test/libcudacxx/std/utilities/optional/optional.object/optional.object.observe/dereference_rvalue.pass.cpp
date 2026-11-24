@@ -21,19 +21,19 @@ using cuda::std::optional;
 
 struct X
 {
-  __host__ __device__ constexpr int test() const&
+  TEST_FUNC constexpr int test() const&
   {
     return 3;
   }
-  __host__ __device__ constexpr int test() &
+  TEST_FUNC constexpr int test() &
   {
     return 4;
   }
-  __host__ __device__ constexpr int test() const&&
+  TEST_FUNC constexpr int test() const&&
   {
     return 5;
   }
-  __host__ __device__ constexpr int test() &&
+  TEST_FUNC constexpr int test() &&
   {
     return 6;
   }
@@ -41,24 +41,24 @@ struct X
 
 struct Y
 {
-  __host__ __device__ constexpr int test() &&
+  TEST_FUNC constexpr int test() &&
   {
     return 7;
   }
 
-  __host__ __device__ constexpr int test() &
+  TEST_FUNC constexpr int test() &
   {
     return 42;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     optional<X> opt{};
     unused(opt);
     static_assert(cuda::std::is_same_v<decltype(*cuda::std::move(opt)), X&&>);
-    static_assert(noexcept(*cuda::std::move(opt)), "");
+    static_assert(noexcept(*cuda::std::move(opt)));
     // static_assert(!noexcept(*cuda::std::move(opt)));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator*() is constexpr, and
@@ -71,7 +71,7 @@ __host__ __device__ constexpr bool test()
     optional<X&> optref;
     unused(optref);
     static_assert(cuda::std::is_same_v<decltype(*cuda::std::move(optref)), X&>);
-    static_assert(noexcept(*cuda::std::move(optref)), "");
+    static_assert(noexcept(*cuda::std::move(optref)));
     static_assert(noexcept(*cuda::std::move(optref)));
   }
 
@@ -105,7 +105,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

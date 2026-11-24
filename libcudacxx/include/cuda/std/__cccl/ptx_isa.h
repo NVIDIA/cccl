@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,18 +36,27 @@
 // For clang cuda check
 // https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp getNVPTXTargetFeatures
 #if _CCCL_CUDACC_AT_LEAST(14, 0) && !_CCCL_CUDA_COMPILER(CLANG)
-#  define __cccl_ptx_isa 920ULL
+#  define __cccl_ptx_isa 950ULL
+// PTX ISA 9.5 is available from CUDA 13.5
+#elif _CCCL_CUDACC_AT_LEAST(13, 5) && !_CCCL_CUDA_COMPILER(CLANG)
+#  define __cccl_ptx_isa 950ULL
+// PTX ISA 9.4 is available from CUDA 13.4
+#elif _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_CUDA_COMPILER(CLANG, <, 24)
+#  define __cccl_ptx_isa 940ULL
+// PTX ISA 9.3 is available from CUDA 13.3
+#elif _CCCL_CUDACC_AT_LEAST(13, 3) && !_CCCL_CUDA_COMPILER(CLANG, <, 24)
+#  define __cccl_ptx_isa 930ULL
 // PTX ISA 9.2 is available from CUDA 13.2
-#elif _CCCL_CUDACC_AT_LEAST(13, 2) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 2) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 920ULL
 // PTX ISA 9.1 is available from CUDA 13.1
-#elif _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 910ULL
 // PTX ISA 9.0 is available from CUDA 13.0, driver r580
-#elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG, <, 23)
 #  define __cccl_ptx_isa 900ULL
 // PTX ISA 8.8 is available from CUDA 12.9, driver r575
-#elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG, <, 22)
 #  define __cccl_ptx_isa 880ULL
 // PTX ISA 8.7 is available from CUDA 12.8, driver r570
 #elif _CCCL_CUDACC_AT_LEAST(12, 8) && !_CCCL_CUDA_COMPILER(CLANG, <, 20)
@@ -121,7 +130,7 @@
 #if _CCCL_COMPILER(NVRTC)
 
 // missing SM_88
-#  if !defined(NV_PROVIDES_SM_88)
+#  ifndef NV_PROVIDES_SM_88
 #    define _NV_TARGET_VAL_SM_88 880
 #    define NV_PROVIDES_SM_88    __NV_PROVIDES_SM_88
 #    define NV_IS_EXACTLY_SM_88  __NV_IS_EXACTLY_SM_88
@@ -213,6 +222,37 @@
 #    endif
 #  endif // !NV_HAS_FEATURE_SM_103a
 
+// missing SM_107
+#  ifndef NV_PROVIDES_SM_107
+#    define _NV_TARGET_VAL_SM_107 1070
+#    define NV_PROVIDES_SM_107    __NV_PROVIDES_SM_107
+#    define NV_IS_EXACTLY_SM_107  __NV_IS_EXACTLY_SM_107
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_107)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_107 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_107      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_107 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_107      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_107)
+#      define _NV_TARGET___NV_PROVIDES_SM_107      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_107 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_107      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_107 0
+#    endif
+#  endif // !NV_PROVIDES_SM_107
+
+// missing SM_107
+#  ifndef NV_HAS_FEATURE_SM_107a
+#    define NV_HAS_FEATURE_SM_107a __NV_HAS_FEATURE_SM_107a
+#    if defined(__CUDA_ARCH_FEAT_SM107_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1070))
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107a 1
+#    else
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107a 0
+#    endif
+#  endif // !NV_HAS_FEATURE_SM_107a
+
 // missing SM_110
 #  ifndef NV_PROVIDES_SM_110
 #    define _NV_TARGET_VAL_SM_110 1100
@@ -276,7 +316,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 
 // missing SM_121
-#  if !defined(NV_PROVIDES_SM_121)
+#  ifndef NV_PROVIDES_SM_121
 #    define _NV_TARGET_VAL_SM_121 1210
 #    define NV_PROVIDES_SM_121    __NV_PROVIDES_SM_121
 #    define NV_IS_EXACTLY_SM_121  __NV_IS_EXACTLY_SM_121
@@ -328,6 +368,16 @@
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103f 0
 #    endif
 #  endif // NV_HAS_FEATURE_SM_103f
+
+// missing SM_107f
+#  ifndef NV_HAS_FEATURE_SM_107f
+#    define NV_HAS_FEATURE_SM_107f __NV_HAS_FEATURE_SM_107f
+#    if defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1070)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107f 1
+#    else
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107f 0
+#    endif
+#  endif // NV_HAS_FEATURE_SM_107f
 
 // missing SM_110f
 #  ifndef NV_HAS_FEATURE_SM_110f

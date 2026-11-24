@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,6 +37,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 [[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
 {
+  // Several CUDA floating-point wrappers intentionally share the same storage width.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_arithmetic_v<_RawTp> || is_pointer_v<_RawTp>)
   {
     return sizeof(_RawTp) * CHAR_BIT;
@@ -65,6 +67,12 @@ template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
     return 8;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (is_same_v<_RawTp, __nv_fp8_ue5m3>)
+  {
+    return 8;
+  }
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_RawTp, __nv_fp8_e8m0>)
   {
@@ -104,6 +112,7 @@ template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
     static_assert(__always_false_v<_Tp>, "unsupported type");
     return 0;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 template <typename _Tp>

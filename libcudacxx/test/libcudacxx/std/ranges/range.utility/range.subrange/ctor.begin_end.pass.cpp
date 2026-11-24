@@ -32,7 +32,7 @@ static_assert(cuda::std::is_constructible_v<ConvertibleForwardSubrange, Converti
 static_assert(cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // 3. (Same as default case.)
 // 4. and 5. must be sized.
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   ForwardSubrange a(ForwardIter(globalBuff), ForwardIter(globalBuff + 8));
   assert(base(a.begin()) == globalBuff);

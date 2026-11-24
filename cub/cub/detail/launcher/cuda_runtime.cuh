@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,36 +13,81 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+
+#include <nv/target>
+
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#  define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#endif
+
 CUB_NAMESPACE_BEGIN
+
+namespace experimental
+{
+class DeviceDescription;
+} // namespace experimental
 
 namespace detail
 {
 struct TripleChevronFactory
 {
-  CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
-    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+    if (dependent_launch)
+    {
+      [[maybe_unused]] int sm_version = 0; // NOLINT(misc-const-correctness)
+      _CCCL_ASSERT(_CUB::SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
+      if (sm_version >= 900)
+      {
+        [[maybe_unused]] ::cuda::compute_capability cc; // NOLINT(misc-const-correctness)
+        _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "Failed to query PTX compute capability");
+        _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
+                     "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
+      }
+    }
   }
 
+  CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
+    dim3 grid,
+    dim3 block,
+    ::cuda::std::size_t shared_mem,
+    ::cudaStream_t stream,
+    bool dependent_launch = false,
+    dim3 cluster_dim      = dim3{0, 0, 0}) const
+  {
+    __assert_pdl_allowed(dependent_launch);
+    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+      grid, block, shared_mem, stream, dependent_launch, cluster_dim);
+  }
+
+  template <class T = void>
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
-    return cub::PtxVersion(version);
+    return _CUB::PtxVersion<T>(version);
   }
 
-  CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  template <class T = void>
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxComputeCap(::cuda::compute_capability& cc) const
   {
-    return ptx_arch_id(arch_id);
+    return _CUB::detail::ptx_compute_cap<T>(cc);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
-    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    const ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (::cudaSuccess != error)
     {
       return error;
@@ -54,7 +99,7 @@ struct TripleChevronFactory
 
   template <typename Kernel>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
-  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0)
+  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0) const
   {
     return ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
@@ -62,7 +107,7 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal;
-    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    const ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (::cudaSuccess != error)
     {
       return error;
@@ -84,8 +129,6 @@ struct TripleChevronFactory
     return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
   }
 
-  // TODO(bgruber): this is very similar to thrust::cuda_cub::core::get_max_shared_memory_per_block. We should unify
-  // this.
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
     int device = 0;
@@ -96,6 +139,89 @@ struct TripleChevronFactory
     }
 
     return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
+  }
+
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] Kernel kernel_ptr)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST, //
+                      ({ return _CUB::MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, kernel_ptr); }),
+                      ({
+                        ::cudaFuncAttributes func_attrs{};
+                        if (const auto error = CubDebug(::cudaFuncGetAttributes(&func_attrs, kernel_ptr)))
+                        {
+                          return error;
+                        }
+                        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                        return cudaSuccess;
+                      }))
+  }
+
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
+  {
+    return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+  }
+};
+
+/**
+ * Kernel dispatch configuration
+ */
+struct KernelConfig
+{
+  int threads_per_block{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
+
+  // TODO(bgruber): remove this overload in CCCL 4.0 when we drop the public dispatchers
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
+    items_per_thread  = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
+  }
+
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory,
+            // This is always experimental::DeviceDescription, but we must make it a template
+            // argument to stop compilers type-checking on incomplete types, because we don't
+            // want to include the whole header for it here.
+            //
+            // The translation units that call this overload will already include the
+            // appropriate header anyways.
+            typename DeviceDescriptionT = experimental::DeviceDescription>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init(
+    KernelPtrT kernel_ptr,
+    AgentPolicyT agent_policy,
+    const LauncherFactory& launcher_factory,
+    const DeviceDescriptionT& device_descr,
+    const void* d_temp_storage)
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return device_descr.__occupancy(kernel_ptr, launcher_factory, d_temp_storage, threads_per_block, 0, sm_occupancy);
+  }
+
+  // Using new tuning API conventions
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  __init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
 } // namespace detail

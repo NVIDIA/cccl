@@ -5,7 +5,7 @@
 
 # example-begin
 import cupy as cp
-from numba import cuda as numba_cuda
+from numba_cuda_mlir import cuda as numba_cuda
 
 from cuda.compute.algorithms import select
 
@@ -28,7 +28,13 @@ def count_rejects(x):
 
 
 # Execute select - selects even numbers, counts rejections
-select(d_in, d_out, d_num_selected, count_rejects, len(d_in))
+select(
+    d_in=d_in,
+    d_out=d_out,
+    d_num_selected_out=d_num_selected,
+    cond=count_rejects,
+    num_items=len(d_in),
+)
 
 # Get results
 num_selected = int(d_num_selected.get()[0])

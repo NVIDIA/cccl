@@ -8,13 +8,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
 #include <climits>
 #include <cstddef>
+#include <iostream>
 
+#include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
-#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-reduce-custommin
 struct CustomMin
@@ -41,21 +43,21 @@ struct is_equal
   }
 };
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-reduce
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   c2h::device_vector<int> d_out(3);
-  CustomMin min_op;
-  int initial_value{INT_MAX};
+  const CustomMin min_op;
+  const int initial_value{INT_MAX};
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Reduce(
+  const auto query_error    = cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
@@ -65,12 +67,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
     d_offsets_it + 1,
     min_op,
     initial_value);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Reduce(
+  const auto error = cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
@@ -80,17 +86,23 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
     d_offsets_it + 1,
     min_op,
     initial_value);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> expected{6, INT_MAX, 0};
+  const c2h::device_vector<int> expected{6, INT_MAX, 0};
   // example-end segmented-reduce-reduce
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-sum
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -99,26 +111,36 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Sum(
+  const auto query_error    = cub::DeviceSegmentedReduce::Sum(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Sum(
+  const auto error = cub::DeviceSegmentedReduce::Sum(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> expected{21, 0, 17};
+  const c2h::device_vector<int> expected{21, 0, 17};
   // example-end segmented-reduce-sum
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-min
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -127,26 +149,36 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Min(
+  const auto query_error    = cub::DeviceSegmentedReduce::Min(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Min(
+  const auto error = cub::DeviceSegmentedReduce::Min(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> expected{6, INT_MAX, 0};
+  const c2h::device_vector<int> expected{6, INT_MAX, 0};
   // example-end segmented-reduce-min
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmin
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -155,26 +187,36 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::ArgMin(
+  const auto query_error    = cub::DeviceSegmentedReduce::ArgMin(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::ArgMin(
+  const auto error = cub::DeviceSegmentedReduce::ArgMin(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << error << '\n';
+  }
 
   c2h::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, INT_MAX}, {2, 0}};
   // example-end segmented-reduce-argmin
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin(), is_equal()));
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-max
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -183,26 +225,36 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Max(
+  const auto query_error    = cub::DeviceSegmentedReduce::Max(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Max(
+  const auto error = cub::DeviceSegmentedReduce::Max(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> expected{8, INT_MIN, 9};
+  const c2h::device_vector<int> expected{8, INT_MIN, 9};
   // example-end segmented-reduce-max
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmax
-  int num_segments                  = 3;
+  const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -211,144 +263,199 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[se
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::ArgMax(
+  const auto query_error    = cub::DeviceSegmentedReduce::ArgMax(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::ArgMax(
+  const auto error = cub::DeviceSegmentedReduce::ArgMax(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << error << '\n';
+  }
 
   c2h::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, INT_MIN}, {3, 9}};
   // example-end segmented-reduce-argmax
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin(), is_equal()));
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-reduce
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   c2h::device_vector<int> d_out(3);
-  CustomMin min_op;
-  int initial_value{INT_MAX};
+  const CustomMin min_op;
+  const int initial_value{INT_MAX};
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Reduce(
+  const auto query_error    = cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, min_op, initial_value);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Reduce(
+  const auto error = cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, min_op, initial_value);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> expected{6, 5, 0};
+  const c2h::device_vector<int> expected{6, 5, 0};
   // example-end fixed-size-segmented-reduce-reduce
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-sum
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
   c2h::device_vector<int> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Sum(
+  const auto query_error    = cub::DeviceSegmentedReduce::Sum(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Sum(
+  const auto error = cub::DeviceSegmentedReduce::Sum(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> d_expected{14, 12, 3};
+  const c2h::device_vector<int> d_expected{14, 12, 3};
   // example-end fixed-size-segmented-reduce-sum
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-min
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
   c2h::device_vector<int> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Min(
+  const auto query_error    = cub::DeviceSegmentedReduce::Min(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Min(
+  const auto error = cub::DeviceSegmentedReduce::Min(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> d_expected{6, 5, 0};
+  const c2h::device_vector<int> d_expected{6, 5, 0};
   // example-end fixed-size-segmented-reduce-min
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmin
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
   c2h::device_vector<cuda::std::pair<int, int>> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::ArgMin(
+  const auto query_error    = cub::DeviceSegmentedReduce::ArgMin(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::ArgMin(
+  const auto error = cub::DeviceSegmentedReduce::ArgMin(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << error << '\n';
+  }
 
-  c2h::host_vector<cuda::std::pair<int, int>> h_expected{{0, 6}, {1, 5}, {1, 0}};
+  const c2h::host_vector<cuda::std::pair<int, int>> h_expected{{0, 6}, {1, 5}, {1, 0}};
   // example-end fixed-size-segmented-reduce-argmin
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
-  c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  const c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
 
   REQUIRE(h_expected == h_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-max
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
 
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
   c2h::device_vector<int> d_out(3);
@@ -356,47 +463,162 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::Max(
+  const auto query_error    = cub::DeviceSegmentedReduce::Max(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::Max(
+  const auto error = cub::DeviceSegmentedReduce::Max(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << error << '\n';
+  }
 
-  c2h::device_vector<int> d_expected{8, 7, 3};
+  const c2h::device_vector<int> d_expected{8, 7, 3};
   // example-end fixed-size-segmented-reduce-max
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmax
-  int num_segments = 3;
-  int segment_size = 2;
+  const int num_segments = 3;
+  const int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
   c2h::device_vector<cuda::std::pair<int, int>> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedReduce::ArgMax(
+  const auto query_error    = cub::DeviceSegmentedReduce::ArgMax(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << query_error << '\n';
+  }
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
-  cub::DeviceSegmentedReduce::ArgMax(
+  const auto error = cub::DeviceSegmentedReduce::ArgMax(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << error << '\n';
+  }
 
-  c2h::host_vector<cuda::std::pair<int, int>> h_expected{{1, 8}, {0, 7}, {0, 3}};
+  const c2h::host_vector<cuda::std::pair<int, int>> h_expected{{1, 8}, {0, 7}, {0, 3}};
   // example-end fixed-size-segmented-reduce-argmax
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
-  c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  const c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
   REQUIRE(h_expected == h_out);
+}
+
+// Guard tests: each public DeviceSegmentedReduce method must resolve unambiguously
+// to the legacy temp-storage overload when called in its minimal form (no explicit
+// stream, all defaults left implicit), even though the env overloads are also in
+// scope. If env-overload SFINAE drifts, these become "ambiguous overload" compile errors.
+
+struct segmented_reduce_plus_t
+{
+  __host__ __device__ int operator()(int a, int b) const
+  {
+    return a + b;
+  }
+};
+
+CUB_TEST("DeviceSegmentedReduce::Reduce legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  ::cuda::std::int64_t n    = 0;
+  int* d_offsets            = nullptr;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Reduce(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets, segmented_reduce_plus_t{}, 0));
+}
+
+CUB_TEST("DeviceSegmentedReduce::Sum legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  ::cuda::std::int64_t n    = 0;
+  int* d_offsets            = nullptr;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
+}
+
+CUB_TEST("DeviceSegmentedReduce::Min legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  ::cuda::std::int64_t n    = 0;
+  int* d_offsets            = nullptr;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
+}
+
+CUB_TEST("DeviceSegmentedReduce::Max legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  ::cuda::std::int64_t n    = 0;
+  int* d_offsets            = nullptr;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
+}
+
+CUB_TEST("DeviceSegmentedReduce::ArgMin legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage               = nullptr;
+  size_t temp_storage_bytes          = 0;
+  int* d_in                          = nullptr;
+  cub::KeyValuePair<int, int>* d_out = nullptr;
+  ::cuda::std::int64_t n             = 0;
+  int* d_offsets                     = nullptr;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
+}
+
+CUB_TEST("DeviceSegmentedReduce::ArgMax legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
+{
+  void* d_temp_storage               = nullptr;
+  size_t temp_storage_bytes          = 0;
+  int* d_in                          = nullptr;
+  cub::KeyValuePair<int, int>* d_out = nullptr;
+  ::cuda::std::int64_t n             = 0;
+  int* d_offsets                     = nullptr;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }

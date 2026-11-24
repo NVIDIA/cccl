@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,14 +22,24 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
 #include <cuda/experimental/__execution/just.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
-#include <cuda/experimental/__execution/transform_sender.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -93,7 +103,7 @@ struct starts_on_t
 
 private:
   template <class _Sch, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Sch __sch, _Env&&... __env)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto __mk_env2(_Sch __sch, _Env&&... __env)
   {
     return __join_env(__mk_sch_env(__sch, __env...), __fwd_env(static_cast<_Env&&>(__env))...);
   }
@@ -108,7 +118,8 @@ private:
     // is the sender's.
     _CCCL_EXEC_CHECK_DISABLE
     template <class _SetTag, class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
     {
       return get_completion_scheduler<_SetTag>(
@@ -118,14 +129,15 @@ private:
     // If the sender has a _SetTag completion, then the completion scheduler for _SetTag
     // is the sender's.
     template <class _SetTag, class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
     {
       return {};
     }
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, _Env&&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t, _Env&&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
                                execution::get_completion_behavior<_Sndr, __env2_t<_Sch, _Env>...>());
@@ -134,7 +146,7 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_starts_on_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
         -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
     {
@@ -146,14 +158,15 @@ private:
 
 public:
   template <class _Sndr>
-  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
+  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr auto
+  transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
     auto&& [__ign, __sch, __child] = __sndr;
     return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
   }
 
   template <class _Sch, class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Sch, class _Sndr>
@@ -162,7 +175,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(
       auto(__child_completions) = execution::get_child_completion_signatures<_Self, _Sndr, __env2_t<_Sch, _Env>...>())
@@ -179,7 +192,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
   {
     return __attrs_t<_Sch, _Sndr>{this};
   }
@@ -191,7 +204,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
   static_assert(__is_scheduler<_Sch>, "starts_on requires a scheduler as the first argument");
   static_assert(__is_sender<_Sndr>, "starts_on requires a sender as the second argument");

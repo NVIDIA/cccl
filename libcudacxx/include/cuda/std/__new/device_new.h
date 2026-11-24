@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,9 @@
 
 // clang-cuda only provides device flavors of operator new if we included <new>
 #if _CCCL_CUDA_COMPILER(CLANG)
-#  include <new>
+// IWYU pragma: begin_exports
+#  include <cuda/std/__host_stdlib/new>
+// IWYU pragma: end_exports
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #endif // _CUDA_STD___NEW_DEVICE_NEW_H

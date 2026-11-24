@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/decompose.h>
 #include <cuda/std/__floating_point/format.h>
@@ -49,7 +48,7 @@ template <class _Tp>
 {
   static_assert(__fp_has_inf_v<__fp_format_of_v<_Tp>>, "The format does not support infinity");
 
-#if defined(_CCCL_BUILTIN_HUGE_VALF)
+#ifdef _CCCL_BUILTIN_HUGE_VALF
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_HUGE_VALF());
@@ -74,7 +73,7 @@ template <__fp_format _Fmt>
   {
     return _Storage(0x7fu);
   }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return _Storage(0xffu);
   }
@@ -90,10 +89,10 @@ template <class _Tp>
 {
   static_assert(__fp_has_nan_v<__fp_format_of_v<_Tp>>, "The format does not support nan");
 
-#if defined(_CCCL_BUILTIN_NANF)
+#ifdef _CCCL_BUILTIN_NANF
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANF());
   }
   else
 #endif // _CCCL_BUILTIN_NANF
@@ -122,27 +121,27 @@ template <class _Tp>
 
   static_assert(__fp_has_nans_v<__fmt>, "The format does not support nans");
 
-#if defined(_CCCL_BUILTIN_NANS)
+#ifdef _CCCL_BUILTIN_NANS
   if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF());
   }
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary64)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANS(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANS());
   }
 #  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format_of_v<long double>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
-#  if defined(_CCCL_BUILTIN_NANFS128)
+#  ifdef _CCCL_BUILTIN_NANSF128
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF128());
   }
-#  endif // _CCCL_BUILTIN_NANFS128
+#  endif // _CCCL_BUILTIN_NANSF128
   else
 #endif // _CCCL_BUILTIN_NANS
   {
@@ -160,6 +159,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
   {
     return _Storage(0x7eu);
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return _Storage(0xfeu);
   }
   else
   {
@@ -226,7 +229,8 @@ template <class _Tp>
   {
     return static_cast<_Tp>(0x1p-14f);
   }
-  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
+  else if constexpr (__fp_is_native_type_v<_Tp>
+                     && (__fmt == __fp_format::__binary32 || __fmt == __fp_format::__bfloat16))
   {
     return static_cast<_Tp>(0x1p-126f);
   }
@@ -240,10 +244,6 @@ template <class _Tp>
     return static_cast<_Tp>(0x1p-16382q);
   }
 #endif // _CCCL_HAS_FLOAT128()
-  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
-  {
-    return static_cast<_Tp>(0x1p-126f);
-  }
   else
   {
     return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_min<__fp_format_of_v<_Tp>>());
@@ -302,6 +302,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return ::cuda::std::__fp_min<_Fmt>();
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return __fp_storage_t<_Fmt>(0);
   }
   else
   {

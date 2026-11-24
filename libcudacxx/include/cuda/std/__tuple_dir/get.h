@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
@@ -57,8 +58,8 @@ template <size_t _Ip, class... _Tp>
 
 namespace __find_detail
 {
-static constexpr size_t __not_found = ~size_t(0);
-static constexpr size_t __ambiguous = __not_found - 1;
+inline constexpr size_t __not_found = ~size_t(0);
+inline constexpr size_t __ambiguous = __not_found - 1;
 
 [[nodiscard]] _CCCL_API constexpr size_t __find_idx_return(size_t __curr_i, size_t __res, bool __matches) noexcept
 {

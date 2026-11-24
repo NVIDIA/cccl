@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // template<input_iterator I, sentinel_for<I> S, class Proj = identity,
 //          indirect_unary_predicate<projected<I, Proj>> Pred>
 //   constexpr I ranges::find_if(I first, S last, Pred pred, Proj proj = {});
@@ -27,7 +30,7 @@
 
 struct Predicate
 {
-  __host__ __device__ bool operator()(int);
+  TEST_HOST_DEVICE_FUNC bool operator()(int);
 };
 
 #if TEST_STD_VER > 2017
@@ -95,7 +98,7 @@ static_assert(!HasFindIfR<InputRangeNotSentinelSemiregular>);
 static_assert(!HasFindIfR<InputRangeNotSentinelEqualityComparableWith>);
 
 template <class It, class Sent = It>
-__host__ __device__ constexpr void test_iterators()
+TEST_HOST_DEVICE_FUNC constexpr void test_iterators()
 {
   {
     int a[]            = {1, 2, 3, 4};
@@ -120,36 +123,36 @@ __host__ __device__ constexpr void test_iterators()
 
 struct NonConstComparable
 {
-  __host__ __device__ friend constexpr bool operator==(const NonConstComparable&, const NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator==(const NonConstComparable&, const NonConstComparable&)
   {
     return false;
   }
-  __host__ __device__ friend constexpr bool operator==(NonConstComparable&, NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator==(NonConstComparable&, NonConstComparable&)
   {
     return false;
   }
-  __host__ __device__ friend constexpr bool operator==(const NonConstComparable&, NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator==(const NonConstComparable&, NonConstComparable&)
   {
     return false;
   }
-  __host__ __device__ friend constexpr bool operator==(NonConstComparable&, const NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator==(NonConstComparable&, const NonConstComparable&)
   {
     return true;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const NonConstComparable&, const NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator!=(const NonConstComparable&, const NonConstComparable&)
   {
     return true;
   }
-  __host__ __device__ friend constexpr bool operator!=(NonConstComparable&, NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator!=(NonConstComparable&, NonConstComparable&)
   {
     return true;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NonConstComparable&, NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator!=(const NonConstComparable&, NonConstComparable&)
   {
     return true;
   }
-  __host__ __device__ friend constexpr bool operator!=(NonConstComparable&, const NonConstComparable&)
+  TEST_HOST_DEVICE_FUNC friend constexpr bool operator!=(NonConstComparable&, const NonConstComparable&)
   {
     return false;
   }
@@ -158,14 +161,14 @@ struct NonConstComparable
 
 struct AlwaysFalse
 {
-  __host__ __device__ constexpr bool operator()(int) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int) const
   {
     return false;
   }
 };
 struct AlwaysTrue
 {
-  __host__ __device__ constexpr bool operator()(int) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int) const
   {
     return true;
   }
@@ -173,13 +176,13 @@ struct AlwaysTrue
 struct CheckStar
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(T&& e) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(T&& e) const
   {
     return e == NonConstComparable{};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_iterators<int*>();
   test_iterators<const int*>();
@@ -193,7 +196,7 @@ __host__ __device__ constexpr bool test()
     // check that projections are used properly and that they are called with the iterator directly
     struct ToAddress
     {
-      __host__ __device__ constexpr int* operator()(int& i) const
+      TEST_HOST_DEVICE_FUNC constexpr int* operator()(int& i) const
       {
         return &i;
       }
@@ -201,7 +204,7 @@ __host__ __device__ constexpr bool test()
     struct PointsToLast
     {
       int* a;
-      __host__ __device__ constexpr bool operator()(int* i) const
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int* i) const
       {
         return i == a + 3;
       }
@@ -222,7 +225,7 @@ __host__ __device__ constexpr bool test()
     // check that the first element is returned
     struct IsZero
     {
-      __host__ __device__ constexpr bool operator()(int i) const
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
       {
         return i == 0;
       }
@@ -300,7 +303,7 @@ __host__ __device__ constexpr bool test()
     struct CountPredicate
     {
       int& predicate_count;
-      __host__ __device__ constexpr bool operator()(int i) const
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
       {
         ++predicate_count;
         return i == 2;
@@ -309,7 +312,7 @@ __host__ __device__ constexpr bool test()
     struct CountProjection
     {
       int& projection_count;
-      __host__ __device__ constexpr int operator()(int i) const
+      TEST_HOST_DEVICE_FUNC constexpr int operator()(int i) const
       {
         ++projection_count;
         return i;
@@ -371,7 +374,7 @@ __host__ __device__ constexpr bool test()
     // check that the implicit conversion to bool works
     struct ReturnBooleanTestable
     {
-      __host__ __device__ constexpr BooleanTestable operator()(const int& i) const
+      TEST_HOST_DEVICE_FUNC constexpr BooleanTestable operator()(const int& i) const
       {
         return BooleanTestable{i == 3};
       }
@@ -395,7 +398,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

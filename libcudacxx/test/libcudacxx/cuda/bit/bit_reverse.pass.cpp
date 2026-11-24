@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -15,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using nl              = cuda::std::numeric_limits<T>;
   constexpr T all_ones  = static_cast<T>(~T{0});
@@ -32,7 +34,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<unsigned char>();
   test<unsigned short>();

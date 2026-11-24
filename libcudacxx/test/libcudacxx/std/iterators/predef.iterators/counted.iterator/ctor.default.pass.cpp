@@ -15,7 +15,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(!cuda::std::default_initializable<cuda::std::counted_iterator<cpp17_input_iterator<int*>>>);
   static_assert(cuda::std::default_initializable<cuda::std::counted_iterator<forward_iterator<int*>>>);

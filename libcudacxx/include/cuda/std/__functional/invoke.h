@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,7 +33,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_cvref.h> // IWYU pragma: keep
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -53,21 +53,22 @@ struct __member_pointer_class_type
 template <class _Ret, class _ClassType>
 struct __member_pointer_class_type<_Ret _ClassType::*>
 {
-  using type = _ClassType;
+  using type _CCCL_NODEBUG = _ClassType;
 };
 
 template <class _DecayedFp>
-using __member_pointer_class_type_t = typename __member_pointer_class_type<_DecayedFp>::type;
+using __member_pointer_class_type_t _CCCL_NODEBUG = typename __member_pointer_class_type<_DecayedFp>::type;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
+using __enable_if_bullet1 _CCCL_NODEBUG =
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
-using __enable_if_bullet2 =
+using __enable_if_bullet2 _CCCL_NODEBUG =
   enable_if_t<is_member_function_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
@@ -75,18 +76,20 @@ template <class _Fp,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet3 _CCCL_NODEBUG =
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+              && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
+using __enable_if_bullet4 _CCCL_NODEBUG =
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
-using __enable_if_bullet5 =
+using __enable_if_bullet5 _CCCL_NODEBUG =
   enable_if_t<is_member_object_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
@@ -94,8 +97,9 @@ template <class _Fp,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet6 _CCCL_NODEBUG =
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+              && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -108,8 +112,8 @@ _CCCL_API inline __nat __invoke(__any, _Args&&... __args);
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet1<_Fp, _A0>>
-_CCCL_API constexpr decltype((::cuda::std::declval<_A0>()
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype((::cuda::std::declval<_A0>()
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept((static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...)))
@@ -119,8 +123,8 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet2<_Fp, _A0>>
-_CCCL_API constexpr decltype((::cuda::std::declval<_A0>().get()
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype((::cuda::std::declval<_A0>().get()
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
 {
   return (__a0.get().*__f)(static_cast<_Args&&>(__args)...);
@@ -128,8 +132,8 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet3<_Fp, _A0>>
-_CCCL_API constexpr decltype(((*::cuda::std::declval<_A0>())
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype(((*::cuda::std::declval<_A0>())
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept(((*static_cast<_A0&&>(__a0)).*__f)(static_cast<_Args&&>(__args)...)))
@@ -141,7 +145,7 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet4<_Fp, _A0>>
-_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype(::cuda::std::declval<_A0>().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
 {
   return static_cast<_A0&&>(__a0).*__f;
@@ -149,7 +153,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet5<_Fp, _A0>>
-_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().get().*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype(::cuda::std::declval<_A0>().get().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 {
   return __a0.get().*__f;
@@ -157,7 +161,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet6<_Fp, _A0>>
-_CCCL_API constexpr decltype((*::cuda::std::declval<_A0>()).*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype((*::cuda::std::declval<_A0>()).*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*__f))
 {
   return (*static_cast<_A0&&>(__a0)).*__f;
@@ -175,7 +179,7 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
 
 // __is_invocable
 template <class _Fp, class... _Args>
-using __invoke_result_t =
+using __invoke_result_t _CCCL_NODEBUG =
   decltype(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
 
 template <class _Fp, class... _Args>
@@ -266,6 +270,7 @@ is_nothrow_invocable_r : bool_constant<is_nothrow_invocable_r_v<_Ret, _Fn, _Args
 template <class _Fn, class... _Args>
 using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
@@ -273,6 +278,7 @@ invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args.
   return ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
 _CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
 _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)
@@ -288,8 +294,8 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_noth
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
-template <typename Invocable, typename InputT, typename InitT = InputT>
-using __accumulator_t = decay_t<invoke_result_t<Invocable, InitT, InputT>>;
+template <typename _Invocable, typename _InputT, typename _InitT = _InputT>
+using __accumulator_t _CCCL_NODEBUG = decay_t<invoke_result_t<_Invocable, _InitT, _InputT>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

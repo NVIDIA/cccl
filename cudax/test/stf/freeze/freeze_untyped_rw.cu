@@ -19,13 +19,13 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void mult(slice<int> s, int val)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < s.size(); i += nthreads)
   {
@@ -52,8 +52,8 @@ int main()
 
   for (int k = 0; k < 4; k++)
   {
-    logical_data_untyped lX_untyped = lX;
-    auto fx                         = ctx.freeze(lX_untyped, access_mode::rw, data_place::current_device());
+    const logical_data_untyped& lX_untyped = lX;
+    auto fx                                = ctx.freeze(lX_untyped, access_mode::rw, data_place::current_device());
 
     _CCCL_ASSERT(fx.get_access_mode() == access_mode::rw, "invalid access mode");
 

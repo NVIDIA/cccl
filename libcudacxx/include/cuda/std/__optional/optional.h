@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,15 +29,14 @@
 #include <cuda/std/__optional/bad_optional_access.h>
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional_base.h>
-#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/add_pointer.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
-#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
@@ -56,22 +55,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Constraints
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
-using __opt_check_constructible_from_opt =
-  _Or<is_constructible<_Tp, _Opt&>,
-      is_constructible<_Tp, _Opt const&>,
-      is_constructible<_Tp, _Opt&&>,
-      is_constructible<_Tp, _Opt const&&>,
-      is_convertible<_Opt&, _Tp>,
-      is_convertible<_Opt const&, _Tp>,
-      is_convertible<_Opt&&, _Tp>,
-      is_convertible<_Opt const&&, _Tp>>;
+inline constexpr bool __opt_check_constructible_from_opt_v =
+  is_constructible_v<_Tp, _Opt&> || is_constructible_v<_Tp, _Opt const&> || is_constructible_v<_Tp, _Opt&&>
+  || is_constructible_v<_Tp, _Opt const&&> || is_convertible_v<_Opt&, _Tp> || is_convertible_v<_Opt const&, _Tp>
+  || is_convertible_v<_Opt&&, _Tp> || is_convertible_v<_Opt const&&, _Tp>;
 
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
-using __opt_check_assignable_from_opt =
-  _Or<is_assignable<_Tp&, _Opt&>,
-      is_assignable<_Tp&, _Opt const&>,
-      is_assignable<_Tp&, _Opt&&>,
-      is_assignable<_Tp&, _Opt const&&>>;
+inline constexpr bool __opt_check_assignable_from_opt_v =
+  is_assignable_v<_Tp&, _Opt&> || is_assignable_v<_Tp&, _Opt const&> || is_assignable_v<_Tp&, _Opt&&>
+  || is_assignable_v<_Tp&, _Opt const&&>;
 
 template <class _Tp, class _Up>
 inline constexpr bool __opt_is_implictly_constructible = is_constructible_v<_Tp, _Up> && is_convertible_v<_Up, _Tp>;
@@ -83,9 +75,10 @@ template <class _Tp, class _Up>
 inline constexpr bool __opt_is_constructible_from_U =
   !is_same_v<remove_cvref_t<_Up>, in_place_t> && !is_same_v<remove_cvref_t<_Up>, optional<_Tp>>;
 
+// concept to avoid MSVC to eagerly instantiate constructability checks
 template <class _Tp, class _Up>
-inline constexpr bool __opt_is_constructible_from_opt =
-  !is_same_v<_Up, _Tp> && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
+_CCCL_CONCEPT __opt_is_constructible_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
+  (requires(!is_same_v<_Up, _Tp>), requires(!__opt_check_constructible_from_opt_v<_Tp, _Up>));
 
 template <class _Tp, class _Up>
 inline constexpr bool __opt_is_assignable = is_constructible_v<_Tp, _Up> && is_assignable_v<_Tp&, _Up>;
@@ -94,15 +87,15 @@ template <class _Tp, class _Up>
 inline constexpr bool __opt_is_assignable_from_U =
   !is_same_v<remove_cvref_t<_Up>, optional<_Tp>> && (!is_same_v<remove_cvref_t<_Up>, _Tp> || !is_scalar_v<_Tp>);
 
+// concept to avoid MSVC to eagerly instantiate assignability checks
 template <class _Tp, class _Up>
-inline constexpr bool __opt_is_assignable_from_opt =
-  !is_same_v<_Up, _Tp> && !__opt_check_constructible_from_opt<_Tp, _Up>::value
-  && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
+_CCCL_CONCEPT __opt_is_assignable_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
+  (requires(__opt_is_constructible_from_opt<_Tp, _Up>), requires(!__opt_check_assignable_from_opt_v<_Tp, _Up>));
 
 template <class _Tp>
 class optional : private __optional_move_assign_base<_Tp>
 {
-  using __base = __optional_move_assign_base<_Tp>;
+  using __base _CCCL_NODEBUG = __optional_move_assign_base<_Tp>;
 
   template <class>
   friend class optional;
@@ -116,14 +109,13 @@ private:
                 "instantiation of optional with in_place_t is ill-formed");
   static_assert(!is_same_v<remove_cvref_t<value_type>, nullopt_t>,
                 "instantiation of optional with nullopt_t is ill-formed");
-  static_assert(!is_reference_v<value_type>,
-                "instantiation of optional with a reference type is ill-formed. Define "
-                "CCCL_ENABLE_OPTIONAL_REF to enable it as a non-standard extension");
   static_assert(is_destructible_v<value_type>, "instantiation of optional with a non-destructible type is ill-formed");
   static_assert(!is_array_v<value_type>, "instantiation of optional with an array type is ill-formed");
 
 public:
-  _CCCL_API constexpr optional() noexcept {}
+  // Use of {} vs = default is deliberate. = default may value-initialize, while {} is
+  // guaranteed to do absolutely nothing.
+  _CCCL_API constexpr optional() noexcept {} // NOLINT(modernize-use-equals-default)
   _CCCL_HIDE_FROM_ABI constexpr optional(const optional&) = default;
   _CCCL_HIDE_FROM_ABI constexpr optional(optional&&)      = default;
   _CCCL_API constexpr optional(nullopt_t) noexcept {}
@@ -131,26 +123,30 @@ public:
   _CCCL_TEMPLATE(class _In_place_t, class... _Args)
   _CCCL_REQUIRES(is_same_v<_In_place_t, in_place_t> _CCCL_AND is_constructible_v<value_type, _Args...>)
   _CCCL_API constexpr explicit optional(_In_place_t, _Args&&... __args)
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<value_type, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
-      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up = value_type)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr optional(_Up&& __v)
-      : __base(in_place, ::cuda::std::forward<_Up>(__v))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr explicit optional(_Up&& __v)
-      : __base(in_place, ::cuda::std::forward<_Up>(__v))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, const _Up&>)
@@ -166,7 +162,6 @@ public:
     this->__construct_from(__v);
   }
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((is_same_v<remove_cv_t<_Tp>, bool> || __opt_is_constructible_from_opt<_Tp, _Up>)
                    _CCCL_AND __opt_is_implictly_constructible<_Tp, const _Up&>)
@@ -198,21 +193,6 @@ public:
   {
     this->__construct_from(::cuda::std::move(__v));
   }
-#else // ^^^ CCCL_ENABLE_OPTIONAL_REF ^^^ / vvv !CCCL_ENABLE_OPTIONAL_REF vvv
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr optional(optional<_Up>&& __v)
-  {
-    this->__construct_from(::cuda::std::move(__v));
-  }
-
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr explicit optional(optional<_Up>&& __v)
-  {
-    this->__construct_from(::cuda::std::move(__v));
-  }
-#endif // !CCCL_ENABLE_OPTIONAL_REF
 
 private:
   template <class _Fp, class... _Args>
@@ -229,8 +209,8 @@ public:
     return *this;
   }
 
-  constexpr optional& operator=(const optional&) = default;
-  constexpr optional& operator=(optional&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(const optional&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(optional&&)      = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = value_type)
@@ -248,7 +228,6 @@ public:
     return *this;
   }
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_reference_v<_Up>)
                    _CCCL_AND __opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, const _Up&>)
@@ -266,15 +245,6 @@ public:
     this->__assign_from(__v);
     return *this;
   }
-#else // ^^^ CCCL_ENABLE_OPTIONAL_REF ^^^ / vvv !CCCL_ENABLE_OPTIONAL_REF vvv
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, const _Up&>)
-  _CCCL_API constexpr optional& operator=(const optional<_Up>& __v)
-  {
-    this->__assign_from(__v);
-    return *this;
-  }
-#endif // !CCCL_ENABLE_OPTIONAL_REF
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, _Up>)
@@ -571,7 +541,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES optional(_Tp) -> optional<_Tp>;
 
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE
@@ -841,12 +811,7 @@ operator>=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp>
-_CCCL_API constexpr enable_if_t<
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-  is_reference_v<_Tp> ||
-#endif // CCCL_ENABLE_OPTIONAL_REF
-    (is_move_constructible_v<_Tp> && is_swappable_v<_Tp>),
-  void>
+_CCCL_API constexpr enable_if_t<is_reference_v<_Tp> || (is_move_constructible_v<_Tp> && is_swappable_v<_Tp>), void>
 swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);

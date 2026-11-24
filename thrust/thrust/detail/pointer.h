@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A pointer to a variable which resides in memory associated with a
@@ -23,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,23 +19,27 @@
 #endif // no system header
 
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
-#include <cuda/std/__type_traits/is_comparable.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__iterator/iterator_traits.h> // IWYU pragma: keep
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstddef>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__type_traits/void_t.h>
 
 THRUST_NAMESPACE_BEGIN
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
@@ -61,11 +52,11 @@ THRUST_NAMESPACE_END
 template <typename Element, typename Tag, typename Reference, typename Derived>
 struct std::iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
 {
-  using pointer           = THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>;
-  using iterator_category = typename pointer::iterator_category;
-  using value_type        = typename pointer::value_type;
-  using difference_type   = typename pointer::difference_type;
-  using reference         = typename pointer::reference;
+  using pointer           = Element*; // must match the return type of pointer::operator->()
+  using iterator_category = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::iterator_category;
+  using value_type        = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::value_type;
+  using difference_type   = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::difference_type;
+  using reference         = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::reference;
 };
 
 THRUST_NAMESPACE_BEGIN
@@ -77,24 +68,22 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  using value_type = typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
-                                      ::cuda::std::type_identity<void>,
-                                      ::cuda::std::remove_cv<Element>>::type;
+  using value_type = typename ::cuda::std::conditional_t<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
+                                                         ::cuda::std::type_identity<void>,
+                                                         ::cuda::std::remove_cv<Element>>::type;
 
   // if no Derived type is given, just use pointer
-  using derived_type =
-    typename eval_if<::cuda::std::is_same_v<Derived, use_default>,
-                     ::cuda::std::type_identity<pointer<Element, Tag, Reference, Derived>>,
-                     ::cuda::std::type_identity<Derived>>::type;
+  using derived_type = ::cuda::std::
+    conditional_t<::cuda::std::is_same_v<Derived, use_default>, pointer<Element, Tag, Reference, Derived>, Derived>;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
-  using reference_type =
-    typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
-                     ::cuda::std::type_identity<void>,
-                     eval_if<::cuda::std::is_same_v<Reference, use_default>,
-                             ::cuda::std::type_identity<reference<Element, derived_type>>,
-                             ::cuda::std::type_identity<Reference>>>::type;
+  using reference_type = typename ::cuda::std::conditional_t<
+    ::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
+    ::cuda::std::type_identity<void>,
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<Reference, use_default>,
+                               ::cuda::std::type_identity<reference<Element, derived_type>>,
+                               ::cuda::std::type_identity<Reference>>>::type;
 
   using type =
     iterator_adaptor<derived_type, Element*, value_type, Tag, random_access_traversal_tag, reference_type, std::ptrdiff_t>;
@@ -147,7 +136,6 @@ struct pointer_base
 template <typename Element, typename Tag, typename Reference, typename Derived>
 class pointer : public detail::pointer_base<Element, Tag, Reference, Derived>::type
 {
-private:
   using super_t      = typename detail::pointer_base<Element, Tag, Reference, Derived>::type;
   using derived_type = typename detail::pointer_base<Element, Tag, Reference, Derived>::derived_type;
 
@@ -155,7 +143,7 @@ private:
   friend class iterator_core_access;
 
   template <typename SuperRef = typename super_t::reference>
-  _CCCL_HOST_DEVICE SuperRef dereference() const
+  _CCCL_HOST_DEVICE_API SuperRef dereference() const
   {
     const auto& derived_ptr = static_cast<const derived_type&>(*this);
     if constexpr (::cuda::std::is_reference_v<SuperRef>)
@@ -181,12 +169,12 @@ public:
 
   /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
    */
-  _CCCL_HOST_DEVICE pointer()
+  _CCCL_HOST_DEVICE_API pointer()
       : super_t(static_cast<Element*>(nullptr))
   {}
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t)
+  _CCCL_HOST_DEVICE_API pointer(::cuda::std::nullptr_t)
       : super_t(static_cast<Element*>(nullptr))
   {}
 
@@ -197,7 +185,7 @@ public:
    */
   // XXX consider making the pointer implementation a template parameter which defaults to Element *
   template <typename OtherElement>
-  _CCCL_HOST_DEVICE explicit pointer(OtherElement* ptr)
+  _CCCL_HOST_DEVICE_API explicit pointer(OtherElement* ptr)
       : super_t(ptr)
   {}
 
@@ -209,8 +197,8 @@ public:
    *                       and its element type shall be convertible to \p Element.
    */
   template <typename OtherPointer, detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer>* = nullptr>
-  _CCCL_HOST_DEVICE pointer(const OtherPointer& other)
-      : super_t(detail::pointer_traits<OtherPointer>::get(other))
+  _CCCL_HOST_DEVICE_API pointer(const OtherPointer& other)
+      : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle this constructor and creates a duplicate ID with the ctor above
@@ -218,19 +206,24 @@ public:
   // OtherPointer's system shall be convertible to Tag
   template <typename OtherPointer,
             detail::enable_if_void_pointer_is_system_convertible_t<OtherPointer, pointer>* = nullptr>
-  _CCCL_HOST_DEVICE explicit pointer(const OtherPointer& other)
-      : super_t(static_cast<Element*>(detail::pointer_traits<OtherPointer>::get(other)))
+  _CCCL_HOST_DEVICE_API explicit pointer(const OtherPointer& other)
+      : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 #endif
 
   // assignment
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE derived_type& operator=(::cuda::std::nullptr_t)
+  //
+  // pointer is a CRTP base, so derived_type& is the correct return type. Returning pointer&
+  // instead would slice off the derived type.
+  // NOLINTBEGIN(misc-unconventional-assign-operator): CRTP base, see above
+  _CCCL_HOST_DEVICE_API derived_type& operator=(::cuda::std::nullptr_t)
   {
     super_t::base_reference() = nullptr;
     return static_cast<derived_type&>(*this);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assignment operator allows assigning from another pointer-like object whose element type
    *  is convertible to \c Element.
@@ -241,74 +234,77 @@ public:
    *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
    *                       and its element type shall be convertible to \p Element.
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): CRTP base, see above
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
+  _CCCL_HOST_DEVICE_API detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
   operator=(const OtherPointer& other)
   {
-    super_t::base_reference() = detail::pointer_traits<OtherPointer>::get(other);
+    super_t::base_reference() = ::cuda::std::to_address(other);
     return static_cast<derived_type&>(*this);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   // observers
 
   /*! \p get returns this \p pointer's encapsulated raw pointer.
    *  \return This \p pointer's raw pointer.
    */
-  _CCCL_HOST_DEVICE Element* get() const
+  _CCCL_HOST_DEVICE_API Element* get() const
   {
     return super_t::base();
   }
 
-  _CCCL_HOST_DEVICE Element* operator->() const
+  _CCCL_HOST_DEVICE_API Element* operator->() const
   {
     return super_t::base();
   }
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE explicit operator bool() const
+  _CCCL_HOST_DEVICE_API explicit operator bool() const
   {
     return bool(get());
   }
 
-  _CCCL_HOST_DEVICE static derived_type
-  pointer_to(typename detail::pointer_traits_detail::pointer_to_param<Element>::type r)
+  template <class T,
+            ::cuda::std::enable_if_t<(::cuda::std::is_void_v<Element> || ::cuda::std::is_same_v<T, Element>), int> = 0>
+  _CCCL_HOST_DEVICE_API static derived_type pointer_to(T& r)
   {
-    return detail::pointer_traits<derived_type>::pointer_to(r);
+    return static_cast<derived_type>(::cuda::std::addressof(r));
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  template <typename charT, typename traits>
-  _CCCL_HOST friend std::basic_ostream<charT, traits>&
-  operator<<(std::basic_ostream<charT, traits>& os, const pointer& p)
+#if _CCCL_HOSTED()
+  template <typename CharT, typename Traits>
+  _CCCL_HOST_API friend std::basic_ostream<CharT, Traits>&
+  operator<<(std::basic_ostream<CharT, Traits>& os, const pointer& p)
   {
     return os << p.get();
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE friend bool operator==(::cuda::std::nullptr_t, pointer p)
+  _CCCL_HOST_DEVICE_API friend bool operator==(::cuda::std::nullptr_t, pointer p)
   {
     return nullptr == p.get();
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(pointer p, ::cuda::std::nullptr_t)
+  _CCCL_HOST_DEVICE_API friend bool operator==(pointer p, ::cuda::std::nullptr_t)
   {
     return nullptr == p.get();
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(::cuda::std::nullptr_t, pointer p)
+  _CCCL_HOST_DEVICE_API friend bool operator!=(::cuda::std::nullptr_t, pointer p)
   {
     return !(nullptr == p);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(pointer p, ::cuda::std::nullptr_t)
+  _CCCL_HOST_DEVICE_API friend bool operator!=(pointer p, ::cuda::std::nullptr_t)
   {
     return !(nullptr == p);
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
   [[nodiscard]]
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool> operator==(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
   {
@@ -316,13 +312,13 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator==(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator!=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
@@ -331,13 +327,13 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator!=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
@@ -346,13 +342,13 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator>=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
@@ -361,13 +357,13 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator>=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator>(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
@@ -376,13 +372,13 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator>(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
@@ -391,7 +387,7 @@ public:
   }
 
   template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
-  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+  _CCCL_HOST_DEVICE_API friend ::cuda::std::enable_if_t<
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
@@ -401,3 +397,37 @@ public:
  */
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// Specialize pointer traits for everything that has the raw_pointer alias
+template <typename Pointer>
+struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
+{
+  using pointer         = Pointer;
+  using element_type    = remove_pointer_t<typename Pointer::raw_pointer>;
+  using difference_type = ptrdiff_t;
+
+  template <typename U>
+  using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
+
+  // Backwards compatibility with thrust::detail::pointer_traits
+  using raw_pointer = typename pointer::raw_pointer;
+
+  // Thrust historically provided a non-standard pointer_to for pointer<void>
+  template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  {
+    return static_cast<element_type*>(::cuda::std::addressof(r));
+  }
+
+  //! @brief Retrieve the address of the element pointed at by an thrust pointer
+  //! @param iter A thrust::pointer
+  //! @return A pointer to the element pointed to by the thrust pointer
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  {
+    return iter.get();
+  }
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD

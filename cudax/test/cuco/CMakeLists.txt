@@ -1,0 +1,15 @@
+#===----------------------------------------------------------------------===##
+#
+# Part of CUDA Experimental in CUDA C++ Core Libraries,
+# under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+#
+#===----------------------------------------------------------------------===##
+
+add_subdirectory(fixed_capacity_map)
+add_subdirectory(fixed_capacity_set)
+add_subdirectory(hyperloglog)
+add_subdirectory(bloom_filter)
+add_subdirectory(utility)

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/iterator_adaptor.h
  *  \brief An iterator which adapts a base iterator
@@ -33,7 +20,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,6 +30,13 @@
 #include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_facade.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _THRUST_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -144,12 +138,12 @@ protected:
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
    */
-  iterator_adaptor() = default;
+  _CCCL_HIDE_FROM_ABI iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
+  _CCCL_HOST_DEVICE_API explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
   {}
 
@@ -167,7 +161,7 @@ public:
 
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base() const
+  _CCCL_HOST_DEVICE_API Base const& base() const
   {
     return m_iterator;
   }
@@ -175,14 +169,14 @@ public:
 protected:
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base_reference() const
+  _CCCL_HOST_DEVICE_API Base const& base_reference() const
   {
     return m_iterator;
   }
 
   /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base& base_reference()
+  _CCCL_HOST_DEVICE_API Base& base_reference()
   {
     return m_iterator;
   }
@@ -192,20 +186,20 @@ protected:
 
 private: // Core iterator interface for iterator_facade
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return *m_iterator;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
+  _CCCL_HOST_DEVICE_API bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
   {
     return m_iterator == x.base();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(difference_type n)
   {
     // XXX statically assert on random_access_traversal_tag
 
@@ -215,13 +209,13 @@ private: // Core iterator interface for iterator_facade
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     ++m_iterator;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     // XXX statically assert on bidirectional_traversal_tag
     --m_iterator;
@@ -229,13 +223,12 @@ private: // Core iterator interface for iterator_facade
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE difference_type
+  _CCCL_HOST_DEVICE_API difference_type
   distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
   {
     return y.base() - m_iterator;
   }
 
-private:
   Base m_iterator;
 
   /*! \endcond
@@ -249,3 +242,8 @@ private:
  */
 
 THRUST_NAMESPACE_END
+
+#ifdef _THRUST_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _THRUST_POP_MACRO_empty_bases
+#endif // defined(_THRUST_POP_MACRO_empty_bases)

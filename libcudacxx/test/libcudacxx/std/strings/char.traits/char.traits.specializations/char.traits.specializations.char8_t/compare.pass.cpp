@@ -10,7 +10,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
 #if _CCCL_HAS_CHAR8_T()
   assert(cuda::std::char_traits<char8_t>::compare(u8"", u8"", 0) == 0);

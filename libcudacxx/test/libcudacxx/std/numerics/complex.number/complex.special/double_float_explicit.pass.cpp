@@ -15,7 +15,7 @@
 //     constexpr complex(const complex<float>&);
 // };
 
-#if defined(__clang__)
+#ifdef __clang__
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER_CLANG
 #elif defined(_MSC_VER)
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER_MSVC
@@ -39,13 +39,12 @@ int main(int, char**)
   {
     constexpr cuda::std::complex<float> cd(2.5, 3.5);
     constexpr cuda::std::complex<double> cf(cd);
-    static_assert(cf.real() == cd.real(), "");
-    static_assert(cf.imag() == cd.imag(), "");
+    static_assert(cf.real() == cd.real());
+    static_assert(cf.imag() == cd.imag());
   }
 
   static_assert(cuda::std::is_same<cuda::std::common_type<cuda::std::complex<double>, cuda::std::complex<float>>::type,
-                                   cuda::std::complex<cuda::std::common_type<double, float>::type>>::value,
-                "");
+                                   cuda::std::complex<cuda::std::common_type<double, float>::type>>::value);
 
   return 0;
 }

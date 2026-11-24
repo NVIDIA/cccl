@@ -14,25 +14,26 @@
 #include "test_macros.h"
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index < VSize), int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert((expected_type<VType, BaseType, Index>::value), "");
-  static_assert((expected_type<const VType, const BaseType, Index>::value), "");
-  static_assert((expected_type<volatile VType, volatile BaseType, Index>::value), "");
-  static_assert((expected_type<const volatile VType, const volatile BaseType, Index>::value), "");
+  static_assert((expected_type<VType, BaseType, Index>::value));
+  static_assert((expected_type<const VType, const BaseType, Index>::value));
+  static_assert((expected_type<volatile VType, volatile BaseType, Index>::value));
+  static_assert((expected_type<const volatile VType, const volatile BaseType, Index>::value));
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index >= VSize), int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {}
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test<VType, BaseType, VSize, 0>();
   test<VType, BaseType, VSize, 1>();
@@ -46,7 +47,7 @@ __host__ __device__ constexpr void test()
   test<Type##3, BaseType, 3>();            \
   test<Type##4, BaseType, 4>();
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -80,6 +81,11 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat162, __nv_bfloat16, 2>();
 #endif // _CCCL_HAS_NVBF16()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8x2_ue5m3, __nv_fp8_ue5m3, 2>();
+  test<__nv_fp8x4_ue5m3, __nv_fp8_ue5m3, 4>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();

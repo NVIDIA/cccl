@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__latch/latch.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -32,7 +32,7 @@ template <thread_scope _Sco>
 class latch : public ::cuda::std::__latch_base<_Sco>
 {
 public:
-  _CCCL_API constexpr latch(::cuda::std::ptrdiff_t __count)
+  _CCCL_HOST_DEVICE_API constexpr latch(::cuda::std::ptrdiff_t __count)
       : ::cuda::std::__latch_base<_Sco>(__count)
   {}
 };

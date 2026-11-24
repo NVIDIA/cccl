@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file generate.h
  *  \brief Fills a range with values "generated" from a function of no arguments
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -77,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Generator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator first,
          ForwardIterator last,
@@ -119,7 +106,7 @@ generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Generator>
-void generate(ForwardIterator first, ForwardIterator last, Generator gen);
+_CCCL_HOST_API void generate(ForwardIterator first, ForwardIterator last, Generator gen);
 
 /*! \p generate_n assigns the result of invoking \p gen, a function object that takes no arguments,
  *  to each element in the range <tt>[first,first + n)</tt>. The return value is <tt>first + n</tt>.
@@ -161,7 +148,7 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename Generator>
-_CCCL_HOST_DEVICE OutputIterator generate_n(
+_CCCL_HOST_DEVICE_API OutputIterator generate_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, Generator gen);
 
 /*! \p generate_n assigns the result of invoking \p gen, a function object that takes no arguments,
@@ -199,11 +186,11 @@ _CCCL_HOST_DEVICE OutputIterator generate_n(
  *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename Generator>
-OutputIterator generate_n(OutputIterator first, Size n, Generator gen);
+_CCCL_HOST_API OutputIterator generate_n(OutputIterator first, Size n, Generator gen);
 
 /*! \} // end transformations
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/generate.inl>
+#include <thrust/detail/generate.inl> // IWYU pragma: export

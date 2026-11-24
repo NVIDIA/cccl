@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -68,13 +68,13 @@ struct __builtin_new_allocator
   }
 
   template <class _Tp>
-  _CCCL_NODEBUG_ALIAS _CCCL_API inline static __holder_t __allocate_type(size_t __n)
+  _CCCL_NODEBUG _CCCL_API inline static __holder_t __allocate_type(size_t __n)
   {
     return __allocate_bytes(__n * sizeof(_Tp), alignof(_Tp));
   }
 
   template <class _Tp>
-  _CCCL_NODEBUG_ALIAS _CCCL_API inline static void __deallocate_type(void* __p, size_t __n) noexcept
+  _CCCL_NODEBUG _CCCL_API inline static void __deallocate_type(void* __p, size_t __n) noexcept
   {
     __deallocate_bytes(__p, __n * sizeof(_Tp), alignof(_Tp));
   }

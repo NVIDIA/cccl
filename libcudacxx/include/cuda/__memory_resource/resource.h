@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,11 +29,8 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
-#  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #  include <cuda/std/__type_traits/fold.h>
-#  include <cuda/std/__type_traits/is_same.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -44,8 +41,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! We require that a resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alignment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
+//!   - ``allocate_sync(size_t bytes, size_t alignment)``
+//!   - ``deallocate_sync(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
@@ -63,8 +60,8 @@ _CCCL_CONCEPT synchronous_resource =
 //! @rst
 //! We require that an resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alignment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
+//!   - ``allocate_sync(size_t bytes, size_t alignment)``
+//!   - ``deallocate_sync(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
@@ -88,7 +85,7 @@ _CCCL_CONCEPT resource = _CCCL_REQUIRES_EXPR(
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
   requires(synchronous_resource<_Resource>),
-  requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(::cuda::std::__fold_and_v<has_property<_Resource, _Properties>...>));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource`
 //! concept and also satisfies all the provided Properties
@@ -97,13 +94,13 @@ _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variad
 // We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
-  requires(resource<_Resource>), requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(resource<_Resource>), requires(::cuda::std::__fold_and_v<has_property<_Resource, _Properties>...>));
 
 template <bool _Convertible>
 struct __different_resource__
 {
   template <class _OtherResource>
-  static constexpr bool __value(_OtherResource*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(_OtherResource*) noexcept
   {
     return synchronous_resource<_OtherResource>;
   }
@@ -112,7 +109,7 @@ struct __different_resource__
 template <>
 struct __different_resource__<true>
 {
-  static constexpr bool __value(void*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(void*) noexcept
   {
     return false;
   }

@@ -53,7 +53,7 @@
 #include <string.h>
 
 // Utilities and system includes
-#include <cuda/experimental/__stf/places/blocked_partition.cuh>
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <cooperative_groups.h>
@@ -437,7 +437,7 @@ int main()
   auto handle_x          = ctx.logical_data(x, {(unsigned) N});
   auto handle_dot_result = ctx.logical_data(dot_result, {(unsigned) 1});
 
-  // std::cout << "\nRunning on GPUs = " << kNumGpusRequired << std::endl;
+  // std::cout << "\nRunning on GPUs = " << kNumGpusRequired << '\n';
   const int sMemSize = sizeof(double) * ((THREADS_PER_BLOCK / 32) + 1);
 
   // auto all_devs = exec_place::repeat<blocked_partition>(exec_place::device(0), kNumGpusRequired);

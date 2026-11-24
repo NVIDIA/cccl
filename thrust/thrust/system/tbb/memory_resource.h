@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #include <thrust/system/tbb/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system::tbb
+namespace system::tbb // NOLINT(modernize-concat-nested-namespaces)
 {
 //! \cond
 namespace detail

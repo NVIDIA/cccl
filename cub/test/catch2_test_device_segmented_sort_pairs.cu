@@ -5,7 +5,8 @@
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
@@ -33,7 +34,7 @@ using pair_types =
 
 #if TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")
+CUB_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]", CUB_SMALL)
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -45,7 +46,7 @@ C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][devi
   const bool sort_descending = GENERATE(ascending, descending);
   const bool sort_buffer     = GENERATE(pointers, double_buffer);
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -67,7 +68,7 @@ C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][devi
   REQUIRE(values_buffer.selector == 1);
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][device]")
+CUB_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][device]", CUB_SMALL)
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -83,7 +84,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   c2h::device_vector<int> offsets(num_segments + 1, int{});
   const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -107,8 +108,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
 
 #endif // TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
+CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
          "[pairs][segmented][sort][device][skip-cs-racecheck]",
+         CUB_SMALL,
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -128,8 +130,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
   test_same_size_segments_derived<KeyT, ValueT>(segment_size, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
+CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
          "[pairs][segmented][sort][device][skip-cs-racecheck]",
+         CUB_SMALL,
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -149,8 +152,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
   test_random_size_segments_derived<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
+CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
          "[pairs][segmented][sort][device][skip-cs-racecheck]",
+         CUB_SMALL,
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -166,8 +170,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values"
   test_random_size_segments_random<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
+CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
          "[pairs][segmented][sort][device]",
+         CUB_SMALL,
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -177,8 +182,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
   test_edge_case_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
+CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
          "[pairs][segmented][sort][device]",
+         CUB_SMALL,
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -190,8 +196,9 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
 
 #if TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
+CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
@@ -212,7 +219,7 @@ try
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
   constexpr auto max_histo_size = 250;
-  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  segmented_verification_helper<key_t> verification_helper{max_histo_size}; // NOLINT(misc-const-correctness)
   verification_helper.prepare_input_data(in_keys);
   thrust::copy(in_keys.cbegin(), in_keys.cend(), in_values.begin());
 
@@ -241,13 +248,14 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments",
          "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
@@ -293,9 +301,9 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 #endif // TEST_TYPES == 0

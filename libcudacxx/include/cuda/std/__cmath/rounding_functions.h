@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,20 +21,114 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/fenv.h>
+#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_FLOAT128()
+// Portable truncation of __float128, used when neither a host builtin nor a device intrinsic is available
+[[nodiscard]] _CCCL_API inline __float128 __trunc_fp128_impl(__float128 __x) noexcept
+{
+  using __storage_t          = __fp_storage_of_t<__float128>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
+  const auto __bits          = ::cuda::std::__fp_get_storage(__x);
+  const int __exp            = ::cuda::std::__fp_get_exp(__x);
+
+  if (__exp >= __mant_nbits)
+  {
+    // already integral, infinity or NaN
+    return __x;
+  }
+  if (__exp < 0)
+  {
+    // |x| < 1 rounds to a zero of the same sign
+    return ::cuda::std::__fp_from_storage<__float128>(
+      static_cast<__storage_t>(__bits & __fp_sign_mask_of_v<__float128>));
+  }
+  const __storage_t __frac_mask = static_cast<__storage_t>(__fp_mant_mask_of_v<__float128> >> __exp);
+  return ::cuda::std::__fp_from_storage<__float128>(static_cast<__storage_t>(__bits & ~__frac_mask));
+}
+
+// rint of __float128 is shared by llrint, lrint, nearbyint and rint, so it is defined ahead of all of them
+#  if _CCCL_CHECK_BUILTIN(builtin_rintf128)
+#    define _CCCL_BUILTIN_RINTF128(...) __builtin_rintf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_rintf128)
+
+// nvcc doesn't implement __builtin_rintf128 on device
+#  if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#    undef _CCCL_BUILTIN_RINTF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+[[nodiscard]] _CCCL_API inline __float128 __rint_fp128(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_RINTF128
+  return _CCCL_BUILTIN_RINTF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_RINTF128 ^^^ / vvv !_CCCL_BUILTIN_RINTF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_rint(__x);))
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
+
+  if (::cuda::std::__fp_get_exp(__x) >= __mant_nbits)
+  {
+    // already integral, infinity or NaN
+    return __x;
+  }
+  // The ulp of 2^112 is 1, so adding it rounds |x| to an integer in the current rounding mode (raising FE_INEXACT
+  // when needed) and subtracting it again is exact
+  constexpr __float128 __two_112 = __float128(1ull << 56) * __float128(1ull << 56);
+  const __float128 __r = ::cuda::std::signbit(__x) ? (__x - __two_112) + __two_112 : (__x + __two_112) - __two_112;
+  // a zero result keeps the sign of the argument
+  return ::cuda::std::copysign(__r, __x);
+#  endif // ^^^ !_CCCL_BUILTIN_RINTF128 ^^^
+}
+
+template <class _Integer>
+[[nodiscard]] _CCCL_API _Integer __lrint_fp128(__float128 __x) noexcept
+{
+  const __float128 __r = ::cuda::std::__rint_fp128(__x);
+  // -min() is a power of two, so the bounds are exact
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  if (__r >= -__bound && __r < __bound)
+  {
+    return static_cast<_Integer>(__r);
+  }
+  // The result is unspecified for NaN and out of range values. Avoid the undefined conversion and return min(), as
+  // the x86 conversion instructions do
+  return numeric_limits<_Integer>::min();
+}
+
+// llround and lround are defined before round
+[[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept;
+
+template <class _Integer>
+[[nodiscard]] _CCCL_API _Integer __lround_fp128(__float128 __x) noexcept
+{
+  const __float128 __r = ::cuda::std::round(__x);
+  // -min() is a power of two, so the bounds are exact
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  if (__r >= -__bound && __r < __bound)
+  {
+    return static_cast<_Integer>(__r);
+  }
+  // The result is unspecified for NaN and out of range values, and converting them is undefined, so return min() like
+  // the x86 conversion instructions do
+  return numeric_limits<_Integer>::min();
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 // ceil
 
@@ -44,9 +138,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_CEILL(...) __builtin_ceill(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ceil)
 
+#if _CCCL_HAS_FLOAT128()
+// Unlike __builtin_fabsf128, older gcc (e.g. gcc-7) lacks the f128 rounding builtins, so rely on __has_builtin only
+#  if _CCCL_CHECK_BUILTIN(builtin_ceilf128)
+#    define _CCCL_BUILTIN_CEILF128(...) __builtin_ceilf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_ceilf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_ceilf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CEILF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 [[nodiscard]] _CCCL_API inline float ceil(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CEILF)
+#ifdef _CCCL_BUILTIN_CEILF
   return _CCCL_BUILTIN_CEILF(__x);
 #else // ^^^ _CCCL_BUILTIN_CEILF ^^^ // vvv !_CCCL_BUILTIN_CEILF vvv
   return ::ceilf(__x);
@@ -55,7 +161,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float ceilf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CEILF)
+#ifdef _CCCL_BUILTIN_CEILF
   return _CCCL_BUILTIN_CEILF(__x);
 #else // ^^^ _CCCL_BUILTIN_CEILF ^^^ // vvv !_CCCL_BUILTIN_CEILF vvv
   return ::ceilf(__x);
@@ -64,7 +170,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double ceil(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CEIL)
+#ifdef _CCCL_BUILTIN_CEIL
   return _CCCL_BUILTIN_CEIL(__x);
 #else // ^^^ _CCCL_BUILTIN_CEIL ^^^ // vvv !_CCCL_BUILTIN_CEIL vvv
   return ::ceil(__x);
@@ -74,7 +180,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double ceil(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_CEILL)
+#  ifdef _CCCL_BUILTIN_CEILL
   return _CCCL_BUILTIN_CEILL(__x);
 #  else // ^^^ _CCCL_BUILTIN_CEILL ^^^ // vvv !_CCCL_BUILTIN_CEILL vvv
   return ::ceill(__x);
@@ -82,7 +188,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 [[nodiscard]] _CCCL_API inline long double ceill(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_CEILL)
+#  ifdef _CCCL_BUILTIN_CEILL
   return _CCCL_BUILTIN_CEILL(__x);
 #  else // ^^^ _CCCL_BUILTIN_CEILL ^^^ // vvv !_CCCL_BUILTIN_CEILL vvv
   return ::ceill(__x);
@@ -105,6 +211,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 ceil(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_CEILF128
+  return _CCCL_BUILTIN_CEILF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_CEILF128 ^^^ / vvv !_CCCL_BUILTIN_CEILF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_ceil(__x);))
+  const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
+  return (__t < __x) ? __t + 1 : __t;
+#  endif // ^^^ !_CCCL_BUILTIN_CEILF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double ceil(_Integer __x) noexcept
 {
@@ -119,9 +238,20 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_FLOORL(...) __builtin_floorl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_floor)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_floorf128)
+#    define _CCCL_BUILTIN_FLOORF128(...) __builtin_floorf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_floorf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_floorf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_FLOORF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 [[nodiscard]] _CCCL_API inline float floor(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FLOORF)
+#ifdef _CCCL_BUILTIN_FLOORF
   return _CCCL_BUILTIN_FLOORF(__x);
 #else // ^^^ _CCCL_BUILTIN_FLOORF ^^^ // vvv !_CCCL_BUILTIN_FLOORF vvv
   return ::floorf(__x);
@@ -130,7 +260,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float floorf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FLOORF)
+#ifdef _CCCL_BUILTIN_FLOORF
   return _CCCL_BUILTIN_FLOORF(__x);
 #else // ^^^ _CCCL_BUILTIN_FLOORF ^^^ // vvv !_CCCL_BUILTIN_FLOORF vvv
   return ::floorf(__x);
@@ -139,7 +269,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double floor(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FLOOR)
+#ifdef _CCCL_BUILTIN_FLOOR
   return _CCCL_BUILTIN_FLOOR(__x);
 #else // ^^^ _CCCL_BUILTIN_FLOOR ^^^ // vvv !_CCCL_BUILTIN_FLOOR vvv
   return ::floor(__x);
@@ -149,7 +279,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double floor(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FLOORL)
+#  ifdef _CCCL_BUILTIN_FLOORL
   return _CCCL_BUILTIN_FLOORL(__x);
 #  else // ^^^ _CCCL_BUILTIN_FLOORL ^^^ // vvv !_CCCL_BUILTIN_FLOORL vvv
   return ::floorl(__x);
@@ -158,7 +288,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double floorl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FLOORL)
+#  ifdef _CCCL_BUILTIN_FLOORL
   return _CCCL_BUILTIN_FLOORL(__x);
 #  else // ^^^ _CCCL_BUILTIN_FLOORL ^^^ // vvv !_CCCL_BUILTIN_FLOORL vvv
   return ::floorl(__x);
@@ -180,6 +310,19 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
     NV_IS_DEVICE, (return ::hfloor(__x);), (return __float2bfloat16(::cuda::std::floor(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 floor(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_FLOORF128
+  return _CCCL_BUILTIN_FLOORF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_FLOORF128 ^^^ / vvv !_CCCL_BUILTIN_FLOORF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_floor(__x);))
+  const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
+  return (__t > __x) ? __t - 1 : __t;
+#  endif // ^^^ !_CCCL_BUILTIN_FLOORF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double floor(_Integer __x) noexcept
@@ -204,7 +347,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 _CCCL_API inline long long llrint(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLRINTF)
+#ifdef _CCCL_BUILTIN_LLRINTF
   return _CCCL_BUILTIN_LLRINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_LLRINTF ^^^ // vvv !_CCCL_BUILTIN_LLRINTF vvv
   return ::llrintf(__x);
@@ -213,7 +356,7 @@ _CCCL_API inline long long llrint(float __x) noexcept
 
 _CCCL_API inline long long llrintf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLRINTF)
+#ifdef _CCCL_BUILTIN_LLRINTF
   return _CCCL_BUILTIN_LLRINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_LLRINTF ^^^ // vvv !_CCCL_BUILTIN_LLRINTF vvv
   return ::llrintf(__x);
@@ -222,7 +365,7 @@ _CCCL_API inline long long llrintf(float __x) noexcept
 
 _CCCL_API inline long long llrint(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLRINT)
+#ifdef _CCCL_BUILTIN_LLRINT
   return _CCCL_BUILTIN_LLRINT(__x);
 #else // ^^^ _CCCL_BUILTIN_LLRINT ^^^ // vvv !_CCCL_BUILTIN_LLRINT vvv
   return ::llrint(__x);
@@ -232,7 +375,7 @@ _CCCL_API inline long long llrint(double __x) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline long long llrint(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LLRINTL)
+#  ifdef _CCCL_BUILTIN_LLRINTL
   return _CCCL_BUILTIN_LLRINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LLRINTL ^^^ // vvv !_CCCL_BUILTIN_LLRINTL vvv
   return ::llrintl(__x);
@@ -241,7 +384,7 @@ _CCCL_API inline long long llrint(long double __x) noexcept
 
 _CCCL_API inline long long llrintl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LLRINTL)
+#  ifdef _CCCL_BUILTIN_LLRINTL
   return _CCCL_BUILTIN_LLRINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LLRINTL ^^^ // vvv !_CCCL_BUILTIN_LLRINTL vvv
   return ::llrintl(__x);
@@ -262,6 +405,13 @@ _CCCL_API inline long long llrintl(long double __x) noexcept
   return ::cuda::std::llrintf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long long llrint(__float128 __x) noexcept
+{
+  return ::cuda::std::__lrint_fp128<long long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llrint(_Integer __x) noexcept
@@ -286,7 +436,7 @@ _CCCL_API inline long long llrint(_Integer __x) noexcept
 
 _CCCL_API inline long long llround(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLROUNDF)
+#ifdef _CCCL_BUILTIN_LLROUNDF
   return _CCCL_BUILTIN_LLROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_LLROUNDF ^^^ // vvv !_CCCL_BUILTIN_LLROUNDF vvv
   return ::llroundf(__x);
@@ -295,7 +445,7 @@ _CCCL_API inline long long llround(float __x) noexcept
 
 _CCCL_API inline long long llroundf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLROUNDF)
+#ifdef _CCCL_BUILTIN_LLROUNDF
   return _CCCL_BUILTIN_LLROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_LLROUNDF ^^^ // vvv !_CCCL_BUILTIN_LLROUNDF vvv
   return ::llroundf(__x);
@@ -304,7 +454,7 @@ _CCCL_API inline long long llroundf(float __x) noexcept
 
 _CCCL_API inline long long llround(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LLROUND)
+#ifdef _CCCL_BUILTIN_LLROUND
   return _CCCL_BUILTIN_LLROUND(__x);
 #else // ^^^ _CCCL_BUILTIN_LLROUND ^^^ // vvv !_CCCL_BUILTIN_LLROUND vvv
   return ::llround(__x);
@@ -314,7 +464,7 @@ _CCCL_API inline long long llround(double __x) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline long long llround(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LLROUNDL)
+#  ifdef _CCCL_BUILTIN_LLROUNDL
   return _CCCL_BUILTIN_LLROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LLROUNDL ^^^ // vvv !_CCCL_BUILTIN_LLROUNDL vvv
   return ::llroundl(__x);
@@ -323,7 +473,7 @@ _CCCL_API inline long long llround(long double __x) noexcept
 
 _CCCL_API inline long long llroundl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LLROUNDL)
+#  ifdef _CCCL_BUILTIN_LLROUNDL
   return _CCCL_BUILTIN_LLROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LLROUNDL ^^^ // vvv !_CCCL_BUILTIN_LLROUNDL vvv
   return ::llroundl(__x);
@@ -344,6 +494,13 @@ _CCCL_API inline long long llroundl(long double __x) noexcept
   return ::cuda::std::llroundf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long long llround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llround(_Integer __x) noexcept
@@ -368,7 +525,7 @@ _CCCL_API inline long long llround(_Integer __x) noexcept
 
 _CCCL_API inline long lrint(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LRINTF)
+#ifdef _CCCL_BUILTIN_LRINTF
   return _CCCL_BUILTIN_LRINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_LRINTF ^^^ // vvv !_CCCL_BUILTIN_LRINTF vvv
   return ::lrintf(__x);
@@ -377,7 +534,7 @@ _CCCL_API inline long lrint(float __x) noexcept
 
 _CCCL_API inline long lrintf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LRINTF)
+#ifdef _CCCL_BUILTIN_LRINTF
   return _CCCL_BUILTIN_LRINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_LRINTF ^^^ // vvv !_CCCL_BUILTIN_LRINTF vvv
   return ::lrintf(__x);
@@ -386,7 +543,7 @@ _CCCL_API inline long lrintf(float __x) noexcept
 
 _CCCL_API inline long lrint(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LRINT)
+#ifdef _CCCL_BUILTIN_LRINT
   return _CCCL_BUILTIN_LRINT(__x);
 #else // ^^^ _CCCL_BUILTIN_LRINT ^^^ // vvv !_CCCL_BUILTIN_LRINT vvv
   return ::lrint(__x);
@@ -396,7 +553,7 @@ _CCCL_API inline long lrint(double __x) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline long lrint(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LRINTL)
+#  ifdef _CCCL_BUILTIN_LRINTL
   return _CCCL_BUILTIN_LRINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LRINTL ^^^ // vvv !_CCCL_BUILTIN_LRINTL vvv
   return ::lrintl(__x);
@@ -405,7 +562,7 @@ _CCCL_API inline long lrint(long double __x) noexcept
 
 _CCCL_API inline long lrintl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LRINTL)
+#  ifdef _CCCL_BUILTIN_LRINTL
   return _CCCL_BUILTIN_LRINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LRINTL ^^^ // vvv !_CCCL_BUILTIN_LRINTL vvv
   return ::lrintl(__x);
@@ -426,6 +583,13 @@ _CCCL_API inline long lrintl(long double __x) noexcept
   return ::cuda::std::lrintf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long lrint(__float128 __x) noexcept
+{
+  return ::cuda::std::__lrint_fp128<long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lrint(_Integer __x) noexcept
@@ -450,7 +614,7 @@ _CCCL_API inline long lrint(_Integer __x) noexcept
 
 _CCCL_API inline long lround(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LROUNDF)
+#ifdef _CCCL_BUILTIN_LROUNDF
   return _CCCL_BUILTIN_LROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_LROUNDF ^^^ // vvv !_CCCL_BUILTIN_LROUNDF vvv
   return ::lroundf(__x);
@@ -459,7 +623,7 @@ _CCCL_API inline long lround(float __x) noexcept
 
 _CCCL_API inline long lroundf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LROUNDF)
+#ifdef _CCCL_BUILTIN_LROUNDF
   return _CCCL_BUILTIN_LROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_LROUNDF ^^^ // vvv !_CCCL_BUILTIN_LROUNDF vvv
   return ::lroundf(__x);
@@ -468,7 +632,7 @@ _CCCL_API inline long lroundf(float __x) noexcept
 
 _CCCL_API inline long lround(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LROUND)
+#ifdef _CCCL_BUILTIN_LROUND
   return _CCCL_BUILTIN_LROUND(__x);
 #else // ^^^ _CCCL_BUILTIN_LROUND ^^^ // vvv !_CCCL_BUILTIN_LROUND vvv
   return ::lround(__x);
@@ -478,7 +642,7 @@ _CCCL_API inline long lround(double __x) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline long lround(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LROUNDL)
+#  ifdef _CCCL_BUILTIN_LROUNDL
   return _CCCL_BUILTIN_LROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LROUNDL ^^^ // vvv !_CCCL_BUILTIN_LROUNDL vvv
   return ::lroundl(__x);
@@ -487,7 +651,7 @@ _CCCL_API inline long lround(long double __x) noexcept
 
 _CCCL_API inline long lroundl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LROUNDL)
+#  ifdef _CCCL_BUILTIN_LROUNDL
   return _CCCL_BUILTIN_LROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LROUNDL ^^^ // vvv !_CCCL_BUILTIN_LROUNDL vvv
   return ::lroundl(__x);
@@ -509,6 +673,13 @@ _CCCL_API inline long lroundl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long lround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lround(_Integer __x) noexcept
 {
@@ -523,9 +694,18 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 #  define _CCCL_BUILTIN_NEARBYINTL(...) __builtin_nearbyintl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nearbyint)
 
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
+#  define _CCCL_BUILTIN_NEARBYINTF128(...) __builtin_nearbyintf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
+
+// nvcc doesn't implement __builtin_nearbyintf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_NEARBYINTF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 [[nodiscard]] _CCCL_API inline float nearbyint(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEARBYINTF)
+#ifdef _CCCL_BUILTIN_NEARBYINTF
   return _CCCL_BUILTIN_NEARBYINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_NEARBYINTF ^^^ // vvv !_CCCL_BUILTIN_NEARBYINTF vvv
   return ::nearbyintf(__x);
@@ -534,7 +714,7 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 
 [[nodiscard]] _CCCL_API inline float nearbyintf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEARBYINTF)
+#ifdef _CCCL_BUILTIN_NEARBYINTF
   return _CCCL_BUILTIN_NEARBYINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_NEARBYINTF ^^^ // vvv !_CCCL_BUILTIN_NEARBYINTF vvv
   return ::nearbyintf(__x);
@@ -543,7 +723,7 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 
 [[nodiscard]] _CCCL_API inline double nearbyint(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEARBYINT)
+#ifdef _CCCL_BUILTIN_NEARBYINT
   return _CCCL_BUILTIN_NEARBYINT(__x);
 #else // ^^^ _CCCL_BUILTIN_NEARBYINT ^^^ // vvv !_CCCL_BUILTIN_NEARBYINT vvv
   return ::nearbyint(__x);
@@ -553,7 +733,7 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double nearbyint(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEARBYINTL)
+#  ifdef _CCCL_BUILTIN_NEARBYINTL
   return _CCCL_BUILTIN_NEARBYINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_NEARBYINTL ^^^ // vvv !_CCCL_BUILTIN_NEARBYINTL vvv
   return ::nearbyintl(__x);
@@ -562,7 +742,7 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 
 [[nodiscard]] _CCCL_API inline long double nearbyintl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEARBYINTL)
+#  ifdef _CCCL_BUILTIN_NEARBYINTL
   return _CCCL_BUILTIN_NEARBYINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_NEARBYINTL ^^^ // vvv !_CCCL_BUILTIN_NEARBYINTL vvv
   return ::nearbyintl(__x);
@@ -583,6 +763,38 @@ _CCCL_API inline long lround(_Integer __x) noexcept
   return __float2bfloat16(::cuda::std::nearbyintf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 nearbyint(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_NEARBYINTF128
+  return _CCCL_BUILTIN_NEARBYINTF128(__x);
+#  elif _CCCL_HOSTED() // ^^^ _CCCL_BUILTIN_NEARBYINTF128 ^^^ / vvv _CCCL_HOSTED() vvv
+  // Only differs from rint in not raising FE_INEXACT, which only matters on the host as the device has no floating
+  // point exceptions. feholdexcept masks the traps while rounding and fesetenv discards the raised flags, which can
+  // only be FE_INEXACT as rint returns NaN and infinity before any arithmetic. The volatile keeps the rounding between
+  // the two calls. There is no way to recover if fesetenv fails, so its result is ignored
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      ::fenv_t __env;
+                      if (::feholdexcept(&__env) != 0)
+                      {
+                        // The environment may not have been saved, so it can not be restored and FE_INEXACT may be
+                        // raised
+                        return ::cuda::std::__rint_fp128(__x);
+                      }
+                      volatile __float128 __result = __x;
+                      __result                     = ::cuda::std::__rint_fp128(__result);
+                      ::fesetenv(&__env);
+                      return __result;
+                    }),
+                    (return ::cuda::std::__rint_fp128(__x);))
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  // Without <fenv.h> the environment can not be saved, so freestanding hosts may raise FE_INEXACT here
+  return ::cuda::std::__rint_fp128(__x);
+#  endif // ^^^ !_CCCL_HOSTED() ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double nearbyint(_Integer __x) noexcept
@@ -607,7 +819,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 _CCCL_API inline float nextafter(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEXTAFTERF)
+#ifdef _CCCL_BUILTIN_NEXTAFTERF
   return _CCCL_BUILTIN_NEXTAFTERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_NEXTAFTERF ^^^ // vvv !_CCCL_BUILTIN_NEXTAFTERF vvv
   return ::nextafterf(__x, __y);
@@ -616,7 +828,7 @@ _CCCL_API inline float nextafter(float __x, float __y) noexcept
 
 _CCCL_API inline float nextafterf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEXTAFTERF)
+#ifdef _CCCL_BUILTIN_NEXTAFTERF
   return _CCCL_BUILTIN_NEXTAFTERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_NEXTAFTERF ^^^ // vvv !_CCCL_BUILTIN_NEXTAFTERF vvv
   return ::nextafterf(__x, __y);
@@ -625,7 +837,7 @@ _CCCL_API inline float nextafterf(float __x, float __y) noexcept
 
 _CCCL_API inline double nextafter(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_NEXTAFTER)
+#ifdef _CCCL_BUILTIN_NEXTAFTER
   return _CCCL_BUILTIN_NEXTAFTER(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_NEXTAFTER ^^^ // vvv !_CCCL_BUILTIN_NEXTAFTER vvv
   return ::nextafter(__x, __y);
@@ -635,7 +847,7 @@ _CCCL_API inline double nextafter(double __x, double __y) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline long double nextafter(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTAFTERL)
+#  ifdef _CCCL_BUILTIN_NEXTAFTERL
   return _CCCL_BUILTIN_NEXTAFTERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTAFTERL ^^^ // vvv !_CCCL_BUILTIN_NEXTAFTERL vvv
   return ::nextafterl(__x, __y);
@@ -644,7 +856,7 @@ _CCCL_API inline long double nextafter(long double __x, long double __y) noexcep
 
 _CCCL_API inline long double nextafterl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTAFTERL)
+#  ifdef _CCCL_BUILTIN_NEXTAFTERL
   return _CCCL_BUILTIN_NEXTAFTERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTAFTERL ^^^ // vvv !_CCCL_BUILTIN_NEXTAFTERL vvv
   return ::nextafterl(__x, __y);
@@ -670,7 +882,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::nextafter(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
@@ -685,7 +897,7 @@ _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_API inline float nexttoward(float __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTTOWARDF)
+#  ifdef _CCCL_BUILTIN_NEXTTOWARDF
   return _CCCL_BUILTIN_NEXTTOWARDF(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTTOWARDF ^^^ // vvv !_CCCL_BUILTIN_NEXTTOWARDF vvv
   return ::nexttowardf(__x, __y);
@@ -694,7 +906,7 @@ _CCCL_API inline float nexttoward(float __x, long double __y) noexcept
 
 _CCCL_API inline float nexttowardf(float __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTTOWARDF)
+#  ifdef _CCCL_BUILTIN_NEXTTOWARDF
   return _CCCL_BUILTIN_NEXTTOWARDF(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTTOWARDF ^^^ // vvv !_CCCL_BUILTIN_NEXTTOWARDF vvv
   return ::nexttowardf(__x, __y);
@@ -703,7 +915,7 @@ _CCCL_API inline float nexttowardf(float __x, long double __y) noexcept
 
 _CCCL_API inline double nexttoward(double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTTOWARD)
+#  ifdef _CCCL_BUILTIN_NEXTTOWARD
   return _CCCL_BUILTIN_NEXTTOWARD(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTTOWARD ^^^ // vvv !_CCCL_BUILTIN_NEXTTOWARD vvv
   return ::nexttoward(__x, __y);
@@ -712,7 +924,7 @@ _CCCL_API inline double nexttoward(double __x, long double __y) noexcept
 
 _CCCL_API inline long double nexttoward(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTTOWARDL)
+#  ifdef _CCCL_BUILTIN_NEXTTOWARDL
   return _CCCL_BUILTIN_NEXTTOWARDL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTTOWARDL ^^^ // vvv !_CCCL_BUILTIN_NEXTTOWARDL vvv
   return ::nexttowardl(__x, __y);
@@ -721,7 +933,7 @@ _CCCL_API inline long double nexttoward(long double __x, long double __y) noexce
 
 _CCCL_API inline long double nexttowardl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_NEXTTOWARDL)
+#  ifdef _CCCL_BUILTIN_NEXTTOWARDL
   return _CCCL_BUILTIN_NEXTTOWARDL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_NEXTTOWARDL ^^^ // vvv !_CCCL_BUILTIN_NEXTTOWARDL vvv
   return ::nexttowardl(__x, __y);
@@ -759,7 +971,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 
 [[nodiscard]] _CCCL_API inline float rint(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_RINTF)
+#ifdef _CCCL_BUILTIN_RINTF
   return _CCCL_BUILTIN_RINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_RINTF ^^^ // vvv !_CCCL_BUILTIN_RINTF vvv
   return ::rintf(__x);
@@ -768,7 +980,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 
 [[nodiscard]] _CCCL_API inline float rintf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_RINTF)
+#ifdef _CCCL_BUILTIN_RINTF
   return _CCCL_BUILTIN_RINTF(__x);
 #else // ^^^ _CCCL_BUILTIN_RINTF ^^^ // vvv !_CCCL_BUILTIN_RINTF vvv
   return ::rintf(__x);
@@ -777,7 +989,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 
 [[nodiscard]] _CCCL_API inline double rint(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_RINT)
+#ifdef _CCCL_BUILTIN_RINT
   return _CCCL_BUILTIN_RINT(__x);
 #else // ^^^ _CCCL_BUILTIN_RINT ^^^ // vvv !_CCCL_BUILTIN_RINT vvv
   return ::rint(__x);
@@ -787,7 +999,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double rint(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_RINTL)
+#  ifdef _CCCL_BUILTIN_RINTL
   return _CCCL_BUILTIN_RINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_RINTL ^^^ // vvv !_CCCL_BUILTIN_RINTL vvv
   return ::rintl(__x);
@@ -796,7 +1008,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 
 [[nodiscard]] _CCCL_API inline long double rintl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_RINTL)
+#  ifdef _CCCL_BUILTIN_RINTL
   return _CCCL_BUILTIN_RINTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_RINTL ^^^ // vvv !_CCCL_BUILTIN_RINTL vvv
   return ::rintl(__x);
@@ -805,19 +1017,26 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half rint(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half rint(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hrint(__x);), (return __float2half(::cuda::std::rint(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 rint(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 rint(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hrint(__x);), (return __float2bfloat16(::cuda::std::rint(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 rint(__float128 __x) noexcept
+{
+  return ::cuda::std::__rint_fp128(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double rint(_Integer __x) noexcept
@@ -833,9 +1052,20 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_ROUNDL(...) __builtin_roundl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_round)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_roundf128)
+#    define _CCCL_BUILTIN_ROUNDF128(...) __builtin_roundf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_roundf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_roundf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_ROUNDF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 [[nodiscard]] _CCCL_API inline float round(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ROUNDF)
+#ifdef _CCCL_BUILTIN_ROUNDF
   return _CCCL_BUILTIN_ROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_ROUNDF ^^^ // vvv !_CCCL_BUILTIN_ROUNDF vvv
   return ::roundf(__x);
@@ -844,7 +1074,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float roundf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ROUNDF)
+#ifdef _CCCL_BUILTIN_ROUNDF
   return _CCCL_BUILTIN_ROUNDF(__x);
 #else // ^^^ _CCCL_BUILTIN_ROUNDF ^^^ // vvv !_CCCL_BUILTIN_ROUNDF vvv
   return ::roundf(__x);
@@ -853,7 +1083,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double round(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ROUND)
+#ifdef _CCCL_BUILTIN_ROUND
   return _CCCL_BUILTIN_ROUND(__x);
 #else // ^^^ _CCCL_BUILTIN_ROUND ^^^ // vvv !_CCCL_BUILTIN_ROUND vvv
   return ::round(__x);
@@ -863,7 +1093,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double round(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ROUNDL)
+#  ifdef _CCCL_BUILTIN_ROUNDL
   return _CCCL_BUILTIN_ROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ROUNDL ^^^ // vvv !_CCCL_BUILTIN_ROUNDL vvv
   return ::roundl(__x);
@@ -872,7 +1102,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double roundl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ROUNDL)
+#  ifdef _CCCL_BUILTIN_ROUNDL
   return _CCCL_BUILTIN_ROUNDL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ROUNDL ^^^ // vvv !_CCCL_BUILTIN_ROUNDL vvv
   return ::roundl(__x);
@@ -894,6 +1124,25 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_ROUNDF128
+  return _CCCL_BUILTIN_ROUNDF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_ROUNDF128 ^^^ / vvv !_CCCL_BUILTIN_ROUNDF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_round(__x);))
+  // x - trunc(x) is exact, so this avoids the double rounding of trunc(x + 0.5)
+  const __float128 __t    = ::cuda::std::__trunc_fp128_impl(__x);
+  const __float128 __diff = (__x < 0) ? __t - __x : __x - __t;
+  if (__diff >= __float128(0.5))
+  {
+    return (__x < 0) ? __t - 1 : __t + 1;
+  }
+  return __t;
+#  endif // ^^^ !_CCCL_BUILTIN_ROUNDF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double round(_Integer __x) noexcept
 {
@@ -908,9 +1157,20 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_TRUNCL(...) __builtin_truncl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_trunc)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_truncf128)
+#    define _CCCL_BUILTIN_TRUNCF128(...) __builtin_truncf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_truncf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_truncf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_TRUNCF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 [[nodiscard]] _CCCL_API inline float trunc(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TRUNCF)
+#ifdef _CCCL_BUILTIN_TRUNCF
   return _CCCL_BUILTIN_TRUNCF(__x);
 #else // ^^^ _CCCL_BUILTIN_TRUNCF ^^^ // vvv !_CCCL_BUILTIN_TRUNCF vvv
   return ::truncf(__x);
@@ -919,7 +1179,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float truncf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TRUNCF)
+#ifdef _CCCL_BUILTIN_TRUNCF
   return _CCCL_BUILTIN_TRUNCF(__x);
 #else // ^^^ _CCCL_BUILTIN_TRUNCF ^^^ // vvv !_CCCL_BUILTIN_TRUNCF vvv
   return ::truncf(__x);
@@ -928,7 +1188,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double trunc(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TRUNC)
+#ifdef _CCCL_BUILTIN_TRUNC
   return _CCCL_BUILTIN_TRUNC(__x);
 #else // ^^^ _CCCL_BUILTIN_TRUNC ^^^ // vvv !_CCCL_BUILTIN_TRUNC vvv
   return ::trunc(__x);
@@ -938,7 +1198,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double trunc(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TRUNCL)
+#  ifdef _CCCL_BUILTIN_TRUNCL
   return _CCCL_BUILTIN_TRUNCL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TRUNCL ^^^ // vvv !_CCCL_BUILTIN_TRUNCL vvv
   return ::truncl(__x);
@@ -947,7 +1207,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double truncl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TRUNCL)
+#  ifdef _CCCL_BUILTIN_TRUNCL
   return _CCCL_BUILTIN_TRUNCL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TRUNCL ^^^ // vvv !_CCCL_BUILTIN_TRUNCL vvv
   return ::truncl(__x);
@@ -956,19 +1216,31 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half trunc(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half trunc(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::htrunc(__x);), (return __float2half(::cuda::std::trunc(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 trunc(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 trunc(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::htrunc(__x);), (return __float2bfloat16(::cuda::std::trunc(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 trunc(__float128 __x) noexcept
+{
+#  ifdef _CCCL_BUILTIN_TRUNCF128
+  return _CCCL_BUILTIN_TRUNCF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_TRUNCF128 ^^^ / vvv !_CCCL_BUILTIN_TRUNCF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_trunc(__x);))
+  return ::cuda::std::__trunc_fp128_impl(__x);
+#  endif // ^^^ !_CCCL_BUILTIN_TRUNCF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double trunc(_Integer __x) noexcept

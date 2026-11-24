@@ -15,32 +15,32 @@
 
 struct Nothrow
 {
-  __host__ __device__ Nothrow() noexcept {}
+  TEST_FUNC Nothrow() noexcept {}
 };
 
 struct NotDefaultable
 {
-  __host__ __device__ NotDefaultable() = delete;
-  __host__ __device__ NotDefaultable(int) noexcept {}
+  TEST_FUNC NotDefaultable() = delete;
+  TEST_FUNC NotDefaultable(int) noexcept {}
 };
 
 struct MaybeThrowingDefault
 {
-  __host__ __device__ MaybeThrowingDefault() noexcept(false) {}
+  TEST_FUNC MaybeThrowingDefault() noexcept(false) {}
 };
 
 struct MaybeThrowingCopy
 {
-  __host__ __device__ MaybeThrowingCopy(const MaybeThrowingCopy&) noexcept(false) {}
+  TEST_FUNC MaybeThrowingCopy(const MaybeThrowingCopy&) noexcept(false) {}
 };
 
 struct MaybeThrowingMove
 {
-  __host__ __device__ MaybeThrowingMove(MaybeThrowingCopy&&) noexcept(false) {}
+  TEST_FUNC MaybeThrowingMove(MaybeThrowingCopy&&) noexcept(false) {}
 };
 
 template <class Fn>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using zip_function = cuda::zip_function<Fn>;
   static_assert(cuda::std::is_default_constructible_v<zip_function> == cuda::std::is_default_constructible_v<Fn>);
@@ -60,7 +60,7 @@ __host__ __device__ constexpr void test()
   static_assert(cuda::std::is_move_assignable_v<zip_function>);
 }
 
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test<Nothrow>();
   test<NotDefaultable>();

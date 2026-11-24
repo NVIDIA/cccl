@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__clang__)
+#ifdef __clang__
 #  pragma clang diagnostic ignored "-Wsign-compare"
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic ignored "-Wsign-compare"
@@ -24,7 +24,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::iota_view<SomeInt, SomeInt> io(SomeInt(0), SomeInt(10));
@@ -59,7 +59,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

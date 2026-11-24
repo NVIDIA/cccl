@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,6 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -36,17 +35,21 @@ namespace __detail
 template <class _Ret, class _DecayFn>
 class __return_type_wrapper
 {
-private:
   _DecayFn __fn_;
 
 public:
   __return_type_wrapper() = delete;
 
-  template <class _Fn, class = ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>>>
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Fn)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>)
   _CCCL_API constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
       : __fn_(::cuda::std::forward<_Fn>(__fn))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) & noexcept
   {
@@ -58,6 +61,7 @@ public:
     return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) && noexcept
   {
@@ -69,6 +73,7 @@ public:
     return ::cuda::std::__invoke(::cuda::std::move(__fn_), ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const& noexcept
   {
@@ -80,6 +85,7 @@ public:
     return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const&& noexcept
   {

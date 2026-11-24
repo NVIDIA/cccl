@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,32 +22,36 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__remove_volatile)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
 template <class _Tp>
 struct remove_volatile
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 };
 
 template <class _Tp>
-using remove_volatile_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+using remove_volatile_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 
 #else
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile<volatile _Tp>
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>
-using remove_volatile_t _CCCL_NODEBUG_ALIAS = typename remove_volatile<_Tp>::type;
+using remove_volatile_t _CCCL_NODEBUG = typename remove_volatile<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
 

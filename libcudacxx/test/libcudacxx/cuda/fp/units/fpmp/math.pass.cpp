@@ -1,0 +1,360 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// error: device math intrinsics are unsupported in tile code
+
+//===----------------------------------------------------------------------===//
+//
+//  Unit test: fp32mp2 / fp64mp2 math functions.
+//
+//  Sanity test that calls every fpmp2 math entry point on a single input and
+//  compares against the corresponding double-precision reference. It checks that
+//  each function exists, is callable and lands in the right neighbourhood;
+//  accuracy to the last bit is the accuracy suite's job, not this one's.
+//
+//  The functions divide by what their *reference* needs rather than by anything
+//  fpmp2 lacks, since fpmp2 math is host and device alike:
+//
+//    - Where the reference is in ISO <cmath>, the check lives in main(), which
+//      force_include.h turns into a __host__ __device__ function that the
+//      harness runs on the host and then in a kernel. Those get both.
+//    - The rest compare against CUDA-only math (rcbrt, the pi-scaled trig,
+//      normcdf, the inverse error functions, cyl_bessel_i*, the vector norms)
+//      or against names that exist in glibc and CUDA but not in ISO C++, namely
+//      exp10, sincos and the POSIX Bessel functions. Neither group has a
+//      portable host spelling, so NV_IF_TARGET keeps them out of the host pass
+//      and only the kernel run reaches them.
+//
+//===----------------------------------------------------------------------===//
+
+#include <cuda/fpmp>
+#include <cuda/std/cassert>
+#include <cuda/std/cmath>
+#include <cuda/std/type_traits>
+
+#include "test_macros.h"
+
+// Comparison helpers, shared by the portable checks and the device-only kernels.
+TEST_HOST_DEVICE_FUNC bool approx_eq(double a, double b, double tol)
+{
+  if (a == b)
+  {
+    return true;
+  }
+  double diff = ::cuda::std::fabs(a - b);
+  double mag  = ::cuda::std::fmax(::cuda::std::fabs(a), ::cuda::std::fabs(b));
+  if (mag == 0.0)
+  {
+    return diff < tol;
+  }
+  return (diff / mag) < tol;
+}
+
+TEST_HOST_DEVICE_FUNC bool check(double fpmp_val, double ref_val, double tol)
+{
+  return approx_eq(fpmp_val, ref_val, tol);
+}
+
+TEST_HOST_DEVICE_FUNC bool check_int(long long fpmp_val, long long ref_val)
+{
+  return fpmp_val == ref_val;
+}
+
+// ---- checks whose reference is in ISO <cmath> ------------------------------
+//
+// Reached on the host directly and on the device through force_include.h, so
+// these cover both the host fallbacks and the device paths.
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
+{
+  const double x_val = 1.234567890123;
+  const double y_val = 2.345678901234;
+  const double p_val = 0.3; // probability argument, must be in (0,1)
+  const int n_val    = 3;
+
+  // assert per check rather than an accumulated flag, so a failure names the
+  // function that broke instead of just the test.
+#define CHECK_1A(name, xv)     assert(check(static_cast<double>(name(MP2(xv))), ::name(xv), tol))
+#define CHECK_2A(name, xv, yv) assert(check(static_cast<double>(name(MP2(xv), MP2(yv))), ::name(xv, yv), tol))
+
+  // Exponential / logarithmic
+  CHECK_1A(exp, x_val);
+  CHECK_1A(exp2, x_val);
+  CHECK_1A(expm1, x_val);
+  CHECK_1A(log, x_val);
+  CHECK_1A(log2, x_val);
+  CHECK_1A(log10, x_val);
+  CHECK_1A(log1p, x_val);
+  CHECK_1A(logb, x_val);
+
+  // Power / root
+  CHECK_1A(cbrt, x_val);
+
+  // Trigonometric
+  CHECK_1A(sin, x_val);
+  CHECK_1A(cos, x_val);
+  CHECK_1A(tan, x_val);
+  CHECK_1A(asin, 0.5);
+  CHECK_1A(acos, 0.5);
+  CHECK_1A(atan, x_val);
+
+  // Hyperbolic
+  CHECK_1A(sinh, x_val);
+  CHECK_1A(cosh, x_val);
+  CHECK_1A(tanh, x_val);
+  CHECK_1A(acosh, x_val);
+  CHECK_1A(asinh, x_val);
+  CHECK_1A(atanh, 0.5);
+
+  // Error and gamma
+  CHECK_1A(erf, x_val);
+  CHECK_1A(erfc, x_val);
+  CHECK_1A(lgamma, x_val);
+  CHECK_1A(tgamma, x_val);
+
+  // The scaled complementary error function, the normal CDF and the inverse
+  // error functions have no ISO reference; the definitions and the round trips
+  // through erf / erfc stand in, on both sides.  fp64mp2 erfcx, erfinv and
+  // erfcinv are still device-only double fallbacks, so those three stay with
+  // fp32mp2 here and with the CUDA references below for fp64mp2.
+  assert(check(static_cast<double>(normcdf(MP2(x_val))), 0.5 * ::erfc(-x_val * 0.70710678118654752440), tol));
+  assert(check(static_cast<double>(normcdf(MP2(-x_val))), 0.5 * ::erfc(x_val * 0.70710678118654752440), tol));
+  assert(check(0.5 * ::erfc(-static_cast<double>(normcdfinv(MP2(p_val))) * 0.70710678118654752440), p_val, tol));
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    assert(check(static_cast<double>(erfcx(MP2(x_val))), ::exp(x_val * x_val) * ::erfc(x_val), tol));
+    assert(check(static_cast<double>(erfcx(MP2(-x_val))), ::exp(x_val * x_val) * ::erfc(-x_val), tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(-0.9)))), -0.9, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(1.7)))), 1.7, tol));
+  }
+
+  // Rounding and absolute value
+  CHECK_1A(ceil, x_val);
+  CHECK_1A(floor, x_val);
+  CHECK_1A(trunc, x_val);
+  CHECK_1A(round, x_val);
+  CHECK_1A(rint, x_val);
+  CHECK_1A(nearbyint, x_val);
+  CHECK_1A(fabs, -x_val);
+
+  // Two-argument
+  CHECK_2A(pow, x_val, y_val);
+  CHECK_2A(atan2, x_val, y_val);
+  CHECK_2A(fmax, x_val, y_val);
+  CHECK_2A(fmin, x_val, y_val);
+  CHECK_2A(fmod, x_val, y_val);
+  CHECK_2A(remainder, x_val, y_val);
+  CHECK_2A(hypot, x_val, y_val);
+  CHECK_2A(copysign, x_val, y_val);
+  CHECK_2A(fdim, x_val, y_val);
+  CHECK_2A(nextafter, x_val, y_val);
+
+  // min / max are spelled without the f and have no ISO counterpart taking two
+  // doubles, so the reference is the comparison itself.
+  assert(check(static_cast<double>(max(MP2(x_val), MP2(y_val))), (x_val < y_val) ? y_val : x_val, tol));
+  assert(check(static_cast<double>(min(MP2(x_val), MP2(y_val))), (y_val < x_val) ? y_val : x_val, tol));
+
+  // The Boys function has no counterpart in the C library; its reference comes
+  // from the definition, F_0(x) = 0.5 * sqrt(pi/x) * erf(sqrt(x)) for x > 0.
+  assert(check(static_cast<double>(boys_f0(MP2(x_val))),
+               0.5 * ::sqrt(3.14159265358979323846 / x_val) * ::erf(::sqrt(x_val)),
+               tol));
+
+  // normcdfinv at the ends of (0, 1), against CUDA's double normcdfinv. 1 - 2^-53 is
+  // (1.0f, -2^-53) as an fp32mp2 pair, so the result must come from the whole pair,
+  // not from hi == 1.
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1.fffffffffffffp-1))), 8.2095361516013874, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(1.0 - 0x1p-40))), 7.0477002566644087, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1p-40))), -7.0477002566644087, tol));
+  assert(fpmp_isinf(normcdfinv(MP2(1.0))) && !fpmp_signbit(normcdfinv(MP2(1.0))));
+  assert(fpmp_isinf(normcdfinv(MP2(0.0))) && fpmp_signbit(normcdfinv(MP2(0.0))));
+
+  // Scaling by a power of two
+  assert(check(static_cast<double>(ldexp(MP2(x_val), n_val)), ::ldexp(x_val, n_val), tol));
+  assert(check(static_cast<double>(scalbn(MP2(x_val), n_val)), ::scalbn(x_val, n_val), tol));
+  assert(check(static_cast<double>(scalbln(MP2(x_val), (long) n_val)), ::scalbln(x_val, (long) n_val), tol));
+
+  // Integer-returning
+  assert(check_int(ilogb(MP2(x_val)), ::ilogb(x_val)));
+  assert(check_int(llrint(MP2(x_val)), ::llrint(x_val)));
+  assert(check_int(llround(MP2(x_val)), ::llround(x_val)));
+  assert(check_int(lrint(MP2(x_val)), ::lrint(x_val)));
+  assert(check_int(lround(MP2(x_val)), ::lround(x_val)));
+
+  // Classification
+  assert(check_int(fpmp_isfinite(MP2(x_val)), ::cuda::std::isfinite(x_val) ? 1 : 0));
+  assert(check_int(fpmp_isinf(MP2(x_val)), ::cuda::std::isinf(x_val) ? 1 : 0));
+  assert(check_int(fpmp_isnan(MP2(x_val)), ::cuda::std::isnan(x_val) ? 1 : 0));
+  assert(check_int(fpmp_signbit(MP2(x_val)), ::cuda::std::signbit(x_val) ? 1 : 0));
+
+  // Functions returning a second result through a pointer
+  {
+    int e            = 0;
+    const MP2 frac   = frexp(MP2(x_val), &e);
+    int ref_e        = 0;
+    const double ref = ::frexp(x_val, &ref_e);
+    assert(check(static_cast<double>(frac), ref, tol));
+    assert(check_int(e, ref_e));
+  }
+  {
+    MP2 ipart;
+    const MP2 frac     = modf(MP2(x_val), &ipart);
+    double ref_ipart   = 0;
+    const double ref_f = ::modf(x_val, &ref_ipart);
+    assert(check(static_cast<double>(frac), ref_f, tol));
+    assert(check(static_cast<double>(ipart), ref_ipart, tol));
+  }
+  {
+    int quo          = 0;
+    const MP2 res    = remquo(MP2(x_val), MP2(y_val), &quo);
+    int ref_quo      = 0;
+    const double ref = ::remquo(x_val, y_val, &ref_quo);
+    assert(check(static_cast<double>(res), ref, tol));
+    assert(check_int(quo, ref_quo));
+  }
+
+  // fmod, remainder and remquo are exact on sparse pairs (a tail far below
+  // the head, more than 53 significant bits in all) in fp32mp2_high, and
+  // compute on the pair rounded to 53 bits in the other levels, where rounding
+  // the input moves the remainder by the amount dropped.
+  //   x = 2^60 + 2^-20 (81 bits), y = 3: 2^60 = 3 k + 1 with k = 5 mod 8, so
+  //   both remainders are 1 + 2^-20 and the quotient's low bits are 5 (the
+  //   53-bit route gives 1).
+  //   x = 2^40 - (2^8 + 2^-14) (55 bits), y = 768 = 3 * 2^8: 2^40 = 768 k' +
+  //   2^8 with k' = (2^32 - 1) / 3 = 5 mod 8, so x = 768 k' - 2^-14: fmod is
+  //   768 - 2^-14, remainder -2^-14 (the 53-bit route rounds the 2^-14 away).
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    using HP = cuda::fp32mp2_high;
+    const MP2 xs(0x1p+60f, 0x1p-20f);
+    const MP2 ys(3.0f, 0.0f);
+    const HP xsh(0x1p+60f, 0x1p-20f);
+    const HP ysh(3.0f, 0.0f);
+    assert(static_cast<double>(fmod(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(remainder(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(fmod(xs, ys)) == 1.0); // the 53-bit route
+    assert(static_cast<double>(remainder(xs, ys)) == 1.0);
+    int qs = 0;
+    assert(static_cast<double>(remquo(xsh, ysh, &qs)) == 1.0 + 0x1p-20);
+    assert((qs & 7) == 5);
+
+    const HP xbh(0x1p+40f, -(0x1p+8f + 0x1p-14f));
+    const HP ybh(768.0f, 0.0f);
+    assert(static_cast<double>(fmod(xbh, ybh)) == 768.0 - 0x1p-14);
+    assert(static_cast<double>(remainder(xbh, ybh)) == -0x1p-14);
+    int qb = 0;
+    assert(static_cast<double>(remquo(xbh, ybh, &qb)) == -0x1p-14);
+    assert((qb & 7) == 5);
+  }
+
+#undef CHECK_1A
+#undef CHECK_2A
+}
+
+#if _CCCL_CUDA_COMPILATION()
+
+// ---- checks whose reference exists only in CUDA -----------------------------
+//
+// Compiled for the device only, since these references have no host spelling. The
+// kernel that force_include.h already wraps main() in is what runs them, so the test
+// launches nothing of its own -- which is also what keeps it compilable by NVRTC,
+// whose device-only translation unit has no runtime API to launch with.
+template <typename MP2>
+TEST_DEVICE_FUNC void test_device(double tol)
+{
+  const double x_val = 1.234567890123;
+  const double y_val = 2.345678901234;
+  const double p_val = 0.3; // probability argument, must be in (0,1)
+  const int n_val    = 3;
+
+#  define CHECK_1A(name, xv)     assert(check(static_cast<double>(name(MP2(xv))), ::name(xv), tol))
+#  define CHECK_2A(name, xv, yv) assert(check(static_cast<double>(name(MP2(xv), MP2(yv))), ::name(xv, yv), tol))
+#  define CHECK_3A(name, av, bv, cv) \
+    assert(check(static_cast<double>(name(MP2(av), MP2(bv), MP2(cv))), ::name(av, bv, cv), tol))
+#  define CHECK_4A(name, av, bv, cv, dv) \
+    assert(check(static_cast<double>(name(MP2(av), MP2(bv), MP2(cv), MP2(dv))), ::name(av, bv, cv, dv), tol))
+
+  // Base-10 exponential: exp10 is in glibc and CUDA but not in ISO C++.
+  CHECK_1A(exp10, x_val);
+
+  // Reciprocal cube root
+  CHECK_1A(rcbrt, x_val);
+
+  // Error / probability
+  CHECK_1A(erfcinv, p_val);
+  CHECK_1A(erfinv, p_val);
+  CHECK_1A(erfcx, x_val);
+  CHECK_1A(normcdf, x_val);
+  CHECK_1A(normcdfinv, p_val);
+
+  // Bessel: j0/j1/y0/y1 are POSIX rather than ISO, and MSVC spells them _j0.
+  CHECK_1A(j0, x_val);
+  CHECK_1A(j1, x_val);
+  CHECK_1A(y0, x_val);
+  CHECK_1A(y1, x_val);
+  CHECK_1A(cyl_bessel_i0, x_val);
+  CHECK_1A(cyl_bessel_i1, x_val);
+
+  // CUDA trigonometric (pi-scaled)
+  CHECK_1A(sinpi, x_val);
+  CHECK_1A(cospi, x_val);
+
+  // Reciprocal hypotenuse
+  CHECK_2A(rhypot, x_val, y_val);
+
+  // Vector norms
+  CHECK_3A(norm3d, x_val, y_val, p_val);
+  CHECK_3A(rnorm3d, x_val, y_val, p_val);
+  CHECK_4A(norm4d, x_val, y_val, p_val, 0.7);
+  CHECK_4A(rnorm4d, x_val, y_val, p_val, 0.7);
+
+  // Bessel functions taking an order
+  assert(check(static_cast<double>(jn(n_val, MP2(x_val))), ::jn(n_val, x_val), tol));
+  assert(check(static_cast<double>(yn(n_val, MP2(x_val))), ::yn(n_val, x_val), tol));
+
+  // The paired sine and cosine, checked through sin/cos and sinpi/cospi so that the
+  // fpmp2 call is unambiguous next to the CUDA reference of the same name.
+  {
+    double ref_sin = 0.0, ref_cos = 0.0;
+    ::sincos(x_val, &ref_sin, &ref_cos);
+    assert(check(static_cast<double>(sin(MP2(x_val))), ref_sin, tol));
+    assert(check(static_cast<double>(cos(MP2(x_val))), ref_cos, tol));
+  }
+  {
+    double ref_sin = 0.0, ref_cos = 0.0;
+    ::sincospi(x_val, &ref_sin, &ref_cos);
+    assert(check(static_cast<double>(sinpi(MP2(x_val))), ref_sin, tol));
+    assert(check(static_cast<double>(cospi(MP2(x_val))), ref_cos, tol));
+    MP2 __s;
+    MP2 __c;
+    sincospi(MP2(x_val), &__s, &__c);
+    assert(check(static_cast<double>(__s), ref_sin, tol));
+    assert(check(static_cast<double>(__c), ref_cos, tol));
+  }
+
+#  undef CHECK_1A
+#  undef CHECK_2A
+#  undef CHECK_3A
+#  undef CHECK_4A
+}
+
+#endif // _CCCL_CUDA_COMPILATION()
+
+int main(int, char**)
+{
+  // force_include.h makes this main __host__ __device__ and runs it twice, on the
+  // host and then in a kernel, so these cover both without any launch of our own.
+  test_host_device<cuda::fp32mp2>(1e-5);
+  test_host_device<cuda::fp64mp2>(1e-12);
+
+#if _CCCL_CUDA_COMPILATION()
+  // The remaining functions are reachable from device code only, so the kernel run is
+  // the one that checks them.
+  NV_IF_TARGET(NV_IS_DEVICE, (test_device<cuda::fp32mp2>(1e-5); test_device<cuda::fp64mp2>(1e-12);))
+#endif // _CCCL_CUDA_COMPILATION()
+  return 0;
+}

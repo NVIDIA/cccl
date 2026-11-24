@@ -16,12 +16,12 @@
 
 struct X
 {
-  __device__ __host__ X() {}
+  TEST_FUNC X() {}
 
   template <class T>
-  __device__ __host__ X(T);
+  TEST_FUNC X(T);
 
-  __device__ __host__ void operator()() {}
+  TEST_FUNC void operator()() {}
 };
 
 int main(int, char**)

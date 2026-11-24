@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,18 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/optional>
 
@@ -116,7 +118,7 @@ struct __mb_optional_destruct_base
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __val_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -126,14 +128,14 @@ struct __mb_optional_destruct_base<_Tp, true>
   _CCCL_NO_UNIQUE_ADDRESS optional<_Tp> __val_;
 
   _CCCL_API constexpr __mb_optional_destruct_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
-      : __val_(in_place)
+      : __val_(in_place_t{})
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __val_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -244,6 +246,7 @@ struct __mb_holder
 {
   _Tp __val_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr explicit __mb_holder(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
@@ -256,6 +259,7 @@ struct __mb_holder<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr explicit __mb_holder(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
@@ -268,11 +272,12 @@ struct __mb_holder_base
 {
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
                                                 _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __holder_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __holder_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -281,15 +286,17 @@ struct __mb_holder_base<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __mb_holder_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
-      : __holder_(in_place)
+      : __holder_(in_place_t{})
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
                                                 _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __holder_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __holder_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -381,7 +388,7 @@ struct __mb_base : __mb_move_assign<_Tp>
 };
 
 template <class _Tp>
-using __movable_box_base = _If<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
+using __movable_box_base _CCCL_NODEBUG = _If<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
 
 // Primary template - uses ::cuda::std::optional and introduces an empty state in case assignment fails.
 template <class _Tp, bool = __movable_box_object<_Tp>>
@@ -390,16 +397,16 @@ struct __movable_box;
 template <class _Tp>
 struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
 {
-  using __base = __movable_box_base<_Tp>;
+  using __base _CCCL_NODEBUG = __movable_box_base<_Tp>;
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __movable_box(in_place_t,
                                              _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
-  _CCCL_HIDE_FROM_ABI constexpr __movable_box() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __movable_box() noexcept(is_nothrow_default_constructible_v<_Tp>) = default;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +31,7 @@ namespace __v1
 {
 class thread_block;
 
-template <unsigned int Size, typename ParentT>
+template <unsigned int _Size, typename _ParentT>
 class thread_block_tile;
 } // namespace __v1
 using namespace __v1;

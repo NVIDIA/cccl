@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,6 +31,7 @@ template <typename _Tp>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
 {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return const_cast<void*>(static_cast<const volatile void*>(::cuda::std::addressof(__from)));
 }
 

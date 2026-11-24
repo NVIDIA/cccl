@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file sort.h
  *  \brief Sequential implementations of sort algorithms.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,12 +17,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reverse.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/detail/sequential/stable_merge_sort.h>
 #include <thrust/system/detail/sequential/stable_primitive_sort.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
@@ -47,6 +37,10 @@ namespace sort_detail
 template <typename KeyType, typename Compare>
 inline constexpr bool use_primitive_sort =
   ::cuda::std::is_arithmetic_v<KeyType>
+  // RadixEncoder is not specialized for long double
+  && !::cuda::std::is_same_v<KeyType, long double>
+  // radix_sort_dispatcher only supports key sizes of 1, 2, 4, or 8 bytes
+  && (sizeof(KeyType) == 1 || sizeof(KeyType) == 2 || sizeof(KeyType) == 4 || sizeof(KeyType) == 8)
   && (::cuda::std::is_same_v<Compare, ::cuda::std::less<KeyType>>
       || ::cuda::std::is_same_v<Compare, ::cuda::std::greater<KeyType>>);
 
@@ -55,7 +49,7 @@ inline constexpr bool needs_reverse = ::cuda::std::is_same_v<Compare, ::cuda::st
 } // end namespace sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort(
+_CCCL_HOST_DEVICE_API void stable_sort(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
@@ -86,7 +80,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 first1,
   RandomAccessIterator1 last1,

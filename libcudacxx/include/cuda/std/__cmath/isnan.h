@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,12 +23,11 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,29 +37,56 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isnan)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_ISNAN
+#endif // _CCCL_TILE_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isnan_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isnan(__x);
   }
+#endif // !_CCCL_TILE_COMPILATION()
+  // x != x is the canonical NaN test: it is true only when x is NaN.
+  // NOLINTNEXTLINE(misc-redundant-expression)
   return __x != __x;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isnan(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNAN)
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isnan_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // On SM100+ (new NVVM), the compiler recognizes the pattern (storage & 0xFF...FF) as fabs(), reintroducing double
+  // instructions. The workaround is to shift both operands by 1. This generates the same number of instructions on all
+  // gpu archs with 64-bit integer ops (roughly SM107+)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                    (return (__storage << 1) > (__fp_exp_mask_of_v<double> << 1);),
+                    (return (__storage & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;))
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isnan(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNAN)
+  // isnan() for fp64 maps to DSETP instruction, which is generally very slow on desktop GPUs, e.g. 64:1 fp32:fp64
+  // throughput. We can optimize isnan() on desktop GPUs by using integer comparison instead
+  // note: we cannot understand if the code will run on desktop or datacenter GPUs for some SM versions, e.g. SM80 is
+  //       binary compatible with SM86
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnan_storage(__x);)
+  }
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -70,7 +96,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isnan(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -125,6 +151,13 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isnan(__nv_fp8_ue5m3 __x) noexcept
+{
+  return __x.__x == __fp_exp_mant_mask_of_v<__nv_fp8_ue5m3>;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isnan(__nv_fp8_e8m0 __x) noexcept
 {
@@ -162,7 +195,7 @@ template <class _Tp>
     NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
                                                                         // flags
   }
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return __x != __x;

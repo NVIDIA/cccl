@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,10 +25,10 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -40,11 +40,10 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
@@ -53,7 +52,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20011) // calling a __host__ function from a __host__ __device__ function is not allowed
 
 //! @brief Different alternatives for @c __compressed_box_base
 // This is effectively a __movable-box__ that does not rely on `[[no_unique_address]]`
@@ -201,6 +209,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
     _CCCL_API constexpr __storage(in_place_t, _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
         : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
+
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__storage() noexcept {}
   };
   __storage __storage_{};
@@ -215,7 +225,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
   _CCCL_API constexpr __compressed_box_storage() noexcept(is_nothrow_default_constructible_v<_Tp2>)
-      : __storage_(in_place)
+      : __storage_(in_place_t{})
       , __engaged_(true)
   {}
 
@@ -224,7 +234,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __compressed_box_storage(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -268,7 +278,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage<_Index, _Tp, true>
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
   _CCCL_API constexpr __compressed_box_storage() noexcept(is_nothrow_default_constructible_v<_Tp2>)
-      : __storage_(in_place)
+      : __storage_(in_place_t{})
       , __engaged_(true)
   {}
 
@@ -277,7 +287,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage<_Index, _Tp, true>
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __compressed_box_storage(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 };
@@ -287,7 +297,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compressed_box_specialization::__with_engaged>
     : __compressed_box_storage<_Index, _Tp>
 {
-  using __base = __compressed_box_storage<_Index, _Tp>;
+  using __base _CCCL_NODEBUG = __compressed_box_storage<_Index, _Tp>;
 
   _CCCL_API constexpr __compressed_box_base(bool __engaged) noexcept
       : __base(__engaged)
@@ -297,7 +307,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
   _CCCL_API constexpr __compressed_box_base() noexcept(is_nothrow_default_constructible_v<_Tp2>)
-      : __base(in_place)
+      : __base(in_place_t{})
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -305,7 +315,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr __compressed_box_base(in_place_t,
                                             _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   [[nodiscard]] _CCCL_API constexpr _Tp& __get() noexcept
@@ -462,6 +472,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_assign_base<_Index, _Tp,
     copyable<_Tp> ? is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_assignable_v<_Tp>
                   : is_nothrow_copy_constructible_v<_Tp>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_copy_assign_base&
   operator=(const __compressed_box_copy_assign_base& __other) noexcept(__nothrow_copy_assignable)
   {
@@ -558,6 +569,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp,
     movable<_Tp> ? is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>
                  : is_nothrow_move_constructible_v<_Tp>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_move_assign_base&
   operator=(__compressed_box_move_assign_base&& __other) noexcept(__nothrow_move_assignable)
   {
@@ -636,7 +648,16 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box;
 template <class _Elem1>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compressed_box<0, _Elem1>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
@@ -649,7 +670,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Elem1, _Args...>)
   _CCCL_API constexpr __compressed_movable_box(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Elem1, _Args...>)
-      : __base1(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base1(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -667,7 +688,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void
+  swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(is_nothrow_swappable_v<_Elem1>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
   }
@@ -678,8 +700,17 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
     : __compressed_box<0, _Elem1>
     , __compressed_box<1, _Elem2>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
-  using __base2 = __compressed_box<1, _Elem2>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __compressed_box<1, _Elem2>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
@@ -698,13 +729,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
-      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
+      : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -719,8 +752,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
     __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
-      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
+      : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place_t{}, ::cuda::std::forward<_Arg2>(__arg2))
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -752,7 +785,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -765,9 +799,18 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     , __compressed_box<1, _Elem2>
     , __compressed_box<2, _Elem3>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
-  using __base2 = __compressed_box<1, _Elem2>;
-  using __base3 = __compressed_box<2, _Elem3>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __compressed_box<1, _Elem2>;
+  using __base3 _CCCL_NODEBUG = __compressed_box<2, _Elem3>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
@@ -790,14 +833,16 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
     && is_nothrow_default_constructible_v<_Elem3>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
-      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
+      : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -813,8 +858,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
     __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
-      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
+      : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place_t{}, ::cuda::std::forward<_Arg2>(__arg2))
       , __base3()
   {}
 
@@ -832,9 +877,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_REQUIRES(__is_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2, _Arg3&& __arg3) noexcept(
     __is_nothrow_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
-      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
-      , __base3(in_place, ::cuda::std::forward<_Arg3>(__arg3))
+      : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place_t{}, ::cuda::std::forward<_Arg2>(__arg2))
+      , __base3(in_place_t{}, ::cuda::std::forward<_Arg3>(__arg3))
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -874,7 +919,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2> && is_nothrow_swappable_v<_Elem3>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -882,7 +928,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   }
 };
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__memory/address_space.h>
 #include <cuda/__memory/is_pointer_accessible.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
@@ -95,7 +93,7 @@ class __host_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -196,7 +194,10 @@ public:
   _CCCL_API constexpr reference access(data_handle_type __p, ::cuda::std::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_VERIFY(false, "cuda::__host_accessor cannot be used in DEVICE code");))
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_VERIFY(false, "cuda::__host_accessor cannot be used in DEVICE code");))
+    }
     return _Accessor::access(__p, __i);
   }
 
@@ -206,10 +207,14 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
-  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size) const noexcept
   {
+    if (__size == 0)
+    {
+      return false;
+    }
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       bool __is_valid = true;
@@ -217,7 +222,7 @@ public:
       _CCCL_ASSERT(__is_valid, "host_accessor (mdspan): data handle doesn't point to a valid host memory");
       return !__is_valid;
     }
-    return true;
+    return false;
   }
 #endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
 };
@@ -232,7 +237,7 @@ class __device_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -340,19 +345,19 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      bool __is_valid = true;
+      bool __is_valid = true; // NOLINT(misc-const-correctness)
       NV_IF_TARGET(NV_IS_HOST, (__is_valid = __is_device_accessible_pointer_from_host(__p);))
       _CCCL_ASSERT(__is_valid,
                    "device_accessor (mdspan): data handle doesn't point to a valid device or managed memory");
       return !__is_valid;
     }
-    return true;
+    return false;
   }
 #endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
 };
@@ -367,7 +372,7 @@ class __managed_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -461,18 +466,18 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      bool __is_valid = true;
+      bool __is_valid = true; // NOLINT(misc-const-correctness)
       NV_IF_ELSE_TARGET(NV_IS_HOST, (__is_valid = __is_managed_pointer(__p);), (return true;))
       _CCCL_ASSERT(__is_valid, "managed_accessor (mdspan): data handle doesn't point to a valid managed memory");
       return !__is_valid;
     }
-    return true;
+    return false;
   }
 #endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
 };

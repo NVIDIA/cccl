@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,6 +41,8 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   {
     return double{};
   }
+  // Unsupported native formats intentionally produce void in the fallback branches.
+  // NOLINTBEGIN(bugprone-branch-clone)
   else if constexpr (_Fmt == __fp_format::__binary128)
   {
 #if _CCCL_HAS_FLOAT128()
@@ -63,10 +65,11 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   {
     return;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 template <__fp_format _Fmt>
-using __fp_native_type_t = decltype(__fp_native_type_impl<_Fmt>());
+using __fp_native_type_t _CCCL_NODEBUG = decltype(__fp_native_type_impl<_Fmt>());
 
 template <__fp_format _Fmt>
 inline constexpr bool __fp_has_native_type_v = !is_void_v<__fp_native_type_t<_Fmt>>;

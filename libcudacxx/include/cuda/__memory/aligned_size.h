@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
-#include <cuda/std/cstddef>
+#include <cuda/__memory/is_valid_alignment.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -31,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <::cuda::std::size_t _Alignment>
 struct aligned_size_t
 {
-  static_assert(::cuda::is_power_of_two(_Alignment), "alignment must be a power of two");
+  static_assert(::cuda::__is_valid_alignment(_Alignment), "invalid alignment");
 
   static constexpr ::cuda::std::size_t align = _Alignment;
   ::cuda::std::size_t value;

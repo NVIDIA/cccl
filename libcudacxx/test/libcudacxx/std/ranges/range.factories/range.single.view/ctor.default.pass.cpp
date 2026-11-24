@@ -30,7 +30,7 @@ struct IsDefaultConstructible<false>
   IsDefaultConstructible() = delete;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(cuda::std::default_initializable<cuda::std::ranges::single_view<IsDefaultConstructible<true>>>);
   static_assert(!cuda::std::default_initializable<cuda::std::ranges::single_view<IsDefaultConstructible<false>>>);
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 

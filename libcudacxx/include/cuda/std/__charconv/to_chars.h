@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,28 +20,33 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/uabs.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__system_error/errc.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[nodiscard]] _CCCL_API constexpr char __to_chars_value_to_char(int __v, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr char __to_chars_value_to_char(int __v, int __base, bool __uppercase) noexcept
 {
   _CCCL_ASSERT(__v >= 0 && __v < __base, "value must be in the range [0, base)");
-  const int __offset = (__base < 10 || __v < 10) ? '0' : ('a' - 10);
+  const int __offset = (__base <= 10 || __v < 10) ? '0' : ((__uppercase ? 'A' : 'a') - 10);
   return static_cast<char>(__offset + __v);
 }
 
@@ -62,37 +67,64 @@ template <class _Tp>
   {
     if (__uv < __ubase)
     {
-      return __r + 1;
+      __r += 1;
+      break;
     }
-    else if (__uv < __ubase_2)
+    if (__uv < __ubase_2)
     {
-      return __r + 2;
+      __r += 2;
+      break;
     }
-    else if (__uv < __ubase_3)
+    if (__uv < __ubase_3)
     {
-      return __r + 3;
+      __r += 3;
+      break;
     }
-    else if (__uv < __ubase_4)
+    if (__uv < __ubase_4)
     {
-      return __r + 4;
+      __r += 4;
+      break;
     }
 
     __uv /= __ubase_4;
     __r += 4;
   }
+  return __r;
+}
 
-  _CCCL_UNREACHABLE();
+template <int _Base, class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __to_chars_int_width(_Tp __v) noexcept
+{
+  if constexpr (::cuda::is_power_of_two(_Base))
+  {
+    // For bases that are powers of 2, we can count leading zeros to compute the width more efficiently.
+    constexpr auto __base_ilog2 = ::cuda::ilog2(_Base);
+
+    // If value == 0 still need one digit, so we always set the least significant bit.
+    return ::cuda::ceil_div(__num_bits_v<_Tp> - ::cuda::std::countl_zero(static_cast<_Tp>(__v | 1)), __base_ilog2);
+  }
+  else if constexpr (_Base == 10)
+  { // the number of digits of __v is ilog10(__v) + 1
+    return (__v > 1) ? ::cuda::ilog10(__v) + 1 : 1;
+  }
+  else
+  {
+    return ::cuda::std::__to_chars_int_width(__v, _Base);
+  }
 }
 
 template <class _Tp>
-_CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr char*
+__to_chars_int_generic(char* __last, _Tp __value, int __base, bool __uppercase = false) noexcept
 {
-  do
+  while (__value >= static_cast<_Tp>(__base))
   {
     const int __c = __value % __base;
-    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base);
+    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base, __uppercase);
     __value /= static_cast<_Tp>(__base);
-  } while (__value != 0);
+  }
+  *--__last = ::cuda::std::__to_chars_value_to_char(static_cast<int>(__value), __base, __uppercase);
+  return __last;
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -114,7 +146,32 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
   else
   {
     const ptrdiff_t __cap = __last - __first;
-    const int __n         = ::cuda::std::__to_chars_int_width(__value, __base);
+
+    int __n{};
+    switch (__base)
+    {
+      case 2:
+        __n = ::cuda::std::__to_chars_int_width<2>(__value);
+        break;
+      case 4:
+        __n = ::cuda::std::__to_chars_int_width<4>(__value);
+        break;
+      case 8:
+        __n = ::cuda::std::__to_chars_int_width<8>(__value);
+        break;
+      case 10:
+        __n = ::cuda::std::__to_chars_int_width<10>(__value);
+        break;
+      case 16:
+        __n = ::cuda::std::__to_chars_int_width<16>(__value);
+        break;
+      case 32:
+        __n = ::cuda::std::__to_chars_int_width<32>(__value);
+        break;
+      default:
+        __n = ::cuda::std::__to_chars_int_width(__value, __base);
+        break;
+    }
 
     if (__n > __cap)
     {
@@ -123,7 +180,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 
     char* __new_last = __first + __n;
 
-    ::cuda::std::__to_chars_int_generic(__new_last, __value, __base);
+    (void) ::cuda::std::__to_chars_int_generic(__new_last, __value, __base);
 
     return {__new_last, errc{}};
   }
@@ -146,7 +203,8 @@ _CCCL_API constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexc
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(char* __first, char* __last, _Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result
+to_chars(char* __first, char* __last, _Tp __value) noexcept // NOLINT(readability-non-const-parameter)
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");
@@ -158,8 +216,8 @@ _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result
-to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(
+  char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept // NOLINT(readability-non-const-parameter)
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");
@@ -172,8 +230,12 @@ to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result
-to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt, int __prec) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(
+  char* __first, // NOLINT(readability-non-const-parameter)
+  char* __last, // NOLINT(readability-non-const-parameter)
+  _Tp __value,
+  chars_format __fmt,
+  int __prec) noexcept
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/duration.h> // IWYU pragma: keep
 #include <cuda/std/__chrono/time_point.h>
-#include <cuda/std/ctime>
+#include <cuda/std/ctime> // IWYU pragma: keep
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <chrono>
-#endif // !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
+#  include <chrono> // IWYU pragma: keep
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 

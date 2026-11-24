@@ -21,23 +21,23 @@ template <class Type>
 struct Identity : Type
 {};
 
-typedef cuda::std::true_type TrueT;
-typedef cuda::std::false_type FalseT;
+using TrueT  = cuda::std::true_type;
+using FalseT = cuda::std::false_type;
 
-typedef Identity<TrueT> LazyTrueT;
-typedef Identity<FalseT> LazyFalseT;
+using LazyTrueT  = Identity<TrueT>;
+using LazyFalseT = Identity<FalseT>;
 
 // A type that cannot be instantiated
 template <class T>
 struct CannotInst
 {
-  static_assert(cuda::std::is_same<T, T>::value == false, "");
+  static_assert(cuda::std::is_same<T, T>::value == false);
 };
 
 template <int Value>
 struct NextInt
 {
-  typedef NextInt<Value + 1> type;
+  using type             = NextInt<Value + 1>;
   static const int value = Value;
 };
 
@@ -48,11 +48,11 @@ template <class Type>
 struct HasTypeImp
 {
   template <class Up, class = typename Up::type>
-  __host__ __device__ static TrueT test(int);
+  TEST_FUNC static TrueT test(int);
   template <class>
-  __host__ __device__ static FalseT test(...);
+  TEST_FUNC static FalseT test(...);
 
-  typedef decltype(test<Type>(0)) type;
+  using type = decltype(test<Type>(0));
 };
 
 // A metafunction that returns True if Type has a nested 'type' typedef
@@ -61,59 +61,59 @@ template <class Type>
 struct HasType : HasTypeImp<Type>::type
 {};
 
-__host__ __device__ void LazyNotTest()
+TEST_FUNC void LazyNotTest()
 {
   {
-    typedef cuda::std::_Not<LazyTrueT> NotT;
-    static_assert(cuda::std::is_same<typename NotT::type, FalseT>::value, "");
-    static_assert(NotT::value == false, "");
+    using NotT = cuda::std::_Not<LazyTrueT>;
+    static_assert(cuda::std::is_same<typename NotT::type, FalseT>::value);
+    static_assert(NotT::value == false);
   }
   {
-    typedef cuda::std::_Not<LazyFalseT> NotT;
-    static_assert(cuda::std::is_same<typename NotT::type, TrueT>::value, "");
-    static_assert(NotT::value == true, "");
+    using NotT = cuda::std::_Not<LazyFalseT>;
+    static_assert(cuda::std::is_same<typename NotT::type, TrueT>::value);
+    static_assert(NotT::value == true);
   }
   {
     // Check that CannotInst<int> is not instantiated.
-    typedef cuda::std::_Not<CannotInst<int>> NotT;
+    using NotT = cuda::std::_Not<CannotInst<int>>;
 
-    static_assert(cuda::std::is_same<NotT, NotT>::value, "");
+    static_assert(cuda::std::is_same<NotT, NotT>::value);
   }
 }
 
-__host__ __device__ void LazyAndTest()
+TEST_FUNC void LazyAndTest()
 {
   { // Test that it acts as the identity function for a single value
-    static_assert(cuda::std::_And<LazyFalseT>::value == false, "");
-    static_assert(cuda::std::_And<LazyTrueT>::value == true, "");
+    static_assert(cuda::std::_And<LazyFalseT>::value == false);
+    static_assert(cuda::std::_And<LazyTrueT>::value == true);
   }
   {
-    static_assert(cuda::std::_And<LazyTrueT, LazyTrueT>::value == true, "");
-    static_assert(cuda::std::_And<LazyTrueT, LazyFalseT>::value == false, "");
-    static_assert(cuda::std::_And<LazyFalseT, LazyTrueT>::value == false, "");
-    static_assert(cuda::std::_And<LazyFalseT, LazyFalseT>::value == false, "");
+    static_assert(cuda::std::_And<LazyTrueT, LazyTrueT>::value == true);
+    static_assert(cuda::std::_And<LazyTrueT, LazyFalseT>::value == false);
+    static_assert(cuda::std::_And<LazyFalseT, LazyTrueT>::value == false);
+    static_assert(cuda::std::_And<LazyFalseT, LazyFalseT>::value == false);
   }
   { // Test short circuiting - CannotInst<T> should never be instantiated.
-    static_assert(cuda::std::_And<LazyFalseT, CannotInst<int>>::value == false, "");
-    static_assert(cuda::std::_And<LazyTrueT, LazyFalseT, CannotInst<int>>::value == false, "");
+    static_assert(cuda::std::_And<LazyFalseT, CannotInst<int>>::value == false);
+    static_assert(cuda::std::_And<LazyTrueT, LazyFalseT, CannotInst<int>>::value == false);
   }
 }
 
-__host__ __device__ void LazyOrTest()
+TEST_FUNC void LazyOrTest()
 {
   { // Test that it acts as the identity function for a single value
-    static_assert(cuda::std::_Or<LazyFalseT>::value == false, "");
-    static_assert(cuda::std::_Or<LazyTrueT>::value == true, "");
+    static_assert(cuda::std::_Or<LazyFalseT>::value == false);
+    static_assert(cuda::std::_Or<LazyTrueT>::value == true);
   }
   {
-    static_assert(cuda::std::_Or<LazyTrueT, LazyTrueT>::value == true, "");
-    static_assert(cuda::std::_Or<LazyTrueT, LazyFalseT>::value == true, "");
-    static_assert(cuda::std::_Or<LazyFalseT, LazyTrueT>::value == true, "");
-    static_assert(cuda::std::_Or<LazyFalseT, LazyFalseT>::value == false, "");
+    static_assert(cuda::std::_Or<LazyTrueT, LazyTrueT>::value == true);
+    static_assert(cuda::std::_Or<LazyTrueT, LazyFalseT>::value == true);
+    static_assert(cuda::std::_Or<LazyFalseT, LazyTrueT>::value == true);
+    static_assert(cuda::std::_Or<LazyFalseT, LazyFalseT>::value == false);
   }
   { // Test short circuiting - CannotInst<T> should never be instantiated.
-    static_assert(cuda::std::_Or<LazyTrueT, CannotInst<int>>::value == true, "");
-    static_assert(cuda::std::_Or<LazyFalseT, LazyTrueT, CannotInst<int>>::value == true, "");
+    static_assert(cuda::std::_Or<LazyTrueT, CannotInst<int>>::value == true);
+    static_assert(cuda::std::_Or<LazyFalseT, LazyTrueT, CannotInst<int>>::value == true);
   }
 }
 

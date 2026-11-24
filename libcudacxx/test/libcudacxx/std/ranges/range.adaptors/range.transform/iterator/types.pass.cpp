@@ -23,7 +23,7 @@ template <class V, class F>
 _CCCL_CONCEPT HasIterCategory =
   _CCCL_REQUIRES_EXPR((V, F))(typename(typename cuda::std::ranges::transform_view<V, F>::iterator_category));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     // Member typedefs for contiguous iterator.
@@ -102,7 +102,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

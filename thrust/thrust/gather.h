@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file gather.h
  *  \brief Irregular copying from a source range
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather(
+_CCCL_HOST_DEVICE_API OutputIterator gather(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator map_first,
   InputIterator map_last,
@@ -151,7 +138,7 @@ _CCCL_HOST_DEVICE OutputIterator gather(
  *  \endverbatim
  */
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator input_first, OutputIterator result);
 
 /*! \p gather_if conditionally copies elements from a source array into a destination
@@ -225,7 +212,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename RandomAccessIterator,
           typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,
@@ -294,7 +281,7 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
-OutputIterator gather_if(
+_CCCL_HOST_API OutputIterator gather_if(
   InputIterator1 map_first,
   InputIterator1 map_last,
   InputIterator2 stencil,
@@ -386,7 +373,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,
@@ -472,7 +459,7 @@ template <typename InputIterator1,
           typename RandomAccessIterator,
           typename OutputIterator,
           typename Predicate>
-OutputIterator gather_if(
+_CCCL_HOST_API OutputIterator gather_if(
   InputIterator1 map_first,
   InputIterator1 map_last,
   InputIterator2 stencil,
@@ -485,4 +472,4 @@ OutputIterator gather_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/gather.inl>
+#include <thrust/detail/gather.inl> // IWYU pragma: export

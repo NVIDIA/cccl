@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,18 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__cmath/sincos.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
-#include <cuda/std/__complex/vector_support.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
 
@@ -43,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // exp
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> exp(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> exp(const complex<_Tp>& __x)
 {
   _Tp __i = __x.imag();
   if (__i == _Tp(0))
@@ -76,19 +81,20 @@ template <class _Tp>
 // A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
 // Useful in cases where an extended-range exp is needed for intermediate calculations.
 // fp32
-[[nodiscard]] _CCCL_API inline float __internal_unsafe_exp_with_reduction(float __r, float* __ldexp_factor) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float
+__internal_unsafe_exp_with_reduction(float __r, float* __ldexp_factor) noexcept
 {
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  constexpr float __log2_e      = ::cuda::std::numbers::log2e_v<float>;
+  constexpr float __log2_e      = __numbers<float>::__log2e();
   float __j                     = ::cuda::std::fmaf(__r, __log2_e, __round_shift);
   __j                           = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
-  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = ::cuda::std::fmaf(-__j, __numbers<float>::__ln2(), __r);
   __r_reduced = ::cuda::std::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -106,19 +112,20 @@ template <class _Tp>
 }
 
 // fp64:
-[[nodiscard]] _CCCL_API inline double __internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double
+__internal_unsafe_exp_with_reduction(double __r, double* __ldexp_factor) noexcept
 {
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  constexpr double __log2_e      = ::cuda::std::numbers::log2e_v<double>;
+  constexpr double __log2_e      = __numbers<double>::__log2e();
   double __j                     = ::cuda::std::fma(__r, __log2_e, __round_shift);
   __j                            = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
-  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = ::cuda::std::fma(-__j, __numbers<double>::__ln2(), __r);
   __r_reduced = ::cuda::std::fma(-__j, -8.78318343240526554e-17, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -141,7 +148,7 @@ template <class _Tp>
 
 // exp fp32 specialization
 template <>
-_CCCL_API inline complex<float> exp(const complex<float>& __x)
+_CCCL_HOST_DEVICE_API inline complex<float> exp(const complex<float>& __x)
 {
   const float __r = __x.real();
   const float __i = __x.imag();
@@ -191,10 +198,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   // __j converted to int32, clamp so nothing bad happens. Will not change any results.
   // 151 = 127 + 24
   // 277 = 23 + 2*127 + 1
-  if (__exp_r_ldexp_factor > 278.0f)
-  {
-    __exp_r_ldexp_factor = 278.0f;
-  }
+  __exp_r_ldexp_factor = ::cuda::min(__exp_r_ldexp_factor, 278.0f);
   // Catch NaN's here to avoid UB
   if (!(__exp_r_ldexp_factor >= -151.0f))
   {
@@ -229,7 +233,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
 // exp fp64 specialization
 
 template <>
-_CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
+_CCCL_HOST_DEVICE_API inline complex<double> exp<double>(const complex<double>& __x)
 {
   const double __r = __x.real();
   const double __i = __x.imag();
@@ -277,10 +281,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   // Need to add 1 for rounding reasons
   // 1076 = 1023 + 53
   // 2099 = 52 + 2*1023 + 1
-  if (__exp_r_ldexp_factor > 2099.0)
-  {
-    __exp_r_ldexp_factor = 2099.0;
-  }
+  __exp_r_ldexp_factor = ::cuda::min(__exp_r_ldexp_factor, 2099.0);
   // Catch NaN's here to avoid UB
   if (!(__exp_r_ldexp_factor >= -1076.0))
   {
@@ -312,33 +313,33 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   return complex<double>(__ans_r, __ans_i);
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> exp(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> exp(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::exp(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 // pow
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return ::cuda::std::exp(__y * ::cuda::std::log(__x));
 }
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> pow(const complex<__half>& __x, const complex<__half>& __y)
+_CCCL_HOST_DEVICE_API inline complex<__half> pow(const complex<__half>& __x, const complex<__half>& __y)
 {
   // complex<__half>exp and complex<__half>log both call the fp32 version, as they are both
   // faster and more accurate.
@@ -350,7 +351,8 @@ _CCCL_API inline complex<__half> pow(const complex<__half>& __x, const complex<_
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> pow(const complex<__nv_bfloat16>& __x, const complex<__nv_bfloat16>& __y)
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16>
+pow(const complex<__nv_bfloat16>& __x, const complex<__nv_bfloat16>& __y)
 {
   // complex<__nv_bfloat16>exp and complex<__nv_bfloat16>log both call the fp32 version, as they are both
   // faster and more accurate.
@@ -364,7 +366,8 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244)
 
 template <class _Tp, class _Up>
-[[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const complex<_Up>& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<common_type_t<_Tp, _Up>>
+pow(const complex<_Tp>& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
   return ::cuda::std::pow(__result_type(__x), __result_type(__y));
@@ -372,7 +375,7 @@ template <class _Tp, class _Up>
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES((!__is_cuda_std_complex_v<_Up>) )
-[[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
   return ::cuda::std::pow(__result_type(__x), __result_type(__y));
@@ -380,7 +383,7 @@ _CCCL_REQUIRES((!__is_cuda_std_complex_v<_Up>) )
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES((!__is_cuda_std_complex_v<_Tp>) )
-[[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
   return ::cuda::std::pow(__result_type(__x, 0), __result_type(__y));
@@ -391,7 +394,7 @@ _CCCL_DIAG_POP
 // __sqr, computes pow(x, 2)
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> __sqr(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> __sqr(const complex<_Tp>& __x)
 {
   return complex<_Tp>((__x.real() - __x.imag()) * (__x.real() + __x.imag()), _Tp(2) * __x.real() * __x.imag());
 }

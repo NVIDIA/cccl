@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // <cuda/std/functional>
-// UNSUPPORTED: c++20
+// UNSUPPORTED: !c++17
 
 // not2
 
@@ -18,7 +18,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::logical_and<int> F;
+  using F = cuda::std::logical_and<int>;
   assert(!cuda::std::not2(F())(36, 36));
   assert(cuda::std::not2(F())(36, 0));
   assert(cuda::std::not2(F())(0, 36));

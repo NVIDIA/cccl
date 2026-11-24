@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,25 +14,33 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
+
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
-template <int BlockThreadsArg,
+namespace detail
+{
+// TODO(bgruber): drop in CCCL 4.0
+template <int ThreadsPerBlock,
           int WarpThreadsArg,
           int ItemsPerThreadArg,
           cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
-struct AgentSubWarpMergeSortPolicy
+struct agent_sub_warp_merge_sort_policy
 {
-  static constexpr int BLOCK_THREADS      = BlockThreadsArg;
+  static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
   static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
   static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
@@ -42,23 +50,23 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  SubWarpMergeSortAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (WARP_THREADS, WarpThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreadsArg,
+          int ItemsPerThreadArg,
+          cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
+          cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
+using AgentSubWarpMergeSortPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") = detail::agent_sub_warp_merge_sort_policy<
+    ThreadsPerBlock,
+    WarpThreadsArg,
+    ItemsPerThreadArg,
+    LoadAlgorithmArg,
+    LoadModifierArg,
+    StoreAlgorithmArg>;
 
 namespace detail::sub_warp_merge_sort
 {
@@ -71,7 +79,7 @@ namespace detail::sub_warp_merge_sort
  * `PolicyT::LOAD_ALGORITHM`, sort it using `WarpMergeSort`, and store it back
  * using `PolicyT::STORE_ALGORITHM`.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam PolicyT
@@ -86,7 +94,7 @@ namespace detail::sub_warp_merge_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+template <bool IsDescending, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
   using traits           = detail::radix::traits_t<KeyT>;
@@ -95,9 +103,9 @@ class AgentSubWarpSort
   struct BinaryOpT
   {
     template <typename T>
-    _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(T lhs, T rhs) const noexcept
     {
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         return lhs > rhs;
       }
@@ -109,33 +117,33 @@ class AgentSubWarpSort
     }
 
 #if _CCCL_HAS_NVFP16()
-    _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
       else
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
       }
       _CCCL_UNREACHABLE();
     }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
       // Need to explicitly cast to float for SM < 80.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
-        NV_IF_TARGET(
+        NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
       }
       else
       {
-        NV_IF_TARGET(
+        NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hlt(lhs, rhs);), (return __bfloat162float(lhs) < __bfloat162float(rhs);));
       }
       _CCCL_UNREACHABLE();
@@ -144,48 +152,40 @@ class AgentSubWarpSort
   };
 
 #if _CCCL_HAS_NVFP16()
-  _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
+  _CCCL_DEVICE_API static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
   }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-  _CCCL_DEVICE static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
+  _CCCL_DEVICE_API static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
   {
     // Need to explicitly cast to float for SM < 80.
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
   }
 #endif // _CCCL_HAS_NVBF16()
 
   template <typename T>
-  _CCCL_DEVICE static bool equal(T lhs, T rhs)
+  _CCCL_DEVICE_API static bool equal(T lhs, T rhs)
   {
     return lhs == rhs;
   }
 
-  _CCCL_DEVICE static bool get_oob_default(::cuda::std::true_type /* is bool */)
-  {
-    // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
-    // comparison with oob unreliable.
-    return !IS_DESCENDING;
-  }
-
-  _CCCL_DEVICE static KeyT get_oob_default(::cuda::std::false_type /* is bool */)
-  {
-    // For FP64 the difference is:
-    // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
-    // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
-
-    // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
-                                                      : traits::max_raw_binary_key(identity_decomposer_t{});
-    return reinterpret_cast<KeyT&>(default_key_bits);
-  }
-
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
+
+  static_assert(PolicyT::WARP_THREADS <= detail::warp_threads,
+                "SegmentedSortSubWarpMergeSortPolicy: threads_per_warp must not exceed the warp size (32)");
+  // WarpMergeSort expects and produces a blocked arrangement of items
+  static_assert(PolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: load_algorithm must not be WARP_LOAD_STRIPED, since the "
+                "sub-warp merge sort requires a blocked arrangement");
+  static_assert(PolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: store_algorithm must not be WARP_STORE_STRIPED, since the "
+                "sub-warp merge sort produces a blocked arrangement");
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
@@ -211,16 +211,15 @@ public:
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& storage;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit AgentSubWarpSort(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit AgentSubWarpSort(TempStorage& temp_storage)
       : storage(temp_storage.Alias())
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSegment(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessSegment(
     int segment_size, KeysLoadItT keys_input, KeyT* keys_output, ItemsLoadItT values_input, ValueT* values_output)
   {
     WarpMergeSortT warp_merge_sort(storage.sort);
@@ -241,7 +240,25 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = AgentSubWarpSort::get_oob_default(bool_constant_v<::cuda::std::is_same_v<bool, KeyT>>);
+      KeyT oob_default = [&] {
+        if constexpr (::cuda::std::is_same_v<bool, KeyT>)
+        {
+          // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
+          // comparison with oob unreliable.
+          return !IsDescending;
+        }
+        else
+        {
+          // For FP64 the difference is:
+          // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
+          // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
+
+          // Segmented sort doesn't support custom types at the moment.
+          bit_ordered_type default_key_bits = IsDescending ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                           : traits::max_raw_binary_key(identity_decomposer_t{});
+          return reinterpret_cast<KeyT&>(default_key_bits);
+        }
+      }();
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
       __syncwarp(warp_merge_sort.get_member_mask());
@@ -272,7 +289,7 @@ private:
    * Only the first thread of a virtual warp is used for soring.
    */
   template <typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ShortCircuit(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShortCircuit(
     unsigned int linear_tid,
     OffsetT segment_size,
     KeysLoadItT keys_input,

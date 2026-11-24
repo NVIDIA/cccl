@@ -62,12 +62,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                  \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                              \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional_logical]")         \
+  {                                                                                                  \
+    Test##OperatorName##FunctionalHost();                                                            \
+  }                                                                                                  \
   void Test##OperatorName##FunctionalDevice()                                                        \
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                  \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional_logical]")       \
+  {                                                                                                  \
+    Test##OperatorName##FunctionalDevice();                                                          \
+  }
 
 // Create the unit tests
 DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(equal_to, EqualTo);

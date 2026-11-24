@@ -17,15 +17,17 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <random>
+
 using namespace cuda::experimental::stf;
 
 template <int BLOCK_THREADS, typename T>
 __global__ void reduce(slice<const T> values, slice<T> partials, size_t nelems)
 {
   using namespace cub;
-  typedef BlockReduce<T, BLOCK_THREADS> BlockReduceT;
+  using BlockReduceT = BlockReduce<T, BLOCK_THREADS>;
 
-  auto thread_id = BLOCK_THREADS * blockIdx.x + threadIdx.x;
+  auto thread_id = (BLOCK_THREADS * blockIdx.x) + threadIdx.x;
 
   // Local reduction
   T local_sum = 0;
@@ -54,14 +56,16 @@ void run()
   const size_t BLOCK_SIZE = 128;
   const size_t num_blocks = 32;
 
-  int *X, ref_tot;
+  int* X;
+  int ref_tot;
 
   X       = new int[N];
   ref_tot = 0;
 
+  ::std::mt19937 gen(0); // deterministic, as the unseeded rand() was
   for (size_t ind = 0; ind < N; ind++)
   {
-    X[ind] = rand() % N;
+    X[ind] = static_cast<int>(gen() % N);
     ref_tot += X[ind];
   }
 

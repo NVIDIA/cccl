@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
-#include <cuda/std/__algorithm/iter_swap.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__algorithm/partial_sort.h>
@@ -31,15 +30,13 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__functional/ranges_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/climits>
@@ -164,10 +161,7 @@ inline constexpr bool __use_branchless_sort =
 namespace __detail
 {
 // Size in bits for the bitset in use.
-enum
-{
-  __block_size = sizeof(uint64_t) * 8
-};
+inline constexpr int __block_size = sizeof(uint64_t) * 8;
 } // namespace __detail
 
 // Ensures that __c(*__x, *__y) is true by swapping *__x and *__y if necessary.
@@ -601,8 +595,12 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
   }
   else
   {
-    while (++__first < __last && !__comp(__pivot, *__first))
+    while (++__first < __last)
     {
+      if (__comp(__pivot, *__first))
+      {
+        break;
+      }
     }
   }
   // Find the last element less than or equal to the pivot.
@@ -635,7 +633,7 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
   uint64_t __right_bitset     = 0;
 
   // Reminder: length = __lm1 - __first + 1.
-  while (__lm1 - __first >= 2 * __detail::__block_size - 1)
+  while (__lm1 - __first >= (2 * __detail::__block_size) - 1)
   {
     // Record the comparison outcomes for the elements currently on the left
     // side.
@@ -705,8 +703,14 @@ __partition_with_equals_on_right(_RandomAccessIterator __first, _RandomAccessIte
   // Find the last element less than the pivot.
   if (__begin == __first - difference_type(1))
   {
-    while (__first < __last && !__comp(*--__last, __pivot))
-      ;
+    while (__first < __last)
+    {
+      --__last;
+      if (__comp(*__last, __pivot))
+      {
+        break;
+      }
+    }
   }
   else
   {
@@ -777,8 +781,12 @@ __partition_with_equals_on_left(_RandomAccessIterator __first, _RandomAccessIter
   }
   else
   {
-    while (++__first < __last && !__comp(__pivot, *__first))
+    while (++__first < __last)
     {
+      if (__comp(__pivot, *__first))
+      {
+        break;
+      }
     }
   }
 
@@ -927,9 +935,9 @@ _CCCL_API void __introsort(
       continue;
     }
     // Use bitset partition only if asked for.
-    auto __ret                = _UseBitSetPartition
-                                ? ::cuda::std::__bitset_partition<_AlgPolicy, _RandomAccessIterator, _Compare>(__first, __last, __comp)
-                                : ::cuda::std::__partition_with_equals_on_right<_AlgPolicy, _RandomAccessIterator, _Compare>(
+    auto __ret = _UseBitSetPartition
+                 ? ::cuda::std::__bitset_partition<_AlgPolicy, _RandomAccessIterator, _Compare>(__first, __last, __comp)
+                 : ::cuda::std::__partition_with_equals_on_right<_AlgPolicy, _RandomAccessIterator, _Compare>(
                      __first, __last, __comp);
     _RandomAccessIterator __i = __ret.first;
     // [__first, __i) < *__i and *__i <= [__i+1, __last)
@@ -946,13 +954,10 @@ _CCCL_API void __introsort(
         __last = __i;
         continue;
       }
-      else
+      if (__fs)
       {
-        if (__fs)
-        {
-          __first = ++__i;
-          continue;
-        }
+        __first = ++__i;
+        continue;
       }
     }
     // Sort the left partition recursively and the right partition with tail recursion elimination.
@@ -972,11 +977,11 @@ _CCCL_API _Number __log2i(_Number __n)
   }
   if (sizeof(__n) <= sizeof(uint32_t))
   {
-    return sizeof(uint32_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
+    return (sizeof(uint32_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
   }
   if (sizeof(__n) <= sizeof(uint64_t))
   {
-    return sizeof(uint64_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
+    return (sizeof(uint64_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
   }
 
   _Number __log2 = 0;
@@ -988,8 +993,8 @@ _CCCL_API _Number __log2i(_Number __n)
   return __log2;
 }
 
-template <class Comp, class RandomAccessIterator>
-_CCCL_API void __sort(RandomAccessIterator first, RandomAccessIterator last, Comp comp)
+template <class _Comp, class _RandomAccessIterator>
+_CCCL_API void __sort(_RandomAccessIterator first, _RandomAccessIterator last, _Comp comp)
 {
   auto depth_limit = 2 * ::cuda::std::__bit_log2(static_cast<size_t>(last - first));
 
@@ -997,7 +1002,7 @@ _CCCL_API void __sort(RandomAccessIterator first, RandomAccessIterator last, Com
   // that the default comparator is in use so that we are sure that there are no
   // branches in the comparator.
   ::cuda::std::
-    __introsort<_ClassicAlgPolicy, Comp, RandomAccessIterator, __use_branchless_sort<Comp, RandomAccessIterator>>(
+    __introsort<_ClassicAlgPolicy, _Comp, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator>>(
       first, last, comp, depth_limit);
 }
 
@@ -1016,10 +1021,10 @@ _CCCL_API constexpr void __sort_dispatch(_RandomAccessIterator __first, _RandomA
 }
 
 template <class _Type, class... _Options>
-using __is_any_of = _Or<is_same<_Type, _Options>...>;
+using __is_any_of _CCCL_NODEBUG = _Or<is_same<_Type, _Options>...>;
 
 template <class _Type>
-using __sort_is_specialized_in_library = __is_any_of<
+using __sort_is_specialized_in_library _CCCL_NODEBUG = __is_any_of<
   _Type,
   char,
 #ifndef _LIBCPP_HAS_NO_WIDE_CHARACTERS

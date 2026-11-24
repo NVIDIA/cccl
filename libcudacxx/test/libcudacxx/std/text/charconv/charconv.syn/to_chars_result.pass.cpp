@@ -11,7 +11,9 @@
 #include <cuda/std/charconv>
 #include <cuda/std/type_traits>
 
-__host__ __device__ constexpr void test_members()
+#include "test_macros.h"
+
+TEST_FUNC constexpr void test_members()
 {
   cuda::std::to_chars_result x{nullptr, cuda::std::errc{}};
 
@@ -24,7 +26,7 @@ __host__ __device__ constexpr void test_members()
   assert(ec == x.ec);
 }
 
-__host__ __device__ constexpr void test_operator_bool()
+TEST_FUNC constexpr void test_operator_bool()
 {
   static_assert(!cuda::std::is_convertible_v<cuda::std::to_chars_result, bool>);
   static_assert(cuda::std::is_constructible_v<bool, cuda::std::to_chars_result>);
@@ -41,7 +43,7 @@ __host__ __device__ constexpr void test_operator_bool()
   }
 }
 
-__host__ __device__ constexpr void test_operator_eq_and_neq()
+TEST_FUNC constexpr void test_operator_eq_and_neq()
 {
   char a[]{'a'};
   char b[]{'b'};
@@ -72,7 +74,7 @@ __host__ __device__ constexpr void test_operator_eq_and_neq()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_members();
   test_operator_bool();

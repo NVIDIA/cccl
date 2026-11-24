@@ -18,7 +18,7 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <template <class...> class Traits>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Iter       = cuda::discard_iterator;
   using IterTraits = Traits<Iter>;
@@ -33,7 +33,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::__has_random_access_traversal<Iter>);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<cuda::std::iterator_traits>();
 #if !TEST_COMPILER(NVRTC)

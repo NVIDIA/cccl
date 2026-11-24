@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__type_traits/decay.h>
+// IWYU pragma: end_exports
 
-#if _CCCL_STD_VER >= 2023 && __cpp_auto_cast >= 202110L
+#if _CCCL_STD_VER >= 2023 && __cpp_auto_cast >= 202110L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_AUTO_CAST(expr) auto(expr)
 #elif _CCCL_STD_VER < 2020 && _CCCL_COMPILER(MSVC)
 #  define _LIBCUDACXX_AUTO_CAST(expr) (::cuda::std::decay_t<decltype((expr))>) (expr)

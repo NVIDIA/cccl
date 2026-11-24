@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,15 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/unary_function.h>
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__functional/unary_function.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
-
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 template <class _Arg, class _Result>
 class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
@@ -54,10 +55,10 @@ CCCL_DEPRECATED _CCCL_API inline pointer_to_unary_function<_Arg, _Result> ptr_fu
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 #endif // _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H

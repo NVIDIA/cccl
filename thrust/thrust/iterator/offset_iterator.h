@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,10 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/incrementable_traits.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -80,7 +82,7 @@ THRUST_NAMESPACE_BEGIN
 //!
 //! In the above example, the offset is loaded from a device vector, transformed by a \p transform_iterator, and then
 //! applied to the underlying iterator, when the \p offset_iterator is accessed.
-template <typename Iterator, typename Offset = typename ::cuda::std::iterator_traits<Iterator>::difference_type>
+template <typename Iterator, typename Offset = ::cuda::std::iter_difference_t<Iterator>>
 class offset_iterator : public iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>
 {
   //! \cond
@@ -92,17 +94,17 @@ public:
   using difference_type = typename super_t::difference_type;
   //! \endcond
 
-  _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, Offset offset = {})
+  _CCCL_HOST_DEVICE_API offset_iterator(Iterator it = {}, Offset offset = {})
       : super_t(::cuda::std::move(it))
       , m_offset(offset)
   {}
 
-  _CCCL_HOST_DEVICE const Offset& offset() const
+  _CCCL_HOST_DEVICE_API const Offset& offset() const
   {
     return m_offset;
   }
 
-  _CCCL_HOST_DEVICE Offset& offset()
+  _CCCL_HOST_DEVICE_API Offset& offset()
   {
     return m_offset;
   }
@@ -113,7 +115,7 @@ private:
   static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE auto offset_value() const
+  _CCCL_HOST_DEVICE_API auto offset_value() const
   {
     if constexpr (indirect_offset)
     {
@@ -126,18 +128,18 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return *(this->base() + offset_value());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
+  _CCCL_HOST_DEVICE_API bool equal(const offset_iterator& other) const
   {
     return this->base() + offset_value() == other.base() + other.offset_value();
   }
 
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(difference_type n)
   {
     if constexpr (indirect_offset)
     {
@@ -149,7 +151,7 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     if constexpr (indirect_offset)
     {
@@ -161,7 +163,7 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     if constexpr (indirect_offset)
     {
@@ -174,7 +176,7 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
+  _CCCL_HOST_DEVICE_API difference_type distance_to(const offset_iterator& other) const
   {
     return (other.base() + other.offset_value()) - (this->base() + offset_value());
   }
@@ -185,7 +187,7 @@ private:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <typename Iterator>
-_CCCL_HOST_DEVICE offset_iterator(Iterator) -> offset_iterator<Iterator>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES offset_iterator(Iterator) -> offset_iterator<Iterator>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! \} // end fancyiterators

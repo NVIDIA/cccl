@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,19 +22,23 @@
 #  pragma system_header
 #endif // no system header
 
+// The pragma namespaces `clang` and `GCC` are not reserved identifiers, so stringize the pragmas without expanding
+// user macros of the same name.
+#define _CCCL_DIAG_PRAGMA(...) _Pragma(#__VA_ARGS__)
+
 // Enable us to selectively silence host compiler warnings
 #if _CCCL_COMPILER(CLANG)
-#  define _CCCL_DIAG_PUSH                     _CCCL_PRAGMA(clang diagnostic push)
-#  define _CCCL_DIAG_POP                      _CCCL_PRAGMA(clang diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_PRAGMA(clang diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_PUSH                     _CCCL_DIAG_PRAGMA(clang diagnostic push)
+#  define _CCCL_DIAG_POP                      _CCCL_DIAG_PRAGMA(clang diagnostic pop)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_DIAG_PRAGMA(clang diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(GCC)
-#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
-#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_DIAG_PRAGMA(GCC diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_DIAG_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
-#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_PRAGMA(GCC diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_DIAG_PRAGMA(GCC diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(NVHPC)
@@ -62,7 +66,7 @@
 
 // Enable us to selectively silence cuda compiler warnings
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#  ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic pop)
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
@@ -92,6 +96,7 @@
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations") \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                 \
@@ -99,6 +104,7 @@
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations") \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                             \
@@ -106,24 +112,36 @@
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)                     \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message) \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)       \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444)
+#  define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVRTC)
-#  define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
-#  define _CCCL_SUPPRESS_DEPRECATED_POP  _CCCL_NV_DIAG_POP()
+#  if _CCCL_COMPILER(NVRTC, >=, 13, 3) && defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#    define _CCCL_SUPPRESS_DEPRECATED_PUSH       _CCCL_NV_DIAG_PUSH()
+// NVRTC 13.3 does not honor nv_diag_suppress when it is emitted in the same macro expansion as
+// nv_diagnostic push. Keep the suppression in a separate source-level macro invocation.
+// See https://github.com/NVIDIA/cccl/issues/9170 and nvbug 6239043.
+#    define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG _Pragma("nv_diag_suppress 1444,20199")
+#  else // ^^^ NVRTC >= 13.3 with __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^
+#    define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#    define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#  endif // ^^^ NVRTC >= 13.3 with __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^
+#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP()
 #else // unknown compiler
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
+#  define _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // unknown compiler
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
-#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
+#  ifndef _LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
 #    define _CCCL_USE_PRAGMA_MSVC_WARNING
 #  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
 #endif // !_CCCL_COMPILER(MSVC)

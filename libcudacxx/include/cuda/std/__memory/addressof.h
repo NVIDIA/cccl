@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,14 +33,26 @@
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+#if _CCCL_FREESTANDING()
+#  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // _CCCL_FREESTANDING()
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#ifdef __CUDACC_TILE__
+#  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // defined(__CUDACC_TILE__)
+
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
-#    include <bits/move.h>
+#    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
 #    include <__memory/addressof.h>
-#  elif !_CCCL_COMPILER(NVRTC)
-#    include <cuda/std/__cccl/memory_wrapper.h>
+#  else
+#    include <cuda/std/__host_stdlib/memory>
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 
@@ -60,7 +72,7 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -71,7 +83,7 @@ _Tp* addressof(const _Tp&&) noexcept = delete;
 #else
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }

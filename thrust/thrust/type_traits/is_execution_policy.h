@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A type trait that determines if a type is an \a ExecutionPolicy.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +18,8 @@
 #endif // no system header
 
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
+
+#include <cuda/std/__type_traits/is_base_of.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -54,7 +42,7 @@ using is_execution_policy = ::cuda::std::is_base_of<detail::execution_policy_mar
  *  \a ExecutionPolicy and \c false otherwise.
  */
 template <typename T>
-constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
+inline constexpr bool is_execution_policy_v = ::cuda::std::is_base_of_v<detail::execution_policy_marker, T>;
 
 /*! \} // type traits
  */

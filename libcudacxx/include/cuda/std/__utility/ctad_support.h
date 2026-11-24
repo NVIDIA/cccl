@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,6 +22,6 @@
 
 #define _CCCL_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
   template <class... _Tag>                        \
-  _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
+  _CCCL_DEDUCTION_GUIDE_ATTRIBUTES _ClassName(typename _Tag::__allow_ctad...) -> _ClassName<_Tag...>
 
 #endif // _CUDA_STD___UTILITY_CTAD_SUPPORT_H

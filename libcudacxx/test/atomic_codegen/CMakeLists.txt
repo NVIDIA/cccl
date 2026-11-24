@@ -1,67 +1,43 @@
-add_custom_target(libcudacxx.test.atomics.ptx)
+if (libcudacxx_codegen_filecheck_atomics_sass)
+  add_subdirectory(sass)
+endif()
 
-find_program(filecheck "FileCheck")
-
-if (filecheck)
-  message("-- ${filecheck} found... building atomic codegen tests")
-else()
+if (NOT libcudacxx_codegen_filecheck_atomics_ptx)
   return()
 endif()
 
-find_program(cuobjdump "cuobjdump" REQUIRED)
-find_program(bash "bash" REQUIRED)
+add_custom_target(libcudacxx.test.atomics.ptx)
 
-set(atomic_codegen_cuda_arch 80)
-
-set(libcudacxx_atomic_codegen_tests)
-if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  return()
 endif()
 
-# For every atomic API compile the TU and check if the SASS/PTX matches the expected result
-foreach (test_path IN LISTS libcudacxx_atomic_codegen_tests)
-  cmake_path(GET test_path FILENAME test_file)
-  cmake_path(REMOVE_EXTENSION test_file LAST_ONLY OUTPUT_VARIABLE test_name)
+file(GLOB libcudacxx_atomic_codegen_tests CONFIGURE_DEPENDS "*.cu")
+if (NOT libcudacxx_atomic_codegen_tests)
+  return()
+endif()
 
-  add_library(atomic_codegen_${test_name} STATIC "${test_path}")
+libcudacxx_codegen_check_tools(libcudacxx_codegen_tests_enabled)
+if (NOT libcudacxx_codegen_tests_enabled)
+  return()
+endif()
 
-  set_target_properties(
-    atomic_codegen_${test_name}
-    PROPERTIES
-      CUDA_ARCHITECTURES "${atomic_codegen_cuda_arch}"
-      COMPILE_DEFINITIONS "_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1"
+libcudacxx_codegen_get_cuda_architectures(atomic_codegen_cuda_archs PTX)
+if (NOT atomic_codegen_cuda_archs)
+  message(
+    STATUS
+    "No compatible CUDA architectures requested; skipping atomic PTX codegen tests"
   )
+  return()
+endif()
 
-  # Clang stopped emitting PTX in clang20. Add flags to re-enable it.
-  if (
-    CMAKE_CUDA_COMPILER_ID STREQUAL Clang
-    AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 20
-  )
-    target_compile_options(
-      atomic_codegen_${test_name}
-      PRIVATE "--cuda-include-ptx=sm_${atomic_codegen_cuda_arch}"
-    )
-  endif()
-
-  target_compile_options(atomic_codegen_${test_name} PRIVATE "-Wno-comment")
-
-  ## Important for testing the local headers
-  target_include_directories(
-    atomic_codegen_${test_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-  )
-  add_dependencies(libcudacxx.test.atomics.ptx atomic_codegen_${test_name})
-
-  # Add output path to object directory
-  add_custom_command(
-    TARGET libcudacxx.test.atomics.ptx
-    POST_BUILD
-    # gersemi: off
-    COMMAND
-      "${CMAKE_CURRENT_SOURCE_DIR}/dump_and_check.bash"
-        $<TARGET_FILE:atomic_codegen_${test_name}>
-        "${test_path}"
-        SM8X
-    # gersemi: on
+foreach (arch IN LISTS atomic_codegen_cuda_archs)
+  libcudacxx_codegen_add_ptx_tests(
+    AGGREGATE_TARGET libcudacxx.test.atomics.ptx
+    TARGET_PREFIX atomic_codegen
+    ARCH "${arch}"
+    CHECK_PREFIXES SMXX
+    TESTS ${libcudacxx_atomic_codegen_tests}
+    COMPILE_DEFINITIONS _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1
   )
 endforeach()

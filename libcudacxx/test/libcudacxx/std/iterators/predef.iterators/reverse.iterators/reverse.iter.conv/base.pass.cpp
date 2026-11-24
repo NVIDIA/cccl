@@ -19,10 +19,10 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
-  typedef bidirectional_iterator<int*> Iter;
-  int i = 0;
+  using Iter = bidirectional_iterator<int*>;
+  int i      = 0;
   Iter iter(&i);
   cuda::std::reverse_iterator<Iter> const reverse(iter);
   cuda::std::reverse_iterator<Iter>::iterator_type base = reverse.base();
@@ -33,6 +33,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

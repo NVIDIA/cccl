@@ -12,8 +12,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_default_constructor()
+TEST_FUNC constexpr void test_default_constructor()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -26,7 +28,7 @@ __host__ __device__ constexpr void test_default_constructor()
   assert(cuda::std::__fp_get_storage(val) == 0);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_default_constructor<cuda::std::__fp_format::__binary16>();
   test_default_constructor<cuda::std::__fp_format::__binary32>();
@@ -39,6 +41,7 @@ __host__ __device__ constexpr bool test()
   test_default_constructor<cuda::std::__fp_format::__fp80_x86>();
 #endif // _CCCL_HAS_INT128()
   test_default_constructor<cuda::std::__fp_format::__fp8_nv_e4m3>();
+  test_default_constructor<cuda::std::__fp_format::__fp8_nv_ue5m3>();
   test_default_constructor<cuda::std::__fp_format::__fp8_nv_e5m2>();
   test_default_constructor<cuda::std::__fp_format::__fp8_nv_e8m0>();
   test_default_constructor<cuda::std::__fp_format::__fp6_nv_e2m3>();

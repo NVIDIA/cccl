@@ -45,7 +45,7 @@ static_assert(cuda::std::is_constructible_v<SizedSentinelForwardSubrange,
 static_assert(!cuda::std::is_constructible_v<SizedIntPtrSubrange, long*, int*, size_t>); // 4.
 static_assert(cuda::std::is_constructible_v<SizedIntPtrSubrange, int*, int*, size_t>); // 5.
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   SizedSentinelForwardSubrange a(
     ConditionallyConvertibleIter(globalBuff), ConditionallyConvertibleIter(globalBuff + 8), 8);

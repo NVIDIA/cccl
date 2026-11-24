@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cuda/std/complex>
 
 // template<class T>
@@ -20,19 +23,19 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(const T& rho, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const T& rho, cuda::std::complex<T> x)
 {
   assert(cuda::std::polar(rho) == x);
 }
 
 template <class T>
-__host__ __device__ void test(const T& rho, const T& theta, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const T& rho, const T& theta, cuda::std::complex<T> x)
 {
   assert(cuda::std::polar(rho, theta) == x);
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test(T(0), cuda::std::complex<T>(0, 0));
   test(T(1), cuda::std::complex<T>(1, 0));
@@ -43,7 +46,7 @@ __host__ __device__ void test()
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

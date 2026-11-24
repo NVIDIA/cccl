@@ -35,35 +35,35 @@ Build a single CUB test locally::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build the same test for SM90 using a CMake option::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
     --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=90" \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build the test for SM90 with a configure override::
 
   ci/util/build_and_test_targets.sh \
     --configure-override "ci/build_cub.sh -configure -arch 90" \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build **and run** a single CUB test locally::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator" \
-    --ctest-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator" \
+    --ctest-targets "cub.test.iterator"
 
 Build and run a single CUB test in a devcontainer with specific CTK and host::
 
   .devcontainer/launch.sh -d --cuda 12.3 --host gcc12 --gpus all -- \
     ci/util/build_and_test_targets.sh \
       --preset cub-cpp20 \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator"
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator"
 
 Precompile the libcudacxx lit suite::
 
@@ -85,6 +85,29 @@ Execute one or more libcudacxx lit tests::
     --lit-tests \
       "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 
+Documentation builds
+--------------------
+
+Use :file:`docs/gen_docs.bash` for local documentation builds. It generates
+Doxygen XML, regenerates API reference pages, builds Sphinx HTML, and writes
+directly to the versioned output directory under :file:`docs/_build/html/`. The
+version defaults to ``unstable`` and can be overridden with ``SPHINX_CCCL_VER``.
+The script runs Doxygen builds in parallel and builds Sphinx with ``-j auto``::
+
+  ./docs/gen_docs.bash
+
+For repeated edits to hand-written RST files, set
+``CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1`` to reuse existing Doxygen XML and API
+reference pages::
+
+  CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1 ./docs/gen_docs.bash
+
+Use this shortcut only for local iteration on handwritten docs. Cached HTML
+for a deleted or renamed source page may remain until the next full build. Run
+:file:`docs/gen_docs.bash` before final validation; full builds discard the
+Sphinx caches and versioned HTML output before regenerating and checking the
+Doxygen-backed API pages.
+
 ``git_bisect.sh``
 -----------------
 
@@ -102,16 +125,16 @@ Local CUB bisection from latest release to origin/main::
 
   ci/util/git_bisect.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator" \
-    --ctest-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator" \
+    --ctest-targets "cub.test.iterator"
 
 Devcontainer CUB bisection from last week::
 
   .devcontainer/launch.sh -d --cuda 12.3 --host gcc12 --gpus all -- \
     ci/util/git_bisect.sh \
       --preset cub-cpp20 \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator" \
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator" \
       --good-ref -7d
 
 Compute-sanitizer example for regression introduced between 3-4 weeks ago::
@@ -121,8 +144,8 @@ Compute-sanitizer example for regression introduced between 3-4 weeks ago::
     --env C2H_SEED_COUNT_OVERRIDE=1 \
     -- ci/util/git_bisect.sh \
       --preset "cub-cpp20" \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator" \
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator" \
       --good-ref -28d \
       --bad-ref -21d
 

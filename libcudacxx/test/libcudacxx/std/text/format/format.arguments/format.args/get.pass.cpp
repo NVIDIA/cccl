@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // basic_format_arg<Context> get(size_t i) const noexcept;
@@ -19,7 +22,7 @@
 #include "literal.h"
 
 template <class Context>
-__host__ __device__ bool
+TEST_HOST_DEVICE_FUNC bool
 test_format_arg_eq(const cuda::std::basic_format_arg<Context>& lhs, const cuda::std::basic_format_arg<Context>& rhs)
 {
   if (lhs.__type_ != rhs.__type_)
@@ -65,7 +68,7 @@ test_format_arg_eq(const cuda::std::basic_format_arg<Context>& lhs, const cuda::
 }
 
 template <class CharT>
-__host__ __device__ void test_get()
+TEST_HOST_DEVICE_FUNC void test_get()
 {
   using Context = cuda::std::basic_format_context<CharT*, CharT>;
 
@@ -78,8 +81,8 @@ __host__ __device__ void test_get()
     auto c = 'c';
     auto p = nullptr;
 
-    auto store = cuda::std::make_format_args<Context>(n, c, p);
-    auto args  = cuda::std::basic_format_args<Context>{store};
+    const auto store = cuda::std::make_format_args<Context>(n, c, p);
+    const auto args  = cuda::std::basic_format_args<Context>{store};
 
     assert(args.__size() == nargs);
     assert(test_format_arg_eq(
@@ -114,8 +117,9 @@ __host__ __device__ void test_get()
     auto f3 = 2.718281828459045;
     auto f4 = 1.4142135623730951f;
 
-    auto store = cuda::std::make_format_args<Context>(n1, n2, n3, n4, c1, c2, c3, c4, p1, p2, p3, p4, f1, f2, f3, f4);
-    auto args  = cuda::std::basic_format_args<Context>{store};
+    const auto store =
+      cuda::std::make_format_args<Context>(n1, n2, n3, n4, c1, c2, c3, c4, p1, p2, p3, p4, f1, f2, f3, f4);
+    const auto args = cuda::std::basic_format_args<Context>{store};
 
     assert(args.__size() == nargs);
 
@@ -127,7 +131,7 @@ __host__ __device__ void test_get()
   }
 }
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_get<char>();
 #if _CCCL_HAS_WCHAR_T()
@@ -137,5 +141,6 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
+  test();
   return 0;
 }

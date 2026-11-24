@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,18 +21,22 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_null_pointer.h>
-#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/is_arithmetic.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_null_pointer.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_fundamental)
+#  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_fundamental)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
+#ifdef _CCCL_BUILTIN_IS_FUNDAMENTAL
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
 template <class _Tp>
@@ -44,7 +48,7 @@ template <class _Tp>
 inline constexpr bool is_fundamental_v = is_void_v<_Tp> || is_null_pointer_v<_Tp> || is_arithmetic_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<is_fundamental_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : bool_constant<is_fundamental_v<_Tp>>
 {};
 
 #endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL

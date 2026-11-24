@@ -12,7 +12,7 @@
 #define _CUDAX__STREAM_STREAM_REF_CUH
 
 #include <cuda/std/detail/__config>
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,17 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
-#include <cuda/__event/timed_event.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
-#include <cuda_runtime_api.h>
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,10 +46,10 @@ struct stream_ref : ::cuda::stream_ref
 
   stream_ref() = delete;
 
-  //! @brief Converting constructor from \c ::cuda::stream_ref
+  //! @brief Converting constructor from ``cuda::stream_ref``
   //!
   //! @post `*this == __other`
-  _CCCL_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
+  _CCCL_HOST_DEVICE_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
       : ::cuda::stream_ref(__other)
   {}
 
@@ -64,7 +64,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Returns a \c execution::sender that completes on this stream.
   //!
   //! @note Equivalent to `execution::schedule(execution::stream_scheduler{*this})`.
-  _CCCL_API auto schedule() const noexcept;
+  _CCCL_HOST_DEVICE_API auto schedule() const noexcept;
 
   //! @brief Get the logical device under which this stream was created.
   //!
@@ -99,34 +99,34 @@ struct stream_ref : ::cuda::stream_ref
     // lower to CUDART for this instead
     __ensure_current_device __setter(__stream_ctx);
     int __id;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
+    _CCCL_TRY_RUNTIME_API(cudaGetDevice, "Could not get device from a stream", &__id);
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_forward_progress_guarantee_t&) const noexcept
-    -> execution::forward_progress_guarantee
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(const execution::get_forward_progress_guarantee_t&) const noexcept -> execution::forward_progress_guarantee
   {
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_completion_behavior_t&) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(const execution::get_completion_behavior_t&) const noexcept
   {
     return execution::completion_behavior::asynchronous;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref;
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   query(const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> execution::__scheduler_of_t<const _Env&>;
 
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept -> execution::stream_domain;
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> __call_result_t<execution::get_domain_t, const _Env&>;
 };

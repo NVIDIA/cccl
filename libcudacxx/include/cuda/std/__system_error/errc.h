@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,17 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <system_error>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 using ::std::errc;
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 enum class errc
 {
   invalid_argument    = 22,
@@ -42,7 +42,7 @@ enum class errc
   value_too_large = 75,
 #  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
 };
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

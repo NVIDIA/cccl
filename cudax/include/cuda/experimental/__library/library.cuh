@@ -13,7 +13,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -74,12 +74,12 @@ struct library : public library_ref
 
   //! @brief Destroy the `library` object
   //!
-  //! @note If the library fails to unload, the error is silently ignored
+  //! @note If the library fails to unload, the error is silently ignored or an assertion is triggered when enabled.
   ~library()
   {
     if (__library_ != value_type{})
     {
-      [[maybe_unused]] const auto __status = ::cuda::__driver::__libraryUnloadNoThrow(__library_);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__libraryUnloadNoThrow, "Failed to unload library", __library_);
     }
   }
 

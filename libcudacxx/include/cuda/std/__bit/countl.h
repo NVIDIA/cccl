@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -49,9 +48,15 @@
 #  undef _CCCL_BUILTIN_CLZG
 #endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_CLZ
+#  undef _CCCL_BUILTIN_CLZLL
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_BUILTIN_CLZG)
+#ifndef _CCCL_BUILTIN_CLZG
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl_constexpr(_Tp __v) noexcept
@@ -65,7 +70,7 @@ template <typename _Tp>
 
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-#  if defined(_CCCL_BUILTIN_CLZ)
+#  ifdef _CCCL_BUILTIN_CLZ
     return _CCCL_BUILTIN_CLZ(__v);
 #  else // ^^^ _CCCL_BUILTIN_CLZ ^^^ // vvv !_CCCL_BUILTIN_CLZ vvv
     uint32_t __res = 0;
@@ -83,7 +88,7 @@ template <typename _Tp>
   }
   else
   {
-#  if defined(_CCCL_BUILTIN_CLZLL)
+#  ifdef _CCCL_BUILTIN_CLZLL
     return _CCCL_BUILTIN_CLZLL(__v);
 #  else // ^^^ _CCCL_BUILTIN_CLZLL ^^^ // vvv !_CCCL_BUILTIN_CLZLL vvv
     const auto __hi = static_cast<uint32_t>(__v >> 32);
@@ -96,7 +101,7 @@ template <typename _Tp>
 
 #  if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_countl_zero_impl_host(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HOST_API int __cccl_countl_zero_impl_host(_Tp __v) noexcept
 {
 #    if _CCCL_COMPILER(MSVC)
   constexpr auto __digits = numeric_limits<_Tp>::digits;
@@ -113,7 +118,7 @@ template <typename _Tp>
 
 #  if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countl_zero_impl_device(_Tp __v) noexcept
+[[nodiscard]] _CCCL_DEVICE_API int __cccl_countl_zero_impl_device(_Tp __v) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
@@ -130,12 +135,14 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+#  if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__cccl_countl_zero_impl_host(__v);),
                       (return ::cuda::std::__cccl_countl_zero_impl_device(__v);));
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_countl_zero_impl_constexpr(__v);
 }
 
@@ -146,7 +153,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int countl_zero(_Tp __v) noexcept
 {
   int __count{};
-#if defined(_CCCL_BUILTIN_CLZG)
+#ifdef _CCCL_BUILTIN_CLZG
   __count = _CCCL_BUILTIN_CLZG(__v, numeric_limits<_Tp>::digits);
 #else // ^^^ _CCCL_BUILTIN_CLZG ^^^ // vvv !_CCCL_BUILTIN_CLZG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))

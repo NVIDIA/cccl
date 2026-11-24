@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file inner_product.h
  *  \brief Mathematical inner product between ranges
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -86,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -137,7 +124,8 @@ _CCCL_HOST_DEVICE OutputType inner_product(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init);
+_CCCL_HOST_API OutputType
+inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init);
 
 /*! \p inner_product calculates an inner product of the ranges
  *  <tt>[first1, last1)</tt> and <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -198,7 +186,7 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -263,7 +251,7 @@ template <typename InputIterator1,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-OutputType inner_product(
+_CCCL_HOST_API OutputType inner_product(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -277,4 +265,4 @@ OutputType inner_product(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/inner_product.inl>
+#include <thrust/detail/inner_product.inl> // IWYU pragma: export

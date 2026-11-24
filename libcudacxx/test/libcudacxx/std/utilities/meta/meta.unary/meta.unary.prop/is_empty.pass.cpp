@@ -22,29 +22,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_empty()
+TEST_FUNC void test_is_empty()
 {
-  static_assert(cuda::std::is_empty<T>::value, "");
-  static_assert(cuda::std::is_empty<const T>::value, "");
-  static_assert(cuda::std::is_empty<volatile T>::value, "");
-  static_assert(cuda::std::is_empty<const volatile T>::value, "");
-  static_assert(cuda::std::is_empty_v<T>, "");
-  static_assert(cuda::std::is_empty_v<const T>, "");
-  static_assert(cuda::std::is_empty_v<volatile T>, "");
-  static_assert(cuda::std::is_empty_v<const volatile T>, "");
+  static_assert(cuda::std::is_empty<T>::value);
+  static_assert(cuda::std::is_empty<const T>::value);
+  static_assert(cuda::std::is_empty<volatile T>::value);
+  static_assert(cuda::std::is_empty<const volatile T>::value);
+  static_assert(cuda::std::is_empty_v<T>);
+  static_assert(cuda::std::is_empty_v<const T>);
+  static_assert(cuda::std::is_empty_v<volatile T>);
+  static_assert(cuda::std::is_empty_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_empty()
+TEST_FUNC void test_is_not_empty()
 {
-  static_assert(!cuda::std::is_empty<T>::value, "");
-  static_assert(!cuda::std::is_empty<const T>::value, "");
-  static_assert(!cuda::std::is_empty<volatile T>::value, "");
-  static_assert(!cuda::std::is_empty<const volatile T>::value, "");
-  static_assert(!cuda::std::is_empty_v<T>, "");
-  static_assert(!cuda::std::is_empty_v<const T>, "");
-  static_assert(!cuda::std::is_empty_v<volatile T>, "");
-  static_assert(!cuda::std::is_empty_v<const volatile T>, "");
+  static_assert(!cuda::std::is_empty<T>::value);
+  static_assert(!cuda::std::is_empty<const T>::value);
+  static_assert(!cuda::std::is_empty<volatile T>::value);
+  static_assert(!cuda::std::is_empty<const volatile T>::value);
+  static_assert(!cuda::std::is_empty_v<T>);
+  static_assert(!cuda::std::is_empty_v<const T>);
+  static_assert(!cuda::std::is_empty_v<volatile T>);
+  static_assert(!cuda::std::is_empty_v<const volatile T>);
 }
 
 class Empty
@@ -56,7 +56,7 @@ struct NotEmpty
 
 class VirtualFn
 {
-  __host__ __device__ virtual ~VirtualFn();
+  TEST_FUNC virtual ~VirtualFn();
 };
 
 union Union

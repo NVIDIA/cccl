@@ -23,7 +23,7 @@ static_assert(!cuda::std::is_invocable_v<decltype((cuda::std::views::single))>);
 // Can invoke with a move-only type.
 static_assert(cuda::std::is_invocable_v<decltype((cuda::std::views::single)), MoveOnly>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Lvalue.
   {
@@ -66,7 +66,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 

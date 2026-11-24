@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/logical_device_ref.h>
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 
@@ -70,6 +71,10 @@ struct [[maybe_unused]] __ensure_current_context
   //!
   //! @throws cuda_error if the context switch fails
   _CCCL_HOST_API explicit __ensure_current_context(stream_ref __stream);
+
+  _CCCL_HOST_API explicit __ensure_current_context(__logical_device_ref __device)
+      : __ensure_current_context{__device.context()}
+  {}
 
   __ensure_current_context(__ensure_current_context&&)                 = delete;
   __ensure_current_context(__ensure_current_context const&)            = delete;

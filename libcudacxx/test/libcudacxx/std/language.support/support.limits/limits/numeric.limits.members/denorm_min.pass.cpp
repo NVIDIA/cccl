@@ -19,10 +19,11 @@
 #include <cuda/std/limits>
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T expected)
+TEST_FUNC void test(T expected)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::denorm_min(), expected));
   assert(float_eq(cuda::std::numeric_limits<const T>::denorm_min(), expected));
@@ -37,9 +38,9 @@ int main(int, char**)
   test<signed char>(0);
   test<unsigned char>(0);
   test<wchar_t>(0);
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>(0);
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>(0);
   test<char32_t>(0);
   test<short>(0);
@@ -54,18 +55,18 @@ int main(int, char**)
   test<__int128_t>(0);
   test<__uint128_t>(0);
 #endif // _CCCL_HAS_INT128()
-#if defined(FLT_TRUE_MIN)
+#ifdef FLT_TRUE_MIN
   test<float>(FLT_TRUE_MIN);
 #else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
   test<float>(__FLT_DENORM_MIN__);
 #endif // ^^^ !FLT_TRUE_MIN ^^^
-#if defined(DBL_TRUE_MIN)
+#ifdef DBL_TRUE_MIN
   test<double>(DBL_TRUE_MIN);
 #else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
   test<double>(__DBL_DENORM_MIN__);
 #endif // ^^^ !DBL_TRUE_MIN ^^^
 #if _CCCL_HAS_LONG_DOUBLE()
-#  if defined(LDBL_TRUE_MIN)
+#  ifdef LDBL_TRUE_MIN
   test<long double>(LDBL_TRUE_MIN);
 #  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
   test<long double>(__LDBL_DENORM_MIN__);
@@ -80,6 +81,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(0.001953125));
 #endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3>(make_fp8_ue5m3(0x1p-17));
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>(make_fp8_e5m2(0.0000152587890625));
 #endif // _CCCL_HAS_NVFP8_E5M2()

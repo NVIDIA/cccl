@@ -1,38 +1,29 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/find.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/tuple>
 
 // Contributed by Erich Elsen
@@ -41,7 +32,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const T& value)
 {
   using thrust::placeholders::_1;
@@ -52,30 +43,27 @@ find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIt
 template <typename TupleType>
 struct find_if_functor
 {
-  _CCCL_HOST_DEVICE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
+  _CCCL_HOST_DEVICE_API TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
     if (::cuda::std::get<0>(lhs) && ::cuda::std::get<0>(rhs))
     {
       return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (::cuda::std::get<0>(lhs))
+    if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   }
 };
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
-  using result_type     = typename ::cuda::std::tuple<bool, difference_type>;
+  using result_type     = ::cuda::std::tuple<bool, difference_type>;
 
   // empty sequence
   if (first == last)
@@ -100,8 +88,8 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
   IteratorTuple iter_tuple =
     ::cuda::std::make_tuple(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
 
-  ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
-  ZipIterator end   = begin + n;
+  const ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
+  const ZipIterator end   = begin + n;
 
   for (ZipIterator interval_begin = begin; interval_begin < end; interval_begin += interval_size)
   {
@@ -126,7 +114,7 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred));

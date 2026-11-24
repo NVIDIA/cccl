@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 using namespace cuda::experimental::stf;
 
 __global__ void dummy() {}
@@ -24,7 +26,8 @@ int main(int argc, char** argv)
   graph_ctx ctx;
   graph_ctx ctx_2;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(make_slice(X, 1024));
   auto handle_Y = ctx.logical_data(make_slice(Y, 1024));
 
@@ -54,13 +57,13 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    std::cout << "Generating DOT output in " << argv[1] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 
   if (argc > 2)
   {
-    std::cout << "Generating DOT output in " << argv[2] << std::endl;
+    std::cout << "Generating DOT output in " << argv[2] << '\n';
     ctx_2.print_to_dot(argv[2]);
   }
 

@@ -32,7 +32,9 @@ void run()
   Ctx ctx;
 
   const int N = 16;
-  double X[N], Y[N], Z[N];
+  double X[N];
+  double Y[N];
+  double Z[N];
 
   for (size_t ind = 0; ind < N; ind++)
   {
@@ -43,16 +45,16 @@ void run()
 
   // Move logical_data_untyped directly
   logical_data_untyped h1 = ctx.logical_data(X);
-  logical_data_untyped h2(std::move(h1));
+  const logical_data_untyped h2(std::move(h1));
 
   // Ensures the methodology used in the move ctor of logical_data_untyped is working
   // with multiple handles...
   logical_data_untyped h3 = ctx.logical_data(Y);
-  logical_data_untyped h4(std::move(h3));
+  const logical_data_untyped h4(std::move(h3));
 
   // Make sure a class containing a logical_data_untyped is movable
-  foo A = foo(ctx, &Z[0], N);
-  foo B = std::move(A);
+  foo A       = foo(ctx, &Z[0], N);
+  const foo B = std::move(A);
 
   ctx.finalize();
 }

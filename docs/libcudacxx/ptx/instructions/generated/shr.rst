@@ -16,7 +16,7 @@ shr.b32
 .. code-block:: cuda
 
    // shr.b32 dest, a_reg, b_reg; // PTX ISA 10, SM_50
-   template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
+   template <typename B32, enable_if_t<sizeof(B32) == 4 && !(is_integral_v<B32> && is_signed_v<B32>), bool> = true>
    __device__ static inline B32 shr(
      B32 a_reg,
      uint32_t b_reg);
@@ -26,7 +26,7 @@ shr.b64
 .. code-block:: cuda
 
    // shr.b64 dest, a_reg, b_reg; // PTX ISA 10, SM_50
-   template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
+   template <typename B64, enable_if_t<sizeof(B64) == 8 && !(is_integral_v<B64> && is_signed_v<B64>), bool> = true>
    __device__ static inline B64 shr(
      B64 a_reg,
      uint32_t b_reg);
@@ -46,9 +46,9 @@ shr.s32
 .. code-block:: cuda
 
    // shr.s32 dest, a_reg, b_reg; // PTX ISA 10, SM_50
-   template <typename = void>
-   __device__ static inline int32_t shr(
-     int32_t a_reg,
+   template <typename S32, enable_if_t<sizeof(S32) == 4 && is_integral_v<S32> && is_signed_v<S32>, bool> = true>
+   __device__ static inline S32 shr(
+     S32 a_reg,
      uint32_t b_reg);
 
 shr.s64
@@ -56,7 +56,7 @@ shr.s64
 .. code-block:: cuda
 
    // shr.s64 dest, a_reg, b_reg; // PTX ISA 10, SM_50
-   template <typename = void>
-   __device__ static inline int64_t shr(
-     int64_t a_reg,
+   template <typename S64, enable_if_t<sizeof(S64) == 8 && is_integral_v<S64> && is_signed_v<S64>, bool> = true>
+   __device__ static inline S64 shr(
+     S64 a_reg,
      uint32_t b_reg);

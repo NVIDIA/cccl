@@ -65,8 +65,11 @@ Example
      // This semaphore is suitable for all threads on the current processor (e.g. GPU).
      cuda::counting_semaphore<cuda::thread_scope_device> c;
 
+     // This semaphore is suitable for all threads in the same thread block cluster.
+     cuda::counting_semaphore<cuda::thread_scope_cluster> d;
+
      // This semaphore is suitable for all threads in the same thread block.
-     cuda::counting_semaphore<cuda::thread_scope_block> d;
+     cuda::counting_semaphore<cuda::thread_scope_block> e;
    }
 
 `See it on Godbolt <https://godbolt.org/z/3YrjjTvG6>`_

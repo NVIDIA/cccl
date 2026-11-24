@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,9 +25,7 @@
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__type_traits/add_pointer.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,22 +47,22 @@ struct __archetype;
 template <>
 struct __archetype<false, false> // immovable archetype
 {
-  __archetype()                   = default;
-  __archetype(__archetype&&)      = delete;
-  __archetype(const __archetype&) = delete;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
+  __archetype(__archetype&&)        = delete;
+  __archetype(const __archetype&)   = delete;
 
   template <class _Value>
-  _CCCL_API __archetype(_Value) noexcept;
+  _CCCL_HOST_DEVICE_API __archetype(_Value) noexcept;
   template <class _Value>
-  _CCCL_API __archetype(_Value*) = delete;
+  _CCCL_HOST_DEVICE_API __archetype(_Value*) = delete;
 };
 
 // Archetype for interfaces that extend __imovable but not __icopyable
 template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
-  __archetype() = default;
-  _CCCL_API __archetype(__archetype&&) noexcept;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
+  _CCCL_HOST_DEVICE_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
 
@@ -72,23 +70,23 @@ struct __archetype<true, false> : __archetype<false, false> // movable archetype
 template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
-  __archetype() = default;
-  _CCCL_API __archetype(__archetype const&);
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
+  _CCCL_HOST_DEVICE_API __archetype(__archetype const&);
 };
 
 template <class _Interface>
-using __archetype_t _CCCL_NODEBUG_ALIAS =
+using __archetype_t _CCCL_NODEBUG =
   __archetype<__extension_of<_Interface, __imovable<>>, __extension_of<_Interface, __icopyable<>>>;
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
-_CCCL_API auto __normalize_interface(_Ty&&) -> _Ty;
+_CCCL_HOST_DEVICE_API auto __normalize_interface(_Ty&&) -> _Ty;
 
 template <class _Ty>
-_CCCL_API auto __normalize_interface(_Ty*) -> _Ty*;
+_CCCL_HOST_DEVICE_API auto __normalize_interface(_Ty*) -> _Ty*;
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
 
 // Used to map a __basic_any specialization to a normalized interface type:
 template <class _Ty>
@@ -139,13 +137,13 @@ template <class _Archetype>
 extern __archetype<false, false> const* __as_immovable<_Archetype const*>;
 
 template <class _CvAny>
-using __normalized_interface_of _CCCL_NODEBUG_ALIAS = __normalize_t<decltype(__interface_from<__normalize_t<_CvAny>>)>;
+using __normalized_interface_of _CCCL_NODEBUG = __normalize_t<decltype(__interface_from<__normalize_t<_CvAny>>)>;
 
 template <class _CvAny>
-using __src_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_archetype<__normalized_interface_of<_CvAny>>);
+using __src_archetype_of _CCCL_NODEBUG = decltype(__as_archetype<__normalized_interface_of<_CvAny>>);
 
 template <class _CvAny>
-using __dst_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_immovable<__src_archetype_of<_CvAny>>);
+using __dst_archetype_of _CCCL_NODEBUG = decltype(__as_immovable<__src_archetype_of<_CvAny>>);
 
 // If the archetypes are implicitly convertible, then it is possible to
 // dynamically cast from the source to the destination. The cast may fail,
@@ -160,7 +158,9 @@ _CCCL_CONCEPT __any_castable_to =
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   __extension_of<typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type,
+                 // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
                  typename ::cuda::std::remove_reference_t<_DstCvAny>::interface_type>;
 
 _CCCL_END_NAMESPACE_CUDA

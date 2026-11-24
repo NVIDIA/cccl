@@ -21,7 +21,7 @@ using cuda::std::optional;
 
 struct X
 {
-  __host__ __device__ constexpr int test() noexcept
+  TEST_FUNC constexpr int test() noexcept
   {
     return 3;
   }
@@ -29,13 +29,13 @@ struct X
 
 struct Y
 {
-  __host__ __device__ constexpr int test()
+  TEST_FUNC constexpr int test()
   {
     return 5;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::optional<X> opt{};
@@ -86,8 +86,8 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+#ifdef _CCCL_BUILTIN_ADDRESSOF
+  static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;

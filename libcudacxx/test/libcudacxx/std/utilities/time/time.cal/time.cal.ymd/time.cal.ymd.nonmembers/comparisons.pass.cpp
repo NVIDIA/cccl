@@ -40,52 +40,36 @@ int main(int, char**)
   constexpr month January  = cuda::std::chrono::January;
   constexpr month February = cuda::std::chrono::February;
 
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, January, day{1}}, true, false),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, January, day{1}}, true, false));
 
   //  different day
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, January, day{2}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, January, day{2}}, false, true));
 
   //  different month
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, February, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{1}}, year_month_day{year{1234}, February, day{1}}, false, true));
 
   //  different year
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{1}}, year_month_day{year{1235}, January, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{1}}, year_month_day{year{1235}, January, day{1}}, false, true));
 
   //  different month and day
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{2}}, year_month_day{year{1234}, February, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{2}}, year_month_day{year{1234}, February, day{1}}, false, true));
 
   //  different year and month
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, February, day{1}}, year_month_day{year{1235}, January, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, February, day{1}}, year_month_day{year{1235}, January, day{1}}, false, true));
 
   //  different year and day
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, January, day{2}}, year_month_day{year{1235}, January, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, January, day{2}}, year_month_day{year{1235}, January, day{1}}, false, true));
 
   //  different year, month and day
-  static_assert(
-    testComparisons(
-      year_month_day{year{1234}, February, day{2}}, year_month_day{year{1235}, January, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    year_month_day{year{1234}, February, day{2}}, year_month_day{year{1235}, January, day{1}}, false, true));
 
   //  same year, different days
   for (unsigned i = 1; i < 28; ++i)

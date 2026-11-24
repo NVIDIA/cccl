@@ -23,7 +23,7 @@ template <class... Ts>
 using box = cuda::std::__compressed_movable_box<Ts...>;
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
+TEST_FUNC TEST_CONSTEXPR_CXX20 void test(const int expected)
 {
   constexpr bool is_noexcept =
     cuda::std::copyable<T>
@@ -52,7 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   using cuda::std::__compressed_box_choose;
   using cuda::std::__compressed_box_copy_assign_available;
@@ -186,7 +186,7 @@ int main(int, char**)
   test();
 #if TEST_STD_VER >= 2020
 #  if !TEST_COMPILER(GCC, >=, 14) && !TEST_COMPILER(MSVC)
-  // GCC:  error: destroying ‘b’ outside its lifetime (on the })
+  // GCC:  error: destroying 'b' outside its lifetime (on the })
   // MSVC: error: read of an uninitialized symbol
   static_assert(test());
 #  endif // !TEST_COMPILER(GCC, >=, 14) && !TEST_COMPILER(MSVC)

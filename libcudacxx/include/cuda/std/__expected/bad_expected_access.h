@@ -11,7 +11,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,18 +19,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 #include <cuda/std/__utility/move.h>
 
 #include <nv/target>
 
 #if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 #    include <expected>
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
-#    include <exception>
-#  endif // !__cpp_lib_expected
+#  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
+#    include <cuda/std/__host_stdlib/exception>
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,11 +39,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_EXCEPTIONS()
 
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 
 using ::std::bad_expected_access;
 
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
 
 template <class _Err>
 class bad_expected_access;
@@ -56,7 +56,7 @@ public:
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
-  const char* what() const noexcept override
+  _CCCL_HOST_API const char* what() const noexcept override
   {
     return "bad access to cuda::std::expected";
   }
@@ -76,7 +76,7 @@ public:
 #    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
   _CCCL_HOST_DEVICE
 #    endif // _CCCL_CUDA_COMPILER(CLANG)
-  _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept
+  _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept override
   {
     __unex_.~_Err();
   }
@@ -104,7 +104,7 @@ public:
 private:
   _Err __unex_;
 };
-#  endif // !__cpp_lib_expected
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 
 #endif // _CCCL_HAS_EXCEPTIONS()
 

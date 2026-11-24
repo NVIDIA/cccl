@@ -19,8 +19,8 @@
 
 struct Range
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
 
 int main(int, char**)

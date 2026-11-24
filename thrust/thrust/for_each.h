@@ -1,17 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- * *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/for_each.h
  *  \brief Applies a function to each element in a range
@@ -21,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -96,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each(
+_CCCL_HOST_DEVICE_API InputIterator for_each(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -158,7 +145,7 @@ _CCCL_HOST_DEVICE InputIterator for_each(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each_n(
+_CCCL_HOST_DEVICE_API InputIterator for_each_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, UnaryFunction f);
 
 /*! \p for_each applies the function object \p f to each element
@@ -213,7 +200,7 @@ _CCCL_HOST_DEVICE InputIterator for_each_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename UnaryFunction>
-InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
+_CCCL_HOST_API InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
 
 /*! \p for_each_n applies the function object \p f to each element
  *  in the range <tt>[first, first + n)</tt>; \p f's return value, if any,
@@ -267,11 +254,11 @@ InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename UnaryFunction>
-InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);
+_CCCL_HOST_API InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);
 
 /*! \} // end modifying
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/for_each.inl>
+#include <thrust/detail/for_each.inl> // IWYU pragma: export

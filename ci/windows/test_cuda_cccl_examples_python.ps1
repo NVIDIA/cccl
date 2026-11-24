@@ -1,27 +1,39 @@
+<#
+.SYNOPSIS
+    Entry point for the Windows cuda.compute examples test lane.
+.DESCRIPTION
+    Provisions the cuda_cccl wheel, then runs the test payload -- by default in a
+    minimal sibling container, except in `sysctk` mode or when
+    CCCL_MINIMAL_CONTAINER=0. See "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_scripts.rst.
+#>
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
-    [string]$PyVersion
+    [ValidatePattern("^\d+\.\d+t?$")]
+    [string]$PyVersion,
+
+    [Alias("ctk-mode")]
+    [string]$CtkMode = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-# Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-$python = Get-Python -Version $PyVersion
-$cudaMajor = Get-CudaMajor
+# Needs gh and the workflow helpers, which the minimal container lacks.
+$null = Get-CudaCcclWheel
 
-$repoRoot = Get-RepoRoot
+$payloadArgs = @('-py-version', $PyVersion)
+if ($CtkMode) { $payloadArgs += @('-ctk-mode', $CtkMode) }
 
-${wheelPath} = Get-CudaCcclWheel
-& $python -m pip install -U pip pytest pytest-xdist
-& $python -m pip install "${wheelPath}[test-cu$cudaMajor]"
-
-Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
-try {
-    & $python -m pytest -n 6 test_examples.py
+if (((Get-CtkExtraFlavor $CtkMode) -ne 'sysctk') -and ($env:CCCL_MINIMAL_CONTAINER -ne '0')) {
+    & "$PSScriptRoot/run_in_minimal_container.ps1" `
+        -Script 'ci\windows\run_examples_tests.ps1' `
+        -ScriptArgs $payloadArgs
+} else {
+    # By name, not @payloadArgs: array splatting binds positionally, so the
+    # payload would receive the literal "-py-version" as its version.
+    & "$PSScriptRoot/run_examples_tests.ps1" -PyVersion $PyVersion -CtkMode $CtkMode
 }
-finally { Pop-Location }
+exit $LASTEXITCODE

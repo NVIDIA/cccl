@@ -10,15 +10,17 @@
 #include <cuda/std/__string/constexpr_c_functions.h>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 template <class T, size_t n>
-__host__ __device__ constexpr void test_memcpy(const T* src)
+TEST_FUNC constexpr void test_memcpy(const T* src)
 {
   T buf[n + 1]{}; // + 1 to prevent zero size buffer
   assert(cuda::std::__cccl_memcpy(buf, src, n) == buf);
   assert(cuda::std::__cccl_memcmp(buf, src, n) == 0);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // char
   test_memcpy<char, 0>("");

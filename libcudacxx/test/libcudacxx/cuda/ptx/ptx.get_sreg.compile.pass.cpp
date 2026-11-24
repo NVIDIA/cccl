@@ -7,13 +7,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: clang && !nvcc
 
-// <cuda/ptx>
+// <cuda/ptxs/get_sreg.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/get_sreg.h>
 
 #include "generated/get_sreg.h"
 

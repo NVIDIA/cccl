@@ -24,4 +24,21 @@ __global__ void test_mbarrier_init(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::std::uint64_t*, const cuda::std::uint32_t&)>(cuda::ptx::mbarrier_init));));
 #endif // __cccl_ptx_isa >= 700
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.init.layout::v0.shared.b64 [addr], count;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::layout_v0_t, cuda::std::uint64_t*, const cuda::std::uint32_t&)>(
+            cuda::ptx::mbarrier_init));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.init.layout::v1.shared.b64 [addr], count;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::layout_v1_t, cuda::std::uint64_t*, const cuda::std::uint32_t&)>(
+            cuda::ptx::mbarrier_init));));
+#endif // __cccl_ptx_isa >= 940
 }

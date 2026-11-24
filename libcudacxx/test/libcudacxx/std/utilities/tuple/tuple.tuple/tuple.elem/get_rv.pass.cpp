@@ -24,12 +24,14 @@
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
     T t(cuda::std::unique_ptr<int>(new int(3)));
     cuda::std::unique_ptr<int> p = cuda::std::get<0>(cuda::std::move(t));
     assert(*p == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     cuda::std::tuple<MoveOnly> t(3);

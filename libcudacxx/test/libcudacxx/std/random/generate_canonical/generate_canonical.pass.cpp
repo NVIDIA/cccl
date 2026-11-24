@@ -6,17 +6,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-//
 
-#include <cuda/std/__random_>
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/numeric>
+#include <cuda/std/random>
 
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   cuda::std::array<T, 100> data;
   cuda::std::philox4x64 g{};

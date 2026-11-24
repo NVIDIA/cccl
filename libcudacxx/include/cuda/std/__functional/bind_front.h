@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,8 +24,8 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/perfect_forward.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -39,9 +39,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __bind_front_op
 {
   template <class... _Args>
-  _CCCL_API constexpr auto operator()(_Args&&... __args) const
-    noexcept(noexcept(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...)))
-      -> decltype(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Args&&... __args) noexcept(
+    noexcept(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...)))
+    -> decltype(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...))
   {
     return ::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...);
   }

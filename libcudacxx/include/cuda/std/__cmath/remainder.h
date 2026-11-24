@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,14 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float remainder(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDERF)
+#ifdef _CCCL_BUILTIN_REMAINDERF
   return _CCCL_BUILTIN_REMAINDERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDERF ^^^ / vvv !_CCCL_BUILTIN_REMAINDERF vvv
   return ::remainderf(__x, __y);
@@ -61,7 +58,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float remainderf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDERF)
+#ifdef _CCCL_BUILTIN_REMAINDERF
   return _CCCL_BUILTIN_REMAINDERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDERF ^^^ / vvv !_CCCL_BUILTIN_REMAINDERF vvv
   return ::remainderf(__x, __y);
@@ -70,7 +67,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double remainder(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDER)
+#ifdef _CCCL_BUILTIN_REMAINDER
   return _CCCL_BUILTIN_REMAINDER(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDER ^^^ / vvv !_CCCL_BUILTIN_REMAINDER vvv
   return ::remainder(__x, __y);
@@ -80,7 +77,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double remainder(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMAINDERL)
+#  ifdef _CCCL_BUILTIN_REMAINDERL
   return _CCCL_BUILTIN_REMAINDERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_REMAINDERL ^^^ / vvv !_CCCL_BUILTIN_REMAINDERL vvv
   return ::remainderl(__x, __y);
@@ -89,7 +86,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double remainderl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMAINDERL)
+#  ifdef _CCCL_BUILTIN_REMAINDERL
   return _CCCL_BUILTIN_REMAINDERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_REMAINDERL ^^^ / vvv !_CCCL_BUILTIN_REMAINDERL vvv
   return ::remainderl(__x, __y);
@@ -115,7 +112,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> remainder(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::remainder((__result_type) __x, (__result_type) __y);
 }
 
@@ -136,7 +133,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float remquo(float __x, float __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUOF)
+#ifdef _CCCL_BUILTIN_REMQUOF
   return _CCCL_BUILTIN_REMQUOF(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUOF ^^^ / vvv !_CCCL_BUILTIN_REMQUOF vvv
   return ::remquof(__x, __y, __quotient);
@@ -145,7 +142,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float remquof(float __x, float __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUOF)
+#ifdef _CCCL_BUILTIN_REMQUOF
   return _CCCL_BUILTIN_REMQUOF(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUOF ^^^ / vvv !_CCCL_BUILTIN_REMQUOF vvv
   return ::remquof(__x, __y, __quotient);
@@ -154,7 +151,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline double remquo(double __x, double __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUO)
+#ifdef _CCCL_BUILTIN_REMQUO
   return _CCCL_BUILTIN_REMQUO(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUO ^^^ / vvv !_CCCL_BUILTIN_REMQUO vvv
   return ::remquo(__x, __y, __quotient);
@@ -164,7 +161,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double remquo(long double __x, long double __y, int* __quotient) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMQUOL)
+#  ifdef _CCCL_BUILTIN_REMQUOL
   return _CCCL_BUILTIN_REMQUOL(__x, __y, __quotient);
 #  else // ^^^ _CCCL_BUILTIN_REMQUOL ^^^ / vvv !_CCCL_BUILTIN_REMQUOL vvv
   return ::remquol(__x, __y, __quotient);
@@ -173,7 +170,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline long double remquol(long double __x, long double __y, int* __quotient) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMQUOL)
+#  ifdef _CCCL_BUILTIN_REMQUOL
   return _CCCL_BUILTIN_REMQUOL(__x, __y, __quotient);
 #  else // ^^^ _CCCL_BUILTIN_REMQUOL ^^^ / vvv !_CCCL_BUILTIN_REMQUOL vvv
   return ::remquol(__x, __y, __quotient);
@@ -199,7 +196,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> remquo(_A1 __x, _A2 __y, int* __quotient) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::remquo((__result_type) __x, (__result_type) __y, __quotient);
 }
 

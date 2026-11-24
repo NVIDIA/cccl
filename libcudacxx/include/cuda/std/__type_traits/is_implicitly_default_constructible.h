@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -51,6 +53,8 @@ struct __is_implicitly_default_constructible<_Tp,
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file logical.h
  *  \brief Logical operations on ranges
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -82,7 +69,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -125,7 +112,7 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool all_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool all_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p any_of determines whether any element in a range satisfies a predicate.
  *  Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
@@ -170,7 +157,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -214,7 +201,7 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool any_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool any_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p none_of determines whether no element in a range satisfies a predicate.
  *  Specifically, \p none_of returns \c true if there is no iterator \c i in
@@ -259,7 +246,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator first,
         InputIterator last,
@@ -303,7 +290,7 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool none_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool none_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \} // end logical
  *  \} // end reductions
@@ -311,4 +298,4 @@ bool none_of(InputIterator first, InputIterator last, Predicate pred);
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/logical.inl>
+#include <thrust/detail/logical.inl> // IWYU pragma: export

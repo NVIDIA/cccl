@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,11 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,16 +54,71 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
-template <class... _Tunings>
-[[nodiscard]] _CCCL_NODEBUG_API auto __tune(_Tunings...)
+struct __converts_to_anything
 {
-  static_assert((::cuda::std::is_empty_v<_Tunings> && ...), "Stateful tunings are not implemented");
+  template <typename _Tp>
+  _CCCL_API operator _Tp() const
+  {
+    return {};
+  }
+};
 
-  // clang < 19 doesn't like this code
+template <class _PolicySelector>
+_CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
+{
+  constexpr bool __is_selector = ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability>;
+  static_assert(
+    !(__is_selector
+      && ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>),
+    "A callable passed to tune must either be a policy selector (callable with cuda::compute_capability) or "
+    "a policy transformer (callable with cuda::compute_capability and a policy)");
+  if constexpr (__is_selector)
+  {
+    return decltype(_PolicySelector{}(::cuda::compute_capability{})){};
+  }
+  else
+  {
+    constexpr bool __is_transformer =
+      ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>;
+    static_assert(__is_transformer,
+                  "Policy selectors must be invocable with cuda::compute_capability and an optional policy");
+    // only look at the return type if the call operator is usable, to not follow up with more errors
+    if constexpr (__is_transformer)
+    {
+      using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, __converts_to_anything{}));
+      static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, __converts_to_anything>,
+                    "Policy selectors must return a concrete policy type");
+      static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
+                    "Policy selectors with more than one argument must accept the returned policy type as second "
+                    "argument");
+      return ret_t{};
+    }
+    else
+    {
+      return int{}; // already diagnosed
+    }
+  }
+}
+
+//! @rst
+//! Creates an environment from a pack of policy selectors or policy transformers that can be passed to device-wide
+//! parallel algorithms to select tunings for different target architectures. A policy transformer additionally receives
+//! the policy of the default policy selector and returns a modified policy. See the :ref:`policy selector documentation
+//! <cub-policy-selectors>` for more information on how algorithms can be tuned.
+//! @endrst
+template <class... _PolicySelectors>
+[[nodiscard]] _CCCL_NODEBUG_API auto tune(_PolicySelectors...)
+{
+  static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Policy selectors must be stateless");
+  static_assert((::cuda::std::semiregular<_PolicySelectors> && ...), "Policy selectors must be semiregular types");
+
   // since all the tunings are stateless, let's ignore incoming parameters
-  ::cuda::std::execution::env<_Tunings...> __env{};
 
-  return ::cuda::std::execution::prop{__get_tuning_t{}, __env};
+  // we use the return type of the policy_selector as tag
+  using tuning_env = ::cuda::std::execution::env<
+    ::cuda::std::execution::prop<decltype(__detect_policy_return_type<_PolicySelectors>()), _PolicySelectors>...>;
+
+  return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION

@@ -17,35 +17,35 @@
 
 class move_only
 {
-  __host__ __device__ move_only(const move_only&);
-  __host__ __device__ move_only& operator=(const move_only&);
+  TEST_FUNC move_only(const move_only&);
+  TEST_FUNC move_only& operator=(const move_only&);
 
 public:
-  __host__ __device__ move_only(move_only&&) {}
-  __host__ __device__ move_only& operator=(move_only&&)
+  TEST_FUNC move_only(move_only&&) {}
+  TEST_FUNC move_only& operator=(move_only&&)
   {
     return *this;
   }
 
-  __host__ __device__ move_only() {}
+  TEST_FUNC move_only() {}
 };
 
-__host__ __device__ move_only source()
+TEST_FUNC move_only source()
 {
   return move_only();
 }
-__host__ __device__ const move_only csource()
+TEST_FUNC const move_only csource()
 {
   return move_only();
 }
 
-__host__ __device__ void test(move_only) {}
+TEST_FUNC void test(move_only) {}
 
-__device__ int global_var              = 42;
-__device__ const int& global_reference = global_var;
+TEST_GLOBAL_VARIABLE int global_var                               = 42;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() noexcept
+TEST_FUNC QualInt get() noexcept
 {
   return static_cast<QualInt>(global_var);
 }
@@ -55,19 +55,19 @@ TEST_GLOBAL_VARIABLE int move_ctor = 0;
 
 struct A
 {
-  __host__ __device__ A() {}
-  __host__ __device__ A(const A&)
+  TEST_FUNC A() {}
+  TEST_FUNC A(const A&)
   {
     ++copy_ctor;
   }
-  __host__ __device__ A(A&&)
+  TEST_FUNC A(A&&)
   {
     ++move_ctor;
   }
-  __host__ __device__ A& operator=(const A&) = delete;
+  TEST_FUNC A& operator=(const A&) = delete;
 };
 
-__host__ __device__ constexpr bool test_constexpr_move()
+TEST_FUNC constexpr bool test_constexpr_move()
 {
   int y        = 42;
   const int cy = y;
@@ -77,15 +77,16 @@ __host__ __device__ constexpr bool test_constexpr_move()
 int main(int, char**)
 {
   { // Test return type and noexcept.
-    static_assert(cuda::std::is_same<decltype(cuda::std::move(global_var)), int&&>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::move(global_var)), int&&>::value);
     static_assert(noexcept(cuda::std::move(global_var)));
-    static_assert(cuda::std::is_same<decltype(cuda::std::move(global_reference)), const int&&>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::move(global_reference)), const int&&>::value);
     static_assert(noexcept(cuda::std::move(global_reference)));
-    static_assert(cuda::std::is_same<decltype(cuda::std::move(42)), int&&>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::move(42)), int&&>::value);
     static_assert(noexcept(cuda::std::move(42)));
-    static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value);
     static_assert(noexcept(cuda::std::move(get<int const&&>())));
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   { // test copy and move semantics
     A a;
     const A ca = A();
@@ -109,6 +110,7 @@ int main(int, char**)
     assert(copy_ctor == 3);
     assert(move_ctor == 1);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test on a move only type
     move_only mo;
     test(cuda::std::move(mo));
@@ -116,8 +118,8 @@ int main(int, char**)
   }
   {
     constexpr int y = 42;
-    static_assert(cuda::std::move(y) == 42, "");
-    static_assert(test_constexpr_move(), "");
+    static_assert(cuda::std::move(y) == 42);
+    static_assert(test_constexpr_move());
   }
 
   return 0;

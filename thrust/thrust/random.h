@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file random.h
  *  \brief Pseudo-random number generators.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,16 +19,16 @@
 #include <cuda/std/cstdint>
 
 // RNGs
-#include <thrust/random/discard_block_engine.h>
-#include <thrust/random/linear_congruential_engine.h>
-#include <thrust/random/linear_feedback_shift_engine.h>
-#include <thrust/random/subtract_with_carry_engine.h>
-#include <thrust/random/xor_combine_engine.h>
+#include <thrust/random/discard_block_engine.h> // IWYU pragma: export
+#include <thrust/random/linear_congruential_engine.h> // IWYU pragma: export
+#include <thrust/random/linear_feedback_shift_engine.h> // IWYU pragma: export
+#include <thrust/random/subtract_with_carry_engine.h> // IWYU pragma: export
+#include <thrust/random/xor_combine_engine.h> // IWYU pragma: export
 
 // distributions
-#include <thrust/random/normal_distribution.h>
-#include <thrust/random/uniform_int_distribution.h>
-#include <thrust/random/uniform_real_distribution.h>
+#include <thrust/random/normal_distribution.h> // IWYU pragma: export
+#include <thrust/random/uniform_int_distribution.h> // IWYU pragma: export
+#include <thrust/random/uniform_real_distribution.h> // IWYU pragma: export
 
 THRUST_NAMESPACE_BEGIN
 

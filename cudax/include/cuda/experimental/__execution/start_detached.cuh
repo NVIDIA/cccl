@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,11 +24,9 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__exception/terminate.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -76,13 +74,13 @@ private:
       delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }
@@ -90,16 +88,16 @@ private:
 
 public:
   template <class _Sndr>
-  _CCCL_API static auto apply_sender(_Sndr __sndr)
+  _CCCL_HOST_DEVICE_API static auto apply_sender(_Sndr __sndr)
   {
     execution::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
   }
 
   /// run detached.
   template <class _Sndr>
-  _CCCL_API void operator()(_Sndr __sndr) const
+  _CCCL_HOST_DEVICE_API void operator()(_Sndr __sndr) const
   {
-    using __domain_t _CCCL_NODEBUG_ALIAS = __completion_domain_of_t<set_value_t, _Sndr, env<>>;
+    using __domain_t _CCCL_NODEBUG = __completion_domain_of_t<set_value_t, _Sndr, env<>>;
     execution::apply_sender(__domain_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };

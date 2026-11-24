@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
+#ifdef _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER
 
 template <class _S1, class _S2, class _M1, class _M2>
 [[nodiscard]] _CCCL_API constexpr bool is_corresponding_member(_M1 _S1::* __m1_ptr, _M2 _S2::* __m2_ptr) noexcept

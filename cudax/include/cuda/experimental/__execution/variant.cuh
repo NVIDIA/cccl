@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,22 +22,21 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/monostate.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
@@ -74,7 +73,7 @@ struct __visit_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... _Idx, class _Fn, class _CvVariant, class... _As>
-  _CCCL_API static void
+  _CCCL_HOST_DEVICE_API static void
   __visit(::cuda::std::index_sequence<_Idx...>*,
           const size_t __index,
           _Fn&& __fn,
@@ -114,7 +113,7 @@ namespace __detail
 struct __destroy_fn
 {
   template <class _Ty>
-  _CCCL_API void operator()(_Ty& __ty) const noexcept
+  _CCCL_HOST_DEVICE_API void operator()(_Ty& __ty) const noexcept
   {
     ::cuda::std::__destroy_at(::cuda::std::addressof(__ty));
   }
@@ -123,7 +122,7 @@ struct __destroy_fn
 struct __move_to_fn
 {
   template <class _Ty>
-  _CCCL_API void operator()(_Ty&& __from) const noexcept
+  _CCCL_HOST_DEVICE_API void operator()(_Ty&& __from) const noexcept
   {
     ::cuda::std::__construct_at(static_cast<decay_t<_Ty>*>(__to), static_cast<_Ty&&>(__from));
   }
@@ -137,9 +136,9 @@ class __variant
 {
 public:
   template <size_t _Ny>
-  using __at _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG = ::cuda::std::__type_index_c<_Ny, _Ts...>;
 
-  _CCCL_API __variant() noexcept {}
+  _CCCL_HOST_DEVICE_API __variant() noexcept {}
 
   _CCCL_TEMPLATE(class...)
   _CCCL_REQUIRES((::cuda::std::move_constructible<_Ts> && ...))
@@ -154,7 +153,7 @@ public:
     }
   }
 
-  _CCCL_API ~__variant()
+  _CCCL_HOST_DEVICE_API ~__variant()
   {
     __reset();
   }
@@ -170,14 +169,14 @@ public:
   }
 
   template <int = 0, class _Ty>
-  _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>&
+  _CCCL_HOST_DEVICE_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>&
   {
     return __emplace<decay_t<_Ty>>(static_cast<_Ty&&>(__value));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
-  _CCCL_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
+  _CCCL_HOST_DEVICE_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = __index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
@@ -190,7 +189,8 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Ny, class... _As>
-  _CCCL_API auto __emplace_at(_As&&... __as) noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
+  _CCCL_HOST_DEVICE_API auto __emplace_at(_As&&... __as) noexcept(__nothrow_constructible<__at<_Ny>, _As...>)
+    -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
@@ -202,11 +202,11 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class... _As>
-  _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
+  _CCCL_HOST_DEVICE_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
-    constexpr size_t __new_index         = __index_of<__result_t, _Ts...>();
+    using __result_t _CCCL_NODEBUG = __call_result_t<_Fn, _As...>;
+    constexpr size_t __new_index   = __index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
     __reset();
@@ -215,7 +215,7 @@ public:
     return *::cuda::std::launder(__value);
   }
 
-  _CCCL_API void __reset() noexcept
+  _CCCL_HOST_DEVICE_API void __reset() noexcept
   {
     if (__index_ != __npos)
     {
@@ -231,7 +231,7 @@ private:
   friend struct __visit_t;
 
   template <size_t, bool _Check, class _CvVariant>
-  friend _CCCL_API constexpr auto&& __variant_get(_CvVariant&& __var) noexcept;
+  friend _CCCL_HOST_DEVICE_API constexpr auto&& __variant_get(_CvVariant&& __var) noexcept;
 
   _CCCL_TRIVIAL_API static constexpr auto __indices() noexcept -> ::cuda::std::make_index_sequence<sizeof...(_Ts)>*
   {
@@ -263,13 +263,13 @@ private:
 };
 
 template <class... _Ts>
-using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, _Ts...>;
+using __nullable_variant _CCCL_NODEBUG = __variant<__monostate, _Ts...>;
 
 template <class... _Ts>
-using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG = __variant<decay_t<_Ts>...>;
 
 template <class... _Ts>
-using __nullable_decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, decay_t<_Ts>...>;
+using __nullable_decayed_variant _CCCL_NODEBUG = __variant<__monostate, decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

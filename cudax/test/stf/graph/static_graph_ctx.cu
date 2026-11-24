@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 using namespace cuda::experimental::stf;
 
 // Static graph ctx
@@ -24,7 +26,8 @@ __global__ void dummy() {}
 
 int main(int argc, char** argv)
 {
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
@@ -43,7 +46,7 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    std::cout << "Generating DOT output in " << argv[1] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -64,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(const argument_type& __v) const
+  [[nodiscard]] _CCCL_API constexpr result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type& __v)
   {
     size_t __res = __v.valueless_by_exception()
                    ? 299792458 // Random value chosen by the universe upon creation

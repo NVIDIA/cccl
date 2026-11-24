@@ -7,6 +7,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: assertion failed
+
 // <memory>
 
 // default_delete
@@ -19,11 +26,11 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<B> d2;
-  cuda::std::default_delete<A> d1 = d2;
-  A* p                            = new B;
+  [[maybe_unused]] cuda::std::default_delete<A> d1 = d2;
+  A* p                                             = new B;
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);

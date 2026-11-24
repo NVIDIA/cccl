@@ -1,18 +1,5 @@
-/*
- *  Copyright 2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/shuffle_iterator.h
 //! \brief An output iterator which generates a sequence of values representing a random permutation
@@ -20,7 +7,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,15 +16,18 @@
 #endif // no system header
 
 #include <thrust/detail/random_bijection.h>
-#include <thrust/detail/type_traits.h>
+#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -148,21 +138,21 @@ public:
   //! shuffle_iterator.
   template <class URBG,
             class Enable = ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<BijectionFunc, IndexType, URBG&&>>>
-  _CCCL_HOST_DEVICE shuffle_iterator(IndexType n, URBG&& g)
+  _CCCL_HOST_DEVICE_API shuffle_iterator(IndexType n, URBG&& g)
       : super_t(IndexType{0})
       , bijection(n, ::cuda::std::forward<URBG>(g))
   {}
 
   //! \brief Constructs a \p shuffle_iterator with a given bijection.
   //! \param bijection The bijection to use.
-  _CCCL_HOST_DEVICE shuffle_iterator(BijectionFunc bijection)
+  _CCCL_HOST_DEVICE_API shuffle_iterator(BijectionFunc bijection)
       : super_t(IndexType{0})
       , bijection(std::move(bijection))
   {}
 
 private:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  _CCCL_HOST_DEVICE IndexType dereference() const
+  _CCCL_HOST_DEVICE_API IndexType dereference() const
   {
     assert(this->base() < bijection.size());
     return bijection(this->base());
@@ -179,7 +169,7 @@ private:
 //! \return A new \p shuffle_iterator which generates a random permutation of the input range.
 //! \see shuffle_iterator
 template <class IndexType, class URBG>
-_CCCL_HOST_DEVICE shuffle_iterator<IndexType> make_shuffle_iterator(IndexType n, URBG&& g)
+_CCCL_HOST_DEVICE_API shuffle_iterator<IndexType> make_shuffle_iterator(IndexType n, URBG&& g)
 {
   return shuffle_iterator<IndexType>(n, ::cuda::std::forward<URBG>(g));
 } // end make_shuffle_iterator

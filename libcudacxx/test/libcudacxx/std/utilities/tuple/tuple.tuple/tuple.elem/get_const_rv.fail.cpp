@@ -17,12 +17,12 @@
 #include <cuda/std/tuple>
 
 template <class T>
-__host__ __device__ void cref(T const&)
+TEST_FUNC void cref(T const&)
 {}
 template <class T>
-__host__ __device__ void cref(T const&&) = delete;
+TEST_FUNC void cref(T const&&) = delete;
 
-cuda::std::tuple<int> __host__ __device__ const tup4()
+cuda::std::tuple<int> TEST_FUNC const tup4()
 {
   return cuda::std::make_tuple(4);
 }

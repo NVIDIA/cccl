@@ -28,7 +28,7 @@ struct Empty
 struct A
 {
   int id_;
-  __host__ __device__ explicit constexpr A(int i)
+  TEST_FUNC explicit constexpr A(int i)
       : id_(i)
   {}
 };
@@ -42,30 +42,30 @@ struct NoDefault
 // are not explicitly initialized are not all default constructible.
 // Otherwise, cuda::std::is_constructible would return true but instantiating
 // the constructor would fail.
-__host__ __device__ void test_default_constructible_extension_sfinae()
+TEST_FUNC void test_default_constructible_extension_sfinae()
 {
   {
     using Tuple = cuda::std::tuple<MoveOnly, NoDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<Tuple, MoveOnly>::value);
 
-    static_assert(cuda::std::is_constructible<Tuple, MoveOnly, NoDefault>::value, "");
+    static_assert(cuda::std::is_constructible<Tuple, MoveOnly, NoDefault>::value);
   }
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, NoDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly>::value);
 
-    static_assert(cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly, NoDefault>::value, "");
+    static_assert(cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly, NoDefault>::value);
   }
   {
     // Same idea as above but with a nested tuple type.
     using Tuple       = cuda::std::tuple<MoveOnly, NoDefault>;
     using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
-    static_assert(!cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value);
 
-    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value, "");
+    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value);
   }
   // testing extensions
 #ifdef _CUDA_STD_VERSION
@@ -73,9 +73,9 @@ __host__ __device__ void test_default_constructible_extension_sfinae()
     using Tuple       = cuda::std::tuple<MoveOnly, int>;
     using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
-    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
+    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value);
 
-    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value, "");
+    static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value);
   }
 #endif
 }
@@ -104,16 +104,16 @@ int main(int, char**)
     using Tup = cuda::std::tuple<E, E, E>;
     // Test that the reduced arity initialization extension is only
     // allowed on the explicit constructor.
-    static_assert(test_convertible<Tup, E, E, E>(), "");
+    static_assert(test_convertible<Tup, E, E, E>());
 
     Tup t(E(0), E(1));
-    static_assert(!test_convertible<Tup, E, E>(), "");
+    static_assert(!test_convertible<Tup, E, E>());
     assert(cuda::std::get<0>(t) == 0);
     assert(cuda::std::get<1>(t) == 1);
     assert(cuda::std::get<2>(t) == MoveOnly());
 
     Tup t2(E(0));
-    static_assert(!test_convertible<Tup, E>(), "");
+    static_assert(!test_convertible<Tup, E>());
     assert(cuda::std::get<0>(t2) == 0);
     assert(cuda::std::get<1>(t2) == E());
     assert(cuda::std::get<2>(t2) == E());
@@ -124,7 +124,7 @@ int main(int, char**)
   }
   {
     constexpr cuda::std::tuple<A, A> t(3, 2);
-    static_assert(cuda::std::get<0>(t).id_ == 3, "");
+    static_assert(cuda::std::get<0>(t).id_ == 3);
   }
   // Check that SFINAE is properly applied with the default reduced arity
   // constructor extensions.

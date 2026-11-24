@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,26 +22,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/cstddef> // size_t
-#include <cuda/std/cstdint> // uintptr_t
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _ByteAlignment, class _ElementType>
-[[nodiscard]] _CCCL_API inline bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
+[[nodiscard]] _CCCL_API bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
 {
-  using ::cuda::std::uintptr_t;
-  static_assert(::cuda::is_power_of_two(_ByteAlignment), "alignment must be a power of two");
-  if constexpr (!::cuda::std::is_void_v<_ElementType>)
-  {
-    static_assert(_ByteAlignment % alignof(_ElementType) == 0,
-                  "the alignment must be a multiple of the element alignment");
-  }
-  return (reinterpret_cast<uintptr_t>(__ptr) % _ByteAlignment) == 0;
+  static_assert(::cuda::__is_valid_alignment(_ByteAlignment), "invalid _ByteAlignment");
+  return ::cuda::is_aligned(__ptr, _ByteAlignment);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

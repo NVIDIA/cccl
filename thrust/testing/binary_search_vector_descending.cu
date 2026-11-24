@@ -21,7 +21,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundDescendingSimple()
+void test_vector_lower_bound_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -35,18 +35,18 @@ void TestVectorLowerBoundDescendingSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end = thrust::lower_bound(
+  const typename IntVector::iterator output_end = thrust::lower_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(integral_output.end(), output_end);
+  REQUIRE(integral_output.end() == output_end);
 
-  IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
-  ASSERT_EQUAL(ref, integral_output);
+  const IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
+  REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_lower_bound_descending_simple);
 
 template <class Vector>
-void TestVectorUpperBoundDescendingSimple()
+void test_vector_upper_bound_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -59,18 +59,18 @@ void TestVectorUpperBoundDescendingSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end = thrust::upper_bound(
+  const typename IntVector::iterator output_end = thrust::upper_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(output_end, integral_output.end());
+  REQUIRE(output_end == integral_output.end());
 
-  IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
-  ASSERT_EQUAL(ref, integral_output);
+  const IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
+  REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_upper_bound_descending_simple);
 
 template <class Vector>
-void TestVectorBinarySearchDescendingSimple()
+void test_vector_binary_search_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -84,26 +84,26 @@ void TestVectorBinarySearchDescendingSimple()
 
   // test with boolean output type
   BoolVector bool_output(10);
-  typename BoolVector::iterator bool_output_end = thrust::binary_search(
+  const typename BoolVector::iterator bool_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(bool_output_end, bool_output.end());
+  REQUIRE(bool_output_end == bool_output.end());
 
-  BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
-  ASSERT_EQUAL(bool_ref, bool_output);
+  const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
+  REQUIRE(bool_ref == bool_output);
 
   // test with integral output type
   IntVector integral_output(10, 2);
-  typename IntVector::iterator int_output_end = thrust::binary_search(
+  const typename IntVector::iterator int_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(int_output_end, integral_output.end());
+  REQUIRE(int_output_end == integral_output.end());
 
-  IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
+  const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
 
-  ASSERT_EQUAL(int_ref, integral_output);
+  REQUIRE(int_ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_binary_search_descending_simple);
 
 template <typename T>
 struct TestVectorLowerBoundDescending
@@ -126,10 +126,10 @@ struct TestVectorLowerBoundDescending
     thrust::lower_bound(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorLowerBoundDescending, SignedIntegralTypes> TestVectorLowerBoundDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDescending, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBoundDescending
@@ -152,10 +152,10 @@ struct TestVectorUpperBoundDescending
     thrust::upper_bound(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorUpperBoundDescending, SignedIntegralTypes> TestVectorUpperBoundDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDescending, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearchDescending
@@ -178,7 +178,7 @@ struct TestVectorBinarySearchDescending
     thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorBinarySearchDescending, SignedIntegralTypes> TestVectorBinarySearchDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDescending, SignedIntegralTypes);

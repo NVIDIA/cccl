@@ -19,7 +19,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,9 +27,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/cstdint>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <nv/target>
+
+#include <cstring>
+#include <functional>
 
 namespace cuda::experimental::stf
 {
@@ -210,7 +218,7 @@ public:
   {}
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */

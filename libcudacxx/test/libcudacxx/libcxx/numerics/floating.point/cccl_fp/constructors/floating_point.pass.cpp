@@ -16,8 +16,10 @@
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt, class Fp>
-__host__ __device__ constexpr void test_fp_constructor()
+TEST_FUNC constexpr void test_fp_constructor()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -33,7 +35,7 @@ __host__ __device__ constexpr void test_fp_constructor()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_format()
+TEST_FUNC constexpr void test_format()
 {
   // standard floating point types
   test_fp_constructor<Fmt, float>();
@@ -55,6 +57,9 @@ __host__ __device__ constexpr void test_format()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_constructor<Fmt, __nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_constructor<Fmt, __nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_fp_constructor<Fmt, __nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -86,13 +91,14 @@ __host__ __device__ constexpr void test_format()
 #endif // _CCCL_HAS_INT128()
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e4m3>>();
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e5m2>>();
+  test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_ue5m3>>();
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e8m0>>();
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp6_nv_e2m3>>();
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp6_nv_e3m2>>();
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp4_nv_e2m1>>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_format<cuda::std::__fp_format::__binary16>();
   test_format<cuda::std::__fp_format::__binary32>();

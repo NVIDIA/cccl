@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file system/system_error.h
  *  \brief An exception object used to report error conditions that have an
@@ -23,16 +10,18 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/system/error_code.h>
 
-#include <stdexcept>
+#include <cuda/std/__host_stdlib/stdexcept>
+
 #include <string>
 
 THRUST_NAMESPACE_BEGIN
@@ -79,7 +68,7 @@ namespace system
  *    }
  *    catch(thrust::system_error e)
  *    {
- *      std::cerr << "Error inside sort: " << e.what() << std::endl;
+ *      std::cerr << "Error inside sort: " << e.what() << '\n';
  *      terminate_gracefully();
  *    }
  *
@@ -145,7 +134,7 @@ public:
 
   /*! Destructor does not throw.
    */
-  inline virtual ~system_error() noexcept {}
+  _CCCL_HIDE_FROM_ABI ~system_error() noexcept override = default;
 
   /*! Returns an object encoding the error.
    *  \return <tt>ec</tt> or <tt>error_code(ev, ecat)</tt>, from the
@@ -157,7 +146,7 @@ public:
    *  \return a string incorporating <tt>code().message()</tt> and the
    *          arguments supplied in the constructor.
    */
-  inline const char* what() const noexcept;
+  inline const char* what() const noexcept override;
 
   /*! \cond
    */
@@ -180,4 +169,4 @@ using system::system_error;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/system_error.inl>
+#include <thrust/system/detail/system_error.inl> // IWYU pragma: export

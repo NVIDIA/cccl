@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,44 +20,54 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_all_extents)
+#  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_all_extents)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
+#ifdef _CCCL_BUILTIN_REMOVE_ALL_EXTENTS
+
 template <class _Tp>
 struct remove_all_extents
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
 };
 
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
-using remove_all_extents_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+using remove_all_extents_t _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
+template <class _Tp>
+using remove_all_extents_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
-#else
+#else // ^^^ _CCCL_BUILTIN_REMOVE_ALL_EXTENTS ^^^ / vvv !_CCCL_BUILTIN_REMOVE_ALL_EXTENTS vvv
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[]>
 {
-  using type = typename remove_all_extents<_Tp>::type;
+  using type _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
 };
 template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[_Np]>
 {
-  using type = typename remove_all_extents<_Tp>::type;
+  using type _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
 };
 
 template <class _Tp>
-using remove_all_extents_t _CCCL_NODEBUG_ALIAS = typename remove_all_extents<_Tp>::type;
+using remove_all_extents_t _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
 
-#endif // defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_REMOVE_ALL_EXTENTS ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

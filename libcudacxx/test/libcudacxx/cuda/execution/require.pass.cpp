@@ -8,10 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   static_assert(
     cuda::std::is_same_v<decltype(cuda::execution::determinism::__get_determinism(cuda::execution::__get_requirements(
@@ -34,6 +37,11 @@ __host__ __device__ void test()
       decltype(cuda::execution::output_ordering::__get_output_ordering(
         cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::unsorted)))),
       cuda::execution::output_ordering::unsorted_t>);
+
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::execution::output_ordering::__get_output_ordering(cuda::execution::__get_requirements(
+                  cuda::execution::require(cuda::execution::output_ordering::stable_sorted)))),
+                cuda::execution::output_ordering::stable_sorted_t>);
 }
 
 int main(int, char**)
