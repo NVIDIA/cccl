@@ -405,7 +405,7 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_same_type()
 
 _CCCL_DIAG_POP
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
 TEST_FUNC constexpr bool basic_constexpr_test()
 {
   struct Nested
@@ -423,7 +423,7 @@ int main(int, char**)
 {
   assert(tests()); // NOLINT(misc-static-assert)
   assert(test_same_type()); // NOLINT(misc-static-assert)
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
   static_assert(basic_constexpr_test());
   static_assert(test_same_type());
 #endif // _CCCL_BUILTIN_BIT_CAST

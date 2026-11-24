@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -87,7 +87,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 
 /*
  * Polynomial evaluation helpers
@@ -1089,7 +1089,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // None of the four branches matched, so the bodies below would expand to undefined
 // _CCCL_FPMP_*Q macros. The auto-detection above cannot produce this; forcing
 // CCCL_FPMP_FP128_MATH_FALLBACK=1 on a pass with no binary128 math backend can.
-#    if !defined(_CCCL_FPMP_EXPQ)
+#    ifndef _CCCL_FPMP_EXPQ
 #      error \
         "CCCL_FPMP_FP128_MATH_FALLBACK is on but this compilation pass has no binary128 math backend (no <quadmath.h>, no 128-bit long double, no device fp128 intrinsics). Leave the knob unset to get the binary64 bodies, or provide a backend."
 #    endif

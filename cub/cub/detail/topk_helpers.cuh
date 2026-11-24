@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/climits>
 
@@ -58,17 +59,13 @@ template <int BitsPerPass>
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = (int{sizeof(T)} * CHAR_BIT) - ((pass + 1) * BitsPerPass);
-  start_bit     = ::cuda::std::max(start_bit, 0);
-  return start_bit;
+  return (::cuda::max) ((int{sizeof(T)} * CHAR_BIT) - ((pass + 1) * BitsPerPass), 0);
 }
 
 template <int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
 {
-  int start_bit = total_bits - ((pass + 1) * BitsPerPass);
-  start_bit     = ::cuda::std::max(start_bit, 0);
-  return start_bit;
+  return (::cuda::max) (total_bits - ((pass + 1) * BitsPerPass), 0);
 }
 
 // Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing

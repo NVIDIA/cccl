@@ -14,7 +14,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -181,7 +181,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 /**
  * \brief Log macro for printf statements.
  */
-#if !defined(_CubLog)
+#ifndef _CubLog
 #  if _CCCL_HOSTJIT()
 #    define _CubLog(format, ...) (void(0))
 #  else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv !_CCCL_HOSTJIT() vvv

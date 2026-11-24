@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_ty
   }
   else
   {
-    return (UniformRandomNumberGenerator::min) (); // NOLINT(readability-redundant-parentheses)
+    return (UniformRandomNumberGenerator::min) ();
   }
 }
 
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_ty
   }
   else
   {
-    return (UniformRandomNumberGenerator::max) (); // NOLINT(readability-redundant-parentheses)
+    return (UniformRandomNumberGenerator::max) ();
   }
 }
 

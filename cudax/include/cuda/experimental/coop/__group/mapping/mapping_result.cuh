@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo(dabayer): do we want to always use uint32_t for all counts/ranks?
 
@@ -46,6 +46,11 @@ struct __uniform_static_unit_count;
 
 template <::cuda::std::size_t... _StaticUnitCounts>
 struct __static_unit_counts;
+
+template <::cuda::std::size_t _StaticGroupCount,
+          ::cuda::std::size_t _StaticGroupRank,
+          ::cuda::std::size_t _StaticUnitCount>
+struct __per_group_count;
 
 template <class _CountsTag, bool _IsAlwaysExhaustive, bool _IsAlwaysContiguous>
 struct __mapping_result;
@@ -275,8 +280,12 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
   {
     _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
-    constexpr ::cuda::std::size_t __counts[]{_StaticUnitCounts...};
-    return __counts[__i];
+
+    // Use fold expression rather than constexpr array to keep runtime queries in registers.
+    ::cuda::std::size_t __index  = 0;
+    ::cuda::std::size_t __result = 0;
+    ((__result = (__i == __index++) ? _StaticUnitCounts : __result), ...);
+    return __result;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
@@ -316,6 +325,92 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
     {
       return __unit_rank_ != __invalid_count_or_rank;
     }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
+  {
+    return _IsAlwaysExhaustive;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
+  {
+    return _IsAlwaysContiguous;
+  }
+};
+
+// This mapping result is only ever used in group.with_static_unit_count(...) where it's constructed from the group's
+// mapping result. That means that the mapping result is always valid. We still keep the is_always_exhaustive() property
+// from the original mapping result.
+template <::cuda::std::size_t _StaticGroupCount,
+          ::cuda::std::size_t _StaticGroupRank,
+          ::cuda::std::size_t _StaticUnitCount,
+          bool _IsAlwaysExhaustive,
+          bool _IsAlwaysContiguous>
+struct __mapping_result<__per_group_count<_StaticGroupCount, _StaticGroupRank, _StaticUnitCount>,
+                        _IsAlwaysExhaustive,
+                        _IsAlwaysContiguous>
+{
+  static_assert(_StaticGroupCount != ::cuda::std::dynamic_extent, "group count must be statically known");
+  static_assert(_StaticGroupRank < _StaticGroupCount, "group rank out of range");
+  static_assert(_StaticUnitCount != ::cuda::std::dynamic_extent, "unit count must be statically known");
+
+  ::cuda::std::uint32_t __unit_rank_;
+  ::cuda::device::lane_mask __lane_mask_;
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
+  {
+    return _StaticGroupCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_count() const
+  {
+    return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return _StaticGroupRank;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t group_rank() const
+  {
+    return static_cast<::cuda::std::uint32_t>(_StaticGroupRank);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
+  {
+    return _StaticUnitCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
+    return _StaticUnitCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const
+  {
+    return static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
+  {
+    return __unit_rank_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
+  {
+    return __lane_mask_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool is_valid() const
+  {
+    return true;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()

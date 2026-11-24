@@ -159,6 +159,20 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
 
+  const auto initial_capacity = set.capacity();
+  set.rehash(context.stream);
+  set.rehash_async(context.stream);
+  REQUIRE(set.capacity() == initial_capacity);
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys));
+  set.rehash(context.stream, 2 * initial_capacity);
+  REQUIRE(set.capacity() >= 2 * initial_capacity);
+  set.rehash_async(context.stream, initial_capacity);
+  REQUIRE(set.capacity() == initial_capacity);
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys));
+  REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
+
   // The stencil is negative only for the first half while every key is nonnegative, so the stencil, not the key,
   // selects the first half.
   const auto stencil = cuda::counting_iterator<int>{-num_keys / 2};

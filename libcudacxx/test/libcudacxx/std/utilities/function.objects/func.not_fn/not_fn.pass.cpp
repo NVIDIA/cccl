@@ -390,7 +390,7 @@ TEST_FUNC void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
     assert(ret2() == true);
-#if defined(_CUDA_STD_VERSION)
+#ifdef _CUDA_STD_VERSION
     ret = ret2;
     assert(ret() == true);
     assert(ret2() == true);
@@ -409,7 +409,7 @@ TEST_FUNC void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(cuda::std::move(value2));
     assert(ret2() == true);
-#if defined(_CUDA_STD_VERSION)
+#ifdef _CUDA_STD_VERSION
     ret = cuda::std::move(ret2);
     assert(ret() == true);
 #endif // _CUDA_STD_VERSION

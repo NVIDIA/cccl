@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float hypot(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOTF)
+#ifdef _CCCL_BUILTIN_HYPOTF
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
   return ::hypotf(__x, __y);
@@ -64,7 +64,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float hypotf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOTF)
+#ifdef _CCCL_BUILTIN_HYPOTF
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
   return ::hypotf(__x, __y);
@@ -73,7 +73,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double hypot(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOT)
+#ifdef _CCCL_BUILTIN_HYPOT
   return _CCCL_BUILTIN_HYPOT(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_HYPOT ^^^ // vvv !_CCCL_BUILTIN_HYPOT vvv
   return ::hypot(__x, __y);
@@ -83,7 +83,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double hypot(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_HYPOTL)
+#  ifdef _CCCL_BUILTIN_HYPOTL
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
   return ::hypotl(__x, __y);
@@ -92,7 +92,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double hypotl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_HYPOTL)
+#  ifdef _CCCL_BUILTIN_HYPOTL
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
   return ::hypotl(__x, __y);

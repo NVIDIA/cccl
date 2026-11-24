@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -39,10 +39,11 @@
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
+#include <cuda/experimental/coop/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -118,6 +119,8 @@ class virtual_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(group<_ParentGroup>);
+  static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
+                "the parent group must not be a group_view");
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
@@ -230,53 +233,63 @@ public:
     __synchronizer_instance_.do_wait_aligned(__hier_, ::cuda::std::move(__tok));
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _ParentGroup&)
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _Arg&)
   {
     return _MappingResult::static_group_count();
   }
 
-  template <class _Tp, class _QueryMappingResult>
+  _CCCL_TEMPLATE(class _Tp, class _QueryMappingResult, class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
-  __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&)
+  __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _Arg&)
   {
     // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_count());
   }
 
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _ParentGroup& __parent) const
+  _CCCL_TEMPLATE(class _Tp, class _Arg)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _Arg& __parent) const
   {
     return __count_as_impl<_Tp>(__mapping_result_, __hier_, __parent);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _ParentGroup& __parent) const
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
     return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _ParentGroup&)
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _Arg&)
   {
     return _MappingResult::static_group_rank();
   }
 
-  template <class _Tp, class _QueryMappingResult>
+  _CCCL_TEMPLATE(class _Tp, class _QueryMappingResult, class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
-  __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&)
+  __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _Arg&)
   {
     // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_rank());
   }
 
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _ParentGroup& __parent) const
+  _CCCL_TEMPLATE(class _Tp, class _Arg)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _Arg& __parent) const
   {
     return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __parent);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _ParentGroup& __parent) const
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
+  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
   {
     return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }

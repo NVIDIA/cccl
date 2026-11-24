@@ -51,6 +51,7 @@ check_system_deps() {
     # Map of command -> package name
     local -A cmd_to_pkg=(
         [cmake]=cmake
+        [dot]=graphviz
         [ninja]=ninja-build
         [flex]=flex
         [bison]=bison
