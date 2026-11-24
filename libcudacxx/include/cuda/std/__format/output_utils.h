@@ -88,10 +88,14 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
   {
     __out_it.__get_container()->__copy(__str);
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_OutCharT>::__iterator>)
+  {
+    __out_it.__buffer_->__copy(__str);
     return __out_it;
   }
   else
@@ -136,10 +140,14 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
   {
     __out_it.__get_container()->__transform(__first, __last, ::cuda::std::move(__operation));
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_OutCharT>::__iterator>)
+  {
+    __out_it.__buffer_->__transform(__first, __last, ::cuda::std::move(__operation));
     return __out_it;
   }
   else
@@ -154,10 +162,14 @@ __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
   {
     __out_it.__get_container()->__fill(__n, __value);
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_CharT>::__iterator>)
+  {
+    __out_it.__buffer_->__fill(__n, __value);
     return __out_it;
   }
   else
@@ -193,8 +205,10 @@ template <class _CharT, class _OutIt>
 //! from the type of \a __specs. Integer output uses \c std::to_chars for its
 //! conversion, which means the [\a __first, \a __last) always contains elements
 //! of the type \c char.
+//!
+//! @note We mark this function as _CCCL_NOINLINE_DEVICE to improve ptxas compilation times.
 template <class _CharT, class _ParserCharT, class _OutIt>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE _OutIt
 __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
 {
   if (__size >= static_cast<ptrdiff_t>(__specs.__width_))

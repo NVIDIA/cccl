@@ -25,7 +25,7 @@ def test_register_conversion_example():
     import cutlass
     from cutlass import cute
 
-    import cuda.coop.cutlass as cutlass_coop
+    import cuda.coop.cutlass as coop
 
     @cute.kernel
     def convert_registers(destination: cute.Pointer):
@@ -34,7 +34,7 @@ def test_register_conversion_example():
         original[0] = thread * 2
         original[1] = thread * 2 + 1
 
-        items = cutlass_coop.ThreadData.from_register_tensor(original)
+        items = coop.ThreadData.from_register_tensor(original)
         items[0] = items[0] + 10
         vector = items.to_tensor_ssa()
         copied = items.to_register_tensor()

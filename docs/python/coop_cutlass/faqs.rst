@@ -13,10 +13,19 @@ FAQs
 Which package and import should I use?
 --------------------------------------
 
-Install ``cuda-coop-cutlass`` and use ``import cuda.coop.cutlass as coop``.
-The import activates its CuTe integration. ``cuda.coop`` is a namespace
-parent; public operations live in ``cuda.coop.cutlass``. No separate
-registration call or backend selector is needed.
+Install the ``cuda-coop-cutlass`` package, as
+:ref:`Installation <coop-cutlass-installation>` shows, and import
+``cuda.coop.cutlass``:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as coop
+
+The whole public API is in this one module, and importing it is the only
+setup. Keep the module's name in front of each call, as the examples do with
+``coop``. The package has a function named ``sum``, and
+``from cuda.coop.cutlass import sum`` replaces Python's built-in ``sum`` in
+the importing module.
 
 .. _coop-faq-thread-data-local-array:
 .. _coop-faq-local-array-payload:
@@ -24,94 +33,117 @@ registration call or backend selector is needed.
 Why use ``ThreadData`` for per-thread values?
 ---------------------------------------------
 
-``ThreadData`` carries a compile-time item count, element type, and optional
-alignment through cooperative operations. A returning Load infers its dtype
-from the source. Direct construction supports generated values and auxiliary
-outputs, while register-tensor and immutable-vector adapters connect native
-CuTe values to this payload model.
+A primitive is compiled for a known number of items per thread and a known
+element type. ``ThreadData`` carries both, so a call such as
+``coop.inclusive_sum(block, values)`` needs no other arguments. The item
+count is a template argument of the CUB code behind the call, which is why
+it is a Python integer, fixed when the kernel is compiled.
 
-Declare ``items_per_thread: cutlass.Constexpr`` on the kernel and launcher
-and forward it at launch. The count corresponds to the CUB
-``ITEMS_PER_THREAD`` specialization parameter. A value computed from device
-data cannot supply a static payload extent. Initialize every slot that an
-operation reads and use ``cutlass.range_constexpr`` for payload indexing.
-
-See :ref:`register payloads <coop-cutlass-register-payloads>` for copy,
-identity, lifetime, and reconstruction rules. Conversion does not promise
-zero-copy behavior, absence of spills, or reconstruction of distributed MMA
-ownership from a flat per-thread shape.
+:ref:`ThreadData <coop-thread-data>` in the API reference has the rules and
+the conversions to and from CuTe register tensors. A conversion copies the
+items in flat index order. The kernel keeps track of which thread owns which
+element of a matrix multiply-accumulate (MMA) fragment.
 
 .. _coop-faq-returning-load:
 
 What does Load return?
 ----------------------
 
-``coop.load(group, source, items_per_thread=N)`` always returns a fresh
-``ThreadData``, including when ``N=1``. Separate calls have independent
-result ownership. Use ``ThreadData`` constructors for generated values;
-Load has no caller-provided output parameter.
+A new ``ThreadData`` in each thread of the group, with ``items_per_thread``
+items of the source's element type. In CUB, ``Load`` fills an array that
+the caller declares. Here every call returns a :term:`payload` of its own.
 
-``alignment`` requests a minimum alignment when returned payload storage is
-materialized. It does not establish alignment of the source or destination
-pointer. ``offset`` counts source elements, and ``valid_items`` counts tile
-elements across the group. Without ``oob_default``, invalid payload slots
-are unspecified and must not be read.
+``items_per_thread=1`` gives a payload of one item. A primitive that takes
+one scalar per thread, such as a warp scan, takes ``values[0]``.
+:func:`~cuda.coop.cutlass.load` in the API reference has the rules for
+``offset``, ``valid_items``, ``oob_default`` and ``alignment``.
 
 .. _coop-faq-shared-load:
 
 How do I stage a tile in shared memory?
 ---------------------------------------
 
-Use native CuTe copies with deliberately matched source and destination
-partitions. Synchronize before another thread consumes the shared tile,
-then use returning Load to form per-thread payloads. Store can also write
-``ThreadData`` to a shared tensor. Both native shared allocations and typed
-``TempStorage.reserve`` views are supported. See
-:ref:`shared-memory staging <coop-shared-load-store>`.
+Write the :term:`tile` to a shared tensor, wait at a barrier, and read it
+back with ``load``. The tensor comes from CuTe's ``SmemAllocator`` or from
+:meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`. The
+kernel fills it from a payload with ``store``, or straight from global
+memory with native CuTe copies. The barrier, such as ``block.sync()``, is
+what lets ``load`` give a thread elements that another thread wrote.
 
-A masked-out native copy leaves the destination unchanged. Initialize those
-slots explicitly if the application needs a default. Asynchronous native
-copies require their own completion protocol; a consumer barrier alone does
-not replace that protocol.
+:ref:`Staging a tile in shared memory <coop-shared-load-store>` in Advanced
+topics has a complete kernel that stages a tile with a native copy, and the
+rules for copies with predicates and for asynchronous copies.
 
 .. _coop-faq-thread-data-dtype:
 
 When does ``ThreadData`` need an explicit element type?
 -------------------------------------------------------
 
-Load infers its dtype from a supported CuTe source. Direct construction can
-infer it from homogeneous initialized values. Use typed scalar assignments
-when a computation needs a particular width or signedness. Explicit dtype
-construction remains supported, and a consuming primitive may require a
-specific type or a narrower set of types than the general payload supports.
+When its items are raw MLIR integers, such as the result of an operation
+built with the ``cutlass._mlir`` bindings. They have a width and no sign.
+Pass ``dtype`` with that width, or wrap each item in a CUTLASS type such as
+``cutlass.Uint32``.
 
-Raw MLIR integer values can carry a width without signedness. Preserve their
-intended element type in the producer or wrap them in the corresponding
-CUTLASS scalar type. Explicit metadata must agree with that width. Giving a
-dtype does not initialize missing slots or reconcile conflicting values.
-See :ref:`advanced interop <coop-cutlass-dtype-inference>`.
+Otherwise leave it out. ``load`` takes the type from the memory, and a
+primitive takes it from the items of a payload the kernel fills, which must
+all have the same type. ``dtype`` of :func:`~cuda.coop.cutlass.load` is for
+unsigned integers behind a ``cute.Pointer`` argument, which CuTe reports as
+signed.
+
+``to_tensor_ssa`` and ``to_register_tensor`` need the type as well. A
+payload from ``load``, a primitive or a conversion carries it. For a payload
+the kernel built with ``ThreadData(n)``, ``from_values`` or ``from_fn`` and
+no ``dtype``, pass ``dtype`` to ``to_tensor_ssa`` or ``to_register_tensor``,
+or call ``to_tensor_ssa(like=tensor)``, which takes the type and the shape
+from ``tensor``.
+
+A payload made with ``ThreadData(n, dtype=...)`` still starts with no
+values. Python numbers among the items take that type if it can hold them.
+An integer out of range, or a float in an integer payload, is rejected when
+the kernel is compiled. An item that already has a CuTe type is not
+converted and must have exactly that type. ``ThreadData.from_fn`` with
+``dtype`` converts, as :ref:`the entry on changing a payload's element type
+<coop-faq-payload-conversion>` shows. :ref:`ThreadData <coop-thread-data>`
+in the API reference lists the supported types.
 
 .. _coop-faq-producer:
 
 Who chooses a producer's memory copy and synchronization?
 ---------------------------------------------------------
 
-A producer hook used by ``ThreadData.load(source)`` chooses the copy or load,
-ensures readiness, and owns the source lifetime. The adapter invokes the hook
-once and propagates its errors. A bare TMEM tensor is not automatically
-adapted, and a flat payload shape cannot recover distributed MMA ownership.
-See :ref:`producer interoperability <coop-cutlass-producer-interop>`.
+The producer does. A producer is an object that brings its own data into
+registers, such as one that holds a tensor in tensor memory (TMEM).
+``ThreadData.load(source)`` calls the ``__cuda_coop_thread_data_load__``
+method of ``source`` once, while the kernel is compiled, and makes a
+payload from the register values the method returns. The method chooses the
+copy and makes sure the data is ready. ``ThreadData.load`` itself reads no
+memory and waits at no barrier.
 
-.. _coop-faq-release:
+An object without the method is rejected when the kernel is compiled, a bare
+tensor in tensor memory included. :ref:`Producer-owned register loads
+<coop-cutlass-producer-interop>` in Advanced topics has a tested producer
+and the rules for the method and for what it returns.
 
-Does releasing storage wait for its users?
-------------------------------------------
+.. _coop-faq-temp-storage:
 
-``TempStorage.release()`` inserts no barrier or wait. Complete and synchronize
-outstanding uses before releasing the descriptor. Release consumes it and
-its aliases on the executing path, including within branches and loops, and
-returns the whole allocated region including padding and exclusive slices.
-Using the descriptor or stale aliases after release is an error.
+Why or when would I provide my own ``TempStorage``?
+---------------------------------------------------
+
+Usually you can leave it out. The compiler provides the scratch each call
+needs and adds a barrier after it. Pass your own to choose which calls share
+bytes, to place the barriers yourself, to set the region's size or
+alignment, or to keep your own data in the region. This kernel shares one
+region across three calls:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-temp-storage-begin
+   :end-before: # cutlass-concept-temp-storage-end
+
+:ref:`TempStorage <coop-temp-storage>` in the API reference lists the
+primitives that accept one and shows the layouts and the barriers. The entry
+on :ref:`exclusive slices <coop-faq-exclusive-storage>` says what
+``sharing="exclusive"`` costs and what it saves.
 
 .. _coop-faq-exclusive-storage:
 .. _why-use-sharing-exclusive-instead-of-omitting-storage:
@@ -120,322 +152,361 @@ Using the descriptor or stale aliases after release is an error.
 Why use ``TempStorage`` with ``sharing="exclusive"``?
 -----------------------------------------------------
 
-Passing ``coop.TempStorage(sharing="exclusive")`` as ``temp_storage`` gives
-distinct call sites separate scratch slices. Omitting ``temp_storage`` lets
-the compiler choose the scratch layout and insert reuse barriers. It may
-reuse scratch across compatible calls; omission does not guarantee a
-separate slice for each call site.
+Compared with the default, ``sharing="shared"``, it uses more shared memory
+and needs fewer barriers. Each call site has its own slice, so two different
+call sites never reuse each other's scratch and need no barrier between them
+when ``auto_sync=False``. A call site that runs again, as in a loop, reuses
+its own slice, and that reuse still needs a barrier. See
+:ref:`TempStorage <coop-temp-storage>` for the two layouts side by side.
 
-The explicit ``TempStorage`` descriptor retains its capacity, alignment, and
-synchronization controls. Two calls with separate slices need no barrier
-solely to reuse each other's scratch. This can save that synchronization when
-``auto_sync=False``, at the cost of more shared memory. Barriers required by
-the algorithm or by application data dependencies still apply.
+Leaving ``temp_storage`` out adds a barrier after each call that uses
+scratch. The compiler picks the layout, which today is one region per call.
 
-Repeated execution of one call site, including a loop, reuses its slice.
-Synchronize before that reuse or set ``auto_sync=True`` to request trailing
-reuse barriers. ``sharing`` controls layout independently of ``auto_sync``.
-The backend accounts for cooperative scratch with either explicit or omitted
-storage; ``exclusive`` is a choice about which calls may share its bytes.
+.. _coop-faq-release:
 
-.. _coop-faq-temp-storage:
+Does releasing storage wait for its users?
+------------------------------------------
 
-Why or when would I provide my own ``TempStorage``?
----------------------------------------------------
+No. :meth:`TempStorage.release <cuda.coop.cutlass.TempStorage.release>`
+returns the region as an ordinary shared tensor and adds no barrier. Every
+thread must be past the last primitive that used the region before any
+thread writes through that tensor. With ``auto_sync=False``, call ``sync()``
+before ``release``.
 
-Usually, you can omit it. The compiler allocates the scratch required by
-an operation and inserts a barrier to make reuse safe. Direct, striped, and
-vectorized Load/Store need no shared scratch.
+.. _coop-faq-storage-control-flow:
 
-An explicit descriptor lets you choose which supported block operations
-share an allocation. For example, a transpose Load and Store can
-share scratch while the values stay in each thread's payload:
+Can I use a ``TempStorage`` inside an ``if`` or a loop?
+-------------------------------------------------------
 
-.. code-block:: python
-
-   # Inside a kernel; source, destination, and items_per_thread are arguments.
-   block = coop.this_block()
-   scratch = coop.TempStorage(auto_sync=True)
-   items = coop.load(
-       block, source, items_per_thread=items_per_thread,
-       algorithm="transpose", temp_storage=scratch,
-   )
-   coop.store(
-       block, destination, items, algorithm="transpose", temp_storage=scratch
-   )
-
-The compiler sizes and aligns the shared region for both calls. It inserts
-a barrier after each use. Construct the descriptor inside the kernel, and
-keep application values in ``ThreadData`` or your own arrays.
-
-A descriptor also lets you request capacity or alignment, or choose separate
-slices with ``sharing="exclusive"``. Explicit descriptors default to
-``auto_sync=False``, so the kernel must provide reuse barriers, including across
-loop iterations. The example requests ``auto_sync=True`` to insert those
-barriers automatically. See :ref:`exclusive scratch slices
-<coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
-synchronization.
-
-Explicit block descriptors are supported by transpose-family Load/Store,
-Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
-Discontinuity, Histogram, and both Run Length Decode forms. Storage-free
-Load/Store accept a descriptor without using scratch. Warp operations manage
-their own resources and reject explicit descriptors. See
-:ref:`the storage model <coop-concepts-storage>` and
-:ref:`storage requirements <coop-cutlass-storage>` for each family's limits.
+Yes, as long as every path uses the same object. Construct one
+``TempStorage`` inside the kernel before the ``if`` or loop. The Notes under
+:class:`TempStorage <cuda.coop.cutlass.TempStorage>` list what the compiler
+rejects.
 
 .. _coop-faq-topk-order:
 
 Does TopK return sorted results?
 --------------------------------
 
-No. It selects the smallest or largest keys and places them in a blocked
-output prefix without promising their order. Only the first
-``min(k, valid_items)`` positions are defined. When keys tie at the selection
-boundary, any of the tied keys may fill the remaining positions. Pair variants
-keep each selected key attached to its value. Use a sorting primitive when
-you need ordered output. See the :ref:`TopK examples <coop-cutlass-topk>`.
+No. The selected keys fill the first positions of the result in no defined
+order. To get them in order, pass the result of ``topk_min_keys`` or
+``topk_max_keys`` to :func:`~cuda.coop.cutlass.merge_sort_keys` with
+``valid_items`` set to the number of keys selected and an ``oob_default``
+that sorts after them. The first kernel in
+:ref:`Top-k selection <coop-cutlass-topk>` in the API reference does this
+with ``topk_min_keys``. After ``topk_min_pairs`` or ``topk_max_pairs``, pass
+both payloads to :func:`~cuda.coop.cutlass.merge_sort_pairs` in the same
+way, and each value moves with its key.
 
 .. _coop-faq-global-sort:
 
 Does sorting each block sort the whole array?
 ---------------------------------------------
 
-Each call sorts only the selected group's tile. Several blocks therefore
-produce independently sorted tiles. A globally sorted array requires an
-algorithm that combines those tiles. Warp and logical-warp Merge Sort
-likewise sort each participating group's tile independently. The
+No. A merge sort or a radix sort orders the :term:`tile` of the group that
+makes the call. A kernel that sorts every block leaves each block's tile in
+order and the array as a whole unsorted. The package has no primitive that
+merges sorted tiles. A merge sort also runs on a warp or a group of lanes,
+and a radix sort runs on a block only.
+
+:ref:`Comparison sorting <coop-cutlass-merge-sort>` in the API reference
+says where the sorted keys end up across the threads. The
 :doc:`Merge Sort <visualizations/merge-sort>` and
-:doc:`radix sorting <visualizations/radix>` visualizations illustrate these
-operations.
+:doc:`radix sorting <visualizations/radix>` pages draw both sorts.
 
 .. _coop-faq-neighbor-operations:
 
 When should I use Adjacent Difference or Discontinuity?
 -------------------------------------------------------
 
-Use :func:`cuda.coop.cutlass.adjacent_difference` to compute a value from each item
-and its neighbor, such as the delta between successive samples. Use
-:func:`cuda.coop.cutlass.discontinuity` to produce flags that mark boundaries, such
-as the first and last item of each equal-value run. It returns ``int32``
-flags; ``mode="heads_and_tails"`` returns both payloads.
+Use :func:`~cuda.coop.cutlass.adjacent_difference` for the difference
+between each item and its neighbor, such as the change between successive
+samples. Use :func:`~cuda.coop.cutlass.discontinuity` for flags that mark
+where each run of equal values starts and ends.
+:ref:`Neighbor comparisons <coop-cutlass-neighbors>` in the API reference
+sets the two side by side.
 
-Tile boundaries matter for both operations. Supply a predecessor or
-successor when comparisons must continue across tiles. A multiblock
-kernel that reads global neighbors must preserve those source values
-until all readers finish. The
-:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-:doc:`Discontinuity <visualizations/discontinuity>` examples use separate
-input and output arrays.
+To continue a sequence across tiles, pass the last item of the previous tile
+as ``tile_predecessor_item``, or the first item of the next tile as
+``tile_successor_item``. Read that item from the input array and write
+results to a separate array, so that the input keeps its values for another
+tile or block to read. The second example under
+:func:`~cuda.coop.cutlass.adjacent_difference` does this in a loop over
+tiles.
 
 .. _coop-faq-histogram-padding:
 
 Can I zero-pad a partial Histogram tile?
 ----------------------------------------
 
-Every input sample contributes to a bin, including a padded zero. A
-zero-padded load therefore adds extra counts to bin zero. Histogram has
-no ``valid_items`` parameter. Process complete tiles or handle the tail
-separately with a kernel that counts only valid samples.
+No. ``histogram`` counts every item of every thread, so each padded zero
+adds one to bin 0. Pad with the index of an extra bin, and leave that bin
+out when you store the counts.
 
-Output padding is different: returned counter slots whose bin index is
-at least ``bins`` contain zero. Store the first ``bins`` counters using
-the striped layout. See the
-:doc:`Histogram explorer <visualizations/histogram>`.
+In this kernel ``load`` gives every item at or past ``count`` the value 70.
+``histogram`` counts those items in bin 70, the last of its 71 bins, and
+``store`` writes the counts of bins 0 to 69:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
+   :language: python
+   :start-after: # cutlass-histogram-partial-tile-example-begin
+   :end-before: # cutlass-histogram-partial-tile-example-end
+   :dedent: 4
+
+Without ``oob_default`` the items at or past ``count`` would hold undefined
+values, and ``histogram`` would use them as bin indices.
+:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
+rules for each argument and for the result.
 
 .. _coop-faq-histogram-accumulation:
 
 Does Histogram retain counters between calls?
 ---------------------------------------------
 
-Each call returns fresh counts and preserves its samples. For repeated
-tiles within a kernel, keep an accumulator payload and add the returned
-counts to it. Each thread retains the same striped bin ownership when
-the configuration stays fixed. The :doc:`tested accumulation example
-<visualizations/histogram>` shows this pattern.
+No. Each call counts from zero, even when it shares a ``TempStorage`` with
+earlier calls. To count several tiles, keep a payload of totals and add
+each call's counters to it. Item ``i`` of a thread's counters stands for
+the same bin in every call, so each thread adds item by item:
 
-CUB's ``BlockHistogram::Composite`` accumulates into a caller's counter
-buffer. That persistent state belongs to the buffer; it does not require
-a persistent C++ Histogram object. The Python API exposes the fresh-count
-operation, so neither a parent object nor retained counters in
-``TempStorage`` are needed.
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
+   :language: python
+   :start-after: # cutlass-histogram-tiles-example-begin
+   :end-before: # cutlass-histogram-tiles-example-end
+   :dedent: 4
+
+Here ``totals`` and the counters are ``Int32``. For totals past the range
+of ``Int32``, call ``histogram`` with ``counter_dtype=cutlass.Int64`` and
+give ``totals`` the same element type. CUB's ``Composite`` method, which
+adds to counters the caller keeps, has no counterpart in the package.
+:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
+rules for each argument and for the result.
 
 .. _coop-faq-rld-lifecycle:
 
 Why do windowed and bulk Run Length Decode use different calls?
 ---------------------------------------------------------------
 
-:func:`cuda.coop.cutlass.run_length_decode` returns a fixed-size payload for the
-window beginning at ``decoded_window_offset``. Use it when the kernel
-needs to work with that window's values. It prepares the run table on
-each call, even when calls share a ``TempStorage`` descriptor.
+:func:`~cuda.coop.cutlass.run_length_decode` returns one window of the
+decoded stream as a payload, for the kernel to use.
+:func:`~cuda.coop.cutlass.run_length_decode_into` writes the whole stream to
+a tensor and returns the length of the stream to every thread.
 
-:func:`cuda.coop.cutlass.run_length_decode_into` writes the entire expanded
-sequence into a destination array. It prepares the table once, loops
-over decoding windows internally, and returns the total decoded size to
-every thread. The destination must have enough remaining capacity;
-use separate source and destination storage.
+Every call checks the run lengths and finds where each run starts before it
+decodes, and nothing is kept from one call to the next. A stream of 94 items
+in windows of 32 takes three ``run_length_decode`` calls, each with that
+work. One ``run_length_decode_into`` call does the work once and writes the
+three windows itself.
 
-The prepared run table persists only within the call. A window offset
-selects a position in the expanded sequence; the decoder does not advance
-a hidden cursor. A shared scratch descriptor controls allocation reuse,
-not decoder state. See :ref:`run positions and windows
-<coop-glossary-decoding>` and the
-:doc:`RLD explorer <visualizations/run-length-decode>`.
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference sets
+the two functions side by side, and the example under
+``run_length_decode_into`` is this comparison as a tested kernel. The
+:doc:`explorer <visualizations/run-length-decode>` steps through both calls,
+and :ref:`run positions and windows <coop-glossary-decoding>` in the
+glossary follows one stream through a window.
 
 .. _coop-faq-rld-padding:
 
 How do I pad run inputs and recognize the end of decoded output?
 ----------------------------------------------------------------
 
-Use a positive prefix of run lengths followed by zeros. An all-zero tile
-represents an empty sequence; an interior zero followed by a positive
-length is invalid. The values associated with padding runs are ignored.
+End the block's run lengths with zeros. With the runs taken thread by thread
+across the block, every positive length comes before every zero. The value
+paired with a zero length never appears in the output. A block whose lengths
+are all zero decodes to nothing.
 
-A windowed decode fills positions beyond the expanded sequence with
-zero. Zero may also be a real run value, so use the total decoded size
-to determine which positions are valid. The bulk operation returns
-the total to every block member. For a window, derive its valid prefix
-from the input run lengths. Bulk decoding leaves the unused destination
-suffix unchanged.
+:func:`~cuda.coop.cutlass.run_length_decode` puts zero in every item past
+the end of the stream. Zero can also be a run value, so compare an item's
+position with the length of the stream. ``run_length_decode`` does not
+return that length, and the kernel works it out from the run lengths.
+:func:`~cuda.coop.cutlass.run_length_decode_into` returns the length to
+every thread and leaves the elements after the stream as they were.
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference has
+the rules for lengths and offsets.
 
 .. _coop-faq-batched-reduce:
 
 How does Batched Warp Reduction differ from ordinary Reduce?
 ------------------------------------------------------------
 
-Ordinary ``reduce(group, values)`` combines all participating threads'
-payload items into one aggregate. Both block and Warp reductions accept
-one scalar or a fixed-size payload per thread and define the result only
-at group rank zero.
-``reduce_batched(warp, values)`` reduces each local slot independently across
-the warp. Three slots per lane mean three independent results, one for each
-slot.
+``reduce(group, values)`` combines every item of every thread into one
+result, which the thread with rank 0 in the group holds.
+``reduce_batched(warp, values)`` keeps the items apart: item ``b`` of every
+lane belongs to batch ``b``, and each batch has its own result, so three
+items per lane give three results.
 
-The results are distributed among lanes in blocked or striped order;
-they are not broadcast to every lane. Each returned payload has
-``ceil(batches / warp_width)`` slots, and slots without a corresponding
-batch are unspecified. The :doc:`feature-sum example
-<visualizations/reduce-batched>` guards its stores by batch index.
+Each result is in one lane, and a lane can end up with none.
+``output_layout`` sets which batch each item of the returned payload holds,
+and a kernel reads an item only when that batch number is below the number
+of batches.
+:ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API reference
+has the two output layouts and a tested kernel, and the
+:doc:`explorer <visualizations/reduce-batched>` draws both layouts.
 
 .. _coop-faq-collective-control-flow:
 
-Can thread-local work surround a collective?
---------------------------------------------
+Can I call a primitive inside an ``if`` or a loop?
+--------------------------------------------------
 
-Yes. A leader thread can prepare data before a collective and consume its
-result afterwards. Every member of the group must reach the collective in the
-same iteration, including members whose inputs are excluded by ``valid_items``.
-A condition around the collective itself must be uniform across the group.
-A block collective inside ``if thread == 0`` violates this requirement.
+Yes, when every thread of the group makes the call. An ``if`` around the
+call must have the same condition in every thread of the group, and a loop
+around it the same number of trips. Threads whose data is at or past a
+``valid_items`` count make the call too. For a call on a warp or a group of
+lanes, the group is that warp or those lanes, and the block's other warps
+or groups can take another path. A block primitive inside
+``if block.rank() == 0:`` breaks the rule. The package does not check it,
+so that kernel still compiles. :ref:`Thread groups <coop-thread-groups>` in
+the API reference has the rules that every primitive shares.
 
-Use a runtime ``if`` statement for conditional collective calls. A runtime
-conditional expression such as ``coop.sum(block, x) if condition else y``
-is rejected when it needs temporary storage. Synchronize application data
-before another thread reads it; the collective's scratch-reuse barrier does
-not replace synchronization required by earlier application writes.
+Work for some of the threads goes before or after the call, in an ``if`` of
+its own. This fragment makes one group of 24 lanes in each warp. The outer
+condition is true in every lane of the group, so the whole group calls
+``sum``, and the eight lanes outside the group skip the call. The inner
+``if`` lets the lane with rank 0 store the result:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-group-by-partial-begin
+   :end-before: # cutlass-concept-group-by-partial-end
+   :dedent: 4
+
+Write the condition as an ``if`` statement. Inside a runtime
+``a if c else b`` expression, a block primitive that takes ``temp_storage``
+and uses scratch is rejected when the kernel is compiled. For a loop, the
+kernel in :ref:`the entry on carrying a scan aggregate
+<coop-faq-scan-loop-aggregate>` calls ``load``, ``exclusive_scan`` and
+``store`` on every trip.
+
+.. _coop-faq-blocks:
+
+How do I process more than one block?
+-------------------------------------
+
+Launch a grid of blocks and compute the ``offset`` of ``load`` and ``store``
+from ``cute.arch.block_idx()``. ``load`` and ``store`` never add the block
+index, so blocks that pass the same ``offset`` read and write the same
+:term:`tile`. In a launch with ``grid=3, block=128``,
+``cute.arch.block_idx()[0] * 128 * items_per_thread`` starts each block's
+tile after the tiles of the blocks before it.
+:ref:`More than one block <coop-cutlass-blocks>` in the Programming Guide
+has the complete kernel.
 
 .. _coop-faq-scan-loop-aggregate:
 
 How do I carry a scan aggregate across loop iterations?
 -------------------------------------------------------
 
-Create ``aggregate_output`` inside the loop, then explicitly assign its
-item to the payload carried across iterations. CuTe recognizes that
-assignment as a loop-carried update. An outer payload used without an
-explicit loop-carried update is rejected: the implicit mutation alone cannot
-carry its new value out of the runtime region.
+Create the ``aggregate_output`` payload inside the loop and read its item
+there. A payload created outside the loop and only passed as
+``aggregate_output`` is rejected when the kernel is compiled.
 
-.. code-block:: python
+In this kernel ``tile_total`` is created on each trip, and
+``total = total + tile_total[0]`` carries the running total to the next
+trip:
 
-   aggregate = coop.ThreadData.from_values(cutlass.Int32(0))
-   total = cutlass.Int32(0)
-   for _ in cutlass.range(iterations):
-       total = total + aggregate[0]
-       current = coop.ThreadData(1)
-       prefix = coop.inclusive_sum(block, value, aggregate_output=current)
-       aggregate[0] = current[0]
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
+   :language: python
+   :start-after: # cutlass-scan-running-total-example-begin
+   :end-before: # cutlass-scan-running-total-example-end
+   :dedent: 4
 
-The same rule applies to runtime branches and Radix Rank's
-``exclusive_digit_prefix``: create the output in that region and copy its
-items explicitly before leaving it. Keep the condition or iteration count
-uniform across the participating group. The scan aggregate excludes the
-exclusive seed and is available to every member; an ordinary Reduce result
-is defined only at group rank zero.
+To keep the aggregate in a payload created before the loop, give that
+payload a value of the aggregate's element type first, as in
+``outer = coop.ThreadData.from_values(cutlass.Int32(0))`` for the ``Int32``
+values here, and assign the item in the loop:
+``outer[0] = tile_total[0]``. The same holds inside a runtime ``if``, and
+for ``exclusive_digit_prefix`` of ``radix_rank_keys``.
+
+The loop count or condition must be the same in every thread of the group.
+Every thread receives the aggregate, whereas a ``reduce`` result is defined
+at rank 0 only. The aggregate leaves out ``initial_value``.
 
 .. _coop-faq-payload-conversion:
 
 How do I change a payload's element type?
 -----------------------------------------
 
-Use ``ThreadData.from_fn(len(values), lambda i: values[i], dtype=cutlass.Float32)``
-to create a converted payload. Supported NumPy scalar classes and ``np.dtype``
-selectors name the same element types as their CUTLASS equivalents. ``int``
-and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe values.
+Build a new payload with
+:meth:`ThreadData.from_fn <cuda.coop.cutlass.ThreadData.from_fn>` and name
+the new type as ``dtype``:
 
-``ThreadData(..., dtype=..., values=...)`` and ``from_values`` declare the
-type of existing items. Typed items must agree with that declaration;
-changing metadata does not convert them. Export to a register tensor or
-``TensorSSA`` checks the source declaration before applying an explicit
-output dtype. Widening unsigned input preserves its unsigned value.
-An explicit narrowing conversion can discard information, so choose the
-destination width deliberately.
+.. code-block:: python
 
-Carry a fixed item count, dtype, and alignment through runtime branches and
-loops. Changing any of these properties at a runtime join is rejected.
-Initialize loop-carried payloads with the alignment of the values that will
-replace them. A CuTe "different structure" diagnostic can indicate a dtype or
-alignment change. Normalize branch results before the join, or use a
-compile-time condition when each alternative needs a different representation.
+   # Inside a kernel. values is a payload of Int32 items.
+   as_floats = coop.ThreadData.from_fn(
+       len(values), lambda i: values[i], dtype=cutlass.Float32
+   )
 
-.. _coop-faq-storage-control-flow:
+Each item becomes ``cutlass.Float32(values[i])``. ``dtype`` is a CUTLASS
+type, the matching NumPy type or a NumPy ``dtype`` such as
+``numpy.dtype("float32")``, or Python ``int`` or ``float``, which mean
+``Int32`` and ``Float32``. The conversions between a payload and CuTe's
+register forms take ``dtype`` as well and cast the items they copy:
+``from_register_tensor`` and ``from_vector`` on the way in,
+``to_tensor_ssa`` and ``to_register_tensor`` on the way out. An unsigned
+item keeps its value when the new type is wider.
 
-Can I choose temporary storage inside a branch or loop?
---------------------------------------------------------
+``dtype`` on ``ThreadData(...)`` or ``from_values`` states the type the
+items have, and converts no item that already has a CuTe type.
+``to_tensor_ssa`` and ``to_register_tensor`` check the items against that
+type before they cast. A payload declared ``Int32`` that holds a
+``Float32`` item is rejected when the kernel is compiled, whatever ``dtype``
+the call names. :ref:`The entry on explicit element types
+<coop-faq-thread-data-dtype>` has those rules.
 
-Construct one ``TempStorage`` inside the kernel before the control flow
-when calls must reuse one allocation. Aliases of that descriptor are
-supported. Selecting between different descriptors at a runtime join is
-rejected, even when their capacities happen to match. A fresh descriptor
-created and used entirely inside one branch or loop iteration is also
-supported. Host-created descriptors can be used directly, but cannot be
-carried through runtime control flow.
-
-Let ``TempStorage()`` infer capacity unless an explicit limit is needed.
-A supplied capacity must fit both the device's shared-memory budget and the
-signed 32-bit byte-count representation. Shared-storage alignment must be a
-power of two no greater than 1024 bytes. A capacity smaller than the required
-allocation raises a compilation error.
+A variable that holds a payload keeps one item count, element type and
+alignment through a runtime ``if`` or loop. Inside one, assigning the
+variable a payload that differs in any of the three is rejected when the
+kernel is compiled, and CuTe can report the change as a container whose
+structure differs. Convert before the ``if`` or loop, or to the same type
+on every path. When a loop assigns the variable a new payload, give the
+variable a payload with the same element type and alignment before the
+loop. To choose a type by a Python value, write
+``if cutlass.const_expr(flag):``, which is decided when the kernel is
+compiled.
 
 .. _coop-faq-floating-prefix:
 
-How do floating min/max and scan seeds handle NaN and infinity?
----------------------------------------------------------------
+How do ``"min"`` and ``"max"`` treat NaN, and can a scan start from infinity?
+-----------------------------------------------------------------------------
 
-``min`` and ``max`` reductions use ``fmin``/``fmax`` semantics: a numeric
-operand wins over NaN, and an all-NaN contributing prefix produces NaN.
-``valid_items`` excludes later members' values while those members still
-participate. The ``np.minimum`` and ``np.maximum`` operator aliases select
-these same reduction semantics.
+On ``Float32`` and ``Float64`` values, ``"min"`` and ``"max"`` follow
+``fmin`` and ``fmax`` in reductions and in scans: a number wins over NaN.
+A reduction returns NaN only when every value that goes into it is NaN.
+``numpy.minimum`` and ``numpy.maximum`` select the same two operators.
 
-For an exclusive floating scan, use a typed identity with the input dtype,
-for example ``np.float32(np.inf)`` for ``min`` or
-``cutlass.Float32(-math.inf)`` for ``max``. Matching typed NaN and infinity
-seeds are accepted. Plain Python numeric seeds must be finite and
-representable in the input dtype. The seed must be uniform within the group.
+An exclusive scan with ``"min"`` or ``"max"`` starts from its
+``initial_value``. A plain Python float must be finite there, so pass a
+typed infinity: ``numpy.float32(numpy.inf)`` for ``"min"`` and
+``numpy.float32(-numpy.inf)`` for ``"max"`` on ``Float32`` values. A typed
+NaN is accepted as well. :ref:`Reduction <coop-cutlass-reduce>` and
+:ref:`Scan <coop-cutlass-scan>` in the API reference have the rules for
+operators and initial values.
 
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?
 -------------------------------------------------
 
-Import validates the CuTe interfaces. Compilation additionally requires
-matching CCCL headers, NVRTC, linker support, and a compatible toolkit.
-Check the operation's launch shape, dtype, and participation requirements.
-A successful host import alone does not establish GPU runtime qualification.
+The import checks one thing: that the installed CuTe DSL has the
+:ref:`interfaces the package needs <coop-cutlass-compiler-requirements>`.
+The rest is checked when a kernel is compiled, by ``cute.compile`` or by a
+call of the kernel's launcher:
 
-For provider compilation errors, verify the toolkit and CCCL header origins,
-then use ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` to inspect generated source. The
-:doc:`Developer Guide <developer_guide>` explains compiler and linker
-inspection, including why the final linked cubin is needed to assess calls,
-barriers, spills, and resource use.
+* The CUDA toolkit. NVRTC must report the same version as the CUDA headers
+  the package found, and nvJitLink the same major version and a minor
+  version at least as new.
+* The CCCL headers. The wheel includes them.
+  ``CUDA_COOP_CUTLASS_CCCL_ROOT`` selects others, and a root without them
+  is rejected.
+* The kernel. Each primitive checks its group, its element types and the
+  block size of the launch. :ref:`Thread groups <coop-thread-groups>` in
+  the :doc:`API reference <api>` has the rules that every primitive shares,
+  and each entry there has its own.
+
+:ref:`Requirements <coop-cutlass-requirements>` lists the versions to
+install, and :doc:`configuration` lists the variables that say where the
+toolkit and the headers are. When NVRTC rejects the generated C++, set
+``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` to a directory before compiling and
+read the source the package writes there. The
+:doc:`Developer Guide <developer_guide>` follows a compilation step by
+step.

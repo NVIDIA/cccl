@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.permute.static]
 //
@@ -24,10 +24,10 @@
 // template<simd-size-type N = V::size(), simd-mask-type V, class IdxMap>
 // constexpr resize_t<N, V> permute(const V& v, IdxMap&& idxmap);
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

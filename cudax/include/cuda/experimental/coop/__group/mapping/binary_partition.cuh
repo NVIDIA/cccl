@@ -48,7 +48,7 @@ template <class _Callable, class _Unit, class _ParentGroup, class _PrevMappingRe
   _Callable& __fn, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
 {
   static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
-  static_assert(::cuda::std::is_same_v<typename _ParentGroup::bound_level, warp_level>,
+  static_assert(::cuda::std::is_same_v<typename _ParentGroup::boundary_level, warp_level>,
                 "binary_partition can be only used within warp_level");
 
   constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();

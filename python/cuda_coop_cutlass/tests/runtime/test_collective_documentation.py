@@ -29,7 +29,7 @@ def test_scatter_example(items_per_thread):
     import cutlass
     from cutlass import cute
 
-    import cuda.coop.cutlass as cutlass_coop
+    import cuda.coop.cutlass as coop
 
     @cute.kernel
     def reverse_tile(
@@ -37,20 +37,18 @@ def test_scatter_example(items_per_thread):
         destination: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        block = cutlass_coop.this_block()
+        block = coop.this_block()
         thread = block.rank()
-        items = cutlass_coop.load(
-            block, source, items_per_thread=items_per_thread
-        )
-        ranks = cutlass_coop.ThreadData(items_per_thread)
+        items = coop.load(block, source, items_per_thread=items_per_thread)
+        ranks = coop.ThreadData(items_per_thread)
         for item in cutlass.range_constexpr(items_per_thread):
             ranks[item] = cutlass.Int32(
                 64 * items_per_thread - 1 - (thread * items_per_thread + item)
             )
-        reversed_items = cutlass_coop.exchange(
+        reversed_items = coop.exchange(
             block, items, mode="scatter_to_blocked", ranks=ranks
         )
-        cutlass_coop.store(block, destination, reversed_items)
+        coop.store(block, destination, reversed_items)
 
     @cute.jit
     def launch(
@@ -81,15 +79,15 @@ def test_rotate_example():
     # cutlass-rotate-example-begin
     from cutlass import cute
 
-    import cuda.coop.cutlass as cutlass_coop
+    import cuda.coop.cutlass as coop
 
     @cute.kernel
     def rotate_tile(source: cute.Pointer, destination: cute.Pointer):
-        block = cutlass_coop.this_block()
+        block = coop.this_block()
         thread = block.rank()
         inputs = cute.make_tensor(source, cute.make_layout(64))
         outputs = cute.make_tensor(destination, cute.make_layout(64))
-        outputs[thread] = cutlass_coop.shuffle(
+        outputs[thread] = coop.shuffle(
             block, inputs[thread], mode="rotate", distance=7
         )
 

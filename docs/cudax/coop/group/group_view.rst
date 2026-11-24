@@ -12,7 +12,7 @@
   {
   public:
     using unit_level      = Unit;
-    using bound_level     = typename Group::bound_level;
+    using boundary_level     = typename Group::boundary_level;
     using hierarchy_type  = typename Group::hierarchy_type;
 
     group_view() = delete;
@@ -88,7 +88,7 @@ Examples
 
   // A "this" group has matching unit and bound levels, so it contains a single unit.
   template <typename Group>
-    requires cuda::std::same_as<typename Group::unit_level, typename Group::bound_level>
+    requires cuda::std::same_as<typename Group::unit_level, typename Group::boundary_level>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     assert(src_rank == 0);
@@ -98,7 +98,7 @@ Examples
   // This overload shuffles values among thread-level units within a warp.
   template <typename Group>
     requires cuda::std::same_as<typename Group::unit_level, cuda::thread_level>
-      && cuda::std::same_as<typename Group::bound_level, cuda::warp_level>
+      && cuda::std::same_as<typename Group::boundary_level, cuda::warp_level>
   __device__ int shuffle(const Group& group, int value, cuda::std::uint32_t src_rank)
   {
     // Because this overload takes the group as const&, we can't use it in a constant expression

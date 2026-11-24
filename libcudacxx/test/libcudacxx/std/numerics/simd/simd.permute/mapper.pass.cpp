@@ -13,9 +13,9 @@
 
 // [simd.permute.static]: mapper constraints, named-lvalue invocation, and overload selection.
 
-#include <cuda/simd>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

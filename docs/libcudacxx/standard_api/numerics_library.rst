@@ -13,6 +13,7 @@ Numerics Library
    numerics_library/numbers
    numerics_library/numeric
    numerics_library/random
+   numerics_library/simd
 
 Any Standard C++ header not listed below is omitted.
 
@@ -67,3 +68,9 @@ Any Standard C++ header not listed below is omitted.
      - CCCL 3.3.0
      - CUDA 13.3
      - `\<random\> <https://en.cppreference.com/w/cpp/header/random>`_
+
+   * - :ref:`<cuda/std/simd> <libcudacxx-standard-api-numerics-simd>`
+     - Data-parallel vectors, masks, and operations
+     - CCCL 3.7.0
+     - To be announced
+     - `\<simd\> <https://en.cppreference.com/cpp/header/simd>`_, `C++ working draft <https://eel.is/c++draft/simd>`_

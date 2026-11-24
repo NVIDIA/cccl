@@ -6,24 +6,30 @@
 Shuffle
 =======
 
-:func:`cuda.coop.cutlass.shuffle` shifts values within a complete block and returns a
-new per-thread payload. The input remains unchanged. ``up`` and ``down`` move
-one item along the flattened blocked tile, including across thread boundaries.
-Scalar ``offset`` and ``rotate`` modes operate on one value per thread.
-See :func:`cuda.coop.cutlass.shuffle` for the supported distances.
+:func:`~cuda.coop.cutlass.shuffle` shifts a block's values along the order
+of its threads. With a payload it shifts the block's items by one position.
+With one scalar per thread it gives each thread the scalar of the thread
+``distance`` ranks ahead of it.
+
+The explorer shows the four modes on a block of eight threads. For ``up``
+and ``down``, each thread holds one, two or four items. ``offset`` and
+``rotate`` move one scalar per thread, with the same distance in every
+thread.
 
 .. coop-visualization:: shuffle
 
    .. only:: html
 
       .. figure:: shuffle-up.svg
-         :alt: Up shuffle moves each input one position to the right in blocked order; the first output has no source and is undefined.
+         :alt: Eight threads hold the values 0 to 15, two each. In the row
+               below, the values 0 to 14 sit one position to the right, and
+               the first position holds a question mark.
          :width: 100%
 
-         Up with eight illustrative threads and two items per thread.
+         ``up`` on eight threads with two items each.
 
-   A unit Up shift gives each position its predecessor. ``?`` marks an
-   undefined output, which must not be read.
+   ``up`` gives each position the item before it. ``?`` marks the result
+   with no source, which is undefined.
 
    .. code-block:: text
 
@@ -35,32 +41,22 @@ See :func:`cuda.coop.cutlass.shuffle` for the supported distances.
 Reading the stages
 ------------------
 
-The first row contains working copies of the input. For Up and Down, each
-thread makes its boundary item available through shared scratch. The other
-items shift between that thread's own slots. The last row places the resulting
-values in blocked ownership.
+The first row holds the input. For ``up`` and ``down``, each thread puts
+one item into shared scratch for its neighbor: its last item for ``up`` and
+its first item for ``down``. Its other items move between its own slots.
+For ``offset`` and ``rotate``, every thread puts its scalar into scratch.
+The last row holds the result, grouped by thread.
 
-``up`` reads ``input[p - 1]`` for output position ``p``; ``down`` reads
-``input[p + 1]``. They support only the compile-time distance ``1``. The
-first Up output and last Down output are undefined. Neither mode wraps or
-copies the original boundary value into the result.
-
-The scalar modes use one scalar per thread. ``offset`` reads
-thread ``t + distance``, with an undefined result when that thread lies
-outside the block. ``rotate`` reads ``(t + distance) % block_size`` and
-requires ``1 <= distance < block_size``. Both accept runtime distances,
-which may differ between threads; the explorer uses a uniform distance.
-
-Select a value to follow its source and destination. The shared row shows
-the values communicated between threads, not a bank layout or a count of
-hardware instructions.
+Select a value to follow it from its source to its destination. The shared
+row shows the values that pass between threads.
 
 Using Shuffle in a kernel
 -------------------------
 
 This CuTe fragment uses the :ref:`kernel-fragment
 setup <coop-visualization-kernels>`. Launch with 128 threads and provide at
-least ``128 * items_per_thread`` source and destination elements per block.
+least ``128 * items_per_thread`` source and destination elements for each
+block.
 
 .. code-block:: python
 
@@ -70,15 +66,16 @@ least ``128 * items_per_thread`` source and destination elements per block.
        block, source, items_per_thread=items_per_thread, offset=offset
    )
    shifted = coop.shuffle(block, items, mode="up")
-   for item in range(items_per_thread):
+   for item in cutlass.range_constexpr(items_per_thread):
        position = thread_rank * items_per_thread + item
        if position > 0:
            destination[offset + position] = shifted[item]
 
-Every thread calls Shuffle. The conditional guards only the write afterward,
-so the undefined first result is never consumed. The first element of each
-block's destination tile is left unchanged; initialize those elements
-separately if they need a value.
+Every thread makes the call. The ``if`` guards the write that follows it,
+so the undefined first item is never read. The first element of each
+block's tile in ``destination`` keeps the value it had.
+
+This tested kernel rotates one scalar per thread by seven ranks.
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
    :language: python
@@ -86,5 +83,5 @@ separately if they need a value.
    :end-before: # cutlass-rotate-example-end
    :dedent: 4
 
-See :func:`cuda.coop.cutlass.shuffle` and
-:ref:`the Programming Guide <coop-cutlass-shuffle>` for scalar and array modes.
+:ref:`Data rearrangement <coop-cutlass-shuffle>` in the API reference has
+the rules for each mode and for ``distance``.

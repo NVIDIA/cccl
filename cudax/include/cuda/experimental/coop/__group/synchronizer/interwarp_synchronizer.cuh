@@ -93,7 +93,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -101,7 +102,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
@@ -158,7 +159,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -166,7 +168,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
@@ -188,7 +190,7 @@ class interwarp_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __make_instance(_Range& __barrier_ids, const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
-    using _Bound = typename _ParentGroup::bound_level;
+    using _Bound = typename _ParentGroup::boundary_level;
 
     constexpr auto __static_group_count      = _MappingResult::static_group_count();
     constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_Range>;

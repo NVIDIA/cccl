@@ -49,7 +49,7 @@ template <class _Group>
 {
   NV_IF_TARGET(
     NV_PROVIDES_SM_90, ({
-      if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::bound_level, warp_level>)
+      if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
       {
         return ::cuda::ptx::elect_sync(~0u);
       }

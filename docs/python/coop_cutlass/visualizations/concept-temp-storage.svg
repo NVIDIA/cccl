@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" role="img" aria-labelledby="title desc">
+<title id="title">Where three calls put their scratch with and without a TempStorage</title>
+<desc id="desc">Scratch for a transpose Load, a Scan and a transpose Store on a block of 128 threads with four Int32 items each, drawn to scale. The calls need 2,048, 672 and 2,064 bytes. With temp_storage left out, each call has its own region, 4,784 bytes in all. With one shared TempStorage, every call starts at offset 0 of one 2,064-byte region. With one exclusive TempStorage, the calls sit end to end in one 4,784-byte region.</desc>
+<rect width="760" height="420" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif">
+<text x="30.0" y="34.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">temp_storage</tspan> left out</text>
+<text x="730.0" y="34.0" font-size="13" text-anchor="end" fill="#44556b">three regions · 4,784 bytes</text>
+<rect x="30.0" y="46.0" width="299.7" height="38.0" rx="6" fill="none" stroke="#68798b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="34.0" y="50.0" width="291.7" height="30" rx="4" fill="#c9eaf0" stroke="#68798b"/>
+<text x="179.8" y="70.0" font-size="13" text-anchor="middle" fill="#172b3a">load · 2,048 B</text>
+<rect x="329.7" y="46.0" width="98.3" height="38.0" rx="6" fill="none" stroke="#68798b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="333.7" y="50.0" width="90.3" height="30" rx="4" fill="#fff0bd" stroke="#68798b"/>
+<text x="378.8" y="70.0" font-size="13" text-anchor="middle" fill="#172b3a">scan · 672 B</text>
+<rect x="428.0" y="46.0" width="302.0" height="38.0" rx="6" fill="none" stroke="#68798b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="432.0" y="50.0" width="294.0" height="30" rx="4" fill="#dceac1" stroke="#68798b"/>
+<text x="579.0" y="70.0" font-size="13" text-anchor="middle" fill="#172b3a">store · 2,064 B</text>
+<text x="30.0" y="126.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">sharing="shared"</tspan></text>
+<text x="730.0" y="126.0" font-size="13" text-anchor="end" fill="#44556b">one region · 2,064 bytes</text>
+<rect x="30.0" y="138.0" width="302.0" height="106.0" rx="6" fill="none" stroke="#68798b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="34.0" y="142.0" width="291.7" height="30" rx="4" fill="#c9eaf0" stroke="#68798b"/>
+<text x="179.8" y="162.0" font-size="13" text-anchor="middle" fill="#172b3a">load · 2,048 B</text>
+<rect x="34.0" y="176.0" width="90.3" height="30" rx="4" fill="#fff0bd" stroke="#68798b"/>
+<text x="79.2" y="196.0" font-size="13" text-anchor="middle" fill="#172b3a">scan · 672 B</text>
+<rect x="34.0" y="210.0" width="294.0" height="30" rx="4" fill="#dceac1" stroke="#68798b"/>
+<text x="181.0" y="230.0" font-size="13" text-anchor="middle" fill="#172b3a">store · 2,064 B</text>
+<text x="356.0" y="182.0" font-size="13" text-anchor="start" fill="#44556b">Every call starts at offset 0.</text>
+<text x="356.0" y="202.0" font-size="13" text-anchor="start" fill="#44556b">The region is as large as the largest call.</text>
+<text x="30.0" y="284.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">sharing="exclusive"</tspan></text>
+<text x="730.0" y="284.0" font-size="13" text-anchor="end" fill="#44556b">one region · 4,784 bytes</text>
+<rect x="30.0" y="296.0" width="700.0" height="38.0" rx="6" fill="none" stroke="#68798b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="34.0" y="300.0" width="291.7" height="30" rx="4" fill="#c9eaf0" stroke="#68798b"/>
+<text x="179.8" y="320.0" font-size="13" text-anchor="middle" fill="#172b3a">load · 2,048 B</text>
+<rect x="333.7" y="300.0" width="90.3" height="30" rx="4" fill="#fff0bd" stroke="#68798b"/>
+<text x="378.8" y="320.0" font-size="13" text-anchor="middle" fill="#172b3a">scan · 672 B</text>
+<rect x="432.0" y="300.0" width="294.0" height="30" rx="4" fill="#dceac1" stroke="#68798b"/>
+<text x="579.0" y="320.0" font-size="13" text-anchor="middle" fill="#172b3a">store · 2,064 B</text>
+<line x1="30" y1="362" x2="730" y2="362" stroke="#68798b" stroke-width="1.2"/>
+<line x1="30.0" y1="362" x2="30.0" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="30.0" y="383.0" font-size="12" text-anchor="start" fill="#44556b">0</text>
+<line x1="179.8" y1="362" x2="179.8" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="179.8" y="383.0" font-size="12" text-anchor="middle" fill="#44556b">1,024</text>
+<line x1="329.7" y1="362" x2="329.7" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="329.7" y="383.0" font-size="12" text-anchor="middle" fill="#44556b">2,048</text>
+<line x1="479.5" y1="362" x2="479.5" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="479.5" y="383.0" font-size="12" text-anchor="middle" fill="#44556b">3,072</text>
+<line x1="629.3" y1="362" x2="629.3" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="629.3" y="383.0" font-size="12" text-anchor="middle" fill="#44556b">4,096</text>
+<line x1="730.0" y1="362" x2="730.0" y2="368" stroke="#68798b" stroke-width="1.2"/>
+<text x="730.0" y="383.0" font-size="12" text-anchor="end" fill="#44556b">4,784</text>
+<text x="380.0" y="404.0" font-size="13" text-anchor="middle" fill="#44556b">bytes of shared memory</text>
+</g>
+</svg>

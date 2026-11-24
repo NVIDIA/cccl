@@ -12,6 +12,39 @@ from tests.runtime_support import device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
+def test_merge_sort_lane_groups_example():
+    """Sort each group of eight lanes and check every tile on the host.
+
+    Each group holds 16 keys. Every run of 16 outputs must equal the host
+    sort of the same run, and the 128 outputs as a whole must stay unsorted.
+    """
+
+    # cutlass-merge-sort-groups-example-begin
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.kernel
+    def sort_groups(source: cute.Pointer, destination: cute.Pointer):
+        lanes = coop.this_warp().group_by(8)
+        keys = coop.load(lanes, source, items_per_thread=2)
+        ordered = coop.merge_sort_keys(lanes, keys)
+        coop.store(lanes, destination, ordered)
+
+    @cute.jit
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        sort_groups(source, destination).launch(grid=1, block=64)
+
+    # cutlass-merge-sort-groups-example-end
+    values = (np.arange(128, dtype=np.int32) * 13) % 31 - 15
+    observed = np.full_like(values, -101)
+    with device_array(values) as src, device_array(observed) as dst:
+        launch(src, dst)
+    expected = np.sort(values.reshape(8, 16), axis=1).reshape(-1)
+    np.testing.assert_array_equal(observed, expected)
+    assert not np.array_equal(observed, np.sort(values))
+
+
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_merge_sort_example(items_per_thread):
     # cutlass-merge-sort-example-begin

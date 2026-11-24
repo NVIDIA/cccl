@@ -34,7 +34,7 @@ def run_example(items_per_thread=2):
     selected key's bits with the source key at that position checks the pair
     and also distinguishes positive and negative zero. The kernel also stores
     the original payloads to confirm that TopK left them unchanged. Sentinel
-    tails check that Store writes only the defined result prefix.
+    tails check that Store writes only the selected items.
     """
     tile_size = _THREADS * items_per_thread
     valid_items = tile_size - 35
