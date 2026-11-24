@@ -110,29 +110,32 @@ template <class _Tp>
   using ::cuda::std::uint32_t;
   using ::cuda::std::uint64_t;
 
-  const auto __un = static_cast<unsigned>(__n);
-
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    return static_cast<_Tp>(::cuda::__szext_clamp_sm70(uint32_t{__v}, __un));
+    constexpr auto __nbits = ::cuda::std::__num_bits_v<_Tp>;
+
+    if (_CCCL_IS_CONSTANT_P(__n))
+    {
+      return static_cast<_Tp>(__v & ((__n < __nbits) ? (1u << __n) - 1u : ~0u));
+    }
+
+    const auto __ret = ::cuda::__szext_clamp_sm70(uint32_t{__v}, static_cast<uint32_t>(__n));
+    _CCCL_ASSUME(__ret == (__v & ((__n < __nbits) ? (1u << __n) - 1u : ~0u)));
+    return static_cast<_Tp>(__ret);
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    const auto __lo = ::cuda::__szext_clamp_sm70(static_cast<uint32_t>(__v), __un);
-    const auto __hi = ::cuda::__szext_clamp_sm70(
-      static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
+    const auto __lo = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v), __n);
+    const auto __hi = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v >> 32), ::cuda::std::max(__n - 32, 0));
     return _Tp{__lo} | (_Tp{__hi} << 32);
   }
 #  if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    const auto __w0 = ::cuda::__szext_clamp_sm70(static_cast<uint32_t>(__v), __un);
-    const auto __w1 = ::cuda::__szext_clamp_sm70(
-      static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
-    const auto __w2 = ::cuda::__szext_clamp_sm70(
-      static_cast<uint32_t>(__v >> 64), static_cast<uint32_t>(::cuda::std::max(__n - 64, 0)));
-    const auto __w3 = ::cuda::__szext_clamp_sm70(
-      static_cast<uint32_t>(__v >> 96), static_cast<uint32_t>(::cuda::std::max(__n - 96, 0)));
+    const auto __w0 = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v), __n);
+    const auto __w1 = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v >> 32), ::cuda::std::max(__n - 32, 0));
+    const auto __w2 = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v >> 64), ::cuda::std::max(__n - 64, 0));
+    const auto __w3 = ::cuda::__bit_trunc_impl_sm70(static_cast<uint32_t>(__v >> 96), ::cuda::std::max(__n - 96, 0));
     return _Tp{__w0} | (_Tp{__w1} << 32) | (_Tp{__w2} << 64) | (_Tp{__w3} << 96);
   }
 #  endif // _CCCL_HAS_INT128()
