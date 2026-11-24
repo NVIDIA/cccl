@@ -58,7 +58,7 @@ The implementation exploits CUDA SIMD instructions for the following element typ
    * - 16-bit integers
      - Addition, subtraction, negation, increment, decrement, minimum, maximum
      - ``add.u16x2``
-     - ``SM90`` or later
+     - ``SM90``, ``SM100``, ``SM103``, ``SM107``, ``SM120``, and ``SM121``, addition use ``VIADD.16x2``. Minimum/maximum use ``VIMNMX``. ``SM110`` uses the scalar path
    * - 8-bit integers
      - Addition, subtraction, negation, increment, decrement, minimum, maximum
      - ``add.u8x4``
@@ -70,7 +70,7 @@ The implementation exploits CUDA SIMD instructions for the following element typ
    * - 32-bit floats
      - Addition, subtraction, negation, increment, decrement, multiplication, fused multiply-add
      - ``add.rn.f32x2``
-     - ``SM100`` or later, CUDA 12.8 or later
+     - ``SM100``, ``SM103``, and ``SM107``
    * - Half and Bfloat16
      - Addition, multiplication, fused multiply-add
      - ``fma.rn.f16x2``
