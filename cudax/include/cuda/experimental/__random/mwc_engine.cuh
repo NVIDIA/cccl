@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___RANDOM_MWC_ENGINE_H
-#define _CUDA___RANDOM_MWC_ENGINE_H
+#ifndef __CUDAX_RANDOM_MWC_ENGINE_CUH
+#define __CUDAX_RANDOM_MWC_ENGINE_CUH
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,8 +34,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE(cuda::experimental)
-
+namespace cuda::experimental
+{
 // The engine implementation follows Sebastiano Vigna's MWC64X/32 and MWC128X/32:
 // https://github.com/vigna/MWCPRNG
 template <int _Lag, ::cuda::std::uint32_t _Multiplier>
@@ -338,8 +338,8 @@ using mwc64x32 = __mwc_engine<1, 0xFFF145F8u>;
 //! @brief Experimental scrambled multiply-with-carry engine with 128-bit state and 32-bit output
 //! The period is approximately 2^127
 using mwc128x32 = __mwc_engine<3, 0xFFCCCC66u>;
-_CCCL_END_NAMESPACE(cuda::experimental)
+} // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___RANDOM_MWC_ENGINE_H
+#endif // __CUDAX_RANDOM_MWC_ENGINE_CUH

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,18 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// The engine has no tile execution annotations.
-// UNSUPPORTED: force-tile
-
-#include <cuda/random>
-#include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
 #include <cuda/std/random>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
+#include <cuda/experimental/random.cuh>
+
+#include <c2h/catch2_test_helper.h>
 
 using cuda::experimental::mwc128x32;
 using cuda::experimental::mwc64x32;
@@ -34,7 +31,7 @@ struct seed_words
   uint32_t value;
 
   template <class Iterator>
-  TEST_HOST_DEVICE_FUNC constexpr void generate(Iterator first, const Iterator last)
+  __host__ __device__ constexpr void generate(Iterator first, const Iterator last)
   {
     while (first != last)
     {
@@ -44,7 +41,7 @@ struct seed_words
 };
 
 template <class Engine>
-TEST_HOST_DEVICE_FUNC constexpr bool test_interface()
+__host__ __device__ constexpr bool test_interface()
 {
   using cuda::std::is_same_v;
   static_assert(is_same_v<typename Engine::result_type, uint32_t>);
@@ -62,23 +59,38 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_interface()
 
   // Default construction uses default_seed
   Engine engine;
-  assert(engine == Engine{Engine::default_seed});
+  if (engine != Engine{Engine::default_seed})
+  {
+    return false;
+  }
 
   // Copy construction preserves the state and the next output
   auto copy = engine;
-  assert(copy() == engine());
+  if (copy() != engine())
+  {
+    return false;
+  }
 
   // Advancing only one engine makes their states unequal
   static_cast<void>(engine());
-  assert(copy != engine);
+  if (copy == engine)
+  {
+    return false;
+  }
 
   // Copy assignment restores equal states
   copy = engine;
-  assert(copy == engine);
+  if (copy != engine)
+  {
+    return false;
+  }
 
   // Reseeding matches construction with the same seed
   engine.seed(0);
-  assert(engine == Engine{0});
+  if (engine != Engine{0})
+  {
+    return false;
+  }
 
   // Exercise the jump path during constant evaluation for both engines.
   engine.seed(1234);
@@ -88,13 +100,11 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_interface()
     static_cast<void>(step_engine());
   }
   engine.discard(256);
-  assert(engine == step_engine);
-
-  return true;
+  return engine == step_engine;
 }
 
 template <class Engine>
-TEST_HOST_DEVICE_FUNC constexpr void test_discard()
+__host__ __device__ void test_discard()
 {
   for (auto count : {0ull, 1ull, 63ull, 64ull, 65ull, 255ull, 256ull, 257ull, 1000ull})
   {
@@ -105,25 +115,25 @@ TEST_HOST_DEVICE_FUNC constexpr void test_discard()
       static_cast<void>(step_engine());
     }
     jump_engine.discard(count);
-    assert(step_engine == jump_engine);
-    assert(step_engine() == jump_engine());
+    REQUIRE(step_engine == jump_engine);
+    REQUIRE(step_engine() == jump_engine());
   }
 }
 
 template <class Engine>
-TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 void test_seed_sequence()
+__host__ __device__ void test_seed_sequence()
 {
   cuda::std::seed_seq seq{0u, 1u, 2u, 3u, 0xFFFFFFFFu};
   Engine first{seq};
   Engine second;
   second.seed(seq);
-  assert(first == second);
+  REQUIRE(first == second);
 
   // test distribution correctness
   cuda::std::uniform_int_distribution<unsigned> dist{0, 17};
   for (int i = 0; i < 100; ++i)
   {
-    assert(dist(first) <= 17);
+    REQUIRE(dist(first) <= 17);
   }
 }
 
@@ -137,25 +147,23 @@ struct reference_values
 // Generated with Vigna's MWC64X_32.c / MWC128X_32.c, seeded from SplitMix64:
 // https://github.com/vigna/MWCPRNG/tree/07f35668a41e6b18c20439867c2ad11fa33bff73/prngs
 template <class Engine, cuda::std::size_t Size>
-TEST_HOST_DEVICE_FUNC constexpr void test_reference(const reference_values (&vectors)[Size])
+__host__ __device__ void test_reference(const reference_values (&vectors)[Size])
 {
   for (auto vector : vectors)
   {
     Engine engine{vector.seed};
     engine.discard(vector.discard);
-    assert(engine() == vector.output);
+    REQUIRE(engine() == vector.output);
   }
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool test()
+__host__ __device__ constexpr bool test_engines()
 {
-  assert(test_interface<mwc64x32>());
-  assert(test_interface<mwc128x32>());
-  return true;
+  return test_interface<mwc64x32>() && test_interface<mwc128x32>();
 }
 
 // Full jump tests exceed constexpr step limits
-TEST_HOST_DEVICE_FUNC void runtime_test()
+__host__ __device__ void runtime_test()
 {
   test_discard<mwc64x32>();
   test_discard<mwc128x32>();
@@ -218,10 +226,19 @@ TEST_HOST_DEVICE_FUNC void runtime_test()
   test_reference<mwc128x32>(mwc128x32_vectors);
 }
 
-int main(int, char**)
+__global__ void test_on_device()
 {
-  assert(test()); // NOLINT(misc-static-assert)
-  static_assert(test());
+  REQUIRE_DEVICE(test_engines());
   runtime_test();
-  return 0;
+}
+
+C2H_TEST("MWC engine operations", "[random]")
+{
+  static_assert(test_engines());
+  REQUIRE(test_engines());
+  runtime_test();
+
+  test_on_device<<<1, 1>>>();
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }

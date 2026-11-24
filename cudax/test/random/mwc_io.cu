@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,18 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Streams are only available on the host.
-// UNSUPPORTED: nvrtc, force-tile
-
-#include <cuda/random>
-#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+
+#include <cuda/experimental/random.cuh>
 
 #include <ios>
 #include <sstream>
 #include <string>
 
-#include "test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class Engine, class CharT>
 void test_roundtrip()
@@ -32,14 +29,14 @@ void test_roundtrip()
   Engine engine{42};
   engine.discard(1000);
   stream << engine;
-  assert(stream.flags() == flags);
-  assert(stream.fill() == CharT('#'));
+  REQUIRE(stream.flags() == flags);
+  REQUIRE(stream.fill() == CharT('#'));
 
   Engine copy;
   stream >> copy;
-  assert(!stream.fail());
-  assert(stream.flags() == flags);
-  assert(copy == engine);
+  REQUIRE(!stream.fail());
+  REQUIRE(stream.flags() == flags);
+  REQUIRE(copy == engine);
 }
 
 template <class Engine>
@@ -51,9 +48,9 @@ void test_invalid(const char* const text)
   Engine engine{42};
   auto saved = engine;
   stream >> engine;
-  assert(stream.fail());
-  assert(stream.flags() == flags);
-  assert(engine == saved);
+  REQUIRE(stream.fail());
+  REQUIRE(stream.flags() == flags);
+  REQUIRE(engine == saved);
 }
 
 template <class Engine>
@@ -62,11 +59,11 @@ void test_reference(const char* const text, const cuda::std::uint32_t expected)
   Engine engine;
   std::istringstream stream{text};
   stream >> engine;
-  assert(!stream.fail());
-  assert(engine() == expected);
+  REQUIRE(!stream.fail());
+  REQUIRE(engine() == expected);
 }
 
-void test()
+C2H_TEST("MWC stream input and output", "[random]")
 {
   using cuda::experimental::mwc128x32;
   using cuda::experimental::mwc64x32;
@@ -93,10 +90,4 @@ void test()
   test_reference<mwc64x32>("1 1", 0);
   test_reference<mwc128x32>("1 2 3 0", 3);
   test_reference<mwc128x32>("1 2 3 1", 2);
-}
-
-int main(int, char**)
-{
-  NV_IF_TARGET(NV_IS_HOST, (test();));
-  return 0;
 }

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -10,11 +10,12 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/random>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/utility>
+
+#include <cuda/experimental/random.cuh>
 
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>

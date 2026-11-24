@@ -1,9 +1,9 @@
-.. _libcudacxx-extended-api-random-mwc:
+.. _cudax-random-mwc:
 
 ``mwc64x32`` and ``mwc128x32``
 ==============================
 
-Defined in the ``<cuda/random>`` header as **experimental** feature in the namespace ``cuda::experimental``.
+Include ``<cuda/experimental/random.cuh>`` to use these engines in the ``cuda::experimental`` namespace.
 
 These scrambled *Multiply-With-Carry (MWC)* engines implement the `RandomNumberEngine <https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine>`_ interface and produce unsigned 32-bit values over the entire range ``[0, 2^32 - 1]``.
 They use the **MWC64X/32** and **MWC128X/32** algorithms from `Scrambled Multiply-with-Carry Pseudorandom Number Generators <https://arxiv.org/abs/2610.27313>`_.
@@ -61,7 +61,7 @@ Randomly seeding many ``mwc64x32`` engines can lead to overlapping streams becau
 
 .. code:: cuda
 
-    #include <cuda/random>
+    #include <cuda/experimental/random.cuh>
 
     __global__ void sample(unsigned* output) {
         auto tid = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;

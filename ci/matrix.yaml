@@ -158,15 +158,19 @@ workflows:
     # libcu++ Codegen FileCheck: PRs use one GCC host compiler per CTK.
     # Suite-specific architectures are added separately.
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.0', cxx: 'gcc12', codegen_target: ['atomics-ptx', 'atomics-sass'], sm: [75, 80, 90]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: 'gcc14', codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: 'gcc14', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: 'gcc14', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: 'gcc14', codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: 'gcc15', codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: 'gcc15', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: 'gcc15', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: 'gcc15', codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: 'gcc14', sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: 'gcc15', sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: 'gcc', sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4', 'l4', 'h100']}
@@ -377,15 +381,19 @@ workflows:
     # libcu++ Codegen FileCheck: nightly covers the GCC and Clang host compilers
     # supported by each CTK. Suite-specific architectures are added separately.
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.0', cxx: ['gcc12', 'clang14'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: [75, 80, 90]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: ['gcc', 'clang'], sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -524,15 +532,19 @@ workflows:
     # libcu++ Codegen FileCheck: weekly covers the GCC and Clang host compilers
     # supported by each CTK. Suite-specific architectures are added separately.
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.0', cxx: ['gcc12', 'clang14'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: [75, 80, 90]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'random-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'random-sass', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
+    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: ['gcc', 'clang21'], sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -809,6 +821,9 @@ jobs:
   verify_codegen: { gpu: false, name: 'VerifyCodegen' }
   codegen_filecheck: { gpu: false, name: 'libcu++ Codegen FileCheck' }
 
+  # cudax:
+  random_sass: { gpu: false, name: 'Random SASS FileCheck', invoke: { prefix: 'build', args: '-cmake-options "-Dcudax_RANDOM_CODEGEN_ONLY=ON -DCCCL_ENABLE_CUDA_SMOKE_TESTS=OFF"' } }
+
   # CUB:
   build_nolid: { name: 'BuildNoLaunch',     gpu: false, invoke: { prefix: 'build', args: '-no-lid'} }
   build_lid0:  { name: 'BuildHostLaunch',   gpu: false, invoke: { prefix: 'build', args: '-lid0'} }
@@ -868,7 +883,6 @@ jobs:
 codegen_targets:
   atomics-ptx: { name: 'Atomics PTX', cmake_target: 'libcudacxx.test.atomics.ptx' }
   atomics-sass: { name: 'Atomics SASS', cmake_target: 'libcudacxx.test.atomics.sass' }
-  random-sass: { name: 'Random SASS', cmake_target: 'libcudacxx.test.random.sass' }
   cmath-ptx: { name: 'cmath PTX', cmake_target: 'libcudacxx.test.cmath.ptx' }
   simd-ptx: { name: 'SIMD PTX', cmake_target: 'libcudacxx.test.simd.ptx' }
   simd-sass: { name: 'SIMD SASS', cmake_target: 'libcudacxx.test.simd.sass' }

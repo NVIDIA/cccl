@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++ in the CUDA C++ Core Libraries,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/random>
 #include <cuda/std/utility>
+
+#include <cuda/experimental/random.cuh>
 
 // Return the updated engine and output to keep the complete step observable.
 __device__ __noinline__ auto mwc64_cccl(cuda::experimental::mwc64x32 engine)
