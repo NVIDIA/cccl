@@ -124,21 +124,20 @@ def test_generic_wheel_workflow_excludes_standalone_package(tmp_path):
     "remote_wheel,remote_sdist,allow_missing,error",
     [
         (b"wrong", None, True, "SHA-256 mismatch"),
-        (b"wheel", None, False, "Missing from test.pypi.org"),
-        (b"wheel", None, True, None),
-        (b"wheel", b"sdist", False, None),
+        (None, None, False, "Missing from test.pypi.org"),
+        (None, None, True, None),
+        (b"wheel", None, False, None),
+        (b"wheel", b"sdist", True, "Unexpected file"),
     ],
 )
 def test_release_index_hashes(
-    tmp_path, monkeypatch, remote_wheel, remote_sdist, allow_missing, error
+    monkeypatch, remote_wheel, remote_sdist, allow_missing, error
 ):
-    wheel = tmp_path / "cuda_coop_cutlass-0.1.0-py3-none-any.whl"
-    sdist = tmp_path / "cuda_coop_cutlass-0.1.0.tar.gz"
-    wheel.write_bytes(b"wheel")
-    sdist.write_bytes(b"sdist")
+    wheel = "cuda_coop_cutlass-0.1.0-py3-none-any.whl"
+    sdist = "cuda_coop_cutlass-0.1.0.tar.gz"
     files = [
-        {"filename": path.name, "digests": {"sha256": hashlib.sha256(data).hexdigest()}}
-        for path, data in ((wheel, remote_wheel), (sdist, remote_sdist))
+        {"filename": name, "digests": {"sha256": hashlib.sha256(data).hexdigest()}}
+        for name, data in ((wheel, remote_wheel), (sdist, remote_sdist))
         if data is not None
     ]
 
@@ -148,8 +147,11 @@ def test_release_index_hashes(
 
     checker = str(ROOT / "ci/verify_cuda_coop_cutlass_index.py")
     flags = ["--allow-missing"] if allow_missing else []
-    monkeypatch.setattr(sys, "argv", [checker, "testpypi", str(tmp_path), *flags])
+    digest = hashlib.sha256(b"wheel").hexdigest()
+    monkeypatch.setattr(sys, "argv", [checker, "testpypi", "0.1.0", digest, *flags])
     monkeypatch.setattr("urllib.request.urlopen", index_response)
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    sleeps = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
     with pytest.raises(SystemExit, match=error) if error else nullcontext():
         runpy.run_path(checker, run_name="__main__")
+    assert sleeps == ([10] * 5 if remote_wheel is None and not allow_missing else [])
