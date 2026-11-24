@@ -46,7 +46,7 @@
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
-    "SCCACHE_S3_KEY_PREFIX": "cccl-test/sccache-v0.18.0-rapids.16",
+    "SCCACHE_S3_KEY_PREFIX": "cccl",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}"
   },
   "initializeCommand": [
