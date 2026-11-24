@@ -12,7 +12,7 @@
   {
   public:
     using unit_level      = Level;
-    using bound_level     = Level;
+    using boundary_level     = Level;
     using hierarchy_type  = Hierarchy;
 
     /*this-group*/() = delete;

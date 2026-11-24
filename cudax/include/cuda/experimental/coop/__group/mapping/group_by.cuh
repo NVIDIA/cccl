@@ -186,7 +186,7 @@ template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, c
 [[nodiscard]] _CCCL_DEVICE_API auto __group_by_map(
   ::cuda::std::uint32_t __unit_count, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev)
 {
-  using _Bound = typename _ParentGroup::bound_level;
+  using _Bound = typename _ParentGroup::boundary_level;
   using ::cuda::std::uint32_t;
 
   auto __result = ::cuda::experimental::coop::__group_by_partition<_StaticUnitCount, _Exhaustive, _Unit, _Bound>(

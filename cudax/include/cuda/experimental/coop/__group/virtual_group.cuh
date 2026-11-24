@@ -136,7 +136,7 @@ class virtual_group
 
 public:
   using unit_level                                 = _Unit;
-  using bound_level                                = typename _ParentGroup::bound_level;
+  using boundary_level                             = typename _ParentGroup::boundary_level;
   using hierarchy_type                             = _Hierarchy;
   using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
   using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
@@ -262,7 +262,7 @@ public:
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
-    return __count_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
+    return __count_as_impl<typename boundary_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
@@ -291,9 +291,9 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API typename bound_level::__product_type rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename boundary_level::__product_type rank(const _Arg& __parent) const
   {
-    return __rank_as_impl<typename bound_level::__product_type>(__mapping_result_, __hier_, __parent);
+    return __rank_as_impl<typename boundary_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 

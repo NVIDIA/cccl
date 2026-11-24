@@ -34,7 +34,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test types
   static_assert(cuda::std::is_same_v<Unit, typename Group::unit_level>);
-  static_assert(cuda::std::is_same_v<Level, typename Group::bound_level>);
+  static_assert(cuda::std::is_same_v<Level, typename Group::boundary_level>);
 
   // Test Group::arrival_token.
   using ArrivalToken = typename Group::arrival_token;
@@ -122,7 +122,7 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   static_assert(cuda::gpu_thread.static_count(group_view) == StaticN);
 
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
-  using Bound = typename Group::bound_level;
+  using Bound = typename Group::boundary_level;
 
   const auto count_ref = group.__mapping_result().unit_count();
   const auto rank_ref  = cuda::gpu_thread.rank(Bound{}, group.hierarchy()) % count_ref;
