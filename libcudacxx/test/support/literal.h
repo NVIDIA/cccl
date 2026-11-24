@@ -62,15 +62,15 @@ template <class CharT>
 #  define TEST_CHARLIT(CharT, val) _test_charlit_impl<CharT>(val, L##val, u##val, U##val)
 #endif // _CCCL_HAS_CHAR8_T()
 
-template <class CharT, cuda::std::size_t N>
-[[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr auto _test_strlit_impl(
-  [[maybe_unused]] const char (&char_str)[N],
-  [[maybe_unused]] const wchar_t (&wchar_str)[N],
+template <class CharT, class CharStr, class WCharStr, class Char8Str = void, class Char16Str, class Char32Str>
+[[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr const auto& _test_strlit_impl(
+  [[maybe_unused]] const CharStr& char_str,
+  [[maybe_unused]] const WCharStr& wchar_str,
 #if _CCCL_HAS_CHAR8_T()
-  [[maybe_unused]] const char8_t (&char8_str)[N],
+  [[maybe_unused]] const Char8Str& char8_str,
 #endif // _CCCL_HAS_CHAR8_T()
-  [[maybe_unused]] const char16_t (&char16_str)[N],
-  [[maybe_unused]] const char32_t (&char32_str)[N]) noexcept -> const CharT (&)[N]
+  [[maybe_unused]] const Char16Str& char16_str,
+  [[maybe_unused]] const Char32Str& char32_str) noexcept
 {
   if constexpr (cuda::std::is_same_v<CharT, char>)
   {
@@ -137,12 +137,12 @@ template <int Base>
       value = c - '0';
       return true;
     }
-    else if (c >= 'A' && c < 'A' + (Base - 10))
+    if (c >= 'A' && c < 'A' + (Base - 10))
     {
       value = c - 'A' + 10;
       return true;
     }
-    else if (c >= 'a' && c < 'a' + (Base - 10))
+    if (c >= 'a' && c < 'a' + (Base - 10))
     {
       value = c - 'a' + 10;
       return true;
@@ -177,7 +177,7 @@ _test_int_literal_impl(const char* begin, const char* end) noexcept
       return result;
     }
 
-    const U new_value = value * Base + digit;
+    const U new_value = (value * Base) + digit;
     if (new_value < value || new_value > max)
     {
       result.overflow = true;

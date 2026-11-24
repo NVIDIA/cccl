@@ -219,6 +219,14 @@ struct __fmt_spec_fields
   __ret.__consume_all_  = true;
   return __ret;
 }
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_tuple() noexcept
+{
+  __fmt_spec_fields __ret{};
+  __ret.__use_range_fill_ = true;
+  __ret.__clear_brackets_ = true;
+  __ret.__consume_all_    = false;
+  return __ret;
+}
 
 enum class __fmt_spec_alignment : uint8_t
 {
@@ -714,7 +722,6 @@ public:
       , __alternate_form_{false}
       , __locale_specific_form_{false}
       , __clear_brackets_{false}
-      , __type_{__fmt_spec_type::__default}
       , __hour_{false}
       , __weekday_name_{false}
       , __weekday_{false}
@@ -725,9 +732,6 @@ public:
       , __reserved_1_{}
       , __width_as_arg_{false}
       , __precision_as_arg_{false}
-      , __width_{0}
-      , __precision_{-1}
-      , __fill_{}
   {}
 
   underlying_type_t<__fmt_spec_alignment> __alignment_ : 3;
@@ -735,7 +739,7 @@ public:
   bool __alternate_form_                               : 1;
   bool __locale_specific_form_                         : 1;
   bool __clear_brackets_                               : 1;
-  __fmt_spec_type __type_;
+  __fmt_spec_type __type_{__fmt_spec_type::__default};
 
   // These flags are only used for formatting chrono. Since the struct has
   // padding space left it's added to this structure.
@@ -757,12 +761,12 @@ public:
   bool __precision_as_arg_ : 1;
 
   // The requested width, either the value or the arg-id.
-  uint32_t __width_;
+  uint32_t __width_{0};
 
   // The requested precision, either the value or the arg-id.
-  int32_t __precision_;
+  int32_t __precision_{-1};
 
-  __fmt_spec_code_point<_CharT> __fill_;
+  __fmt_spec_code_point<_CharT> __fill_{};
 
 private:
   template <class _It, class _ParseCtx>

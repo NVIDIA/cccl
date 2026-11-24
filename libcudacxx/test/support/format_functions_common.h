@@ -40,14 +40,14 @@ struct context
 template <>
 struct context<char>
 {
-  using type = cuda::std::format_context;
+  using type _CCCL_NODEBUG = cuda::std::format_context;
 };
 
 #if _CCCL_HAS_WCHAR_T()
 template <>
 struct context<wchar_t>
 {
-  using type = cuda::std::wformat_context;
+  using type _CCCL_NODEBUG = cuda::std::wformat_context;
 };
 #endif // _CCCL_HAS_WCHAR_T()
 
@@ -111,7 +111,7 @@ struct cuda::std::formatter<status, CharT>
   template <class Out>
   TEST_HOST_DEVICE_FUNC auto format(status s, basic_format_context<Out, CharT>& ctx) const -> decltype(ctx.out())
   {
-    const char* names[] = {"foo", "bar", "foobar"};
+    const char* const names[] = {"foo", "bar", "foobar"};
     char buffer[7];
     const char* result_begin = names[0];
     const char* result_end   = names[0];
@@ -205,7 +205,11 @@ struct cuda::std::formatter<parse_call_validator, CharT>
   {
     if (!parse_called)
     {
+#if _CCCL_HAS_EXCEPTIONS()
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (throw parse_call_validator::parse_function_not_called{};), (assert(false);))
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
       assert(false);
+#endif // !_CCCL_HAS_EXCEPTIONS()
     }
     return ctx.out();
   }
