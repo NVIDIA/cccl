@@ -8,7 +8,6 @@ import pytest
 from host_benchmark_cases import (
     CALL_CASES,
     CASES,
-    UNCHANGED_CASES,
     HostBenchmarkCase,
     patch_wrapper_to_skip_native_compute,
     synchronize,
@@ -87,26 +86,6 @@ def test_twoshot_call_host_overhead(benchmark, case: HostBenchmarkCase):
 
     def call() -> None:
         case.twoshot(state, wrapper)
-
-    benchmark.pedantic(
-        call,
-        rounds=TWOSHOT_ROUNDS,
-        iterations=TWOSHOT_ITERATIONS,
-        warmup_rounds=0,
-    )
-
-
-@pytest.mark.benchmark(group="cuda.compute.host.call_unchanged")
-@pytest.mark.parametrize("case", _case_params(UNCHANGED_CASES))
-def test_call_unchanged_host_overhead(benchmark, case: HostBenchmarkCase):
-    cc.clear_all_caches()
-    state = case.setup()
-    wrapper = case.make_wrapper(state)
-    patch_wrapper_to_skip_native_compute(wrapper, case.noop_return_kind)
-    synchronize()
-
-    def call() -> None:
-        case.unchanged(state, wrapper)
 
     benchmark.pedantic(
         call,
