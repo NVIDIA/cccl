@@ -53,9 +53,6 @@ class _BinarySearch:
         "op_cccl",
         "data_ptr",
         "out_ptr",
-        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
-        # positives).
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -97,7 +94,6 @@ class _BinarySearch:
 
         self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
-        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinarySearchBuildResult,
             d_data,
@@ -116,11 +112,6 @@ class _BinarySearch:
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -148,11 +139,7 @@ class _BinarySearch:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         if comp is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl,
-                OpKind.LESS if comp is None else comp,
-                self._last_stateless_op,
-            )
+            rebind_op_state(self.op_cccl, OpKind.LESS if comp is None else comp)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         loaded_build_result.compute(

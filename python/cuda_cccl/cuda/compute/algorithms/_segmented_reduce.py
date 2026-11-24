@@ -37,9 +37,6 @@ class _SegmentedReduce(Serializable):
         "end_offsets_in_cccl",
         "h_init_cccl",
         "op_cccl",
-        # Perf cache, keyed by identity (strong ref, no GC-reuse false
-        # positives). See _Reduce.__slots__ for the full rationale.
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -73,7 +70,6 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
             d_in,
@@ -94,13 +90,6 @@ class _SegmentedReduce(Serializable):
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized -- without this, a
-        # deserialized _SegmentedReduce would raise AttributeError the
-        # first time __call__ reads it.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -152,9 +141,7 @@ class _SegmentedReduce(Serializable):
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         if h_init is not UNCHANGED:
             set_cccl_value_state(self.h_init_cccl, h_init)
@@ -303,8 +290,6 @@ def segmented_reduce(
         num_segments=num_segments,
         start_offsets_in=start_offsets_in,
         end_offsets_in=end_offsets_in,
-        op=op,
-        h_init=h_init,
         max_segment_size=max_segment_size,
         stream=stream,
     )

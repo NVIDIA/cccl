@@ -31,9 +31,6 @@ class _MergeSort(Serializable):
         "op_cccl",
         "build_results",
         "loaded_build_result",
-        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
-        # positives).
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -68,7 +65,6 @@ class _MergeSort(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
-        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceMergeSortBuildResult,
             d_in_keys,
@@ -87,11 +83,6 @@ class _MergeSort(Serializable):
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -126,9 +117,7 @@ class _MergeSort(Serializable):
             set_cccl_iterator_state(self.d_out_values_cccl, d_out_values)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -271,6 +260,5 @@ def merge_sort(
         d_out_keys=d_out_keys,
         d_out_values=d_out_values,
         num_items=num_items,
-        op=op,
         stream=stream,
     )

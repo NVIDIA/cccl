@@ -52,7 +52,6 @@ class _Scan(Serializable):
         # Perf cache; see _Reduce.__slots__ for rationale. init_value isn't
         # cached this way -- same reason h_init isn't: it's mutable.
         "_last_loaded_build_result",
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -119,7 +118,6 @@ class _Scan(Serializable):
         # loaded_build_result / device_scan_fn are bound lazily on the first
         # __call__ (see _bind_device_scan_fn).
         self._last_loaded_build_result = None
-        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
             d_in,
@@ -143,9 +141,8 @@ class _Scan(Serializable):
 
     def _after_deserialize(self) -> None:
         # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where these two caches are otherwise initialized.
+        # where this cache is otherwise initialized.
         self._last_loaded_build_result = None
-        self._last_stateless_op = None
 
     def _bind_device_scan_fn(self) -> None:
         # Derived from force_inclusive + init_kind, from the loaded build result (not
@@ -203,9 +200,7 @@ class _Scan(Serializable):
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         if init_value is not UNCHANGED:
             match self.init_kind:
@@ -344,8 +339,6 @@ def exclusive_scan(
         temp_storage=tmp_storage,
         d_in=d_in,
         d_out=d_out,
-        op=op,
-        init_value=init_value,
         num_items=num_items,
         stream=stream,
     )
@@ -446,8 +439,6 @@ def inclusive_scan(
         temp_storage=tmp_storage,
         d_in=d_in,
         d_out=d_out,
-        op=op,
-        init_value=init_value,
         num_items=num_items,
         stream=stream,
     )

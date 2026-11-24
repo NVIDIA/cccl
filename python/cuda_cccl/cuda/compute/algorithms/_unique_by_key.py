@@ -30,9 +30,6 @@ class _UniqueByKey(Serializable):
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
         "op_cccl",
-        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
-        # positives).
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -65,7 +62,6 @@ class _UniqueByKey(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.uint8)
 
-        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUniqueByKeyBuildResult,
             d_in_keys,
@@ -86,11 +82,6 @@ class _UniqueByKey(Serializable):
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -121,9 +112,7 @@ class _UniqueByKey(Serializable):
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -260,7 +249,6 @@ def unique_by_key(
         d_out_keys=d_out_keys,
         d_out_items=d_out_items,
         d_out_num_selected=d_out_num_selected,
-        op=op,
         num_items=num_items,
         stream=stream,
     )

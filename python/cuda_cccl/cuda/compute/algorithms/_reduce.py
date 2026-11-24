@@ -52,11 +52,10 @@ class _Reduce(Serializable):
         "build_results",
         "loaded_build_result",
         "device_reduce_fn",
-        # Perf caches, keyed by identity (strong refs, so no GC-reuse false
+        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
         # positives). h_init isn't cached this way: it's mutable, and
         # identity can't detect an in-place change.
         "_last_loaded_build_result",
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -123,7 +122,6 @@ class _Reduce(Serializable):
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
         self._last_loaded_build_result = None
-        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -147,11 +145,10 @@ class _Reduce(Serializable):
 
     def _after_deserialize(self) -> None:
         # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where these two caches are otherwise initialized -- without this,
-        # a deserialized _Reduce would raise AttributeError the first time
-        # _bind_device_reduce_fn/__call__ reads them.
+        # where this cache is otherwise initialized -- without this, a
+        # deserialized _Reduce would raise AttributeError the first time
+        # _bind_device_reduce_fn reads it.
         self._last_loaded_build_result = None
-        self._last_stateless_op = None
 
     def _bind_device_reduce_fn(self) -> None:
         # Derived from the loaded build result (not serialized); bound at __call__
@@ -196,9 +193,7 @@ class _Reduce(Serializable):
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         if h_init is not UNCHANGED and self.init_kind is _bindings.InitKind.VALUE_INIT:
             # We know that h_init_cccl is a Value here, so this cast tells MyPy
@@ -359,7 +354,5 @@ def reduce_into(
         d_in=d_in,
         d_out=d_out,
         num_items=num_items,
-        op=op,
-        h_init=h_init,
         stream=stream,
     )

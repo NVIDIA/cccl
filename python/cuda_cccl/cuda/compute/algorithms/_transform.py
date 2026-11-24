@@ -25,9 +25,6 @@ class _UnaryTransform(Serializable):
         "op_cccl",
         "build_results",
         "loaded_build_result",
-        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
-        # positives).
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -52,7 +49,6 @@ class _UnaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in_type,), out_type)
 
-        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUnaryTransform,
             d_in,
@@ -67,11 +63,6 @@ class _UnaryTransform(Serializable):
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -94,9 +85,7 @@ class _UnaryTransform(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.loaded_build_result.compute(
@@ -118,9 +107,6 @@ class _BinaryTransform(Serializable):
         "op_cccl",
         "build_results",
         "loaded_build_result",
-        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
-        # positives).
-        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -149,7 +135,6 @@ class _BinaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
-        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinaryTransform,
             d_in1,
@@ -166,11 +151,6 @@ class _BinaryTransform(Serializable):
                 compute_capability=compute_capability,
             ),
         )
-
-    def _after_deserialize(self) -> None:
-        # deserialize() bypasses __init__ (see Serializable.deserialize),
-        # where this cache is otherwise initialized.
-        self._last_stateless_op = None
 
     def __call__(
         self,
@@ -196,9 +176,7 @@ class _BinaryTransform(Serializable):
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         if op is not UNCHANGED:
-            self._last_stateless_op = rebind_op_state(
-                self.op_cccl, op, self._last_stateless_op
-            )
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.loaded_build_result.compute(
