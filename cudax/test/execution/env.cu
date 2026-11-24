@@ -14,6 +14,7 @@
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/memory_resource.cuh>
+#include <cuda/experimental/stream.cuh>
 
 #include <testing.cuh>
 

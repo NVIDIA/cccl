@@ -59,7 +59,7 @@ enum class EC2 : unsigned
 template <class T, class U>
 TEST_FUNC constexpr void test_is_layout_compatible(bool expected)
 {
-#if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE)
+#ifdef _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE
   assert((cuda::std::is_layout_compatible<T, U>::value == expected));
   assert((cuda::std::is_layout_compatible<T, const U>::value == expected));
   assert((cuda::std::is_layout_compatible<T, volatile U>::value == expected));

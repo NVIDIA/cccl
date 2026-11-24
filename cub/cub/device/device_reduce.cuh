@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -102,9 +102,8 @@ inline constexpr bool is_non_deterministic_v =
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceReduce that accept an environment (except ``ReduceByKey``) can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ReducePolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceReduce (except ``ReduceByKey``) can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::ReducePolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
 //!      :language: c++
@@ -1017,7 +1016,7 @@ public:
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return __minmax_reduce(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, (limits_t::max) (), env);
   }
 
   //! @rst
@@ -1091,7 +1090,7 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
     return _CUB::detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
-      return __minmax_reduce(storage, bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
+      return __minmax_reduce(storage, bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, (limits_t::max) (), env);
     });
   }
 
@@ -1525,6 +1524,8 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  //!
+  //! Deprecated [Since 2.8]
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "
@@ -1560,7 +1561,7 @@ public:
     const ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{AccumT(1, (::cuda::std::numeric_limits<InputValueT>::max)())};
 
     return _CUB::detail::reduce::dispatch<AccumT>(
       d_temp_storage,
@@ -1991,6 +1992,8 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  //!
+  //! Deprecated [Since 2.8]
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "

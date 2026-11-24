@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.ctor], basic_vec constructors
 //
@@ -22,10 +22,10 @@
 // constexpr basic_vec(Range&&, flags<> = {});                                      // range
 // constexpr basic_vec(Range&&, const mask_type&, flags<> = {});                    // masked range
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

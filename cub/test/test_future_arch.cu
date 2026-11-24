@@ -8,7 +8,7 @@
 #  define TEST_CUDA_ARCH 9900
 
 // Replace __CUDA_ARCH__ only in device code.
-#  if defined(__CUDA_ARCH__)
+#  ifdef __CUDA_ARCH__
 #    undef __CUDA_ARCH__
 #    define __CUDA_ARCH__ TEST_CUDA_ARCH
 #  endif // __CUDA_ARCH__

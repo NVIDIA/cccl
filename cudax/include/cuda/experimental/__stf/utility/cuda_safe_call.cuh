@@ -24,7 +24,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/source_location>
 #include <cuda/std/variant>
 
@@ -47,13 +48,13 @@
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 #if __has_include(<cublas_v2.h>)
 #  include <cublas_v2.h>
 #endif
 #if __has_include(<cusolverDn.h>)
-#  include <cusolverDn.h>
+#  include <cusolverDn.h> // IWYU pragma: keep
 #endif
 
 namespace cuda::experimental::stf

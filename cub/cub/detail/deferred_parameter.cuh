@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,6 +17,7 @@
 
 #include <cuda/__argument/argument.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
@@ -27,6 +28,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// Classify argument roles here; validate the wrapped count type after selecting the overload.
+template <typename NumItemsT, bool IsWrapper = ::cuda::args::__is_wrapper_v<NumItemsT>>
+inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT>;
+
+template <typename NumItemsT>
+inline constexpr bool is_num_items_v<NumItemsT, true> = ::cuda::args::__traits<NumItemsT>::is_single_value;
+
 template <typename NumItemsT>
 using num_items_offset_t = choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
 
@@ -76,7 +84,7 @@ template <typename TargetT, typename ParameterT>
 
   if constexpr (args_traits_t::is_deferred)
   {
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     return parameter;
 #  else
     return ::cuda::args::__unwrap(parameter);
@@ -88,7 +96,7 @@ template <typename TargetT, typename ParameterT>
   }
 }
 
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
 // Work around for NVCC emitting invalid lambda-dependent type aliases
 template <typename TargetT, typename SourceT, typename StaticBoundsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto

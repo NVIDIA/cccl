@@ -17,7 +17,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+
+#include <array>
+#include <tuple>
 
 namespace cuda::experimental::places
 {

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,6 +32,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
 #  include <cuda/std/__utility/forward.h>
@@ -383,24 +384,25 @@ _CCCL_HOST_API void inline __do_launch(
   ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
 {
   __config.hStream = __stream.get();
-#  if defined(_CCCLRT_LAUNCH_CONFIG_TEST)
+#  ifdef _CCCLRT_LAUNCH_CONFIG_TEST
   test_launch_kernel_replacement(__config, __kernel, __args_ptrs);
 #  else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
   ::cuda::__driver::__launchKernel(__config, __kernel, __args_ptrs);
 #  endif // ^^^ !_CUDAX_LAUNCH_CONFIG_TEST ^^^
 }
 
-template <typename... _ExpTypes, typename _Dst, typename _Config>
-_CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
+template <class _Config>
+_CCCL_HOST_API void
+__launch_kernel(stream_ref __stream, const _Config& __conf, ::CUfunction __kernel, void** __args_ptrs)
 {
-  static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
+  using _Hierarchy = typename _Config::hierarchy_type;
+  static_assert(!::cuda::std::is_same_v<_Hierarchy, __empty_hierarchy>,
                 "Can't launch a configuration without hierarchy dimensions");
 
-  using _Hierarchy = typename _Config::hierarchy_type;
+  constexpr bool __has_cluster_level        = _Hierarchy::has_level(cluster);
+  constexpr unsigned int __num_attrs_needed = _Config::__num_attrs + __has_cluster_level;
 
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level        = _Hierarchy::has_level(cluster);
-  constexpr unsigned int __num_attrs_needed = __detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
@@ -411,25 +413,38 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
     _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
   }
 
-  __config.gridDimX  = block.dims(grid, __conf).x;
-  __config.gridDimY  = block.dims(grid, __conf).y;
-  __config.gridDimZ  = block.dims(grid, __conf).z;
-  __config.blockDimX = gpu_thread.dims(block, __conf).x;
-  __config.blockDimY = gpu_thread.dims(block, __conf).y;
-  __config.blockDimZ = gpu_thread.dims(block, __conf).z;
+  const auto __grid_dims = block.dims(grid, __conf.hierarchy());
+  __config.gridDimX      = __grid_dims.x;
+  __config.gridDimY      = __grid_dims.y;
+  __config.gridDimZ      = __grid_dims.z;
+
+  const auto __block_dims = gpu_thread.dims(block, __conf.hierarchy());
+  __config.blockDimX      = __block_dims.x;
+  __config.blockDimY      = __block_dims.y;
+  __config.blockDimZ      = __block_dims.z;
 
   if constexpr (__has_cluster_level)
   {
     ::CUlaunchAttribute __cluster_dims_attr{};
-    __cluster_dims_attr.id                 = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
-    __cluster_dims_attr.value.clusterDim.x = block.dims(cluster, __conf).x;
-    __cluster_dims_attr.value.clusterDim.y = block.dims(cluster, __conf).y;
-    __cluster_dims_attr.value.clusterDim.z = block.dims(cluster, __conf).z;
-    __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
+    __cluster_dims_attr.id = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
+
+    const auto __cluster_dims              = block.dims(cluster, __conf.hierarchy());
+    __cluster_dims_attr.value.clusterDim.x = __cluster_dims.x;
+    __cluster_dims_attr.value.clusterDim.y = __cluster_dims.y;
+    __cluster_dims_attr.value.clusterDim.z = __cluster_dims.z;
+
+    __config.attrs[__config.numAttrs++] = __cluster_dims_attr;
   }
 
-  const void* __pArgs[(sizeof...(__args) > 0) ? sizeof...(__args) : 1]{::cuda::std::addressof(__args)...};
-  return ::cuda::__do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel, const_cast<void**>(__pArgs));
+  ::cuda::__do_launch(__stream, __config, __kernel, __args_ptrs);
+}
+
+// Materialize the kernel's parameter types before erasing them so launch configuration is shared across signatures.
+template <class... _ExpTypes, class _Config>
+_CCCL_HOST_API void __launch_impl(stream_ref __stream, const _Config& __conf, ::CUfunction __kernel, _ExpTypes... __args)
+{
+  const void* __args_ptrs[sizeof...(_ExpTypes) == 0 ? 1 : sizeof...(_ExpTypes)]{::cuda::std::addressof(__args)...};
+  ::cuda::__launch_kernel(__stream, __conf, __kernel, const_cast<void**>(__args_ptrs));
 }
 
 _CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(::cuda::stream_ref __stream)

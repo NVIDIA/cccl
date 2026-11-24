@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -74,7 +74,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     // We pass the policy as an environment to DeviceAdjacentDifference
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
-      "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
+      "__pstl_cuda_adjacent_difference: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
       ::cuda::std::move(__first),
       __result,
       __count,
@@ -122,7 +122,8 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     }
     else
     {
-      static_assert(__always_false_v<_Policy>, "CUDA backend of cuda::std::merge requires random access iterators");
+      static_assert(__always_false_v<_Policy>,
+                    "CUDA backend of cuda::std::adjacent_difference requires random access iterators");
       return ::cuda::std::adjacent_difference(
         ::cuda::std::move(__first),
         ::cuda::std::move(__last),

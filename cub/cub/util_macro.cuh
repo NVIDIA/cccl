@@ -10,7 +10,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +31,7 @@ CUB_NAMESPACE_BEGIN
  * @def CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
-#if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
+#ifndef CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #  if !_CCCL_CUDA_COMPILER(NVHPC)
@@ -56,7 +56,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
     }
 #endif
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
 #  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
 #  define CUB_DETAIL_CONSTEXPR_ISH
 #else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv

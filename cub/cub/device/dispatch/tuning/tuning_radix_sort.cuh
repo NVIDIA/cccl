@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -1612,7 +1612,7 @@ struct policy_hub
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
     static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
-    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr bool ONESWEEP              = true;
     static constexpr int ONESWEEP_RADIX_BITS    = 8;
     static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
 
@@ -1837,7 +1837,7 @@ struct policy_hub
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __scale_num_parts(int nominal_4b_num_parts, int compute_t_size)
 {
-  return ::cuda::std::max(1, nominal_4b_num_parts * 4 / ::cuda::std::max(compute_t_size, 4));
+  return (::cuda::std::max) (1, nominal_4b_num_parts * 4 / (::cuda::std::max) (compute_t_size, 4));
 }
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1861,7 +1861,7 @@ struct policy_selector
   // Dominant-sized key/value type
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
-    return ::cuda::std::max(value_size, key_size);
+    return (::cuda::std::max) (value_size, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
@@ -2011,10 +2011,9 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
-      const int onesweep_radix_bits = 8;
-      const bool offset_64bit       = offset_size == 8;
+      const auto use_onesweep          = RadixSortAlgorithm::onesweep;
+      const int onesweep_radix_bits    = 8;
+      const bool offset_64bit          = offset_size == 8;
 
       const auto histogram = RadixSortHistogramPolicy{
         128, 16, _CUB::detail::radix_sort::__scale_num_parts(1, key_size), onesweep_radix_bits};

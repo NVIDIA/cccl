@@ -45,13 +45,13 @@ Returns a ``cuda::std::simd::basic_vec<cuda::std::make_unsigned_t<T>, Abi>`` whe
 - On device, packed 8-bit integer vectors translate to:
 
   - ``VABSDIFF4`` on ``SM80``, ``SM86``, ``SM87``, ``SM89``, ``SM90``, ``SM100``, ``SM103``, and ``SM110``.
-  - Two ``VIMNMX.S8x4/U8x4`` instructions followed by ``VIADD.S8x4/U8x4`` on ``SM120f``.
+  - Two ``VIMNMX.S8x4/U8x4`` instructions followed by ``VIADD.S8x4/U8x4`` on ``SM107`` and ``SM120``.
 
-- Other integer element types use the equivalent ``max(lhs, rhs) - min(lhs, rhs)`` formulation:
+- For wider integer elements:
 
   - 16-bit elements use packed ``VIMNMX.S16x2/U16x2`` and ``VIADD.16x2`` instructions on ``SM90``
     and later architectures.
-  - 32-bit elements use ``VIMNMX`` for minimum and maximum on ``SM90`` and later architectures.
+  - 32-bit elements use one ``VABSDIFF`` per element on ``SM90`` and ``SM100``. On ``SM107`` and ``SM120``, they use minimum, maximum, and subtraction.
   - Other cases use scalar instructions.
 
 Example

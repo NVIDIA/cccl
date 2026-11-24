@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,6 +20,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
@@ -737,6 +738,31 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_batched_delay_policy(LookbackDelayPolicy policy)
+  -> LookbackDelayPolicy
+{
+  if (policy.kind == LookbackDelayAlgorithm::fixed_delay || policy.kind == LookbackDelayAlgorithm::no_delay)
+  {
+    // Occupancy-sized grids may have fewer than 500 CTAs. Retain nanosleeps to avoid serious lookback regressions.
+    policy.delay = policy.kind == LookbackDelayAlgorithm::no_delay ? 0 : policy.delay;
+    policy.kind  = LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold;
+  }
+  return policy;
+}
+
+// Only persistent batch grids need waits independent of grid size. Apply this after custom tuning so
+// single-grid scans retain their selected delay policy and custom batch policies preserve their wait behavior.
+template <typename PolicySelector>
+struct batch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = PolicySelector{}(cc);
+    policy.lookback.lookback_delay = _CUB::detail::scan::make_batched_delay_policy(policy.lookback.lookback_delay);
+    return policy;
+  }
+};
+
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
@@ -868,7 +894,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
 
-  const int align_inout = ::cuda::std::max({16, input_align, output_align});
+  const int align_inout = (::cuda::std::max) ({16, input_align, output_align});
   const int inout_bytes = (policy.tile_size() * input_size) + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
@@ -876,7 +902,9 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
   const int num_sum_exclusive_cta_stages =
-    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
+    policy.lookahead_stages > 0
+      ? policy.lookahead_stages
+      : (::cuda::std::max) (1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
   void* next_block_idx_base =
@@ -941,7 +969,7 @@ struct policy_selector
     // manual tuning based on cub.bench.scan.exclusive.sum.base
     // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
     // 2-byte types and double needed special handling
-    lookahead_policy.items_per_thread = ::cuda::std::max((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
+    lookahead_policy.items_per_thread = (::cuda::std::max) ((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
     // TODO(bgruber): the special handling of double below is a LOT faster on B200, but exceeds 48KiB SMEM
     // clang-format off
       // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
@@ -968,7 +996,7 @@ struct policy_selector
       }
       else
       {
-        policy.items_per_thread = ::cuda::std::min(policy.items_per_thread, input_value_size <= 2 ? 63 : 127);
+        policy.items_per_thread = (::cuda::std::min) (policy.items_per_thread, input_value_size <= 2 ? 63 : 127);
       }
     }
     return policy;
@@ -1622,12 +1650,13 @@ struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
-    using InputValueT                   = it_value_t<InputIteratorT>;
-    constexpr bool output_value_is_void = ::cuda::std::is_void_v<it_value_t<OutputIteratorT>>;
-    using OutputValueT = ::cuda::std::conditional_t<output_value_is_void, AccumT, it_value_t<OutputIteratorT>>;
+    using InputValueT  = it_value_t<InputIteratorT>;
+    using OutputValueT = non_void_value_t<OutputIteratorT, AccumT>;
 
+    // output iterators without a value type (e.g. transform_output_iterator) never match the tuning benchmarks
+    constexpr bool output_has_value_type = ::cuda::std::is_same_v<OutputValueT, it_value_t<OutputIteratorT>>;
     constexpr bool benchmark_match =
-      !output_value_is_void && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
+      output_has_value_type && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
 
     constexpr bool accum_is_primitive_or_trivially_copy_constructible =
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;

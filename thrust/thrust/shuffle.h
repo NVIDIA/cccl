@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -182,4 +182,4 @@ _CCCL_HOST_DEVICE_API void shuffle_copy(RandomIterator first, RandomIterator las
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/shuffle.inl>
+#include <thrust/detail/shuffle.inl> // IWYU pragma: export

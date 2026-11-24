@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,9 +28,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// todo(dabayer): Deprecate and remove this function in CCCL 4.0.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __v) noexcept
+[[nodiscard]]
+CCCL_DEPRECATED_BECAUSE("cuda::bit_reverse is deprecated and will be removed in next major release. "
+                        "Please, use cuda::std::bit_reverse instead.")
+_CCCL_API constexpr _Tp bit_reverse(_Tp __v) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
   return ::cuda::std::bit_reverse(__v);

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,12 +30,12 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__floating_point/constants.h>
-#include <cuda/std/climits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 
 /*
  * --------------------------------------------------------------------
@@ -1498,66 +1498,58 @@ __fpmp2_nearbyint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi,
 
 /*
  * --------------------------------------------------------------------
- * The pair rounded to an integer, (r_hi, r_lo), as a long long - the
- * head is exactly +-2^63 (fp32mp2)
+ * An integral pair as a long long; false when it is outside the type
  * --------------------------------------------------------------------
- * Such a pair is in range when its tail points inward: (-2^63, 1) is
- * LLONG_MIN + 1 and (2^63, -1) is LLONG_MAX, while (2^63, 0) and
- * (-2^63, -1) are not.  The tail is an integer with |lo| <= 2^39, so the
- * value is reached from the limits without casting the head.  Returns
- * false for a pair that is out of range (a NaN tail included), and
- * true with the value otherwise.  Only the slow path of llrint and
- * llround comes here.
+ * Below 2^63 the limbs convert one by one (|lo| <= ulp(hi)/2 keeps the
+ * sum in range).  At |hi| = 2^63 the pair is in range when its low limb
+ * points inward, -2^63 + lo and 2^63 - |lo|: the sum is then formed from
+ * the end of the range, since 2^63 itself does not convert.
  */
 _CCCL_FPMP_CORE_API bool
-__internal_fpmp2_ll_at_2p63(const float __r_hi, const float __r_lo, long long int* __res) noexcept
+__internal_fpmp2_integral_to_llong(const float __r_hi, const float __r_lo, long long int* __res) noexcept
 {
-  if (::cuda::__fpmp_internal_fabs(__r_hi) < 0x1p63f) /* the tail rounded the head inward */
+  if (::cuda::__fpmp_internal_fabs(__r_hi) < 0x1p63f)
   {
     *__res = static_cast<long long int>(__r_hi) + static_cast<long long int>(__r_lo);
     return true;
   }
-  const bool __pos = __r_hi > 0.0f;
-  if (__pos ? !(__r_lo < 0.0f) : !(__r_lo >= 0.0f))
+  if (__r_hi == -0x1p63f && __r_lo >= 0.0f)
   {
-    return false;
+    *__res = (::cuda::std::numeric_limits<long long int>::min)() + static_cast<long long int>(__r_lo);
+    return true;
   }
-  *__res = __pos ? (LLONG_MAX + (static_cast<long long int>(__r_lo) + 1))
-                 : (LLONG_MIN + static_cast<long long int>(__r_lo));
-  return true;
+  if (__r_hi == 0x1p63f && __r_lo < 0.0f)
+  {
+    *__res = (::cuda::std::numeric_limits<long long int>::max)() + (static_cast<long long int>(__r_lo) + 1);
+    return true;
+  }
+  return false;
 }
 
 /*
  * --------------------------------------------------------------------
  * Round to long long llrint(x) (fp32mp2) - exact on the limb pair
  * --------------------------------------------------------------------
- * The exact rint of the pair, converted limb by limb (both limbs are
- * integers then, and |lo| <= ulp(hi)/2 keeps the sum in range).  NaN,
- * infinities and |x| > 2^63 go to the platform's own scalar function on
- * the high limb, so those inputs keep the sentinel it reports (the only
- * path through a double, and it never computes); a head of exactly
- * +-2^63 is in range when its tail points inward, see above.
+ * The exact rint of the pair, converted by the helper above, which also
+ * takes the pairs at +-2^63 that are in range through their low limb.
+ * NaN, infinities and values outside the type go to the platform's own
+ * scalar function on the high limb, so those inputs keep the sentinel it
+ * reports (the only path through a double, and it never computes).
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const float __x_hi, const float __x_lo) noexcept
 {
-  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f)
-      || !(::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>()))
+  if (::cuda::__fpmp_internal_fabs(__x_hi) <= 0x1p63f
+      && ::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>())
   {
-    long long int __edge;
-    if (::cuda::__fpmp_internal_fabs(__x_hi) == 0x1p63f)
+    float __r_hi, __r_lo;
+    ::cuda::__fpmp2_rint<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
+    long long int __res;
+    if (::cuda::__internal_fpmp2_integral_to_llong(__r_hi, __r_lo, &__res))
     {
-      float __r_hi, __r_lo;
-      ::cuda::__fpmp2_rint<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
-      if (::cuda::__internal_fpmp2_ll_at_2p63(__r_hi, __r_lo, &__edge))
-      {
-        return __edge;
-      }
+      return __res;
     }
-    return ::cuda::std::llrint(static_cast<double>(__x_hi));
   }
-  float __r_hi, __r_lo;
-  ::cuda::__fpmp2_rint<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
-  return static_cast<long long int>(__r_hi) + static_cast<long long int>(__r_lo);
+  return ::cuda::std::llrint(static_cast<double>(__x_hi));
 }
 
 /*
@@ -1582,33 +1574,25 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
  * --------------------------------------------------------------------
  * Round to long long llround(x) (fp32mp2) - exact on the limb pair
  * --------------------------------------------------------------------
- * The exact round of the pair, converted limb by limb (both limbs are
- * integers then, and |lo| <= ulp(hi)/2 keeps the sum in range).  NaN,
- * infinities and |x| > 2^63 go to the platform's own scalar function on
- * the high limb, so those inputs keep the sentinel it reports (the only
- * path through a double, and it never computes); a head of exactly
- * +-2^63 is in range when its tail points inward, see llrint.
+ * The exact round of the pair, converted as in llrint: the pairs at
+ * +-2^63 that are in range through their low limb included, NaN,
+ * infinities and values outside the type left to the platform's own
+ * scalar function on the high limb.
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const float __x_hi, const float __x_lo) noexcept
 {
-  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f)
-      || !(::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>()))
+  if (::cuda::__fpmp_internal_fabs(__x_hi) <= 0x1p63f
+      && ::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>())
   {
-    long long int __edge;
-    if (::cuda::__fpmp_internal_fabs(__x_hi) == 0x1p63f)
+    float __r_hi, __r_lo;
+    ::cuda::__fpmp2_round<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
+    long long int __res;
+    if (::cuda::__internal_fpmp2_integral_to_llong(__r_hi, __r_lo, &__res))
     {
-      float __r_hi, __r_lo;
-      ::cuda::__fpmp2_round<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
-      if (::cuda::__internal_fpmp2_ll_at_2p63(__r_hi, __r_lo, &__edge))
-      {
-        return __edge;
-      }
+      return __res;
     }
-    return ::cuda::std::llround(static_cast<double>(__x_hi));
   }
-  float __r_hi, __r_lo;
-  ::cuda::__fpmp2_round<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
-  return static_cast<long long int>(__r_hi) + static_cast<long long int>(__r_lo);
+  return ::cuda::std::llround(static_cast<double>(__x_hi));
 }
 
 /*

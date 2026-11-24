@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -252,20 +252,34 @@ struct reduce_by_key_delay_constructor_t
   }
 };
 
-template <unsigned int Delay, unsigned int L2WriteLatency>
+template <unsigned int Delay, unsigned int L2WriteLatency, bool UseGridThreshold = true>
 struct fixed_delay_constructor_t
 {
   struct delay_t
   {
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      _CUB::detail::delay_or_prevent_hoisting<Delay>();
+      if constexpr (UseGridThreshold || Delay == 0)
+      {
+        _CUB::detail::delay_or_prevent_hoisting<Delay>();
+      }
+      else
+      {
+        _CUB::detail::always_delay_or_prevent_hoisting<Delay>();
+      }
     }
   };
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    _CUB::detail::delay<L2WriteLatency>();
+    if constexpr (UseGridThreshold || L2WriteLatency == 0)
+    {
+      _CUB::detail::delay<L2WriteLatency>();
+    }
+    else
+    {
+      _CUB::detail::always_delay<L2WriteLatency>();
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()

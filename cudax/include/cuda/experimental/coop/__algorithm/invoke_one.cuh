@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,29 +40,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
 template <class _Group>
 [[nodiscard]] _CCCL_DEVICE_API bool __elect_one(const _Group& __group)
 {
-  if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
-  {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, ({ return ::cuda::ptx::elect_sync(~0u); }))
-  }
-  else if constexpr (!::cuda::std::is_same_v<typename _Group::unit_type, thread_level>)
-  {
-    // For groups whose unit is >= warp_level, we want to still execute the elect.sync PTX instruction by the root warp
-    // to let the compiler enter the Uniform Data Path (UDP) when invoking the callable.
-    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                   if (warp.is_root_rank(__group))
-                   {
-                     return ::cuda::ptx::elect_sync(~0u);
-                   }
-                   return false;
-                 }))
-  }
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90, ({
+      if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
+      {
+        return ::cuda::ptx::elect_sync(~0u);
+      }
+      else if constexpr (!::cuda::std::is_same_v<typename _Group::unit_level, thread_level>)
+      {
+        // Elect a lane in the root warp so the compiler can use the uniform data path for the callable.
+        if (warp.is_root_rank(__group))
+        {
+          return ::cuda::ptx::elect_sync(~0u);
+        }
+        return false;
+      }
+    }))
   return gpu_thread.is_root_rank(__group);
 }
 

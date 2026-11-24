@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,12 +45,24 @@
 #  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) 0
 #endif // !__has_declspec_attribute
 
-// MSVC needs extra help with empty base classes
+// MSVC needs extra help with empty base classes, and the layout of CCCL types depends on it. Some code bases define
+// `empty_bases` as a macro, which must neither change this check nor break _CCCL_DECLSPEC_EMPTY_BASES. So push and
+// pop `empty_bases` around this check and in every header that uses _CCCL_DECLSPEC_EMPTY_BASES, like
+// <cuda/std/__tuple_dir/tuple_leaf.h> does.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 #if _CCCL_COMPILER(MSVC) || _CCCL_HAS_DECLSPEC_ATTRIBUTE(empty_bases)
 #  define _CCCL_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_DECLSPEC_EMPTY_BASES
 #endif // !_CCCL_COMPILER(MSVC)
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #if _CCCL_HAS_ATTRIBUTE(__nodebug__)
 #  define _CCCL_NODEBUG __attribute__((__nodebug__))

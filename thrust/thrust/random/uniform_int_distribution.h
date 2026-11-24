@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -104,7 +104,7 @@ public:
    *           the platform.
    */
   _CCCL_HOST_DEVICE_API explicit uniform_int_distribution(
-    IntType a = 0, IntType b = ::cuda::std::numeric_limits<IntType>::max());
+    IntType a = 0, IntType b = (::cuda::std::numeric_limits<IntType>::max)());
 
   /*! This constructor creates a new \p uniform_int_distribution from a \p param_type object
    *  encapsulating the range of the distribution.

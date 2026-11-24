@@ -14,7 +14,7 @@
 // basic_vec<T, Abi> requires T to be a vectorizable type.
 // bool is explicitly excluded by the standard.
 
-#include <cuda/std/__simd_>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

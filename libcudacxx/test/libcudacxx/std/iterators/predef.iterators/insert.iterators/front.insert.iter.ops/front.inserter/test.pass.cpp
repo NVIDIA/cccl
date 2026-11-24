@@ -15,7 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 
 #  include "nasty_containers.h"
@@ -34,7 +34,7 @@ TEST_FUNC void test(C c)
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test(cuda::std::list<int>());
   test(nasty_list<int>());
 #endif
