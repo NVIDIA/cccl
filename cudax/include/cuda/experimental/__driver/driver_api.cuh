@@ -37,8 +37,9 @@
 // #define'd version aliases in cuda.h (e.g. #define cuFoo cuFoo_v2).
 // The ## operator suppresses macro expansion of the function name, so this is
 // safe even for names that are #define'd to versioned variants.
-#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major, minor) \
-    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(::PFN_##pfn_name##_v##major##0##minor##0, #pfn_name, major, minor)
+#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major_version, minor_version) \
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(                                       \
+      ::PFN_##pfn_name##_v##major_version##0##minor_version##0, #pfn_name, major_version, minor_version)
 
 namespace cuda::experimental::__driver
 {

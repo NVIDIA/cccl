@@ -91,7 +91,6 @@ PUSH_POP_MACROS = {
     "Windows nasty macros": ["min", "max"],
     "sal.h on Windows": ["__callback"],
     "other macros": ["clang"],
-    "sys/sysmacros.h on linux": ["major", "minor", "makedev"],
 }
 
 
