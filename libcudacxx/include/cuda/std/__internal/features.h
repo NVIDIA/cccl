@@ -111,6 +111,14 @@
   ((_CCCL_HAS_SIMD_8BIT_PTX() || _CCCL_HAS_SIMD_8BIT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
 
+// 8-bit arithmetic and saturating addition are supported on SM107f in PTX ISA 9.4
+#if __cccl_ptx_isa >= 940ULL
+#  define _CCCL_DISPATCH_SIMD_8BIT_TARGET(...) \
+    NV_DISPATCH_TARGET(NV_HAS_FEATURE_SM_107f, (__VA_ARGS__), NV_HAS_FEATURE_SM_120f, (__VA_ARGS__))
+#else
+#  define _CCCL_DISPATCH_SIMD_8BIT_TARGET(...) NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (__VA_ARGS__))
+#endif
+
 // TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD SAT intrinsics
 #define _CCCL_HAS_SIMD_SAT_INTRINSICS() 0
 #define _CCCL_HAS_SIMD_SAT_PTX()        (__cccl_ptx_isa >= 920ULL)
