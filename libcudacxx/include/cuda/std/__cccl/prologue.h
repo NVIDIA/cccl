@@ -218,12 +218,6 @@
 #  define _CCCL_POP_MACRO_intrinsic
 #endif // defined(intrinsic)
 
-#ifdef noinline
-#  pragma push_macro("noinline")
-#  undef noinline
-#  define _CCCL_POP_MACRO_noinline
-#endif // defined(noinline)
-
 #ifdef noinline_calls
 #  pragma push_macro("noinline_calls")
 #  undef noinline_calls
