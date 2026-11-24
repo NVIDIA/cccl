@@ -1,0 +1,39 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="388" viewBox="0 0 456 388" role="img" aria-labelledby="title desc">
+  <title id="title">Three result shapes for the same two row sums</title>
+  <desc id="desc">The rows [1, 2, 3, 4] and [5, 6, 7, 8] sum to 10 and 26. Removing the reduced axis gives a vector, retaining it gives a column, and broadcasting repeats each sum across its row.</desc>
+  <rect width="456" height="388" rx="8" fill="#fff"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#132c47">
+    <text x="16" y="31" font-size="21" font-weight="bold">Sum across each row</text>
+    <text x="16" y="61" font-size="16">Input shape (2, 4)</text>
+    <g fill="#e6f0fb" stroke="#7894af">
+      <rect x="210" y="41" width="224" height="32" rx="4"/>
+      <rect x="210" y="78" width="224" height="32" rx="4"/>
+    </g>
+    <g font-size="16" text-anchor="middle">
+      <text x="238" y="63">1</text><text x="294" y="63">2</text><text x="350" y="63">3</text><text x="406" y="63">4</text>
+      <text x="238" y="100">5</text><text x="294" y="100">6</text><text x="350" y="100">7</text><text x="406" y="100">8</text>
+    </g>
+    <g stroke="#cad7e2"><path d="M16 124 H440 M16 208 H440 M16 295 H440"/></g>
+    <g font-size="17" font-weight="bold">
+      <text x="16" y="154">Remove the axis</text><text x="16" y="239">Retain the axis</text><text x="16" y="327">Broadcast</text>
+    </g>
+    <g font-size="16">
+      <text x="16" y="180">Shape (2,)</text><text x="16" y="265">Shape (2, 1)</text><text x="16" y="353">Shape (2, 4)</text>
+    </g>
+    <g fill="#fff0c7" stroke="#ad934d">
+      <rect x="210" y="148" width="112" height="34" rx="4"/>
+      <rect x="210" y="214" width="56" height="34" rx="4"/>
+      <rect x="210" y="252" width="56" height="34" rx="4"/>
+      <rect x="210" y="303" width="224" height="34" rx="4"/>
+      <rect x="210" y="341" width="224" height="34" rx="4"/>
+    </g>
+    <g font-size="16" text-anchor="middle">
+      <text x="238" y="171">10</text><text x="294" y="171">26</text>
+      <text x="238" y="237">10</text><text x="238" y="275">26</text>
+      <text x="238" y="326">10</text><text x="294" y="326">10</text><text x="350" y="326">10</text><text x="406" y="326">10</text>
+      <text x="238" y="364">26</text><text x="294" y="364">26</text><text x="350" y="364">26</text><text x="406" y="364">26</text>
+    </g>
+  </g>
+</svg>

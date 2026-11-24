@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.abspath("_ext"))
 for _pkg in (
     "../python/cuda_cccl",
     "../python/cuda_coop_cutlass",
+    "../python/cuda_coop_tile",
     "../python/cuda_stf",
 ):
     python_package_path = os.path.abspath(_pkg)
@@ -116,6 +117,8 @@ templates_path = ["_templates"]
 # Exclude patterns
 exclude_patterns = [
     "_build",
+    "**/AGENTS.md",
+    "**/CLAUDE.md",
     "_repo",
     "tools",
     "VERSION.md",
