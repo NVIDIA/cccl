@@ -90,9 +90,7 @@ Checks:
   # again. It is easier to just follow the rule of "always explicitly default initialize
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
-  - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
-  - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-suspicious-call-argument'

@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 

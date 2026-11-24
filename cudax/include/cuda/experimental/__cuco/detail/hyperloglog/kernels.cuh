@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>

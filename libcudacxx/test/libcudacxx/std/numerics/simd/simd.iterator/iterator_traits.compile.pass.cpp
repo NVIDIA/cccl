@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.iterator], spec-mandated nested typedefs and iterator_traits
 //
@@ -20,9 +20,9 @@
 // basic_vec::iterator, basic_vec::const_iterator, basic_mask::iterator,
 // basic_mask::const_iterator.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cstddef>
 #include <cuda/std/iterator>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

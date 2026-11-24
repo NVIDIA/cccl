@@ -10,7 +10,7 @@
 
 // overaligned_flag<N> requires N to be a power of two.
 
-#include <cuda/std/__simd_>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

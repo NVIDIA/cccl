@@ -268,4 +268,4 @@ _CCCL_HOST_API ForwardIterator uninitialized_fill_n(ForwardIterator first, Size 
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/uninitialized_fill.inl>
+#include <thrust/detail/uninitialized_fill.inl> // IWYU pragma: export

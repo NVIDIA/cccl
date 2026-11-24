@@ -285,4 +285,4 @@ _CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/sequence.inl>
+#include <thrust/detail/sequence.inl> // IWYU pragma: export

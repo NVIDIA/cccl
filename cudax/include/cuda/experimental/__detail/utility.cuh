@@ -21,11 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/__utility/move.h>
-
-#include <cuda/experimental/__detail/type_traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

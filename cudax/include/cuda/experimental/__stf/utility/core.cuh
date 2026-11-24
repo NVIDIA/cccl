@@ -27,8 +27,6 @@
 #endif // no system header
 
 #include <cstddef>
-#include <functional>
-#include <limits>
 #include <tuple>
 #include <type_traits>
 #include <utility>

@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo: Can we make any_of be implemented as reduce(group, data, cuda::std::logical_or{})?
 
@@ -63,7 +63,7 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const this_thread<_Hiera
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group)
-_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto
 __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, bool __thread_data)
 {
@@ -75,7 +75,7 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, b
   }
   else
   {
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 

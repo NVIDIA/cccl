@@ -52,7 +52,7 @@
 #  include <cuda/std/__utility/integer_sequence.h>
 #endif // _CCCL_COMPILER(GCC, <, 9)
 
-#if !defined(_CCCL_NO_TYPEID)
+#ifndef _CCCL_NO_TYPEID
 #  include <typeinfo>
 #endif
 

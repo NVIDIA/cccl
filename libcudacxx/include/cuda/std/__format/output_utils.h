@@ -27,39 +27,16 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_spec_parser.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-// Needs to be a functor for tile mode
-struct __fmt_hex_to_upper
-{
-  [[nodiscard]] _CCCL_API constexpr char _CCCL_STATIC_CALL_OPERATOR(char __c) noexcept
-  {
-    switch (__c)
-    {
-      case 'a':
-        return 'A';
-      case 'b':
-        return 'B';
-      case 'c':
-        return 'C';
-      case 'd':
-        return 'D';
-      case 'e':
-        return 'E';
-      case 'f':
-        return 'F';
-      default:
-        return __c;
-    }
-  }
-};
 
 struct __fmt_padding_size_result
 {
@@ -111,10 +88,14 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
   {
     __out_it.__get_container()->__copy(__str);
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_OutCharT>::__iterator>)
+  {
+    __out_it.__buffer_->__copy(__str);
     return __out_it;
   }
   else
@@ -135,13 +116,13 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
   return ::cuda::std::__fmt_copy(basic_string_view{::cuda::std::to_address(__first), __n}, ::cuda::std::move(__out_it));
 }
 
-// Needed to ensure the tile compiler does break trying to
+// Wrap the operation for the tile compiler.
 template <class _UnaryOp>
 struct __transform_wrapper
 {
   _UnaryOp& __op_;
 
-  _CCCL_API constexpr __transform_wrapper(_UnaryOp& __op) noexcept
+  _CCCL_API constexpr explicit __transform_wrapper(_UnaryOp& __op) noexcept
       : __op_(__op)
   {}
 
@@ -159,10 +140,14 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
   {
     __out_it.__get_container()->__transform(__first, __last, ::cuda::std::move(__operation));
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_OutCharT>::__iterator>)
+  {
+    __out_it.__buffer_->__transform(__first, __last, ::cuda::std::move(__operation));
     return __out_it;
   }
   else
@@ -177,10 +162,14 @@ __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
-  // todo: handle __fmt_retarget_buffer once implemented
-  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
+  if constexpr (same_as<_OutIt, __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
   {
     __out_it.__get_container()->__fill(__n, __value);
+    return __out_it;
+  }
+  else if constexpr (same_as<_OutIt, typename __fmt_retarget_buffer<_CharT>::__iterator>)
+  {
+    __out_it.__buffer_->__fill(__n, __value);
     return __out_it;
   }
   else
@@ -216,8 +205,10 @@ template <class _CharT, class _OutIt>
 //! from the type of \a __specs. Integer output uses \c std::to_chars for its
 //! conversion, which means the [\a __first, \a __last) always contains elements
 //! of the type \c char.
+//!
+//! @note We mark this function as _CCCL_NOINLINE_DEVICE to improve ptxas compilation times.
 template <class _CharT, class _ParserCharT, class _OutIt>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE _OutIt
 __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
 {
   if (__size >= static_cast<ptrdiff_t>(__specs.__width_))
@@ -255,7 +246,7 @@ template <class _It, class _CharT = iter_value_t<_It>, class _ParserCharT, class
 {
   _CCCL_ASSERT(__first <= __last, "Not a valid range");
 
-  ptrdiff_t __size = __last - __first;
+  const auto __size = static_cast<size_t>(__last - __first);
   if (__size >= __specs.__width_)
   {
     return ::cuda::std::__fmt_transform(__first, __last, ::cuda::std::move(__out_it), __op);
@@ -310,7 +301,7 @@ __fmt_write_string(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parse
   {
     return ::cuda::std::__fmt_write_string_no_precision(__str, ::cuda::std::move(__out_it), __specs);
   }
-  int __size = ::cuda::std::__fmt_truncate(__str, __specs.__precision_);
+  const int __size = ::cuda::std::__fmt_truncate(__str, __specs.__precision_);
   return ::cuda::std::__fmt_write(__str.begin(), __str.end(), ::cuda::std::move(__out_it), __specs, __size);
 }
 

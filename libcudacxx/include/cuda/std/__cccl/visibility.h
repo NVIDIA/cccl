@@ -80,6 +80,8 @@
 #  define _CCCL_FORCEINLINE_LAMBDA __attribute__((__always_inline__))
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+// Some code bases define `noinline` as a macro. Push and pop `noinline` around every use of _CCCL_NOINLINE, like
+// <cuda/__memory/address_space.h> does.
 #if _CCCL_COMPILER(NVRTC)
 #  define _CCCL_NOINLINE __attribute__((noinline))
 #elif _CCCL_OS(WINDOWS)
@@ -110,7 +112,7 @@
 
 // Note: we will allow the user to redefine _CCCL_KERNEL_ATTRIBUTES until CCCL 4.0, since they may have
 // redefined CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES.
-#if !defined(_CCCL_KERNEL_ATTRIBUTES)
+#ifndef _CCCL_KERNEL_ATTRIBUTES
 #  define _CCCL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !_CCCL_KERNEL_ATTRIBUTES
 

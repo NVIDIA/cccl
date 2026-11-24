@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -30,7 +30,9 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_list_operations.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/undefined.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
@@ -38,7 +40,6 @@
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
-#include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

@@ -25,8 +25,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 

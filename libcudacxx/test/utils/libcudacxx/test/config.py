@@ -1246,6 +1246,10 @@ class Configuration(object):
         self.cxx.treatWarningsAsErrors(enable_pedantic)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
+            # Some constexpr functions of libcu++ check for constant evaluation, but not all of their specializations
+            # can be constexpr. Users do not see these warnings, because its headers are system headers, which the
+            # tests disable.
+            self.cxx.warning_flags += ["--diag-suppress=3060,3206"]
             if "msvc" in self.config.available_features:
                 self.cxx.warning_flags += ["-Xcompiler", "/W4"]
                 # warning C4100: 'quack': unreferenced formal parameter
@@ -1290,6 +1294,15 @@ class Configuration(object):
                     # GCC pre-GCC5 spuriously generates these on reasonable aggregate initialization.
                     addIfHostSupports("-Wno-missing-field-initializers")
 
+                if "nvhpc" in self.config.available_features:
+                    # nvc++ reparses the host code and does not see the NVCC suppressions above.
+                    self.cxx.warning_flags += [
+                        "-Xcompiler",
+                        "--diag_suppress=is_constant_evaluated_in_nonconstexpr_context",
+                        "-Xcompiler",
+                        "--diag_suppress=if_consteval_in_nonconstexpr_function",
+                    ]
+
                 # TODO: port the warning disables from the non-NVCC path?
 
                 if enable_pedantic:
@@ -1317,6 +1330,12 @@ class Configuration(object):
             self.cxx.addWarningFlagIfSupported("-Wno-user-defined-literals")
             self.cxx.addWarningFlagIfSupported("-Wno-noexcept-type")
             self.cxx.addWarningFlagIfSupported("-Wno-aligned-allocation-unavailable")
+            if "nvhpc" in self.config.available_features:
+                # See the NVCC flags above.
+                self.cxx.warning_flags += [
+                    "--diag_suppress=is_constant_evaluated_in_nonconstexpr_context",
+                    "--diag_suppress=if_consteval_in_nonconstexpr_function",
+                ]
             # These warnings should be enabled in order to support the MSVC
             # team using the test suite; They enable the warnings below and
             # expect the test suite to be clean.

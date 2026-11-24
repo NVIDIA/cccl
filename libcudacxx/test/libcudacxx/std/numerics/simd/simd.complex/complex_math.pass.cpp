@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.complex.math] free functions: real, imag, abs, arg, norm, conj, proj,
 // exp, log, log10, sqrt, polar, pow
@@ -19,9 +19,9 @@
 // The execution gets stuck in nvcc 12.0 with msvc.
 // UNSUPPORTED: msvc && nvcc-12.0
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

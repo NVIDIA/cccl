@@ -24,7 +24,6 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

@@ -25,7 +25,7 @@
 
 #include <cuda/std/tuple>
 
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 namespace cuda::experimental::stf
 {

@@ -11,7 +11,9 @@
 #ifndef __CUDAX_STREAM__
 #define __CUDAX_STREAM__
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/stream/scheduler.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_STREAM__

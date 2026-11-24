@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/addressof.h> // IWYU pragma: export
 
 THRUST_NAMESPACE_BEGIN
 using ::cuda::std::addressof;

@@ -24,6 +24,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <algorithm>
 #include <vector>
 

@@ -182,14 +182,14 @@ struct hierarchy_level_base
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr auto count(const _Group& __group) noexcept
   {
-    return count_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
+    return count_as<__default_1d_query_type<typename _Group::unit_level>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
   [[nodiscard]] _CCCL_API static auto rank(const _Group& __group) noexcept
   {
-    return rank_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
+    return rank_as<__default_1d_query_type<typename _Group::unit_level>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)

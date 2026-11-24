@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 

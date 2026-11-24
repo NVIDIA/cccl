@@ -37,7 +37,7 @@
 #    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
 #  endif // ^^^ has cuda compiler ^^^
 
-#  if !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
+#  ifndef _LIBCUDA_PTX_ARCH_SPECIFIC
 #    ifdef __CUDA_ARCH_SPECIFIC__
 #      define _LIBCUDA_PTX_ARCH_SPECIFIC() __CUDA_ARCH_SPECIFIC__
 #    else
@@ -55,7 +55,7 @@
 #    endif // ^^^ !defined(__CUDA_ARCH_SPECIFIC__)
 #  endif // ^^^ !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
 
-#  if !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+#  ifndef __CUDA_HAS_ARCH_FAMILY_SPECIFIC
 
 #    define __CUDA_HAS_ARCH_FAMILY_SPECIFIC(N) false
 

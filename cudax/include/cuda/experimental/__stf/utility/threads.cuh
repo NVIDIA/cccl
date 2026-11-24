@@ -20,11 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/source_location>
-
 #include <atomic>
 #include <cstdio>
-#include <mutex>
 
 namespace cuda::experimental::stf::reserved
 {

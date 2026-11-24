@@ -83,6 +83,11 @@ template <size_t _Ip, class _T1, class _T2>
 constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&&) noexcept;
 #  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
+// Before GCC 11, the debug mode of libstdc++ declares get for its std::array in std::__debug
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 11) && defined(_GLIBCXX_DEBUG)
+inline namespace __debug
+{
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 11) && _GLIBCXX_DEBUG
 template <size_t _Ip, class _Tp, size_t _Size>
 constexpr _Tp& get(array<_Tp, _Size>&) noexcept;
 
@@ -102,6 +107,9 @@ constexpr const _Tp&& get(const array<_Tp, _Size>&& __arr) noexcept
 template <size_t _Ip, class _Tp, size_t _Size>
 constexpr const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
 #  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 11) && defined(_GLIBCXX_DEBUG)
+} // namespace __debug
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 11) && _GLIBCXX_DEBUG
 
 #  if __cpp_lib_tuple_like >= 202311L
 template <size_t _Ip, class _Tp>

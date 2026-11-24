@@ -26,6 +26,8 @@
  * SM split methods available when building an execution place for one
  */
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::places

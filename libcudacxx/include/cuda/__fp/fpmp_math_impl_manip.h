@@ -36,7 +36,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 
 /*
  * ====================================================================
@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * 1:32 or worse.
  *
  * Algorithm -- 3-piece split (vs. the 2-piece used by
- * __internal_fpmp2_ldexp2 for the bounded-n exp2/exp10 callers):
+ * __internal_fpmp2_exp_scale for the bounded-n exp callers):
  *
  *   2^n  =  2^k * 2^k * 2^(n - 2k),  k = n/3
  *

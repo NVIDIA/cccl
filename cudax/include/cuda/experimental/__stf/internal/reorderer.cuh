@@ -27,19 +27,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // reorderer_payload uses task_dep_vector_untyped
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <algorithm> // ::std::shuffle
-#include <functional> // ::std::function
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <memory> // ::std::unique_ptr
 #include <queue>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved

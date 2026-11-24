@@ -23,8 +23,6 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__utility/move.h>
 
 #if _CCCL_HOSTED()
 #  include <exception> // IWYU pragma: keep

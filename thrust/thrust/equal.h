@@ -248,4 +248,4 @@ equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Binary
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/equal.inl>
+#include <thrust/detail/equal.inl> // IWYU pragma: export

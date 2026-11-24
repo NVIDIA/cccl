@@ -28,6 +28,8 @@
 
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 
+#include <cuda.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

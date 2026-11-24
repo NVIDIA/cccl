@@ -50,21 +50,21 @@ struct __saturating_add_operation
     {
       if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t) || sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
       {
-        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
-                       using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_Storage>;
-                       const auto __lhs_u         = ::cuda::std::simd::__to_unsigned_storage(__lhs);
-                       const auto __rhs_u         = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-                       __unsigned_storage_t __result_u{};
-                       if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
-                       {
-                         __result_u = ::cuda::simd::__vadd_sat_16bit_x2<_Tp>(__lhs_u, __rhs_u);
-                       }
-                       else
-                       {
-                         __result_u = ::cuda::simd::__vadd_sat_8bit_x4<_Tp>(__lhs_u, __rhs_u);
-                       }
-                       return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
-                     }));
+        _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+          using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_Storage>;
+          const auto __lhs_u         = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+          const auto __rhs_u         = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+          __unsigned_storage_t __result_u{};
+          if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
+          {
+            __result_u = ::cuda::simd::__vadd_sat_16bit_x2<_Tp>(__lhs_u, __rhs_u);
+          }
+          else
+          {
+            __result_u = ::cuda::simd::__vadd_sat_8bit_x4<_Tp>(__lhs_u, __rhs_u);
+          }
+          return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
+        })
       }
     }
 #endif // _CCCL_HAS_SIMD_SAT()

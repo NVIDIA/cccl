@@ -222,7 +222,7 @@ public:
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
       _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                   "::cuda::std::cuda::std::ranges::subrange was passed an invalid size hint");
+                   "::cuda::std::ranges::subrange was passed an invalid size hint");
     }
   }
 

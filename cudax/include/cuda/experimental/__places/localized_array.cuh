@@ -29,18 +29,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <array>
+#include <cstdlib>
 #include <functional>
 #include <random>
+#include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <cuda.h>
 
 namespace cuda::experimental::places
 {
