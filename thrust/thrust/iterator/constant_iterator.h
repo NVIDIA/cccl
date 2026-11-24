@@ -24,6 +24,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
@@ -219,3 +220,14 @@ make_constant_iterator(V x)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class Value, class Incrementable, class System>
+inline constexpr bool
+  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::constant_iterator<Value, Incrementable, System>> = true;
+_CCCL_END_NAMESPACE_CUDA
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // _CCCL_DOXYGEN_INVOKED

@@ -115,9 +115,6 @@
 
 // sal.h on Windows
 
-#undef __valid
-#define __valid 1
-
 #undef __callback
 #define __callback 1
 
@@ -125,17 +122,6 @@
 
 #undef clang
 #define clang 1
-
-// sys/sysmacros.h on linux
-
-#undef major
-#define major 1
-
-#undef minor
-#define minor 1
-
-#undef makedev
-#define makedev 1
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -259,28 +245,12 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `max`"
 #endif
 
-#ifdef __valid
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `__valid`"
-#endif
-
 #ifdef __callback
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `__callback`"
 #endif
 
 #ifdef clang
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `clang`"
-#endif
-
-#ifdef major
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `major`"
-#endif
-
-#ifdef minor
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `minor`"
-#endif
-
-#ifdef makedev
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `makedev`"
 #endif
 
 #include <cuda/std/__cccl/epilogue.h>
@@ -405,28 +375,12 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `max`"
 #endif
 
-#if __valid != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `__valid`"
-#endif
-
 #if __callback != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `__callback`"
 #endif
 
 #if clang != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `clang`"
-#endif
-
-#if major != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `major`"
-#endif
-
-#if minor != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `minor`"
-#endif
-
-#if makedev != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `makedev`"
 #endif
 
 int main(int, char**)

@@ -18,6 +18,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -166,6 +167,17 @@ make_strided_iterator(Iterator it)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class Iter, class StrideHolder>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_iterator<Iter, StrideHolder>> =
+  __is_synthesizing_iterator_v<Iter>;
+_CCCL_END_NAMESPACE_CUDA
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")

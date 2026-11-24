@@ -227,10 +227,13 @@ auto make_iterator_info(cccl_iterator_t it) -> cub::detail::iterator_info
   // moment. So I guess we are fine until CCCL_STORAGE supports such complex types.
   const auto vt_is_trivially_relocatable = true; // input_it.value_type.type != CCCL_STORAGE;
   const auto is_contiguous               = it.type == CCCL_POINTER;
+  // runtime iterators are opaque, so we cannot tell whether they synthesize their values
+  const auto is_synthesizing = false;
   return {static_cast<int>(it.value_type.size),
           static_cast<int>(it.value_type.alignment),
           vt_is_trivially_relocatable,
-          is_contiguous};
+          is_contiguous,
+          is_synthesizing};
 }
 } // namespace transform
 

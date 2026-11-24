@@ -37,6 +37,7 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__iterator/contiguous_iterator_adaptor.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
@@ -363,5 +364,9 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference, class V
 inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
   THRUST_NS_QUALIFIER::transform_iterator<AdaptableUnaryFunction, Iterator, Reference, Value>> =
   __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<Iterator>>;
+
+template <class Fn, class Iter, class Reference, class Value>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::transform_iterator<Fn, Iter, Reference, Value>> =
+  __is_synthesizing_iterator_v<Iter>;
 _CCCL_END_NAMESPACE_CUDA
 #endif // _CCCL_DOXYGEN_INVOKED

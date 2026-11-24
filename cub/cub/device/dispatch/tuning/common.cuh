@@ -20,6 +20,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -122,6 +123,7 @@ struct iterator_info
   int value_type_alignment;
   bool value_type_is_trivially_relocatable;
   bool is_contiguous;
+  bool is_synthesizing;
 };
 
 template <typename It>
@@ -132,7 +134,8 @@ template <typename It>
     static_cast<int>(size_of<vt>),
     static_cast<int>(align_of<vt>),
     ::cuda::is_trivially_copyable_v<vt>,
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>,
+    ::cuda::__is_synthesizing_iterator_v<It>};
 }
 
 enum class primitive_key

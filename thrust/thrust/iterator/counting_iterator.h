@@ -36,6 +36,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -350,6 +351,14 @@ _CCCL_HOST_DEVICE_API auto make_counting_iterator(Incrementable x)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class Incrementable, class System, class Traversal, class Difference, class StrideHolder>
+inline constexpr bool __is_synthesizing_iterator_v<
+  THRUST_NS_QUALIFIER::counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>> = true;
+_CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")
