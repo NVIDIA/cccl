@@ -31,13 +31,17 @@ __global__ void topk_range_kernel(
   using topk_t             = cub::detail::block_topk_air<unsigned, 128, 2, value_t, 8, Unroll, Memoize>;
   constexpr auto direction = SelectMax ? cub::detail::topk::select::max : cub::detail::topk::select::min;
   __shared__ typename topk_t::TempStorage storage;
+  const int thread_offset = static_cast<int>(threadIdx.x) * 2;
   unsigned keys[2];
-  unsigned values[2];
+  [[maybe_unused]] unsigned values[2];
   for (int i = 0; i < 2; ++i)
   {
-    const int index = static_cast<int>(threadIdx.x) * 2 + i;
+    const int index = thread_offset + i;
     keys[i]         = index < valid ? input[index] : (SelectMax ? ~0u : 0u);
-    values[i]       = static_cast<unsigned>(index);
+    if constexpr (Pairs)
+    {
+      values[i] = static_cast<unsigned>(index);
+    }
   }
   if constexpr (Pairs)
   {
@@ -63,7 +67,7 @@ __global__ void topk_range_kernel(
   }
   for (int i = 0; i < 2; ++i)
   {
-    const int index = static_cast<int>(threadIdx.x) * 2 + i;
+    const int index = thread_offset + i;
     if (index < k)
     {
       output[index] = keys[i];
@@ -105,7 +109,7 @@ CUB_TEST("block_topk_air preserves bit ranges across implementation options",
   {
     // The nine-bit range has unique digits; the three-bit range ties at the k boundary.
     // The high bits reverse the full-key order.
-    input[i] = (static_cast<unsigned>(255 - i) << 20) | (static_cast<unsigned>((i * 73) % 256 + 1) << 3)
+    input[i] = (static_cast<unsigned>(255 - i) << 20) | (static_cast<unsigned>(((i * 73) % 256) + 1) << 3)
              | static_cast<unsigned>(i % 8);
   }
   auto reference = input;
