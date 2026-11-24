@@ -136,23 +136,24 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
-  ctx.repeat(nsteps)->*[&](context ctx, size_t iter) {
+  ctx.repeat(nsteps)->*[&](context repeat_ctx, size_t iter) {
     if (image_freq > 0 && iter % image_freq == 0)
     {
       // Dump Un in a PPM file
-      ctx.host_launch(lU.read()).set_symbol("dump")->*[=](auto U) {
+      repeat_ctx.host_launch(lU.read()).set_symbol("dump")->*[=](auto U) {
         dump_iter(U, static_cast<int>(iter));
       };
     }
 
     // Update Un using Un1 value with a finite difference scheme
-    ctx.parallel_for(blocked_partition(), all_devs, inner<1>(lU.shape()), lU.read(), lU1.write()).set_symbol("step")->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
-        U1(i, j) = U(i, j)
-                 + (c
-                    * (((U(i - 1, j) - (2 * U(i, j)) + U(i + 1, j)) / dx2)
-                       + ((U(i, j - 1) - (2 * U(i, j)) + U(i, j + 1)) / dy2)));
-      };
+    repeat_ctx.parallel_for(blocked_partition(), all_devs, inner<1>(lU.shape()), lU.read(), lU1.write())
+        .set_symbol("step")
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
+              U1(i, j) = U(i, j)
+                       + (c
+                          * (((U(i - 1, j) - (2 * U(i, j)) + U(i + 1, j)) / dx2)
+                             + ((U(i, j - 1) - (2 * U(i, j)) + U(i, j + 1)) / dy2)));
+            };
 
     std::swap(lU, lU1);
   };
@@ -165,5 +166,5 @@ int main(int argc, char** argv)
   // finalize() does not wait for work recorded in a stream returned by fence().
   cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsedTime, start, stop));
-  printf("Elapsed time: %f ms\n", elapsedTime);
+  printf("Elapsed time: %f ms\n", static_cast<double>(elapsedTime));
 }

@@ -182,7 +182,7 @@ int main()
       double sum_pageranks = 0.0;
       for (int64_t i = 0; i < num_vertices; i++)
       {
-        sum_pageranks += page_rank[i];
+        sum_pageranks += static_cast<double>(page_rank[i]);
       }
       printf("Page rank answer for personalization %d is %s.\n",
              p,
@@ -192,7 +192,7 @@ int main()
       printf("Personalization %d - First 5 vertices: ", p);
       for (size_t i = 0; i < std::min(5UL, page_rank.size()); ++i)
       {
-        printf("%.6f ", page_rank[i]);
+        printf("%.6f ", static_cast<double>(page_rank[i]));
       }
       printf("\n");
     };

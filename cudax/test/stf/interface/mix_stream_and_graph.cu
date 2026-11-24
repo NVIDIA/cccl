@@ -62,15 +62,15 @@ int main()
     auto lX_alias = gctx.logical_data(sX, data_place::current_device());
 
     // X(i) = (i + 17)
-    gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
-      add<<<16, 128, 0, stream2>>>(sX, 17);
+    gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto gX) {
+      add<<<16, 128, 0, stream2>>>(gX, 17);
     };
 
     // X(i) = 2*(i + 17) + 1
-    gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
+    gctx.host_launch(lX_alias.rw())->*[&](auto gX) {
       for (int ind = 0; ind < N; ind++)
       {
-        sX(ind) = (2 * sX(ind)) + 1;
+        gX(ind) = (2 * gX(ind)) + 1;
       }
     };
 

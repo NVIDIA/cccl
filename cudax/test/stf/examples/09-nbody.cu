@@ -64,9 +64,9 @@ int main()
 
   auto h_particles = ctx.logical_data(make_slice(particles.data(), BODY_CNT));
 
-  ctx.repeat(NITER)->*[&](context ctx, size_t) {
+  ctx.repeat(NITER)->*[&](context repeat_ctx, size_t) {
     // Compute accelerations
-    ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] _CCCL_DEVICE __host__(size_t i, slice<body> p) {
+    repeat_ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] _CCCL_DEVICE __host__(size_t i, slice<body> p) {
       double acc[3];
       for (size_t k = 0; k < 3; k++)
       {
@@ -100,7 +100,7 @@ int main()
     };
 
     // Update velocity and positions
-    ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] __host__ __device__(size_t i, slice<body> p) {
+    repeat_ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] __host__ __device__(size_t i, slice<body> p) {
       for (size_t k = 0; k < 3; k++)
       {
         p(i).vel[k] += p(i).acc[k] * dt;

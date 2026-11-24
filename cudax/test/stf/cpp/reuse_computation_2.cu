@@ -43,10 +43,10 @@ int main()
 
   for (size_t k = 0; k < niter; k++)
   {
-    auto ltmp = run_once(k)->*[&](size_t k) {
+    auto ltmp = run_once(k)->*[&](size_t kk) {
       auto out = ctx.logical_data(lres.shape());
-      ctx.parallel_for(out.shape(), out.write())->*[k] __device__(size_t i, auto tmp) {
-        tmp(i) = (k % 2) * i;
+      ctx.parallel_for(out.shape(), out.write())->*[kk] __device__(size_t i, auto tmp) {
+        tmp(i) = (kk % 2) * i;
       };
       return out;
     };

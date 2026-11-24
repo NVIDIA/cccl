@@ -155,5 +155,5 @@ int main(int argc, char** argv)
   // finalize() does not wait for work recorded in a stream returned by fence().
   cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsedTime, start, stop));
-  printf("Elapsed time: %f ms\n", elapsedTime);
+  printf("Elapsed time: %f ms\n", static_cast<double>(elapsedTime));
 }

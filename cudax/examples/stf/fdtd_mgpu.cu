@@ -43,10 +43,10 @@ void write_vtk_2D(const std::string& filename, slice<const double, 3> Ez, double
   {
     for (size_t x = 0; x < Ez.extent(0); x++)
     {
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 0), dy * static_cast<float>(y + 0));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 1), dy * static_cast<float>(y + 0));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 1), dy * static_cast<float>(y + 1));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 0), dy * static_cast<float>(y + 1));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 0), dy * static_cast<double>(y + 0));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 1), dy * static_cast<double>(y + 0));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 1), dy * static_cast<double>(y + 1));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 0), dy * static_cast<double>(y + 1));
     }
   }
 
@@ -229,11 +229,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   box Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
 
-  ctx.repeat(timesteps)->*[&](context ctx, size_t n) {
+  ctx.repeat(timesteps)->*[&](context repeat_ctx, size_t n) {
     // Update the electric fields
 
     // Update Ex
-    ctx.parallel_for(part, where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
+    repeat_ctx.parallel_for(part, where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
               Ex(i, j, k) =
                 Ex(i, j, k)
@@ -241,7 +241,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
             };
 
     // Update Ey
-    ctx.parallel_for(part, where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
+    repeat_ctx.parallel_for(part, where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
               Ey(i, j, k) =
                 Ey(i, j, k)
@@ -249,7 +249,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
             };
 
     // Update Ez and inject the point source in the same volumetric pass
-    ctx.parallel_for(part, where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
+    repeat_ctx.parallel_for(part, where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
               Ez(i, j, k) =
                 Ez(i, j, k)
@@ -267,7 +267,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     // Update the magnetic fields
 
     // Update Hx
-    ctx.parallel_for(part, where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
+    repeat_ctx.parallel_for(part, where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
         Hx(i, j, k) =
@@ -275,7 +275,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       };
 
     // Update Hy
-    ctx.parallel_for(part, where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
+    repeat_ctx.parallel_for(part, where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
         Hy(i, j, k) =
@@ -283,7 +283,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       };
 
     // Update Hz
-    ctx.parallel_for(part, where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
+    repeat_ctx.parallel_for(part, where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
         Hz(i, j, k) =
@@ -292,7 +292,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     if (output_freq > 0 && n % output_freq == 0)
     {
-      ctx.host_launch(lEz.read())->*[=](auto Ez) {
+      repeat_ctx.host_launch(lEz.read())->*[=](auto Ez) {
         // Output the electric field at the center of the grid
         fprintf(stderr, "%ld\t%le\n", n, Ez(center_x, center_y, center_z));
 

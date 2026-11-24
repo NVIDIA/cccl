@@ -81,7 +81,7 @@ int main()
 
   for (int i = 0; i < numElements; ++i)
   {
-    if (cuda::std::abs(h_A.get_unsynchronized(i) + h_B.get_unsynchronized(i) - h_C.get_unsynchronized(i)) > 1e-5)
+    if (cuda::std::abs(h_A.get_unsynchronized(i) + h_B.get_unsynchronized(i) - h_C.get_unsynchronized(i)) > 1e-5f)
     {
       std::cerr << "Result verification failed at element " << i << "\n";
       exit(EXIT_FAILURE);

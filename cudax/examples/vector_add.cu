@@ -108,7 +108,7 @@ try
   // Verify that the result vector is correct
   for (int i = 0; i < numElements; ++i)
   {
-    if (fabs(A[i] + B[i] - C[i]) > 1e-5)
+    if (fabs(A[i] + B[i] - C[i]) > 1e-5f)
     {
       fprintf(stderr, "Result verification failed at element %d!\n", i);
       exit(EXIT_FAILURE);

@@ -250,9 +250,9 @@ _CCCL_HOST_API inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t
       // The CUDA runtime calls this back, so an exception must not leave it.
       ON_THROW(abort)
       {
-        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-        deallocateHostMemory(args->second, args->first);
-        delete args;
+        auto pair_args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateHostMemory(pair_args->second, pair_args->first);
+        delete pair_args;
       };
     },
     args.get()));
@@ -284,9 +284,9 @@ _CCCL_HOST_API inline void deallocateManagedMemory(void* p, size_t sz, cudaStrea
     [](void* vp) {
       ON_THROW(abort)
       {
-        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-        deallocateManagedMemory(args->second, args->first);
-        delete args;
+        auto pair_args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateManagedMemory(pair_args->second, pair_args->first);
+        delete pair_args;
       };
     },
     args.get()));
@@ -316,9 +316,9 @@ _CCCL_HOST_API inline cudaGraphNode_t deallocateHostMemory(
       [](void* vp) {
         ON_THROW(abort)
         {
-          auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-          deallocateHostMemory(args->second, args->first);
-          delete args;
+          auto pair_args = static_cast<::std::pair<size_t, void*>*>(vp);
+          deallocateHostMemory(pair_args->second, pair_args->first);
+          delete pair_args;
         };
       },
     .userData = args.get()};

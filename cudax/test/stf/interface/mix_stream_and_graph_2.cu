@@ -84,20 +84,20 @@ int main()
 
     for (size_t ii = 0; ii < 10; ii++)
     {
-      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
-        add<<<16, 128, 0, stream2>>>(sX, 17);
+      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto gX) {
+        add<<<16, 128, 0, stream2>>>(gX, 17);
       };
-      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) {
-        add<<<16, 128, 0, stream2>>>(sY, 17);
+      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto gY) {
+        add<<<16, 128, 0, stream2>>>(gY, 17);
       };
-      gctx.task(lX_alias.read(), lY_alias.rw())->*[](cudaStream_t stream2, auto sX, auto sY) {
-        slice_add<<<16, 128, 0, stream2>>>(sX, sY);
+      gctx.task(lX_alias.read(), lY_alias.rw())->*[](cudaStream_t stream2, auto gX, auto gY) {
+        slice_add<<<16, 128, 0, stream2>>>(gX, gY);
       };
-      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
-        add<<<16, 128, 0, stream2>>>(sX, 17);
+      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto gX) {
+        add<<<16, 128, 0, stream2>>>(gX, 17);
       };
-      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) {
-        add<<<16, 128, 0, stream2>>>(sY, 17);
+      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto gY) {
+        add<<<16, 128, 0, stream2>>>(gY, 17);
       };
     }
 

@@ -60,15 +60,15 @@ int main()
     }
   };
 
-  ctx.host_launch(handle_X.read(), handle_Y.read())->*[=](auto X, auto Y) {
+  ctx.host_launch(handle_X.read(), handle_Y.read())->*[=](auto hX, auto hY) {
     for (int ind = 0; ind < N; ind++)
     {
       // Y should be Y0 + alpha X0
       // fprintf(stderr, "Y[%ld] = %lf - expect %lf\n", ind, Y(ind), (Y0(ind) + alpha * X0(ind)));
-      EXPECT(fabs(Y(ind) - (Y0(ind) + (alpha * X0(ind)))) < 0.0001);
+      EXPECT(fabs(hY(ind) - (Y0(ind) + (alpha * X0(ind)))) < 0.0001);
 
       // X should be X0
-      EXPECT(fabs(X(ind) - X0(ind)) < 0.0001);
+      EXPECT(fabs(hX(ind) - X0(ind)) < 0.0001);
     }
   };
 

@@ -17,8 +17,11 @@
 #define _CCCL_DEVICE __attribute__((annotate("device")))
 #define _CCCL_HOST_DEVICE _CCCL_HOST _CCCL_DEVICE
 
+// `members` is a fixture with a virtual method on purpose; it is never deleted polymorphically.
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+
 // CHECK-MESSAGES-NOT: warning:
-struct members final {
+struct members {
   _CCCL_HOST members() = default;
 // CHECK-MESSAGES: :[[@LINE-1]]:14: warning: use _CCCL_HIDE_FROM_ABI to limit ABI visibility [cccl-hide-from-abi]
 // CHECK-MESSAGES-NOT: warning:

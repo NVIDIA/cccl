@@ -223,15 +223,15 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  const float avg_millis           = elapsed_millis / static_cast<float>(g_timing_iterations);
-  const float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const double avg_millis          = static_cast<double>(elapsed_millis) / g_timing_iterations;
+  const double avg_items_per_sec   = double(TILE_SIZE * g_grid_size) / avg_millis / 1000.0;
   const double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
   const double avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockRadixSort::SortBlocked clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockRadixSort::SortBlocked clocks per item: %.3f\n", avg_clocks_per_item);
-  printf("\tAverage kernel millis: %.4f\n", static_cast<double>(avg_millis));
-  printf("\tAverage million items / sec: %.4f\n", static_cast<double>(avg_items_per_sec));
+  printf("\tAverage kernel millis: %.4f\n", avg_millis);
+  printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
   fflush(stdout);
 
   // Cleanup

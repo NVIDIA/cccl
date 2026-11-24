@@ -55,20 +55,20 @@ int main()
   auto handle_Y = ctx.logical_data(Y);
 
   /* Compute Y = Y + alpha X, but leave X on the host and access it with mapped memory */
-  ctx.task(exec_place::device(1), handle_X.read(), handle_Y.rw())->*[&](cudaStream_t stream, auto X, auto Y) {
-    axpy<<<16, 128, 0, stream>>>(n, alpha, X.data_handle(), Y.data_handle());
+  ctx.task(exec_place::device(1), handle_X.read(), handle_Y.rw())->*[&](cudaStream_t stream, auto dX, auto dY) {
+    axpy<<<16, 128, 0, stream>>>(n, alpha, dX.data_handle(), dY.data_handle());
   };
 
   // Access Ask to use X, Y and Z on the host
-  ctx.task(exec_place::host(), handle_X.read(), handle_Y.read())->*[&](cudaStream_t stream, auto X, auto Y) {
+  ctx.task(exec_place::host(), handle_X.read(), handle_Y.read())->*[&](cudaStream_t stream, auto hX, auto hY) {
     cuda_safe_call(cudaStreamSynchronize(stream));
 
     for (int ind = 0; ind < n; ind++)
     {
       // X unchanged
-      EXPECT(fabs(X(ind) - (1.0 * ind)) < 0.00001);
+      EXPECT(fabs(hX(ind) - (1.0 * ind)) < 0.00001);
       // Y = Y + alpha X
-      EXPECT(fabs(Y(ind) - (-3.0 + (ind * (2.0 + alpha)))) < 0.00001);
+      EXPECT(fabs(hY(ind) - (-3.0 + (ind * (2.0 + alpha)))) < 0.00001);
     }
   };
 

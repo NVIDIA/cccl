@@ -293,7 +293,19 @@ public:
     int dev = -1;
     static_cast<void>(cudaGetDevice(&dev));
 
-    format("%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
+    // Write the prefix with a literal format string so -Wformat can check it.
+    const auto write_prefix = [&](char* buf, ::std::size_t size) {
+      return ::std::snprintf(
+        buf, size, "%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
+    };
+    // Compute the bytes to be written.
+    const int needed = write_prefix(nullptr, 0);
+    // Pedantically reserve one extra character for the terminating `\0`.
+    msg.resize(needed + 1);
+    // This will write `needed` bytes plus a `\0` at the end.
+    write_prefix(msg.data(), msg.size());
+    // The terminating `\0` is not part of the string's length.
+    msg.resize(needed);
     // The name for T only, not a visit over every alternative: that would instantiate every
     // family's name and make each user of this header link against cuBLAS.
     msg.append(status_traits<T>::name(status));
@@ -329,19 +341,6 @@ public:
   }
 
 private:
-  template <typename... Ps>
-  _CCCL_HOST_API void format(const char* fmt, Ps&&... ps)
-  {
-    // Compute the bytes to be written.
-    auto needed = ::std::snprintf(nullptr, 0, fmt, ps...);
-    // Pedantically reserve one extra character for the terminating `\0`.
-    msg.resize(needed + 1);
-    // This will write `needed` bytes plus a `\0` at the end.
-    ::std::snprintf(msg.data(), msg.capacity(), fmt, ::cuda::std::forward<Ps>(ps)...);
-    // The terminating `\0` is not part of the string's length.
-    msg.resize(needed);
-  }
-
   ::cuda::std::variant<cudaError_t,
                        CUresult,
                        cudaOccError

@@ -146,8 +146,8 @@ int main(int argc, char** argv)
 
   printf("%s in %f ms (%g GB/s)\n",
          pretty_print_bytes(N * sizeof(double)).c_str(),
-         ms,
-         double(N * sizeof(double)) / 1024 / 1024 / ms);
+         static_cast<double>(ms),
+         double(N * sizeof(double)) / 1024 / 1024 / static_cast<double>(ms));
 
   if (check)
   {
