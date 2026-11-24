@@ -54,9 +54,9 @@
 #    include <iterator> // for ::std::input_iterator_tag
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#  ifdef _GLIBCXX_DEBUG
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
 #    include <debug/safe_iterator.h>
-#  endif // _GLIBCXX_DEBUG
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
@@ -146,12 +146,12 @@ template <class _Iter>
 using _ITER_TRAITS _CCCL_NODEBUG = typename __iter_traits_cache<_Iter>::type;
 
 #if _CCCL_HOSTED()
-#  ifdef _GLIBCXX_DEBUG
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#  endif // _GLIBCXX_DEBUG
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>)
