@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
 // UNSUPPORTED: nvrtc
+
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

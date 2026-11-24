@@ -17,7 +17,7 @@
 #include "test_iterators.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[] = {1, 2, 3, 4, 5};
 

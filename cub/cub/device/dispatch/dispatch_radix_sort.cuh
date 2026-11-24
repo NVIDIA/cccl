@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,26 +20,33 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/grid/grid_even_share.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_runs_on.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
-#include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
+#include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh> // IWYU pragma: export
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -81,6 +88,10 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel, DeviceRadixSortInitKernel<PolicySelector, int, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitKernel<PolicySelector, int, int>);
+
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
     DeviceRadixSortOnesweepKernel<PolicySelector, Order, KeyT, ValueT, OffsetT, int, int, DecomposerT>);
@@ -94,103 +105,15 @@ struct DeviceRadixSortKernelSource
   {
     return sizeof(ValueT);
   }
-};
 
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> radix_sort_policy
-{
-  using active_policy = LegacyActivePolicy;
-
-  auto convert_downsweep_policy = [](auto p) {
-    // MSVC will error if we put a [[maybe_unused]] on the parameter p above:
-    //   C2187: syntax error: 'attribute specifier' was unexpected here
-    (void) p;
-    using p_t = decltype(p);
-    return radix_sort_downsweep_policy{
-      p_t::BLOCK_THREADS,
-      p_t::ITEMS_PER_THREAD,
-      p_t::RADIX_BITS,
-      p_t::LOAD_ALGORITHM,
-      p_t::LOAD_MODIFIER,
-      p_t::RANK_ALGORITHM,
-      p_t::SCAN_ALGORITHM};
-  };
-
-  using hist_pol       = typename active_policy::HistogramPolicy;
-  const auto histogram = radix_sort_histogram_policy{
-    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
-
-  using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
-  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
-
-  using one_pol       = typename active_policy::OnesweepPolicy;
-  const auto onesweep = radix_sort_onesweep_policy{
-    one_pol::BLOCK_THREADS,
-    one_pol::ITEMS_PER_THREAD,
-    one_pol::RANK_NUM_PARTS,
-    one_pol::RADIX_BITS,
-    one_pol::RANK_ALGORITHM,
-    one_pol::SCAN_ALGORITHM,
-    one_pol::STORE_ALGORITHM};
-
-  using scan_pol  = typename active_policy::ScanPolicy;
-  const auto scan = scan_policy{
-    scan_pol::BLOCK_THREADS,
-    scan_pol::ITEMS_PER_THREAD,
-    scan_pol::LOAD_ALGORITHM,
-    scan_pol::LOAD_MODIFIER,
-    scan_pol::STORE_ALGORITHM,
-    scan_pol::SCAN_ALGORITHM,
-    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
-
-  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
-  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
-
-  using up_pol       = typename active_policy::UpsweepPolicy;
-  const auto upsweep = radix_sort_upsweep_policy{
-    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
-
-  using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
-  const auto alt_upsweep = radix_sort_upsweep_policy{
-    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
-
-  const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
-  const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alt_segmented = convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
-
-  return radix_sort_policy{
-    active_policy::ONESWEEP,
-    active_policy::ONESWEEP_RADIX_BITS,
-    histogram,
-    exclusive_sum,
-    onesweep,
-    scan,
-    downsweep,
-    alt_downsweep,
-    upsweep,
-    alt_upsweep,
-    single_tile,
-    segmented,
-    alt_segmented};
-}
-
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename LegacyActivePolicy>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
-  -> radix_sort_policy
-{
-  return convert_policy<LegacyActivePolicy>();
-}
-
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  // this is only called in device code
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> radix_sort_policy
+  CUB_RUNTIME_FUNCTION static constexpr KeyT* AdvanceKeys(KeyT* ptr, OffsetT offset)
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return ptr + offset;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ValueT* AdvanceValues(ValueT* ptr, OffsetT offset)
+  {
+    return ptr + offset;
   }
 };
 } // namespace detail::radix_sort
@@ -201,6 +124,8 @@ struct policy_selector_from_hub
 
 /**
  * Utility class for dispatching the appropriately-tuned kernels for device-wide radix sort
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam SortOrder
  *   Whether to sort in ascending or descending order
@@ -218,7 +143,6 @@ struct policy_selector_from_hub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -233,7 +157,7 @@ template <SortOrder Order,
             OffsetT,
             DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchRadixSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") DispatchRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
@@ -290,7 +214,7 @@ struct DispatchRadixSort
   // Constructor
   //------------------------------------------------------------------------------
 
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchRadixSort(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -336,18 +260,18 @@ struct DispatchRadixSort
    * @param[in] single_tile_kernel
    *   Kernel function pointer to parameterization of cub::DeviceRadixSortSingleTileKernel
    */
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   template <typename ActivePolicyT, typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel, ActivePolicyT policy = {})
   {
-    return __invoke_single_tile(single_tile_kernel, detail::radix_sort::convert_policy(policy).single_tile);
+    return __invoke_single_tile(single_tile_kernel, _CUB::detail::radix_sort::convert_policy(policy).single_tile);
   }
 
 private:
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  __invoke_single_tile(SingleTileKernelT single_tile_kernel, detail::radix_sort::radix_sort_downsweep_policy policy)
+  __invoke_single_tile(SingleTileKernelT single_tile_kernel, RadixSortDownsweepPolicy policy)
   {
     // Return if the caller is simply requesting the size of the storage allocation
     if (d_temp_storage == nullptr)
@@ -357,29 +281,33 @@ private:
     }
 
     // Log single_tile_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
-            "%d, bit_grain %d\n",
-            1,
-            policy.block_threads,
-            (long long) stream,
-            policy.items_per_thread,
-            1,
-            begin_bit,
-            policy.radix_bits);
-#endif
+    _CUB_LOG_KERNEL_LAUNCH(
+      "single_tile_kernel",
+      1,
+      1,
+      1,
+      policy.threads_per_block,
+      0,
+      stream,
+      ", current bit: %d, bit_grain: %d",
+      begin_bit,
+      policy.radix_bits);
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(1, policy.block_threads, 0, stream)
-      .doit(single_tile_kernel,
-            d_keys.Current(),
-            d_keys.Alternate(),
-            d_values.Current(),
-            d_values.Alternate(),
-            num_items,
-            begin_bit,
-            end_bit,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(1, policy.threads_per_block, 0, stream)
+            .doit(single_tile_kernel,
+                  d_keys.Current(),
+                  d_keys.Alternate(),
+                  d_values.Current(),
+                  d_values.Alternate(),
+                  num_items,
+                  begin_bit,
+                  end_bit,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -388,7 +316,7 @@ private:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -408,7 +336,7 @@ public:
   /**
    * Invoke a three-kernel sorting pass at the current bit.
    */
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   template <typename PassConfigT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokePass(
     const KeyT* d_keys_in,
@@ -420,34 +348,39 @@ public:
     int& current_bit,
     PassConfigT& pass_config)
   {
-    int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
+    const int pass_bits = (::cuda::std::min) (pass_config.radix_bits, end_bit - current_bit);
 
-// Log upsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
-            "bit_grain %d\n",
-            pass_config.even_share.grid_size,
-            pass_config.upsweep_config.block_threads,
-            (long long) stream,
-            pass_config.upsweep_config.items_per_thread,
-            pass_config.upsweep_config.sm_occupancy,
-            current_bit,
-            pass_bits);
-#endif
+    // Log upsweep_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "upsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.upsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d, current bit: %d, bit_grain: %d",
+      pass_config.upsweep_config.sm_occupancy,
+      current_bit,
+      pass_bits);
 
     // Spine length written by the upsweep kernel in the current pass.
-    int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
+    const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
-      .doit(pass_config.upsweep_kernel,
-            d_keys_in,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.upsweep_kernel,
+                  d_keys_in,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -456,23 +389,20 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
 
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-            1,
-            pass_config.scan_config.block_threads,
-            (long long) stream,
-            pass_config.scan_config.items_per_thread);
-#endif
+    // Log scan_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
-    launcher_factory(1, pass_config.scan_config.block_threads, 0, stream)
-      .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
+    if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
+                                      .doit(pass_config.scan_kernel, d_spine, pass_spine_length)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -481,34 +411,40 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
 
-// Log downsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-            pass_config.even_share.grid_size,
-            pass_config.downsweep_config.block_threads,
-            (long long) stream,
-            pass_config.downsweep_config.items_per_thread,
-            pass_config.downsweep_config.sm_occupancy);
-#endif
+    // Log downsweep_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "downsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.downsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      pass_config.downsweep_config.sm_occupancy);
 
     // Invoke downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
-      .doit(pass_config.downsweep_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.downsweep_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -517,7 +453,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -528,23 +464,23 @@ public:
     return cudaSuccess;
   }
 
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   /// Pass configuration structure
   template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
   struct PassConfig
   {
-    UpsweepKernelT upsweep_kernel;
+    UpsweepKernelT upsweep_kernel{};
     detail::KernelConfig upsweep_config;
-    ScanKernelT scan_kernel;
+    ScanKernelT scan_kernel{};
     detail::KernelConfig scan_config;
-    DownsweepKernelT downsweep_kernel;
+    DownsweepKernelT downsweep_kernel{};
     detail::KernelConfig downsweep_config;
-    int radix_bits;
-    int radix_digits;
-    int max_downsweep_grid_size;
+    int radix_bits{};
+    int radix_digits{};
+    int max_downsweep_grid_size{};
     GridEvenShare<OffsetT> even_share;
 
-    // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+    // TODO(bgruber): Remove in CCCL 4.0
     /// Initialize pass configuration
     template <typename ActivePolicyT, typename UpsweepPolicyT, typename ScanPolicyT, typename DownsweepPolicyT>
     CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t InitPassConfig(
@@ -563,8 +499,8 @@ public:
       // FIXME(bgruber): we should actually convert upsweep_policy, scan_policy, and downsweep_policy, since they could
       // be different from those inside policy. But this is already so far out of any supported scenario that I am
       // willing to cut this corner.
-      const auto p = detail::radix_sort::convert_policy(policy);
-      __init_pass_config(
+      const auto p = _CUB::detail::radix_sort::convert_policy(policy);
+      return __init_pass_config(
         upsweep_kernel,
         scan_kernel,
         downsweep_kernel,
@@ -575,7 +511,6 @@ public:
         p.scan,
         p.downsweep,
         launcher_factory);
-      return __init_pass_config(p);
     }
 
     CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init_pass_config(
@@ -585,9 +520,9 @@ public:
       int sm_count,
       OffsetT num_items,
       int pass_radix_bits,
-      detail::radix_sort::radix_sort_upsweep_policy upsweep_policy,
-      detail::radix_sort::scan_policy scan_policy,
-      detail::radix_sort::radix_sort_downsweep_policy downsweep_policy,
+      RadixSortUpsweepPolicy upsweep_policy,
+      ScanPolicy scan_policy,
+      RadixSortDownsweepPolicy downsweep_policy,
       KernelLauncherFactory launcher_factory)
     {
       this->upsweep_kernel   = upsweep_kern;
@@ -601,7 +536,7 @@ public:
         return error;
       }
 
-      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy, launcher_factory)))
+      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory)))
       {
         return error;
       }
@@ -614,21 +549,21 @@ public:
       max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
 
       even_share.DispatchInit(
-        num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
+        num_items, max_downsweep_grid_size, (::cuda::std::max) (downsweep_config.tile_size, upsweep_config.tile_size));
 
       return cudaSuccess;
     }
   };
 
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep(ActivePolicyT policy = {})
   {
-    return __invoke_onesweep(detail::radix_sort::convert_policy(policy));
+    return __invoke_onesweep(_CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke_onesweep(detail::radix_sort::radix_sort_policy policy)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke_onesweep(RadixSortPolicy policy)
   {
     // PortionOffsetT is used for offsets within a portion, and must be signed.
     using PortionOffsetT = int;
@@ -638,7 +573,7 @@ private:
     const int RADIX_BITS                = policy.onesweep.radix_bits;
     const int RADIX_DIGITS              = 1 << RADIX_BITS;
     const int ONESWEEP_ITEMS_PER_THREAD = policy.onesweep.items_per_thread;
-    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.block_threads;
+    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.threads_per_block;
     const int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
@@ -646,7 +581,7 @@ private:
     int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
     OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
     PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
-      static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+      static_cast<int>((::cuda::std::min) (num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : kernel_source.ValueSize();
     size_t allocation_sizes[] = {
@@ -663,8 +598,8 @@ private:
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    if (const auto error =
-          detail::alias_temporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    if (const auto error = _CUB::detail::alias_temporaries<NUM_ALLOCATIONS>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
     {
       return error;
     }
@@ -681,20 +616,18 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    // initialization
-    if (const auto error =
-          CubDebug(cudaMemsetAsync(d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream)))
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
       return error;
     }
+    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
+    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
-    // compute num_passes histograms with RADIX_DIGITS bins each
-    if (const auto error = CubDebug(cudaMemsetAsync(d_bins, 0, num_passes * RADIX_DIGITS * sizeof(OffsetT), stream)))
-    {
-      return error;
-    }
-    int device  = -1;
-    int num_sms = 0;
+    const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
+    const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
+    int device                     = -1;
+    int num_sms                    = 0;
 
     if (const auto error = CubDebug(cudaGetDevice(&device)))
     {
@@ -706,7 +639,7 @@ private:
       return error;
     }
 
-    const int HISTO_BLOCK_THREADS = policy.histogram.block_threads;
+    const int HISTO_BLOCK_THREADS = policy.histogram.threads_per_block;
     int histo_blocks_per_sm       = 1;
     auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
@@ -716,52 +649,72 @@ private:
       return error;
     }
 
-// log histogram_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
-            "%d SM occupancy, bit_grain %d\n",
-            histo_blocks_per_sm * num_sms,
-            HISTO_BLOCK_THREADS,
-            reinterpret_cast<long long>(stream),
-            policy.histogram.items_per_thread,
-            histo_blocks_per_sm,
-            policy.histogram.radix_bits);
-#endif
+    // log histogram_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "histogram_kernel",
+      histo_blocks_per_sm * num_sms,
+      1,
+      1,
+      HISTO_BLOCK_THREADS,
+      0,
+      stream,
+      ", SM occupancy: %d, bit_grain: %d",
+      histo_blocks_per_sm,
+      policy.histogram.radix_bits);
+
+    // exclusive sums to determine starts
+    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
+
+    // log exclusive_sum_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "exclusive_sum_kernel",
+      num_passes,
+      1,
+      1,
+      SCAN_BLOCK_THREADS,
+      0,
+      stream,
+      ", bit_grain: %d",
+      policy.exclusive_sum.radix_bits);
+
+    // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
+    // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
+    {
+      constexpr int init_startup_threads = 256;
+      const size_t num_init_items        = (::cuda::std::max) (num_counter_items, num_bin_items);
+      const int init_startup_blocks =
+        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
+
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
+              .doit(
+                kernel_source.RadixSortInitBinsAndCountersKernel(), d_ctrs, num_counter_items, d_bins, num_bin_items)))
+      {
+        return error;
+      }
+    }
 
     if (const auto error = CubDebug(
-          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
+          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream, use_pdl)
             .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
-
-    // exclusive sums to determine starts
-    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.block_threads;
-
-// log exclusive_sum_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-            num_passes,
-            SCAN_BLOCK_THREADS,
-            reinterpret_cast<long long>(stream),
-            policy.exclusive_sum.radix_bits);
-#endif
-
-    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream, use_pdl)
                                       .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
+
     // use the other buffer if no overwrite is allowed
     KeyT* d_keys_tmp     = d_keys.Alternate();
     ValueT* d_values_tmp = d_values.Alternate();
@@ -773,38 +726,57 @@ private:
 
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
-      int num_bits = ::cuda::std::min(end_bit - current_bit, RADIX_BITS);
+      int num_bits = (::cuda::std::min) (end_bit - current_bit, RADIX_BITS);
       for (OffsetT portion = 0; portion < num_portions; ++portion)
       {
         PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-          ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+          (::cuda::std::min) (num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
-        PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        PortionOffsetT num_blocks       = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
 
-        if (const auto error =
-              CubDebug(cudaMemsetAsync(d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT), stream)))
+        if (use_pdl)
         {
-          return error;
+          constexpr int init_lookback_threads = 256;
+          const int init_lookback_blocks =
+            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(init_lookback_threads)));
+
+          if (const auto error = CubDebug(
+                launcher_factory(init_lookback_blocks, init_lookback_threads, 0, stream, use_pdl)
+                  .doit(
+                    kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items, d_lookback, size_t{0})))
+          {
+            return error;
+          }
+        }
+        else
+        {
+          if (const auto error =
+                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+          {
+            return error;
+          }
         }
 
-// log onesweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
-                "current bit %d, bit_grain %d, portion %d/%d\n",
-                num_blocks,
-                ONESWEEP_BLOCK_THREADS,
-                reinterpret_cast<long long>(stream),
-                policy.onesweep.items_per_thread,
-                current_bit,
-                num_bits,
-                static_cast<int>(portion),
-                static_cast<int>(num_portions));
-#endif
+        // log onesweep_kernel configuration
+        _CUB_LOG_KERNEL_LAUNCH(
+          "onesweep_kernel",
+          num_blocks,
+          1,
+          1,
+          ONESWEEP_BLOCK_THREADS,
+          0,
+          stream,
+          ", current bit: %d, bit_grain: %d, portion: %d/%d",
+          current_bit,
+          num_bits,
+          static_cast<int>(portion),
+          static_cast<int>(num_portions));
 
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
         if (const auto error = CubDebug(
-              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, use_pdl)
                 .doit(
                   onesweep_kernel,
                   d_lookback,
@@ -812,9 +784,9 @@ private:
                   portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * RADIX_DIGITS : nullptr,
                   d_bins + (portion * num_passes + pass) * RADIX_DIGITS,
                   d_keys.Alternate(),
-                  d_keys.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceKeys(d_keys.Current(), portion * PORTION_SIZE),
                   d_values.Alternate(),
-                  d_values.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceValues(d_values.Current(), portion * PORTION_SIZE),
                   portion_num_items,
                   current_bit,
                   num_bits,
@@ -823,7 +795,7 @@ private:
           return error;
         }
 
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -876,7 +848,7 @@ public:
    *   Alternate kernel function pointer to parameterization of
    *   cub::DeviceRadixSortDownsweepKernel
    */
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   template <typename ActivePolicyT, typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t InvokePasses(
     UpsweepKernelT upsweep_kernel,
@@ -892,7 +864,7 @@ public:
       scan_kernel,
       downsweep_kernel,
       alt_downsweep_kernel,
-      detail::radix_sort::convert_policy(policy));
+      _CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
@@ -903,7 +875,7 @@ private:
     ScanKernelT scan_kernel,
     DownsweepKernelT downsweep_kernel,
     DownsweepKernelT alt_downsweep_kernel,
-    const detail::radix_sort::radix_sort_policy& policy)
+    const RadixSortPolicy& policy)
   {
     // Get device ordinal
     int device_ordinal;
@@ -920,7 +892,8 @@ private:
     }
 
     // Init regular and alternate-digit kernel configurations
-    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> alt_pass_config;
     if (const auto error = pass_config.__init_pass_config(
           upsweep_kernel,
           scan_kernel,
@@ -952,12 +925,13 @@ private:
     }
 
     // Get maximum spine length
-    int max_grid_size = ::cuda::std::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
-    int spine_length  = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
+    const int max_grid_size =
+      (::cuda::std::max) (pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+    const int spine_length = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
     // Temporary storage allocation requirements
-    void* allocations[3]       = {};
-    size_t allocation_sizes[3] = {
+    void* allocations[3]             = {};
+    const size_t allocation_sizes[3] = {
       // bytes needed for privatized block digit histograms
       spine_length * sizeof(OffsetT),
 
@@ -965,12 +939,12 @@ private:
       (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * kernel_source.ValueSize(),
+      (is_overwrite_okay || KEYS_ONLY) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -983,26 +957,26 @@ private:
 
     // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
     // preferred digit size
-    int num_bits           = end_bit - begin_bit;
-    int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
-    bool is_num_passes_odd = num_passes & 1;
-    int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-    int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+    const int num_bits           = end_bit - begin_bit;
+    int num_passes               = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
+    const bool is_num_passes_odd = num_passes & 1;
+    const int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
+    const int alt_end_bit = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
     // Alias the temporary storage allocations
     OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
 
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[1])
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? static_cast<KeyT*>(allocations[1])
+                          : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[2])
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? static_cast<ValueT*>(allocations[2])
+                          : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
     int current_bit = begin_bit;
@@ -1053,7 +1027,7 @@ private:
   }
 
 public:
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeCopy()
   {
     // is_overwrite_okay == false here
@@ -1064,35 +1038,40 @@ public:
       return cudaSuccess;
     }
 
-// Copy keys
+    // Copy keys
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
-#endif
+#else // CUB_DEBUG_LOG
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
     d_keys.selector ^= 1;
 
     // Copy values if necessary
-    if (!KEYS_ONLY)
+    if constexpr (!KEYS_ONLY)
     {
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
-#endif
+#else // CUB_DEBUG_LOG
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
       {
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1102,16 +1081,16 @@ public:
     return cudaSuccess;
   }
 
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
     struct policy_getter
     {
-      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
-        return detail::radix_sort::convert_policy<ActivePolicyT>();
+        return _CUB::detail::radix_sort::convert_policy<ActivePolicyT>();
       }
     };
     return __invoke(policy_getter{});
@@ -1136,7 +1115,7 @@ public:
     if (begin_bit == end_bit)
     {
       bool has_uva = false;
-      if (const auto error = detail::HasUVA(has_uva))
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
       {
         return error;
       }
@@ -1146,8 +1125,16 @@ public:
       }
     }
 
+    // Older GCCs choke on using policy in a constexpr expression even if it is constexpr itself
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || _CCCL_COMPILER(GCC, <, 10)
+    const auto tile_items =
+      static_cast<OffsetT>(policy.single_tile.threads_per_block * policy.single_tile.items_per_thread);
+#else // ^^^ runtime tile items ^^^ / vvv constexpr tile items vvv
+    constexpr auto tile_items = OffsetT{policy.single_tile.threads_per_block * policy.single_tile.items_per_thread};
+#endif // ^^^ true constexpr tile_items ^^^
+
     // Force kernel code-generation in all compiler passes
-    if (num_items <= static_cast<OffsetT>(policy.single_tile.block_threads * policy.single_tile.items_per_thread))
+    if (num_items <= tile_items)
     {
       // Small, single tile size
       return __invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);
@@ -1155,9 +1142,9 @@ public:
 
 #if _CCCL_COMPILER(GCC, <, 10)
     // gcc 7-9 fail to use `policy` in a constant expression, so we just compute it again inplace
-    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == RadixSortAlgorithm::onesweep)
 #else // _CCCL_COMPILER(GCC, <, 8)
-    if CUB_DETAIL_CONSTEXPR_ISH (policy.use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == RadixSortAlgorithm::onesweep)
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
       return __invoke_onesweep(policy);
@@ -1211,7 +1198,7 @@ public:
    * @param[in] stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
-  // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(bgruber): Remove in CCCL 4.0
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1263,10 +1250,770 @@ public:
 
 namespace detail::radix_sort
 {
-// not used, since we do not need to call Dispatch
-struct fake_policy
+template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT, typename OffsetT>
+struct pass_config
 {
-  using MaxPolicy = void;
+  UpsweepKernelT upsweep_kernel{};
+  KernelConfig upsweep_config;
+  ScanKernelT scan_kernel{};
+  KernelConfig scan_config;
+  DownsweepKernelT downsweep_kernel{};
+  KernelConfig downsweep_config;
+  int radix_bits{};
+  int radix_digits{};
+  int max_downsweep_grid_size{};
+  GridEvenShare<OffsetT> even_share;
+
+  template <typename KernelLauncherFactory>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t init(
+    UpsweepKernelT upsweep_kern,
+    ScanKernelT scan_kern,
+    DownsweepKernelT downsweep_kern,
+    const experimental::DeviceDescription& device_descr,
+    const void* d_temp_storage,
+    OffsetT num_items,
+    int pass_radix_bits,
+    RadixSortUpsweepPolicy upsweep_policy,
+    ScanPolicy scan_policy,
+    RadixSortDownsweepPolicy downsweep_policy,
+    KernelLauncherFactory launcher_factory)
+  {
+    this->upsweep_kernel   = upsweep_kern;
+    this->scan_kernel      = scan_kern;
+    this->downsweep_kernel = downsweep_kern;
+    this->radix_bits       = pass_radix_bits;
+    radix_digits           = 1 << radix_bits;
+
+    if (const auto error = CubDebug(
+          upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory, device_descr, d_temp_storage)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(
+          scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory, device_descr, d_temp_storage)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(
+          downsweep_config.__init(downsweep_kernel, downsweep_policy, launcher_factory, device_descr, d_temp_storage)))
+    {
+      return error;
+    }
+
+    max_downsweep_grid_size =
+      (downsweep_config.sm_occupancy * static_cast<int>(device_descr.__max_sm_count())) * detail::subscription_factor;
+
+    even_share.DispatchInit(
+      num_items, max_downsweep_grid_size, (::cuda::std::max) (downsweep_config.tile_size, upsweep_config.tile_size));
+
+    return cudaSuccess;
+  }
+};
+
+// Not initialized intentionally. This requires callers to pass every value.
+template <typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
+{
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  void* d_temp_storage;
+  size_t& temp_storage_bytes;
+  DoubleBuffer<KeyT>& d_keys; // current buffer holds unsorted input keys, updated before returning to caller
+  DoubleBuffer<ValueT>& d_values; // current buffer holds unsorted input keys, updated before returning to caller
+  OffsetT num_items;
+  int begin_bit; // the beginning least-significant bit index for key comparison
+  int end_bit; // the one-past-the-end least-significant bit index for key comparison
+  bool can_overwrite_source_buffer;
+  cudaStream_t stream;
+  DecomposerT decomposer;
+  KernelSource kernel_source;
+  KernelLauncherFactory launcher_factory;
+  const experimental::DeviceDescription& device_descr;
+
+  template <typename SingleTileKernelT>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  invoke_single_tile(SingleTileKernelT single_tile_kernel, RadixSortDownsweepPolicy policy)
+  {
+    // Return if the caller is simply requesting the size of the storage allocation
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    // Log single_tile_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "single_tile_kernel",
+      1,
+      1,
+      1,
+      policy.threads_per_block,
+      0,
+      stream,
+      ", current bit: %d, bit_grain: %d",
+      begin_bit,
+      policy.radix_bits);
+
+    // Invoke upsweep_kernel with same grid size as downsweep_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(1, policy.threads_per_block, 0, stream)
+            .doit(single_tile_kernel,
+                  d_keys.Current(),
+                  d_keys.Alternate(),
+                  d_values.Current(),
+                  d_values.Alternate(),
+                  num_items,
+                  begin_bit,
+                  end_bit,
+                  decomposer)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Update selector
+    d_keys.selector ^= 1;
+    d_values.selector ^= 1;
+
+    return cudaSuccess;
+  }
+
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_copy()
+  {
+    // can_overwrite_source_buffer == false here
+    // Return the number of temporary bytes if requested
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    // Copy keys
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
+    if (const auto error = CubDebug(cudaMemcpyAsync(
+          d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+    d_keys.selector ^= 1;
+
+    // Copy values if necessary
+    if constexpr (!keys_only)
+    {
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
+      if (const auto error = CubDebug(cudaMemcpyAsync(
+            d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+    d_values.selector ^= 1;
+
+    return cudaSuccess;
+  }
+
+  template <typename PassConfigT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_pass(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    OffsetT* d_spine,
+    int /*spine_length*/,
+    int& current_bit,
+    PassConfigT& pass_config)
+  {
+    const int pass_bits = (::cuda::std::min) (pass_config.radix_bits, end_bit - current_bit);
+
+    // Log upsweep_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "upsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.upsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d, current bit: %d, bit_grain: %d",
+      pass_config.upsweep_config.sm_occupancy,
+      current_bit,
+      pass_bits);
+
+    // Spine length written by the upsweep kernel in the current pass.
+    const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
+
+    // Invoke upsweep_kernel with same grid size as downsweep_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.upsweep_kernel,
+                  d_keys_in,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Log scan_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
+
+    // Invoke scan_kernel
+    if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
+                                      .doit(pass_config.scan_kernel, d_spine, pass_spine_length)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Log downsweep_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "downsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.downsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      pass_config.downsweep_config.sm_occupancy);
+
+    // Invoke downsweep_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.downsweep_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Update current bit
+    current_bit += pass_bits;
+
+    return cudaSuccess;
+  }
+
+  template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_passes(
+    UpsweepKernelT upsweep_kernel,
+    UpsweepKernelT alt_upsweep_kernel,
+    ScanKernelT scan_kernel,
+    DownsweepKernelT downsweep_kernel,
+    DownsweepKernelT alt_downsweep_kernel,
+    const RadixSortPolicy& policy)
+  {
+    // Init regular and alternate-digit kernel configurations
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> alt_pc;
+    if (const auto error = pc.init(
+          upsweep_kernel,
+          scan_kernel,
+          downsweep_kernel,
+          device_descr,
+          d_temp_storage,
+          num_items,
+          policy.downsweep.radix_bits,
+          policy.upsweep,
+          policy.scan,
+          policy.downsweep,
+          launcher_factory))
+    {
+      return error;
+    }
+
+    if (const auto error = alt_pc.init(
+          alt_upsweep_kernel,
+          scan_kernel,
+          alt_downsweep_kernel,
+          device_descr,
+          d_temp_storage,
+          num_items,
+          policy.alt_downsweep.radix_bits,
+          policy.alt_upsweep,
+          policy.scan,
+          policy.alt_downsweep,
+          launcher_factory))
+    {
+      return error;
+    }
+
+    // Get maximum spine length
+    const int max_grid_size = (::cuda::std::max) (pc.max_downsweep_grid_size, alt_pc.max_downsweep_grid_size);
+    const int spine_length  = (max_grid_size * pc.radix_digits) + pc.scan_config.tile_size;
+
+    // Temporary storage allocation requirements
+    void* allocations[3]             = {};
+    const size_t allocation_sizes[3] = {
+      // bytes needed for privatized block digit histograms
+      spine_length * sizeof(OffsetT),
+
+      // bytes needed for 3rd keys buffer
+      (can_overwrite_source_buffer) ? 0 : num_items * kernel_source.KeySize(),
+
+      // bytes needed for 3rd values buffer
+      (can_overwrite_source_buffer || keys_only) ? 0 : num_items * kernel_source.ValueSize(),
+    };
+
+    // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
+    if (const auto error =
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+
+    // Return if the caller is simply requesting the size of the storage allocation
+    if (d_temp_storage == nullptr)
+    {
+      return cudaSuccess;
+    }
+
+    // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
+    // preferred digit size
+    const int num_bits           = end_bit - begin_bit;
+    int num_passes               = ::cuda::ceil_div(num_bits, pc.radix_bits);
+    const bool is_num_passes_odd = num_passes & 1;
+    const int max_alt_passes     = (num_passes * pc.radix_bits) - num_bits;
+    const int alt_end_bit        = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_pc.radix_bits));
+
+    // Alias the temporary storage allocations
+    OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
+
+    DoubleBuffer<KeyT> d_keys_remaining_passes(
+      (can_overwrite_source_buffer || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
+      (can_overwrite_source_buffer) ? d_keys.Current()
+      : is_num_passes_odd           ? static_cast<KeyT*>(allocations[1])
+                                    : d_keys.Alternate());
+
+    DoubleBuffer<ValueT> d_values_remaining_passes(
+      (can_overwrite_source_buffer || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
+      (can_overwrite_source_buffer) ? d_values.Current()
+      : is_num_passes_odd           ? static_cast<ValueT*>(allocations[2])
+                                    : d_values.Alternate());
+
+    // Run first pass, consuming from the input's current buffers
+    int current_bit = begin_bit;
+    if (const auto error = CubDebug(invoke_pass(
+          d_keys.Current(),
+          d_keys_remaining_passes.Current(),
+          d_values.Current(),
+          d_values_remaining_passes.Current(),
+          d_spine,
+          spine_length,
+          current_bit,
+          (current_bit < alt_end_bit) ? alt_pc : pc)))
+    {
+      return error;
+    }
+
+    // Run remaining passes
+    while (current_bit < end_bit)
+    {
+      if (const auto error = CubDebug(invoke_pass(
+            d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+            d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+            d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+            d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+            d_spine,
+            spine_length,
+            current_bit,
+            (current_bit < alt_end_bit) ? alt_pc : pc)))
+      {
+        return error;
+      }
+
+      // Invert selectors
+      d_keys_remaining_passes.selector ^= 1;
+      d_values_remaining_passes.selector ^= 1;
+    }
+
+    // Update selector
+    if (!can_overwrite_source_buffer)
+    {
+      num_passes = 1; // Sorted data always ends up in the other vector
+    }
+
+    d_keys.selector   = (d_keys.selector + num_passes) & 1;
+    d_values.selector = (d_values.selector + num_passes) & 1;
+
+    return cudaSuccess;
+  }
+
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_onesweep(RadixSortPolicy policy)
+  {
+    // PortionOffsetT is used for offsets within a portion, and must be signed.
+    using PortionOffsetT = int;
+    using AtomicOffsetT  = PortionOffsetT;
+
+    // compute temporary storage size
+    const int radix_bits                = policy.onesweep.radix_bits;
+    const int radix_digits              = 1 << radix_bits;
+    const int onesweep_items_per_thread = policy.onesweep.items_per_thread;
+    const int onesweep_block_threads    = policy.onesweep.threads_per_block;
+    const int onesweep_tile_items       = onesweep_items_per_thread * onesweep_block_threads;
+    // portions handle inputs with >=2**30 elements, due to the way lookback works
+    // for testing purposes, one portion is <= 2**28 elements
+    const PortionOffsetT portion_size   = ((1 << 28) - 1) / onesweep_tile_items * onesweep_tile_items;
+    const int num_passes                = ::cuda::ceil_div(end_bit - begin_bit, radix_bits);
+    OffsetT num_portions                = static_cast<OffsetT>(::cuda::ceil_div(num_items, portion_size));
+    const PortionOffsetT max_num_blocks = ::cuda::ceil_div(
+      static_cast<int>((::cuda::std::min) (num_items, static_cast<OffsetT>(portion_size))), onesweep_tile_items);
+
+    const size_t value_size         = keys_only ? 0 : kernel_source.ValueSize();
+    const size_t allocation_sizes[] = {
+      // bins
+      num_portions * num_passes * radix_digits * sizeof(OffsetT),
+      // lookback
+      max_num_blocks * radix_digits * sizeof(AtomicOffsetT),
+      // extra key buffer
+      can_overwrite_source_buffer || num_passes <= 1 ? 0 : num_items * kernel_source.KeySize(),
+      // extra value buffer
+      can_overwrite_source_buffer || num_passes <= 1 ? 0 : num_items * value_size,
+      // counters
+      num_portions * num_passes * sizeof(AtomicOffsetT),
+    };
+    constexpr int num_allocations      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
+    void* allocations[num_allocations] = {};
+    if (const auto error = _CUB::detail::alias_temporaries<num_allocations>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    {
+      return error;
+    }
+
+    // just return if no temporary storage is provided
+    if (d_temp_storage == nullptr)
+    {
+      return cudaSuccess;
+    }
+
+    OffsetT* d_bins           = (OffsetT*) allocations[0]; // NOLINT(misc-const-correctness)
+    AtomicOffsetT* d_lookback = (AtomicOffsetT*) allocations[1];
+    KeyT* d_keys_tmp2         = (KeyT*) allocations[2];
+    ValueT* d_values_tmp2     = (ValueT*) allocations[3];
+    AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4]; // NOLINT(misc-const-correctness)
+
+    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
+    const bool use_pdl =
+      num_items <= pdl_max_items && device_descr.__compute_capability() >= ::cuda::compute_capability{9, 0};
+
+    const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
+    const size_t num_bin_items     = static_cast<size_t>(num_passes) * radix_digits;
+    const int num_sms              = static_cast<int>(device_descr.__max_sm_count());
+    const int histo_block_threads  = policy.histogram.threads_per_block;
+    int histo_blocks_per_sm        = 1;
+    auto histogram_kernel          = kernel_source.RadixSortHistogramKernel();
+
+    if (const auto error = CubDebug(device_descr.__occupancy(
+          histogram_kernel, launcher_factory, d_temp_storage, histo_block_threads, 0, histo_blocks_per_sm)))
+    {
+      return error;
+    }
+
+    // log histogram_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "histogram_kernel",
+      histo_blocks_per_sm * num_sms,
+      1,
+      1,
+      histo_block_threads,
+      0,
+      stream,
+      ", SM occupancy: %d, bit_grain: %d",
+      histo_blocks_per_sm,
+      policy.histogram.radix_bits);
+
+    // exclusive sums to determine starts
+    const int scan_block_threads = policy.exclusive_sum.threads_per_block;
+
+    // log exclusive_sum_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "exclusive_sum_kernel",
+      num_passes,
+      1,
+      1,
+      scan_block_threads,
+      0,
+      stream,
+      ", bit_grain: %d",
+      policy.exclusive_sum.radix_bits);
+
+    // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
+    // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
+    {
+      constexpr int init_startup_threads = 256;
+      const size_t num_init_items        = (::cuda::std::max) (num_counter_items, num_bin_items);
+      const int init_startup_blocks =
+        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
+
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
+              .doit(
+                kernel_source.RadixSortInitBinsAndCountersKernel(), d_ctrs, num_counter_items, d_bins, num_bin_items)))
+      {
+        return error;
+      }
+    }
+
+    if (const auto error = CubDebug(
+          launcher_factory(histo_blocks_per_sm * num_sms, histo_block_threads, 0, stream, use_pdl)
+            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(launcher_factory(num_passes, scan_block_threads, 0, stream, use_pdl)
+                                      .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // use the other buffer if no overwrite is allowed
+    KeyT* d_keys_tmp     = d_keys.Alternate();
+    ValueT* d_values_tmp = d_values.Alternate();
+    if (!can_overwrite_source_buffer && num_passes % 2 == 0)
+    {
+      d_keys.d_buffers[1]   = d_keys_tmp2;
+      d_values.d_buffers[1] = d_values_tmp2;
+    }
+
+    for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += radix_bits, ++pass)
+    {
+      const int num_bits = (::cuda::std::min) (end_bit - current_bit, radix_bits);
+      for (OffsetT portion = 0; portion < num_portions; ++portion)
+      {
+        const PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
+          (::cuda::std::min) (num_items - portion * portion_size, static_cast<OffsetT>(portion_size)));
+
+        const PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, onesweep_tile_items);
+        const size_t num_lookback_items = static_cast<size_t>(num_blocks) * radix_digits;
+
+        if (use_pdl)
+        {
+          constexpr int init_lookback_threads = 256;
+          const int init_lookback_blocks =
+            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(init_lookback_threads)));
+
+          if (const auto error = CubDebug(
+                launcher_factory(init_lookback_blocks, init_lookback_threads, 0, stream, use_pdl)
+                  .doit(
+                    kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items, d_lookback, size_t{0})))
+          {
+            return error;
+          }
+        }
+        else
+        {
+          if (const auto error =
+                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+          {
+            return error;
+          }
+        }
+
+        // log onesweep_kernel configuration
+        _CUB_LOG_KERNEL_LAUNCH(
+          "onesweep_kernel",
+          num_blocks,
+          1,
+          1,
+          onesweep_block_threads,
+          0,
+          stream,
+          ", current bit: %d, bit_grain: %d, portion: %d/%d",
+          current_bit,
+          num_bits,
+          static_cast<int>(portion),
+          static_cast<int>(num_portions));
+
+        auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
+
+        if (const auto error = CubDebug(
+              launcher_factory(num_blocks, onesweep_block_threads, 0, stream, use_pdl)
+                .doit(
+                  onesweep_kernel,
+                  d_lookback,
+                  d_ctrs + portion * num_passes + pass,
+                  portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * radix_digits : nullptr,
+                  d_bins + (portion * num_passes + pass) * radix_digits,
+                  d_keys.Alternate(),
+                  kernel_source.AdvanceKeys(d_keys.Current(), portion * portion_size),
+                  d_values.Alternate(),
+                  kernel_source.AdvanceValues(d_values.Current(), portion * portion_size),
+                  portion_num_items,
+                  current_bit,
+                  num_bits,
+                  decomposer)))
+        {
+          return error;
+        }
+
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
+        {
+          return error;
+        }
+      }
+
+      // use the temporary buffers if no overwrite is allowed
+      if (!can_overwrite_source_buffer && pass == 0)
+      {
+        d_keys   = num_passes % 2 == 0 ? DoubleBuffer<KeyT>(d_keys_tmp, d_keys_tmp2)
+                                       : DoubleBuffer<KeyT>(d_keys_tmp2, d_keys_tmp);
+        d_values = num_passes % 2 == 0 ? DoubleBuffer<ValueT>(d_values_tmp, d_values_tmp2)
+                                       : DoubleBuffer<ValueT>(d_values_tmp2, d_values_tmp);
+      }
+      d_keys.selector ^= 1;
+      d_values.selector ^= 1;
+    }
+
+    return cudaSuccess;
+  }
+
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(PolicyGetter policy_getter)
+  {
+    CUB_DETAIL_CONSTEXPR_ISH auto policy = policy_getter();
+
+    // Return if empty problem, or if no bits to sort and double-buffering is used
+    if (num_items == 0 || (begin_bit == end_bit && can_overwrite_source_buffer))
+    {
+      if (d_temp_storage == nullptr)
+      {
+        temp_storage_bytes = 1;
+      }
+      return cudaSuccess;
+    }
+
+    // Check if simple copy suffices (can_overwrite_source_buffer == false at this point)
+    if (begin_bit == end_bit)
+    {
+      bool has_uva = false;
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
+      {
+        return error;
+      }
+      if (has_uva)
+      {
+        return invoke_copy();
+      }
+    }
+
+    // Force kernel code-generation in all compiler passes
+    if (num_items <= (static_cast<OffsetT>(policy.single_tile.threads_per_block) * policy.single_tile.items_per_thread))
+    {
+      // Small, single tile size
+      return invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);
+    }
+
+#if _CCCL_COMPILER(GCC, <, 10)
+    // gcc 7-9 fail to use `policy` in a constant expression, so we just compute it again inplace
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == RadixSortAlgorithm::onesweep)
+#else // _CCCL_COMPILER(GCC, <, 10)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == RadixSortAlgorithm::onesweep)
+#endif // _CCCL_COMPILER(GCC, <, 10)
+    {
+      return invoke_onesweep(policy);
+    }
+    else
+    {
+      return invoke_passes(
+        kernel_source.RadixSortUpsweepKernel(),
+        kernel_source.RadixSortAltUpsweepKernel(),
+        kernel_source.DeviceRadixSortScanBinsKernel(),
+        kernel_source.RadixSortDownsweepKernel(),
+        kernel_source.RadixSortAltDownsweepKernel(),
+        policy);
+    }
+  }
 };
 
 template <SortOrder Order,
@@ -1285,41 +2032,42 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   OffsetT num_items,
   int begin_bit,
   int end_bit,
-  bool is_overwrite_okay,
+  bool can_overwrite_source_buffer,
   cudaStream_t stream,
+  const experimental::RunsOn& runs_on,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  experimental::DeviceDescription description;
+
+  if (const auto error = CubDebug(runs_on.concrete_description(launcher_factory, d_temp_storage, description)))
   {
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << policy_selector(arch_id);
-                _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  const auto cc = description.__compute_capability();
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    return DispatchRadixSort<Order, KeyT, ValueT, OffsetT, DecomposerT, fake_policy, KernelSource, KernelLauncherFactory>{
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream,
-      -1 /* ptx_version, not used actually */,
-      decomposer,
-      kernel_source,
-      launcher_factory}
-      .__invoke(policy_getter);
+  _CUB::detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
+
+  dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys,
+    d_values,
+    num_items,
+    begin_bit,
+    end_bit,
+    can_overwrite_source_buffer,
+    stream,
+    decomposer,
+    kernel_source,
+    launcher_factory,
+    description};
+
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    return impl.invoke(policy_getter);
   });
 }
 } // namespace detail::radix_sort

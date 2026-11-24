@@ -27,15 +27,15 @@ constexpr bool OpBoolNoexcept<T, cuda::std::void_t<decltype(static_cast<bool>(cu
 
 struct Foo
 {};
-static_assert(!OpBoolNoexcept<Foo>, "");
+static_assert(!OpBoolNoexcept<Foo>);
 
-static_assert(OpBoolNoexcept<cuda::std::expected<int, int>>, "");
-static_assert(OpBoolNoexcept<const cuda::std::expected<int, int>>, "");
+static_assert(OpBoolNoexcept<cuda::std::expected<int, int>>);
+static_assert(OpBoolNoexcept<const cuda::std::expected<int, int>>);
 
 // Test explicit
-static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>, "");
+static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // has_value
   {
@@ -56,7 +56,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

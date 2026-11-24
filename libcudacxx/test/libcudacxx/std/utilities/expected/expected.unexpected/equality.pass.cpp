@@ -25,20 +25,20 @@ struct Error
 {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const Error&, const Error&) = default;
+  TEST_FUNC friend constexpr bool operator==(const Error&, const Error&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const Error& lhs, const Error& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const Error& lhs, const Error& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Error& lhs, const Error& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const Error& lhs, const Error& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }
 #endif
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::unexpected<Error> unex1(Error{2});
   cuda::std::unexpected<Error> unex2(Error{3});
@@ -52,6 +52,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

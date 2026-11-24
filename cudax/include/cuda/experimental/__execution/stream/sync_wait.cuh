@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,12 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/variant.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
+
+#include <nv/target>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -40,7 +50,7 @@ struct __sync_wait_t : private sync_wait_t
 {
   // TODO: calling sync_wait from device code is not supported yet.
   template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
     // _Sndr is a sender that has not yet been transformed to run on the stream domain.
     // The transformation would happen in due course in the connect cpo, so why transform
@@ -48,14 +58,14 @@ struct __sync_wait_t : private sync_wait_t
     // stream_ref, which is needed by __host_apply.
     auto __new_sndr = stream_domain{}.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), __env);
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 (return __host_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));),
-                 (return __device_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));))
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return __host_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));),
+                      (return __device_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));))
     _CCCL_UNREACHABLE();
   }
 
   template <class _Sndr>
-  _CCCL_API auto operator()(_Sndr&& __sndr) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr) const
   {
     return (*this)(static_cast<_Sndr&&>(__sndr), env{});
   }

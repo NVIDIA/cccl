@@ -18,8 +18,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void
-test_find_first_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type x)
+TEST_FUNC constexpr void test_find_first_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type x)
 {
   assert(sv.find_first_not_of(c) == x);
   if (x != SV::npos)
@@ -29,7 +28,7 @@ test_find_first_not_of(const SV& sv, typename SV::value_type c, typename SV::siz
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_find_first_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find_first_not_of(c, pos) == x);
@@ -40,7 +39,7 @@ test_find_first_not_of(const SV& sv, typename SV::value_type c, typename SV::siz
 }
 
 template <class SV>
-__host__ __device__ constexpr void test_find_first_not_of()
+TEST_FUNC constexpr void test_find_first_not_of()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -85,7 +84,7 @@ __host__ __device__ constexpr void test_find_first_not_of()
   test_find_first_not_of(SV(TEST_STRLIT(CharT, "oselktgbcapndfjihrmq")), c, 21, SV::npos);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find_first_not_of<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

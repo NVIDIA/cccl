@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,25 +19,28 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/util_debug.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 /**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
+ *
+ * Deprecated [Since 3.3]
  *
  * @par Overview
  * - TexObjInputIterator wraps a native device pointer of type <tt>ValueType*</tt>. References
@@ -81,6 +84,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename T, typename OffsetT = ptrdiff_t>
 class TexObjInputIterator
@@ -113,22 +121,18 @@ private:
   using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
-private:
-  T* ptr;
-  difference_type tex_offset;
-  cudaTextureObject_t tex_obj;
+  T* ptr{nullptr};
+  difference_type tex_offset{0};
+  cudaTextureObject_t tex_obj{0};
 
 public:
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(nullptr)
-      , tex_offset(0)
-      , tex_obj(0)
-  {}
+  _CCCL_HIDE_FROM_ABI TexObjInputIterator() = default;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -142,16 +146,14 @@ public:
    *   OffsetT (in items) from @p ptr denoting the position of the iterator
    */
   template <typename QualifiedT>
-  cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
+  _CCCL_HOST_API cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
   {
     this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
-    cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
-    cudaResourceDesc res_desc;
-    cudaTextureDesc tex_desc;
-    memset(&res_desc, 0, sizeof(cudaResourceDesc));
-    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+    const cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
+    cudaResourceDesc res_desc{};
+    cudaTextureDesc tex_desc{};
     res_desc.resType                = cudaResourceTypeLinear;
     res_desc.res.linear.devPtr      = this->ptr;
     res_desc.res.linear.desc        = channel_desc;
@@ -161,14 +163,14 @@ public:
   }
 
   /// Unbind this iterator from its texture reference
-  cudaError_t UnbindTexture()
+  _CCCL_HOST_API cudaError_t UnbindTexture()
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     tex_offset++;
@@ -176,21 +178,21 @@ public:
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++()
   {
     tex_offset++;
     return *this;
   }
 
   /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator*() const
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
   }
 
   /// Addition
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator+(Distance n) const
   {
     self_type retval;
     retval.ptr        = ptr;
@@ -201,7 +203,7 @@ public:
 
   /// Addition assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator+=(Distance n)
   {
     tex_offset += n;
     return *this;
@@ -209,7 +211,7 @@ public:
 
   /// Subtraction
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator-(Distance n) const
   {
     self_type retval;
     retval.ptr        = ptr;
@@ -220,58 +222,58 @@ public:
 
   /// Subtraction assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator-=(Distance n)
   {
     tex_offset -= n;
     return *this;
   }
 
   /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE difference_type operator-(self_type other) const
   {
     return tex_offset - other.tex_offset;
   }
 
   /// Array subscript
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 
   /// Structure dereference
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE pointer operator->()
   {
     return &(*(*this));
   }
 
   /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
   {
     return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
   }
 
   /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
   {
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /// ostream operator
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of
   // NV_IF_TARGET
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference device_deref() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reference device_deref() const
   {
     // Move array of uninitialized words, then alias and assign to return
     // value
@@ -289,5 +291,9 @@ private:
     return *reinterpret_cast<T*>(words);
   }
 };
+} // namespace detail
+
+template <typename T, typename OffsetT = ptrdiff_t>
+using TexObjInputIterator CCCL_DEPRECATED = detail::TexObjInputIterator<T, OffsetT>;
 
 CUB_NAMESPACE_END

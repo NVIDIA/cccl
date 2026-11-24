@@ -20,13 +20,13 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_max_exponent()
+TEST_FUNC constexpr int make_expected_max_exponent()
 {
   return 0;
 }
 
 template <class T, int expected = make_expected_max_exponent<T>()>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::max_exponent == expected, "max_exponent test 1");
   static_assert(cuda::std::numeric_limits<const T>::max_exponent == expected, "max_exponent test 2");
@@ -41,9 +41,9 @@ int main(int, char**)
   test<signed char>();
   test<unsigned char>();
   test<wchar_t>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>();
   test<char32_t>();
   test<short>();
@@ -72,6 +72,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3, 8>();
 #endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3, 17>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2, 15>();
 #endif // _CCCL_HAS_NVFP8_E5M2()

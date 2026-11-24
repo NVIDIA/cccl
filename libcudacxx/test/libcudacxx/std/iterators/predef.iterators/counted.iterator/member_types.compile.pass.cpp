@@ -20,9 +20,9 @@ struct InputOrOutputArchetype
 {
   using difference_type = int;
 
-  __host__ __device__ int operator*();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ InputOrOutputArchetype& operator++();
+  TEST_FUNC int operator*();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC InputOrOutputArchetype& operator++();
 };
 
 template <class T>
@@ -34,7 +34,7 @@ _CCCL_CONCEPT HasIteratorConcept = _CCCL_REQUIRES_EXPR((T))(typename(typename T:
 template <class T>
 _CCCL_CONCEPT HasIteratorCategory = _CCCL_REQUIRES_EXPR((T))(typename(typename T::iterator_category));
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Iter = cuda::std::counted_iterator<InputOrOutputArchetype>;

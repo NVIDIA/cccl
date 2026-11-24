@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file extrema.h
  *  \brief Sequential implementations of extrema functions.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,6 +19,8 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -39,53 +28,30 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imin = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*first, *imin))
-    {
-      imin = first;
-    }
-  }
-
-  return imin;
+  return ::cuda::std::min_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imax = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*imax, *first))
-    {
-      imax = first;
-    }
-  }
-
-  return imax;
+  return ::cuda::std::max_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  // Cannot delegate to cuda::std::minmax_element because the standard returns
+  // the *last* equivalent maximum, while Thrust's parallel backends (and existing
+  // tests) expect the *first* equivalent maximum. Changing this is a breaking change.
+  // TODO(cccl 4.0): align with the standard and delegate to cuda::std::minmax_element.
+  const thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
 
   ForwardIterator imin = first;
   ForwardIterator imax = first;
@@ -97,6 +63,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
       imin = first;
     }
 
+    // TODO(bgruber): for CCCL 4.0, switch to `!wrapped_comp(*first, *imax)` to conform to the C++ standard
     if (wrapped_comp(*imax, *first))
     {
       imax = first;

@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,28 +28,58 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
+template <class _Extents, class _StrideArray, bool = (_Extents::rank() == 0)>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base : __mdspan_ebco<_Extents, _StrideArray>
+{
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents, _StrideArray>;
+  using __base::__base;
+};
+
+template <class _Extents, class _StrideArray>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base<_Extents, _StrideArray, true> : __mdspan_ebco<_Extents>
+{
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
+  using __base::__base;
+
+  _CCCL_API constexpr __mapping_base(const _Extents& __ext,
+                                     const _StrideArray&) noexcept(is_nothrow_constructible_v<__base, const _Extents&>)
+      : __base(__ext)
+  {}
+};
+
 template <class _StridedLayoutMapping, class _Extents>
 _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
@@ -61,6 +91,7 @@ struct __constraints
 {
   template <class _StridedLayoutMapping, class _Extents>
   static constexpr bool __converts_implicit =
+    // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
     is_convertible_v<typename _StridedLayoutMapping::extents_type, _Extents>
     && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
@@ -70,8 +101,9 @@ struct __constraints
 
 template <class _Extents>
 class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
-    : private __mdspan_ebco<_Extents,
-                            __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
+    : private __layout_stride_detail::__mapping_base<
+        _Extents,
+        __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
@@ -82,7 +114,9 @@ public:
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base = __mdspan_ebco<_Extents, __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
+  using __base _CCCL_NODEBUG =
+    __layout_stride_detail::__mapping_base<_Extents,
+                                           __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
   template <class, class, class, class>
   friend class mdspan;
@@ -91,36 +125,13 @@ private:
   static constexpr rank_type __rank_    = extents_type::rank();
   static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
 
-  using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
+  using __stride_array _CCCL_NODEBUG = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
 
   // Used for default construction check and mandates
   [[nodiscard]] _CCCL_API static constexpr bool
-  __mul_overflow(index_type __x, index_type __y, index_type* __res) noexcept
-  {
-    *__res = __x * __y;
-    return __x && ((*__res / __x) != __y);
-  }
-  [[nodiscard]] _CCCL_API static constexpr bool
   __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
   {
-    *__res = __x + __y;
-    return *__res < __y;
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(const extents_type& __ext) noexcept
-  {
-    if constexpr (extents_type::rank() != 0)
-    {
-      index_type __prod = __ext.extent(0);
-      for (rank_type __r = 1; __r < extents_type::rank(); __r++)
-      {
-        if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
-        {
-          return false;
-        }
-      }
-    }
-    return true;
+    return ::cuda::add_overflow(*__res, __x, __y);
   }
 
   template <class _OtherIndexType>
@@ -131,7 +142,7 @@ private:
     if constexpr (is_integral_v<_OtherIndexType>)
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
-      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
+      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>(numeric_limits<index_type>::max());
     }
     else
     {
@@ -160,11 +171,12 @@ private:
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
-        if (__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
+        if (::cuda::std::__mdspan_detail::__mul_overflow(
+              __prod, static_cast<index_type>(__strides[__r]), ::cuda::std::addressof(__prod)))
         {
           return false;
         }
-        if (__add_overflow(__size, __prod, &__size))
+        if (__add_overflow(__size, __prod, ::cuda::std::addressof(__size)))
         {
           return false;
         }
@@ -179,7 +191,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr auto
   __offset(const _StridedMapping& __mapping, index_sequence<_Pos...>) noexcept
   {
-    return static_cast<typename _StridedMapping::index_type>(__mapping((_Pos ? 0 : 0)...));
+    return static_cast<typename _StridedMapping::index_type>(__mapping((static_cast<void>(_Pos), 0)...));
   }
 
   template <class _StridedMapping>
@@ -200,7 +212,8 @@ private:
     }
   }
 
-  static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
+  static_assert((extents_type::rank_dynamic() > 0)
+                  || ::cuda::std::__mdspan_detail::__required_span_size_is_representable(extents_type()),
                 "layout_stride::mapping product of static extents must be representable as index_type.");
 
 public:
@@ -343,11 +356,11 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
                    __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
   _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_stride::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
     _CCCL_ASSERT(index_type{0} == __offset(__other),
@@ -357,11 +370,11 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
     !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
   _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_stride::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
     _CCCL_ASSERT(index_type{0} == __offset(__other),
@@ -405,10 +418,7 @@ public:
     {
       return index_type{0};
     }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
+    return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
@@ -441,7 +451,14 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
     //             "layout_stride::mapping: out of bounds indexing");
-    return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    if constexpr (extents_type::rank() == 0)
+    {
+      return index_type{0};
+    }
+    else
+    {
+      return __op_index(__strides(), ::cuda::std::index_sequence_for<_Indices...>(), __idx...);
+    }
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
@@ -497,6 +514,7 @@ public:
               __r_largest = __r;
             }
           }
+
           for (rank_type __r = 0; __r != __rank_; __r++)
           {
             if (extents().extent(__r) == 0 && __r != __r_largest)
@@ -524,8 +542,15 @@ public:
   // it still has the precondition though
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const noexcept
   {
-    _CCCL_ASSERT(__r < __rank_, "layout_stride::mapping::stride(): invalid rank index");
-    return __strides()[__r];
+    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    {
+      _CCCL_ASSERT(__r < __rank_, "layout_stride::mapping::stride(): invalid rank index");
+      return __strides()[__r];
+    }
+    else
+    {
+      return index_type{0};
+    }
   }
 
   template <class _OtherMapping, size_t... _Pos>
@@ -592,6 +617,11 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

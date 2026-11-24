@@ -25,91 +25,91 @@
 
 struct NoCommonRef
 {
-  __host__ __device__ NoCommonRef& operator=(const int&);
+  TEST_FUNC NoCommonRef& operator=(const int&);
 };
-static_assert(cuda::std::is_assignable_v<NoCommonRef&, const int&>, "");
-static_assert(!cuda::std::assignable_from<NoCommonRef&, const int&>, ""); // no common reference type
+static_assert(cuda::std::is_assignable_v<NoCommonRef&, const int&>);
+static_assert(!cuda::std::assignable_from<NoCommonRef&, const int&>); // no common reference type
 
 struct Base
 {};
 struct Derived : Base
 {};
-static_assert(!cuda::std::assignable_from<Base*, Derived*>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived*>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived*&>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived*&&>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived* const>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived* const&>, "");
-static_assert(cuda::std::assignable_from<Base*&, Derived* const&&>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived*>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived*&>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived*&&>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived* const>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived* const&>, "");
-static_assert(!cuda::std::assignable_from<Base*&, const Derived* const&&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived*>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived*&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived*&&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived* const>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived* const&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, Derived* const&&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived*>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived*&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived*&&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived* const>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived* const&>, "");
-static_assert(cuda::std::assignable_from<const Base*&, const Derived* const&&>, "");
+static_assert(!cuda::std::assignable_from<Base*, Derived*>);
+static_assert(cuda::std::assignable_from<Base*&, Derived*>);
+static_assert(cuda::std::assignable_from<Base*&, Derived*&>);
+static_assert(cuda::std::assignable_from<Base*&, Derived*&&>);
+static_assert(cuda::std::assignable_from<Base*&, Derived* const>);
+static_assert(cuda::std::assignable_from<Base*&, Derived* const&>);
+static_assert(cuda::std::assignable_from<Base*&, Derived* const&&>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived*>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived*&>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived*&&>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived* const>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived* const&>);
+static_assert(!cuda::std::assignable_from<Base*&, const Derived* const&&>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived*>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived*&>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived*&&>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived* const>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived* const&>);
+static_assert(cuda::std::assignable_from<const Base*&, Derived* const&&>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived*>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived*&>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived*&&>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived* const>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived* const&>);
+static_assert(cuda::std::assignable_from<const Base*&, const Derived* const&&>);
 
 struct VoidResultType
 {
-  __host__ __device__ void operator=(const VoidResultType&);
+  TEST_FUNC void operator=(const VoidResultType&);
 };
-static_assert(cuda::std::is_assignable_v<VoidResultType&, const VoidResultType&>, "");
-static_assert(!cuda::std::assignable_from<VoidResultType&, const VoidResultType&>, "");
+static_assert(cuda::std::is_assignable_v<VoidResultType&, const VoidResultType&>);
+static_assert(!cuda::std::assignable_from<VoidResultType&, const VoidResultType&>);
 
 struct ValueResultType
 {
-  __host__ __device__ ValueResultType operator=(const ValueResultType&);
+  TEST_FUNC ValueResultType operator=(const ValueResultType&);
 };
-static_assert(cuda::std::is_assignable_v<ValueResultType&, const ValueResultType&>, "");
-static_assert(!cuda::std::assignable_from<ValueResultType&, const ValueResultType&>, "");
+static_assert(cuda::std::is_assignable_v<ValueResultType&, const ValueResultType&>);
+static_assert(!cuda::std::assignable_from<ValueResultType&, const ValueResultType&>);
 
 struct Locale
 {
-  __host__ __device__ const Locale& operator=(const Locale&);
+  TEST_FUNC const Locale& operator=(const Locale&);
 };
-static_assert(cuda::std::is_assignable_v<Locale&, const Locale&>, "");
-static_assert(!cuda::std::assignable_from<Locale&, const Locale&>, "");
+static_assert(cuda::std::is_assignable_v<Locale&, const Locale&>);
+static_assert(!cuda::std::assignable_from<Locale&, const Locale&>);
 
 struct Tuple
 {
-  __host__ __device__ Tuple& operator=(const Tuple&);
-  __host__ __device__ const Tuple& operator=(const Tuple&) const;
+  TEST_FUNC Tuple& operator=(const Tuple&);
+  TEST_FUNC const Tuple& operator=(const Tuple&) const;
 };
-static_assert(!cuda::std::assignable_from<Tuple, const Tuple&>, "");
-static_assert(cuda::std::assignable_from<Tuple&, const Tuple&>, "");
-static_assert(!cuda::std::assignable_from<Tuple&&, const Tuple&>, "");
-static_assert(!cuda::std::assignable_from<const Tuple, const Tuple&>, "");
-static_assert(cuda::std::assignable_from<const Tuple&, const Tuple&>, "");
-static_assert(!cuda::std::assignable_from<const Tuple&&, const Tuple&>, "");
+static_assert(!cuda::std::assignable_from<Tuple, const Tuple&>);
+static_assert(cuda::std::assignable_from<Tuple&, const Tuple&>);
+static_assert(!cuda::std::assignable_from<Tuple&&, const Tuple&>);
+static_assert(!cuda::std::assignable_from<const Tuple, const Tuple&>);
+static_assert(cuda::std::assignable_from<const Tuple&, const Tuple&>);
+static_assert(!cuda::std::assignable_from<const Tuple&&, const Tuple&>);
 
 // Finally, check a few simple cases.
-static_assert(cuda::std::assignable_from<int&, int>, "");
-static_assert(cuda::std::assignable_from<int&, int&>, "");
-static_assert(cuda::std::assignable_from<int&, int&&>, "");
-static_assert(!cuda::std::assignable_from<const int&, int>, "");
-static_assert(!cuda::std::assignable_from<const int&, int&>, "");
-static_assert(!cuda::std::assignable_from<const int&, int&&>, "");
-static_assert(cuda::std::assignable_from<volatile int&, int>, "");
-static_assert(cuda::std::assignable_from<volatile int&, int&>, "");
-static_assert(cuda::std::assignable_from<volatile int&, int&&>, "");
-static_assert(!cuda::std::assignable_from<int (&)[10], int>, "");
-static_assert(!cuda::std::assignable_from<int (&)[10], int (&)[10]>, "");
-static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly>, "");
-static_assert(!cuda::std::assignable_from<MoveOnly&, MoveOnly&>, "");
-static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly&&>, "");
-static_assert(!cuda::std::assignable_from<void, int>, "");
-static_assert(!cuda::std::assignable_from<void, void>, "");
+static_assert(cuda::std::assignable_from<int&, int>);
+static_assert(cuda::std::assignable_from<int&, int&>);
+static_assert(cuda::std::assignable_from<int&, int&&>);
+static_assert(!cuda::std::assignable_from<const int&, int>);
+static_assert(!cuda::std::assignable_from<const int&, int&>);
+static_assert(!cuda::std::assignable_from<const int&, int&&>);
+static_assert(cuda::std::assignable_from<volatile int&, int>);
+static_assert(cuda::std::assignable_from<volatile int&, int&>);
+static_assert(cuda::std::assignable_from<volatile int&, int&&>);
+static_assert(!cuda::std::assignable_from<int (&)[10], int>);
+static_assert(!cuda::std::assignable_from<int (&)[10], int (&)[10]>);
+static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly>);
+static_assert(!cuda::std::assignable_from<MoveOnly&, MoveOnly&>);
+static_assert(cuda::std::assignable_from<MoveOnly&, MoveOnly&&>);
+static_assert(!cuda::std::assignable_from<void, int>);
+static_assert(!cuda::std::assignable_from<void, void>);
 
 int main(int, char**)
 {

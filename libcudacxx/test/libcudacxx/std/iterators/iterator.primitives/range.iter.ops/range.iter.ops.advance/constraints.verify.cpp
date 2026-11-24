@@ -14,10 +14,12 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 class not_incrementable
 {};
 
-__host__ __device__ void proper_constraints()
+TEST_FUNC void proper_constraints()
 {
   not_incrementable p{};
   cuda::std::ranges::advance(p, 5); // expected-error {{no matching function for call}}

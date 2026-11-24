@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,7 +22,12 @@
 #endif // no system header
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/allocator.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__utility/undefined.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/__launch/configuration.h>
@@ -30,17 +35,14 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/unreachable.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -64,7 +66,7 @@ _CCCL_CONCEPT __statically_queryable_with =
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __query_result_or_t<_Env, get_allocator_t, ::cuda::std::allocator<::cuda::std::byte>>
   {
     static_assert(__nothrow_queryable_with_or<_Env, get_allocator_t, true>,
@@ -73,7 +75,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
     return __query_or(__env, *this, ::cuda::std::allocator<::cuda::std::byte>{});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -84,7 +86,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __query_result_or_t<_Env, get_stop_token_t, never_stop_token>
   {
     static_assert(__nothrow_queryable_with_or<_Env, get_stop_token_t, true>,
@@ -92,7 +94,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
     return __query_or(__env, *this, never_stop_token{});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -105,7 +107,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tag = set_value_t, class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __call_result_t<get_completion_scheduler_t<_Tag>,
                        __query_result_t<_Env, get_scheduler_t>,
                        __hide_scheduler<const _Env&>>
@@ -115,7 +117,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
     return get_completion_scheduler_t<_Tag>()(__env.query(*this), __hide_scheduler{__env});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -128,7 +130,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __query_result_t<_Env, get_delegation_scheduler_t>
   {
     static_assert(noexcept(__env.query(*this)));
@@ -136,7 +138,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -160,7 +162,8 @@ struct get_completion_scheduler_t
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch>)
-    [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
       -> decay_t<__query_result_t<_Attrs, _GetComplSch>>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{})));
@@ -172,7 +175,8 @@ struct get_completion_scheduler_t
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch, const _Env&>)
-    [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
       -> decay_t<__query_result_t<_Attrs, _GetComplSch, const _Env&>>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{}, __env)));
@@ -192,7 +196,7 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Self = __recurse_query_t, class _Sch, class... _Env>
     [[nodiscard]]
-    _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
+    _CCCL_HOST_DEVICE_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
     {
       // When determining where the scheduler's operations will complete, we query
       // for the completion scheduler of the value channel:
@@ -244,7 +248,7 @@ private:
   }
 
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     // If __attrs has a completion scheduler, then return it (after checking the scheduler
     // for _its_ completion scheduler):
@@ -272,8 +276,8 @@ private:
 
 public:
   template <class _Attrs, class... _Env, auto _DeclFn = __get_declfn<const _Attrs&, const _Env&...>()>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env&... __env) const noexcept
-    -> __unless_one_of_t<decltype(_DeclFn()), void>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(const _Attrs& __attrs, const _Env&... __env) const noexcept -> __unless_one_of_t<decltype(_DeclFn()), void>
   {
     // If __attrs has a completion scheduler, then return it (after checking the scheduler
     // for _its_ completion scheduler):
@@ -294,7 +298,7 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -329,14 +333,15 @@ inline constexpr bool __is_completion_query<get_completion_behavior_t> = true;
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
   template <class _Sch>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Sch& __sch) const noexcept -> forward_progress_guarantee
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Sch& __sch) const noexcept
+    -> forward_progress_guarantee
   {
     static_assert(__nothrow_queryable_with_or<_Sch, get_forward_progress_guarantee_t, true>,
                   "The get_forward_progress_guarantee query must be noexcept.");
     return __query_or(__sch, *this, forward_progress_guarantee::weakly_parallel);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return false;
   }
@@ -349,7 +354,7 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 _CCCL_GLOBAL_CONSTANT struct get_available_parallelism_t
 {
   template <class _Sch>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Sch& __sch) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Sch& __sch) const noexcept
   {
     static_assert(__nothrow_queryable_with_or<const _Sch&, get_available_parallelism_t, true>,
                   "The get_available_parallelism query must be noexcept.");
@@ -385,7 +390,7 @@ _CCCL_GLOBAL_CONSTANT __single_threaded_config_t __single_threaded_config{};
 _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __query_result_or_t<_Env, get_launch_config_t, __single_threaded_config_t>
   {
     static_assert(__nothrow_queryable_with_or<_Env, get_launch_config_t, true>,
@@ -393,7 +398,7 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     return __query_or(__env, *this, __single_threaded_config);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }

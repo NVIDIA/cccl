@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/cuda/memory.h
  *  \brief Managing memory associated with Thrust's CUDA system.
@@ -22,19 +9,18 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/system/cuda/memory_resource.h>
+#include <thrust/system/cuda/pointer.h>
 
-#include <ostream>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -49,7 +35,7 @@ namespace cuda_cub
  *  \see cuda::free
  *  \see std::malloc
  */
-inline _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE_API pointer<void> malloc(std::size_t n);
 
 /*! Allocates a typed area of memory available to Thrust's <tt>cuda</tt> system.
  *  \param n Number of elements to allocate.
@@ -62,7 +48,7 @@ inline _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n);
  *  \see std::malloc
  */
 template <typename T>
-inline _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE_API pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>cuda::malloc</tt>.
  *  \param ptr A <tt>cuda::pointer<void></tt> pointing to the beginning of an area
@@ -70,7 +56,7 @@ inline _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n);
  *  \see cuda::malloc
  *  \see std::free
  */
-inline _CCCL_HOST_DEVICE void free(pointer<void> ptr);
+inline _CCCL_HOST_DEVICE_API void free(pointer<void> ptr);
 
 /*! \p cuda::allocator is the default allocator used by the \p cuda system's
  *  containers such as <tt>cuda::vector</tt> if no user-specified allocator is

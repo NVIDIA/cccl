@@ -18,10 +18,10 @@
 int main(int, char**)
 {
   using M = cuda::std::monostate;
-  static_assert(cuda::std::is_trivially_default_constructible<M>::value, "");
-  static_assert(cuda::std::is_trivially_copy_constructible<M>::value, "");
-  static_assert(cuda::std::is_trivially_copy_assignable<M>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<M>::value, "");
+  static_assert(cuda::std::is_trivially_default_constructible<M>::value);
+  static_assert(cuda::std::is_trivially_copy_constructible<M>::value);
+  static_assert(cuda::std::is_trivially_copy_assignable<M>::value);
+  static_assert(cuda::std::is_trivially_destructible<M>::value);
   constexpr M m{};
   unused(m);
 

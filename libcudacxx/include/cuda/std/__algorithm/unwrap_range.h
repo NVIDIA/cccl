@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,10 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/unwrap_iter.h>
-#include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/next.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__iterator/concepts.h> // IWYU pragma: keep
+#include <cuda/std/__iterator/next.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -45,7 +44,7 @@ struct __unwrap_range_impl
   _CCCL_API static constexpr auto __unwrap(_Iter __first, _Sent __sent)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
-    auto __last = ranges::next(__first, __sent);
+    auto __last = ::cuda::std::ranges::next(__first, __sent);
     return pair{::cuda::std::__unwrap_iter(::cuda::std::move(__first)),
                 ::cuda::std::__unwrap_iter(::cuda::std::move(__last))};
   }

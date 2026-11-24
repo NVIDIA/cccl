@@ -16,19 +16,17 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <cuda/std/__cccl/execution_space.h>
-
-#include <algorithm> // for std::min and std::max
-#include <limits>
 
 namespace cuda::experimental::stf::reducer
 {
@@ -59,12 +57,12 @@ class maxval
 public:
   static __host__ __device__ void init_op(T& dst)
   {
-    dst = ::std::numeric_limits<T>::lowest();
+    dst = ::cuda::std::numeric_limits<T>::lowest();
   }
 
   static __host__ __device__ void apply_op(T& dst, const T& src)
   {
-    dst = ::std::max(dst, src);
+    dst = ::cuda::std::max(dst, src);
   }
 };
 
@@ -77,12 +75,12 @@ class minval
 public:
   static __host__ __device__ void init_op(T& dst)
   {
-    dst = ::std::numeric_limits<T>::max();
+    dst = ::cuda::std::numeric_limits<T>::max();
   }
 
   static __host__ __device__ void apply_op(T& dst, const T& src)
   {
-    dst = ::std::min(dst, src);
+    dst = ::cuda::std::min(dst, src);
   }
 };
 

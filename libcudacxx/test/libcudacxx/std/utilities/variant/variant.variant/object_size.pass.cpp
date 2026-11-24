@@ -19,14 +19,14 @@ using cuda::std::variant;
 
 int main(int, char**)
 {
-  static_assert(sizeof(variant<char>) == 2 * sizeof(char), "");
-  static_assert(sizeof(variant<short>) == 2 * sizeof(short), "");
-  static_assert(sizeof(variant<int>) == 2 * sizeof(int), "");
-  static_assert(sizeof(variant<long long>) == 2 * sizeof(long long), "");
+  static_assert(sizeof(variant<char>) == 2 * sizeof(char));
+  static_assert(sizeof(variant<short>) == 2 * sizeof(short));
+  static_assert(sizeof(variant<int>) == 2 * sizeof(int));
+  static_assert(sizeof(variant<long long>) == 2 * sizeof(long long));
 
-  static_assert(sizeof(variant<char, char>) == 2 * sizeof(char), "");
-  static_assert(sizeof(variant<char, short>) == 2 * sizeof(short), "");
-  static_assert(sizeof(variant<char, int>) == 2 * sizeof(int), "");
-  static_assert(sizeof(variant<char, long long>) == 2 * sizeof(long long), "");
+  static_assert(sizeof(variant<char, char>) == 2 * sizeof(char));
+  static_assert(sizeof(variant<char, short>) == 2 * sizeof(short));
+  static_assert(sizeof(variant<char, int>) == 2 * sizeof(int));
+  static_assert(sizeof(variant<char, long long>) == 2 * sizeof(long long));
   return 0;
 }

@@ -5,6 +5,8 @@
 
 ``shared_memory`` ``mdspan`` and ``accessor`` allow to express multi-dimensional views of the CUDA shared memory space and provide additional safety checks and performance optimizations.
 
+Defined in the ``<cuda/mdspan>`` header.
+
 Types and Traits
 ----------------
 

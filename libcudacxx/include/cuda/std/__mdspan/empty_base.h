@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,15 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -95,7 +105,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco;
 template <class _Elem1>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, _Elem1>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
@@ -126,7 +136,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, 
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(is_nothrow_swappable_v<_Elem1>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
   }
@@ -137,8 +147,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     : __mdspan_ebco_impl<0, _Elem1>
     , __mdspan_ebco_impl<1, _Elem2>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
@@ -149,6 +159,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
       , __base2()
   {}
 
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(const __mdspan_ebco&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(__mdspan_ebco&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(const __mdspan_ebco&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(__mdspan_ebco&&)      = default;
+
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
     is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>;
@@ -157,13 +172,17 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
+  // The converting constructor's constraint __is_constructible_from_one_arg<const __mdspan_ebco&> creates a circular
+  // dependency in C++20 concepts evaluation on Clang
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
-  _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
+  _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -211,7 +230,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -224,9 +244,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     , __mdspan_ebco_impl<1, _Elem2>
     , __mdspan_ebco_impl<2, _Elem3>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
-  using __base3 = __mdspan_ebco_impl<2, _Elem3>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
+  using __base3 _CCCL_NODEBUG = __mdspan_ebco_impl<2, _Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
@@ -240,6 +260,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
       , __base3()
   {}
 
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(const __mdspan_ebco&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(__mdspan_ebco&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(const __mdspan_ebco&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(__mdspan_ebco&&)      = default;
+
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
     is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2> && is_default_constructible_v<_Elem3>;
@@ -249,14 +274,16 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
     && is_nothrow_default_constructible_v<_Elem3>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
-  _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
+  _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -333,7 +360,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2> && is_nothrow_swappable_v<_Elem3>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -342,6 +370,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

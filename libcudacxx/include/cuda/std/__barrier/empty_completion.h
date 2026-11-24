@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __empty_completion
 {
-  _CCCL_API constexpr void operator()() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void operator()() noexcept {}
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

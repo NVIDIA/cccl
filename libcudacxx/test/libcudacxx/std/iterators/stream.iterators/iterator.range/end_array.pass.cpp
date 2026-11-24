@@ -19,8 +19,9 @@
 int main(int, char**)
 {
   int ia[] = {1, 2, 3};
-  int* i   = cuda::std::begin(ia);
-  int* e   = cuda::std::end(ia);
+
+  int* i = cuda::std::begin(ia);
+  int* e = cuda::std::end(ia);
   assert(e == ia + 3);
   assert(e - i == 3);
 

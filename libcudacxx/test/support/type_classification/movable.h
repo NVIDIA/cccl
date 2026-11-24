@@ -48,83 +48,81 @@ struct has_function_ref_member
 
 struct cpp03_friendly
 {
-  __host__ __device__ cpp03_friendly(cpp03_friendly const&);
-  __host__ __device__ cpp03_friendly& operator=(cpp03_friendly const&);
+  TEST_FUNC cpp03_friendly(cpp03_friendly const&);
+  TEST_FUNC cpp03_friendly& operator=(cpp03_friendly const&);
 };
 
 struct const_move_ctor
 {
-  __host__ __device__ const_move_ctor(const_move_ctor const&&);
-  __host__ __device__ const_move_ctor& operator=(const_move_ctor&&);
+  TEST_FUNC const_move_ctor(const_move_ctor const&&);
+  TEST_FUNC const_move_ctor& operator=(const_move_ctor&&);
 };
 
 struct volatile_move_ctor
 {
-  __host__ __device__ volatile_move_ctor(volatile_move_ctor volatile&&);
-  __host__ __device__ volatile_move_ctor& operator=(volatile_move_ctor&&);
+  TEST_FUNC volatile_move_ctor(volatile_move_ctor volatile&&);
+  TEST_FUNC volatile_move_ctor& operator=(volatile_move_ctor&&);
 };
 
 struct cv_move_ctor
 {
-  __host__ __device__ cv_move_ctor(cv_move_ctor const volatile&&);
-  __host__ __device__ cv_move_ctor& operator=(cv_move_ctor&&);
+  TEST_FUNC cv_move_ctor(cv_move_ctor const volatile&&);
+  TEST_FUNC cv_move_ctor& operator=(cv_move_ctor&&);
 };
 
 struct multi_param_move_ctor
 {
-  __host__ __device__ multi_param_move_ctor(multi_param_move_ctor&&, int = 0);
-  __host__ __device__ multi_param_move_ctor& operator=(multi_param_move_ctor&&);
+  TEST_FUNC multi_param_move_ctor(multi_param_move_ctor&&, int = 0);
+  TEST_FUNC multi_param_move_ctor& operator=(multi_param_move_ctor&&);
 };
 
 struct not_quite_multi_param_move_ctor
 {
-  __host__ __device__ not_quite_multi_param_move_ctor(not_quite_multi_param_move_ctor&&, int);
-  __host__ __device__ not_quite_multi_param_move_ctor& operator=(not_quite_multi_param_move_ctor&&);
+  TEST_FUNC not_quite_multi_param_move_ctor(not_quite_multi_param_move_ctor&&, int);
+  TEST_FUNC not_quite_multi_param_move_ctor& operator=(not_quite_multi_param_move_ctor&&);
 };
 
 struct copy_with_mutable_parameter
 {
-  __host__ __device__ copy_with_mutable_parameter(copy_with_mutable_parameter&);
-  __host__ __device__ copy_with_mutable_parameter& operator=(copy_with_mutable_parameter&);
+  TEST_FUNC copy_with_mutable_parameter(copy_with_mutable_parameter&);
+  TEST_FUNC copy_with_mutable_parameter& operator=(copy_with_mutable_parameter&);
 };
 
 struct const_move_assignment
 {
-  __host__ __device__ const_move_assignment& operator=(const_move_assignment&&) const;
+  TEST_FUNC const_move_assignment& operator=(const_move_assignment&&) const;
 };
 
 struct volatile_move_assignment
 {
-  __host__ __device__ const_move_assignment& operator=(const_move_assignment&&) volatile;
+  TEST_FUNC const_move_assignment& operator=(const_move_assignment&&) volatile;
 };
 
 struct cv_move_assignment
 {
-  __host__ __device__ cv_move_assignment& operator=(cv_move_assignment&&) const volatile;
+  TEST_FUNC cv_move_assignment& operator=(cv_move_assignment&&) const volatile;
 };
 
 struct const_move_assign_and_traditional_move_assign
 {
-  __host__ __device__ const_move_assign_and_traditional_move_assign&
-  operator=(const_move_assign_and_traditional_move_assign&&);
-  __host__ __device__ const_move_assign_and_traditional_move_assign&
+  TEST_FUNC const_move_assign_and_traditional_move_assign& operator=(const_move_assign_and_traditional_move_assign&&);
+  TEST_FUNC const_move_assign_and_traditional_move_assign&
   operator=(const_move_assign_and_traditional_move_assign&&) const;
 };
 
 struct volatile_move_assign_and_traditional_move_assign
 {
-  __host__ __device__ volatile_move_assign_and_traditional_move_assign&
+  TEST_FUNC volatile_move_assign_and_traditional_move_assign&
   operator=(volatile_move_assign_and_traditional_move_assign&&);
-  __host__ __device__ volatile_move_assign_and_traditional_move_assign&
+  TEST_FUNC volatile_move_assign_and_traditional_move_assign&
   operator=(volatile_move_assign_and_traditional_move_assign&&) volatile;
 };
 
 struct cv_move_assign_and_traditional_move_assign
 {
-  __host__ __device__ cv_move_assign_and_traditional_move_assign&
-  operator=(cv_move_assign_and_traditional_move_assign&&);
-  __host__ __device__ cv_move_assign_and_traditional_move_assign&
-  operator=(cv_move_assign_and_traditional_move_assign&&) const volatile;
+  TEST_FUNC cv_move_assign_and_traditional_move_assign& operator=(cv_move_assign_and_traditional_move_assign&&);
+  TEST_FUNC cv_move_assign_and_traditional_move_assign& operator=(cv_move_assign_and_traditional_move_assign&&) const
+    volatile;
 };
 
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
@@ -135,7 +133,7 @@ struct const_move_assign_and_default_ops
   const_move_assign_and_default_ops(const_move_assign_and_default_ops&&)                 = default;
   const_move_assign_and_default_ops& operator=(const_move_assign_and_default_ops const&) = default;
   const_move_assign_and_default_ops& operator=(const_move_assign_and_default_ops&&)      = default;
-  __host__ __device__ const_move_assign_and_default_ops& operator=(const_move_assign_and_default_ops&&) const;
+  TEST_FUNC const_move_assign_and_default_ops& operator=(const_move_assign_and_default_ops&&) const;
 };
 
 struct volatile_move_assign_and_default_ops
@@ -144,7 +142,7 @@ struct volatile_move_assign_and_default_ops
   volatile_move_assign_and_default_ops(volatile_move_assign_and_default_ops&&)                 = default;
   volatile_move_assign_and_default_ops& operator=(volatile_move_assign_and_default_ops const&) = default;
   volatile_move_assign_and_default_ops& operator=(volatile_move_assign_and_default_ops&&)      = default;
-  __host__ __device__ volatile_move_assign_and_default_ops& operator=(volatile_move_assign_and_default_ops&&) volatile;
+  TEST_FUNC volatile_move_assign_and_default_ops& operator=(volatile_move_assign_and_default_ops&&) volatile;
 };
 
 struct cv_move_assign_and_default_ops
@@ -153,18 +151,17 @@ struct cv_move_assign_and_default_ops
   cv_move_assign_and_default_ops(cv_move_assign_and_default_ops&&)                 = default;
   cv_move_assign_and_default_ops& operator=(cv_move_assign_and_default_ops const&) = default;
   cv_move_assign_and_default_ops& operator=(cv_move_assign_and_default_ops&&)      = default;
-  __host__ __device__ cv_move_assign_and_default_ops& operator=(cv_move_assign_and_default_ops&&) const volatile;
+  TEST_FUNC cv_move_assign_and_default_ops& operator=(cv_move_assign_and_default_ops&&) const volatile;
 };
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct deleted_assignment_from_const_rvalue
 {
-  __host__ __device__ deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue const&);
-  __host__ __device__ deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue&&);
-  __host__ __device__ deleted_assignment_from_const_rvalue& operator=(const deleted_assignment_from_const_rvalue&);
-  __host__ __device__ deleted_assignment_from_const_rvalue& operator=(deleted_assignment_from_const_rvalue&&);
-  __host__ __device__ deleted_assignment_from_const_rvalue&
-  operator=(const deleted_assignment_from_const_rvalue&&) = delete;
+  TEST_FUNC deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue const&);
+  TEST_FUNC deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue&&);
+  TEST_FUNC deleted_assignment_from_const_rvalue& operator=(const deleted_assignment_from_const_rvalue&);
+  TEST_FUNC deleted_assignment_from_const_rvalue& operator=(deleted_assignment_from_const_rvalue&&);
+  TEST_FUNC deleted_assignment_from_const_rvalue& operator=(const deleted_assignment_from_const_rvalue&&) = delete;
 };
 
 #endif // TEST_SUPPORT_TYPE_CLASSIFICATION_MOVABLE_H

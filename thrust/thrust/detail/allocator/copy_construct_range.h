@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,15 +16,15 @@
 #include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/tuple>
@@ -51,7 +38,7 @@ struct copy_construct_with_allocator
   Allocator& a;
 
   template <typename Tuple>
-  inline _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);
@@ -79,7 +66,7 @@ inline constexpr bool needs_copy_construct_via_allocator<std::allocator<U>, T> =
 //     perhaps generic::uninitialized_copy could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
+_CCCL_HOST_DEVICE_API Pointer uninitialized_copy_with_allocator(
   Allocator& a,
   const thrust::execution_policy<FromSystem>& from_system,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -93,8 +80,8 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
     using IteratorTuple = ::cuda::std::tuple<InputIterator, Pointer>;
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-    ZipIterator begin = thrust::make_zip_iterator(first, result);
-    ZipIterator end   = begin;
+    const ZipIterator begin = thrust::make_zip_iterator(first, result);
+    ZipIterator end         = begin;
 
     // get a zip_iterator pointing to the end
     const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);
@@ -124,7 +111,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
 //     perhaps generic::uninitialized_copy_n could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
+_CCCL_HOST_DEVICE_API Pointer uninitialized_copy_with_allocator_n(
   Allocator& a,
   const thrust::execution_policy<FromSystem>& from_system,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -161,10 +148,11 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
 }
 
 template <typename System, typename Allocator, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE Pointer copy_construct_range(
+_CCCL_HOST_DEVICE_API Pointer copy_construct_range(
   thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, InputIterator last, Pointer result)
 {
-  if constexpr (needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>)
+  if constexpr (needs_copy_construct_via_allocator<Allocator,
+                                                   typename ::cuda::std::pointer_traits<Pointer>::element_type>)
   {
     return uninitialized_copy_with_allocator(a, from_system, allocator_system<Allocator>::get(a), first, last, result);
   }
@@ -176,10 +164,11 @@ _CCCL_HOST_DEVICE Pointer copy_construct_range(
 }
 
 template <typename System, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE Pointer copy_construct_range_n(
+_CCCL_HOST_DEVICE_API Pointer copy_construct_range_n(
   thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
 {
-  if constexpr (needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>)
+  if constexpr (needs_copy_construct_via_allocator<Allocator,
+                                                   typename ::cuda::std::pointer_traits<Pointer>::element_type>)
   {
     return uninitialized_copy_with_allocator_n(a, from_system, allocator_system<Allocator>::get(a), first, n, result);
   }

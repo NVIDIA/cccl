@@ -11,7 +11,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 template <class _Arg, class _Result>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED unary_function
@@ -43,16 +43,17 @@ struct __unary_function_keep_layout_base
 #endif
 };
 
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Arg, class _Result>
-using __unary_function = unary_function<_Arg, _Result>;
+using __unary_function _CCCL_NODEBUG = unary_function<_Arg, _Result>;
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #else
 template <class _Arg, class _Result>
-using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;
+using __unary_function _CCCL_NODEBUG = __unary_function_keep_layout_base<_Arg, _Result>;
 #endif // !_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 _CCCL_END_NAMESPACE_CUDA_STD

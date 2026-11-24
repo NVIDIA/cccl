@@ -35,7 +35,7 @@ struct Wrapped
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_default_constructible<Wrapped::Inner>::value, "");
+  static_assert(cuda::std::is_default_constructible<Wrapped::Inner>::value);
   Wrapped w;
   w.inner.emplace();
   assert(w.inner.has_value());

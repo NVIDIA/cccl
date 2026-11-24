@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,10 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HAS_BUILTIN(__is_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15)
+#  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

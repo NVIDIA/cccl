@@ -17,12 +17,12 @@ using namespace cuda::experimental::stf;
 
 __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
 {
-  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned int threadid = (blockIdx.x * blockDim.x) + threadIdx.x;
   while (threadid < reserved::kHashTableCapacity)
   {
     if (B.addr[threadid].key != reserved::kEmpty)
     {
-      uint32_t value = B.addr[threadid].value;
+      const uint32_t value = B.addr[threadid].value;
       if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);

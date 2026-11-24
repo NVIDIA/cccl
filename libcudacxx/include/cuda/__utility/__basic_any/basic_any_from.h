@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,26 +36,30 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! a pointer or a reference to the full `__basic_any` object.
 //!
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept -> __basic_any<_Super>&&
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto
+__basic_any_from(_Interface<_Super>&& __self) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+  -> __basic_any<_Super>&&
 {
   return static_cast<__basic_any<_Super>&&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>& __self) noexcept -> __basic_any<_Super>&
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __basic_any_from(_Interface<_Super>& __self) noexcept
+  -> __basic_any<_Super>&
 {
   return static_cast<__basic_any<_Super>&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
   -> __basic_any<_Super> const&
 {
   return static_cast<__basic_any<_Super> const&>(__self);
 }
 
 template <template <class...> class _Interface>
-[[nodiscard]] _CCCL_API auto __basic_any_from(_Interface<> const&) noexcept -> __basic_any<_Interface<>> const&
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __basic_any_from(_Interface<> const&) noexcept
+  -> __basic_any<_Interface<>> const&
 {
   // This overload is selected when called from the thunk of an unspecialized
   // interface; e.g., `icat<>` rather than `icat<ialley_cat<>>`. The thunks of
@@ -64,20 +68,22 @@ template <template <class...> class _Interface>
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>* __self) noexcept -> __basic_any<_Super>*
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __basic_any_from(_Interface<_Super>* __self) noexcept
+  -> __basic_any<_Super>*
 {
   return static_cast<__basic_any<_Super>*>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
   -> __basic_any<_Super> const*
 {
   return static_cast<__basic_any<_Super> const*>(__self);
 }
 
 template <template <class...> class _Interface>
-[[nodiscard]] _CCCL_API auto __basic_any_from(_Interface<> const*) noexcept -> __basic_any<_Interface<>> const*
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __basic_any_from(_Interface<> const*) noexcept
+  -> __basic_any<_Interface<>> const*
 {
   // See comment above about the use of `__basic_any_from` in the thunks of
   // unspecialized interfaces.
@@ -85,10 +91,10 @@ template <template <class...> class _Interface>
 }
 
 template <class _CvInterface>
-using __cvref_basic_any_from_t = decltype(::cuda::__basic_any_from(::cuda::std::declval<_CvInterface>()));
+using __cvref_basic_any_from_t _CCCL_NODEBUG = decltype(::cuda::__basic_any_from(::cuda::std::declval<_CvInterface>()));
 
 template <class _CvInterface>
-using __basic_any_from_t = ::cuda::std::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
+using __basic_any_from_t _CCCL_NODEBUG = ::cuda::std::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

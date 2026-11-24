@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // A user defined formatter using
@@ -33,7 +36,7 @@ template <class CharT>
 struct cuda::std::formatter<color, CharT> : cuda::std::formatter<const char*, CharT>
 {
   template <class Context>
-  __host__ __device__ auto format(color c, Context& ctx) const
+  TEST_HOST_DEVICE_FUNC auto format(color c, Context& ctx) const
   {
     const CharT* color_names[]{TEST_STRLIT(CharT, "black"), TEST_STRLIT(CharT, "red"), TEST_STRLIT(CharT, "gold")};
     return cuda::std::formatter<const CharT*>::format(color_names[static_cast<int>(c)], ctx);
@@ -41,7 +44,7 @@ struct cuda::std::formatter<color, CharT> : cuda::std::formatter<const char*, Ch
 };
 
 template <class CharT>
-__host__ __device__ void test_handle(
+TEST_HOST_DEVICE_FUNC void test_handle(
   cuda::std::basic_string_view<CharT> fmt,
   color value,
   cuda::std::size_t offset,
@@ -73,7 +76,7 @@ __host__ __device__ void test_handle(
 }
 
 template <class CharT>
-__host__ __device__ void test_termination_condition(
+TEST_HOST_DEVICE_FUNC void test_termination_condition(
   cuda::std::basic_string_view<CharT> fmt, color value, cuda::std::basic_string_view<CharT> expected)
 {
   // The format-spec is valid if completely consumed or terminates at a '}'.
@@ -88,14 +91,14 @@ __host__ __device__ void test_termination_condition(
 }
 
 template <class CharT>
-__host__ __device__ void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_termination_condition<CharT>(TEST_STRLIT(CharT, "}"), color::black, TEST_STRLIT(CharT, "black"));
   test_termination_condition<CharT>(TEST_STRLIT(CharT, "}"), color::red, TEST_STRLIT(CharT, "red"));
   test_termination_condition<CharT>(TEST_STRLIT(CharT, "}"), color::gold, TEST_STRLIT(CharT, "gold"));
 }
 
-__host__ __device__ bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_WCHAR_T()

@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-80
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/barrier>
 
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ void test(bool add_delay = false)
+TEST_HOST_DEVICE_FUNC void test(bool add_delay = false)
 {
   Selector<Barrier, Initializer> sel;
   SHARED Barrier* b;

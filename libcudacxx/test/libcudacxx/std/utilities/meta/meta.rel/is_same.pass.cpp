@@ -15,41 +15,41 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_is_same()
+TEST_FUNC void test_is_same()
 {
-  static_assert((cuda::std::is_same<T, U>::value), "");
-  static_assert((!cuda::std::is_same<const T, U>::value), "");
-  static_assert((!cuda::std::is_same<T, const U>::value), "");
-  static_assert((cuda::std::is_same<const T, const U>::value), "");
-  static_assert((cuda::std::is_same_v<T, U>), "");
-  static_assert((!cuda::std::is_same_v<const T, U>), "");
-  static_assert((!cuda::std::is_same_v<T, const U>), "");
-  static_assert((cuda::std::is_same_v<const T, const U>), "");
+  static_assert((cuda::std::is_same<T, U>::value));
+  static_assert((!cuda::std::is_same<const T, U>::value));
+  static_assert((!cuda::std::is_same<T, const U>::value));
+  static_assert((cuda::std::is_same<const T, const U>::value));
+  static_assert((cuda::std::is_same_v<T, U>) );
+  static_assert((!cuda::std::is_same_v<const T, U>) );
+  static_assert((!cuda::std::is_same_v<T, const U>) );
+  static_assert((cuda::std::is_same_v<const T, const U>) );
 }
 
 template <class T, class U>
-__host__ __device__ void test_is_same_ref()
+TEST_FUNC void test_is_same_ref()
 {
-  static_assert((cuda::std::is_same<T, U>::value), "");
-  static_assert((cuda::std::is_same<const T, U>::value), "");
-  static_assert((cuda::std::is_same<T, const U>::value), "");
-  static_assert((cuda::std::is_same<const T, const U>::value), "");
-  static_assert((cuda::std::is_same_v<T, U>), "");
-  static_assert((cuda::std::is_same_v<const T, U>), "");
-  static_assert((cuda::std::is_same_v<T, const U>), "");
-  static_assert((cuda::std::is_same_v<const T, const U>), "");
+  static_assert((cuda::std::is_same<T, U>::value));
+  static_assert((cuda::std::is_same<const T, U>::value));
+  static_assert((cuda::std::is_same<T, const U>::value));
+  static_assert((cuda::std::is_same<const T, const U>::value));
+  static_assert((cuda::std::is_same_v<T, U>) );
+  static_assert((cuda::std::is_same_v<const T, U>) );
+  static_assert((cuda::std::is_same_v<T, const U>) );
+  static_assert((cuda::std::is_same_v<const T, const U>) );
 }
 
 template <class T, class U>
-__host__ __device__ void test_is_not_same()
+TEST_FUNC void test_is_not_same()
 {
-  static_assert((!cuda::std::is_same<T, U>::value), "");
+  static_assert((!cuda::std::is_same<T, U>::value));
 }
 
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 int main(int, char**)

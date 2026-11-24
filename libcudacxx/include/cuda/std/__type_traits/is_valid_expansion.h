@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,7 +32,7 @@ template <template <class...> class, class...>
 _CCCL_API inline false_type __sfinae_test_impl(...);
 
 template <template <class...> class _Templ, class... _Args>
-using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::__sfinae_test_impl<_Templ, _Args...>(0));
+using _IsValidExpansion _CCCL_NODEBUG = decltype(::cuda::std::__sfinae_test_impl<_Templ, _Args...>(0));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

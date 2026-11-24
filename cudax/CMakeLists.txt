@@ -13,6 +13,7 @@ option(
 )
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
 option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's examples." ON)
+option(cudax_ENABLE_PLACES "Enable standalone Places subproject" ON)
 option(cudax_ENABLE_CUDASTF "Enable CUDASTF subproject" ON)
 option(
   cudax_ENABLE_CUDASTF_CODE_GENERATION
@@ -30,6 +31,55 @@ option(
   OFF
 )
 option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
+
+cccl_get_nccl(QUIET)
+
+option(
+  cudax_ENABLE_NCCL
+  "Enable cudax targets that link against NCCL."
+  "${NCCL_FOUND}"
+)
+
+# TODO(jfaibussowit):
+#
+# Remove this once NCCL supports windows and we have added NCCL to the NVHPC
+# devcontainers.
+macro(hack_cudax_handle_missing_nccl)
+  if (NOT cudax_ENABLE_NCCL)
+    message(
+      AUTHOR_WARNING
+      "Function should only be called if we have requested NCCL, this is a developer error"
+    )
+  endif()
+
+  option(
+    HACK_cudax_ALLOW_MISSING_NCCL
+    "Hack to work around CI issues since NCCL does not (yet) officially support Windows"
+    TRUE
+  )
+
+  if (NCCL_FOUND)
+    # If we have somehow already found NCCL (e.g. they have shipped support but we have
+    # forgotten to remove this function), then we have nothing to do. We still call
+    # cccl_get_nccl() though because we want the found version to appear in the logs. The
+    # previous call was with QUIET which won't do that.
+    cccl_get_nccl(REQUIRED)
+  elseif (HACK_cudax_ALLOW_MISSING_NCCL)
+    set(cudax_ENABLE_NCCL FALSE)
+    set(cudax_ENABLE_NCCL FALSE CACHE BOOL "" FORCE)
+  else()
+    # This will cause a hard error
+    cccl_get_nccl(REQUIRED)
+  endif()
+endmacro()
+
+if (cudax_ENABLE_NCCL)
+  if (WIN32 OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVHPC"))
+    hack_cudax_handle_missing_nccl()
+  else()
+    cccl_get_nccl(REQUIRED)
+  endif()
+endif()
 
 if (cudax_ENABLE_CUFILE)
   if (WIN32)
@@ -69,6 +119,9 @@ if (
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
+if (cudax_ENABLE_PLACES)
+  include(cmake/cudaxPlacesConfigureTarget.cmake)
+endif()
 if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()

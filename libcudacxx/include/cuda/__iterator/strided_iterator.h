@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -49,10 +51,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @tparam _Stride Either an <a href="https://eel.is/c++draft/iterator.concept.winc#4">integer-like</a> or an
 //! <a href="https://eel.is/c++draft/views.contiguous#concept:integral-constant-like">integral-constant-like</a>
 //! specifying the stride
-template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
+template <class _Iter, class _Stride>
 class strided_iterator
 {
-private:
   static_assert(::cuda::std::__has_random_access_traversal<_Iter>,
                 "The iterator underlying a strided_iterator must be a random access iterator.");
   static_assert(::cuda::std::__integer_like<_Stride> || ::cuda::std::__integral_constant_like<_Stride>,
@@ -240,26 +241,33 @@ public:
     return *this;
   }
 
+  template <class _Iter2>
+  static constexpr bool __nothrow_plus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter2>
+    && noexcept(::cuda::std::declval<const _Iter2&>() + difference_type());
+
   //! @brief Returns a copy of a @c strided_iterator incremented by a given number of steps
   //! @param __iter The @c strided_iterator to advance
   //! @param __n The number of steps to increment
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator+(const strided_iterator& __iter, difference_type __n) noexcept(
-    ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() + __n))
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator
+  operator+(const strided_iterator& __iter, difference_type __n) noexcept(__nothrow_plus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() + (__iter.stride() * __n), __iter.__stride()};
   }
 
   //! @brief Returns a copy of a @c strided_iterator incremented by a given number of steps
   //! @param __n The number of steps to increment
   //! @param __iter The @c strided_iterator to advance
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator+(difference_type __n, const strided_iterator& __iter) noexcept(
-    ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() + __n))
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator
+  operator+(difference_type __n, const strided_iterator& __iter) noexcept(__nothrow_plus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() + (__iter.stride() * __n), __iter.__stride()};
   }
 
   //! @brief Decrements a @c strided_iterator by a given number of steps
@@ -273,15 +281,21 @@ public:
     return *this;
   }
 
+  template <class _Iter2>
+  static constexpr bool __nothrow_minus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter2>
+    && noexcept(::cuda::std::declval<const _Iter2&>() - difference_type());
+
   //! @brief Returns a copy of a @c strided_iterator decremented by a given number of steps
   //! @param __n The number of steps to decrement
   //! @param __iter The @c strided_iterator to decrement
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator-(const strided_iterator& __iter, difference_type __n) noexcept(
-    ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() - __n))
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator
+  operator-(const strided_iterator& __iter, difference_type __n) noexcept(__nothrow_minus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() - __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() - (__iter.stride() * __n), __iter.__stride()};
   }
 
   template <class _Iter2, class _OtherIter>
@@ -386,8 +400,10 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Iter, typename _Stride>
-_CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c strided_iterator from a random access iterator
 //! @param __iter The random_access iterator

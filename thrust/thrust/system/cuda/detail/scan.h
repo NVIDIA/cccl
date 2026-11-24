@@ -1,34 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,14 +17,19 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_scan.cuh>
+#  include <cub/detail/input_value.cuh>
+#  include <cub/detail/it_traits.cuh>
+#  include <cub/device/dispatch/dispatch_common.cuh>
+#  include <cub/device/dispatch/dispatch_scan.cuh> // IWYU pragma: keep
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
@@ -60,13 +42,10 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
-  using AccumT     = thrust::detail::it_value_t<InputIt>;
-  using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
-
+  using AccumT        = thrust::detail::it_value_t<InputIt>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -79,10 +58,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -95,10 +75,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -111,7 +92,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename InitValueT, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -119,15 +100,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::it_value_t<InputIt>;
-  using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
-
-  using Dispatch32 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, AccumT, cub::ForceInclusive::Yes>;
-  using Dispatch64 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, AccumT, cub::ForceInclusive::Yes>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
+  using ValueT        = cub::detail::it_value_t<InputIt>;
+  using AccumT        = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -140,10 +115,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -156,10 +132,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -172,7 +149,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename InitValueT, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -180,10 +157,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, InitValueT>;
-  using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, InitValueT>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -196,10 +170,11 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -212,10 +187,11 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching exclusive_scan kernel");
@@ -232,7 +208,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 //-------------------------
 
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -248,7 +224,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
   THRUST_CDP_DISPATCH(
@@ -258,7 +234,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, ScanOp scan_op)
 {
   using diff_t           = thrust::detail::it_difference_t<InputIt>;
@@ -267,7 +243,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -281,7 +257,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-_CCCL_HOST_DEVICE OutputIt
+_CCCL_HOST_DEVICE_API OutputIt
 inclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   return thrust::cuda_cub::inclusive_scan(policy, first, last, result, ::cuda::std::plus<>{});
@@ -289,7 +265,7 @@ inclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -305,7 +281,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -319,14 +295,14 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, T init)
 {
   return thrust::cuda_cub::exclusive_scan(policy, first, last, result, init, ::cuda::std::plus<>{});
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-_CCCL_HOST_DEVICE OutputIt
+_CCCL_HOST_DEVICE_API OutputIt
 exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using init_type = thrust::detail::it_value_t<InputIt>;
@@ -335,6 +311,6 @@ exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/scan.h>
+#  include <thrust/scan.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

@@ -27,8 +27,12 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,22 +40,36 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/cassert>
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
-#include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-#include <optional>
 #include <queue>
 #include <sstream>
-#include <stack>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 //! \file
 //!
@@ -106,7 +124,7 @@ struct per_vertex_info
   //! text associated to the vertex
   ::std::string label;
   //! measured duration of the vertex
-  ::std::optional<float> timing;
+  ::cuda::std::optional<float> timing;
   //! is that a task, fence or prereq ?
   vertex_type type;
 
@@ -141,8 +159,8 @@ public:
   dot_section(::std::string sym)
       : symbol(mv(sym))
   {
-    static_assert(::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
-    static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
   //! RAII guard class for managing DOT section lifecycle
@@ -164,7 +182,7 @@ public:
     // Move constructor: transfer ownership and disable the moved-from guard.
     guard(guard&& other) noexcept
         : pc(mv(other.pc))
-        , active(::std::exchange(other.active, false))
+        , active(::cuda::std::exchange(other.active, false))
     {}
 
     // Move assignment, disable the moved-from guard
@@ -180,7 +198,7 @@ public:
         }
         // Transfer ownership
         pc     = mv(other.pc);
-        active = ::std::exchange(other.active, false);
+        active = ::cuda::std::exchange(other.active, false);
       }
       return *this;
     }
@@ -262,7 +280,7 @@ public:
   ::std::string symbol;
 
 private:
-  int depth = ::std::numeric_limits<int>::min();
+  int depth = ::cuda::std::numeric_limits<int>::min();
 
   // An identifier for that section. This is movable, but non
   // copyable, but we manipulate section by the means of shared_ptr.
@@ -311,7 +329,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m = metadata[unique_id];
     m.color = "red";
@@ -386,7 +404,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     set_current_color_by_device(guard);
 
@@ -412,7 +430,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
@@ -447,7 +465,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (is_discarded(id_from, guard) || is_discarded(id_to, guard))
     {
@@ -475,7 +493,7 @@ public:
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (!tracing_enabled)
     {
@@ -540,27 +558,40 @@ public:
     }
   }
 
+  //! @brief Records task timing metadata without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time_ms The task duration in milliseconds.
+  //! @param[in] device The device that executed the task, or `-1` if unspecified.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
+  void add_vertex_timing(const task_type& t,
+                         float time_ms,
+                         [[maybe_unused]] int device            = -1,
+                         const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
-
-    if (!tracing_enabled)
+    // Timing metadata is diagnostic only; allocation or locking failures must
+    // not interfere with task teardown.
+    ON_THROW(notify, loc)
     {
-      return;
-    }
+      ::std::scoped_lock guard(mtx);
 
-    // Save timing information for this task
-    metadata[t.get_unique_id()].timing = time_ms;
+      if (!tracing_enabled)
+      {
+        return;
+      }
+
+      // Save timing information for this task
+      metadata[t.get_unique_id()].timing = time_ms;
+    };
   }
 
-  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone did take a lock.
-  void set_current_color_by_device(::std::lock_guard<::std::mutex>&)
+  // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
+  void set_current_color_by_device(::std::scoped_lock<::std::mutex>&)
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      int dev;
-      cuda_safe_call(cudaGetDevice(&dev));
+      const int dev = cuda_try<cudaGetDevice>();
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
     }
@@ -572,7 +603,7 @@ public:
     {
       return;
     }
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
     current_color = color;
   }
 
@@ -592,7 +623,7 @@ public:
     discarded_tasks.insert(id);
   }
 
-  bool is_discarded(int id, ::std::lock_guard<::std::mutex>&) const
+  bool is_discarded(int id, ::std::scoped_lock<::std::mutex>&) const
   {
     return discarded_tasks.find(id) != discarded_tasks.end();
   }
@@ -683,18 +714,18 @@ private:
   //! - Proper critical path computation through nested contexts (even empty ones)
   //! - Clean visualization of context boundaries in the DAG
   //! - Correct dependency chaining between parent and child contexts
-  ::std::optional<int> proxy_start_unique_id;
-  ::std::optional<int> proxy_end_unique_id;
+  ::cuda::std::optional<int> proxy_start_unique_id;
+  ::cuda::std::optional<int> proxy_end_unique_id;
 };
 
-class dot : public reserved::meyers_singleton<dot>
+class dot : public ::cuda::experimental::meyers_singleton<dot>
 {
 public:
 
 protected:
   dot()
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     const char* filename = getenv("CUDASTF_DOT_FILE");
     if (!filename)
@@ -713,7 +744,20 @@ protected:
 
   ~dot()
   {
-    finish();
+    // A trace we failed to write is not worth terminating the program over, which is what
+    // an exception escaping a destructor would do.
+    _CCCL_TRY
+    {
+      finish();
+    }
+    _CCCL_CATCH (const ::std::exception& e)
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s: %s\n", dot_filename.c_str(), e.what());
+    }
+    _CCCL_CATCH_ALL
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s\n", dot_filename.c_str());
+    }
   }
 
 public:
@@ -735,7 +779,7 @@ public:
   // Add a context to the vector of contexts we need to depict in DOT
   void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     per_ctx.push_back(mv(pc));
   }
@@ -743,7 +787,7 @@ public:
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (dot_filename.empty())
     {
@@ -826,7 +870,7 @@ public:
     }
     else
     {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+      ::std::cerr << "Unable to open file: " << dot_filename << '\n';
     }
 
     const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
@@ -839,7 +883,7 @@ public:
         statsFile << "#nedges,nvertices,total_work,critical_path\n";
 
         // to display an optional value or NA
-        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+        auto formatOptional = [](const ::cuda::std::optional<float>& opt) -> ::std::string {
           return opt ? ::std::to_string(*opt) : "NA";
         };
 
@@ -850,7 +894,7 @@ public:
       }
       else
       {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+        ::std::cerr << "Unable to open file: " << stats_filename << '\n';
       }
     }
 
@@ -1457,8 +1501,8 @@ private:
       next = path_predecessor[next];
     }
 
-    outFile << "// T1 = " << t1 << ::std::endl;
-    outFile << "// Tinf = " << max_dist << ::std::endl;
+    outFile << "// T1 = " << t1 << '\n';
+    outFile << "// Tinf = " << max_dist << '\n';
 
     critical_path = max_dist;
     total_work    = t1;
@@ -1477,8 +1521,8 @@ private:
   ::std::string dot_filename;
 
   // Stats
-  ::std::optional<float> critical_path; // Tinf
-  ::std::optional<float> total_work; // T1
+  ::cuda::std::optional<float> critical_path; // Tinf
+  ::cuda::std::optional<float> total_work; // T1
   size_t edge_count;
   size_t vertex_count;
 
@@ -1518,7 +1562,7 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
   auto sec = ::std::make_shared<dot_section>(mv(symbol));
   int id   = sec->get_id();
 
-  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+  ::std::scoped_lock guard(pc->mtx);
 
   // Get parent section ID from stack (must have at least the context section)
   auto& section_stack = pc->section_id_stack;
@@ -1544,7 +1588,7 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
   }
 
   {
-    auto guard = ::std::lock_guard{pc->mtx};
+    auto guard = ::std::scoped_lock{pc->mtx};
 
     _CCCL_ASSERT(!pc->section_id_stack.empty(), "Cannot pop from empty section stack");
     pc->section_id_stack.pop_back();

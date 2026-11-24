@@ -1,0 +1,129 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++ in the CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD___SIMD_UTILITY_H
+#define _CUDA_STD___SIMD_UTILITY_H
+
+#include <cuda/std/detail/__config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/size.h>
+#include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/concepts.h>
+#include <cuda/std/__simd/flag.h>
+#include <cuda/std/__simd/type_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
+
+//----------------------------------------------------------------------------------------------------------------------
+// __can_generate_v
+
+template <typename _Tp, typename _From>
+inline constexpr bool __is_generator_result_v =
+  is_same_v<_Tp, bool> // bool is supported by mask only
+    ? is_same_v<_From, bool>
+    : (convertible_to<_From, _Tp> && (!is_arithmetic_v<_From> || __is_value_preserving_v<_From, _Tp>) );
+
+template <typename _Tp, typename _Generator, __simd_size_type _Idx, typename = void>
+inline constexpr bool __is_well_formed = false;
+
+template <typename _Tp, typename _Generator, __simd_size_type _Idx>
+inline constexpr bool
+  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>> =
+    __is_generator_result_v<_Tp, decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>;
+
+template <typename _Tp, typename _Generator, __simd_size_type... _Indices>
+[[nodiscard]]
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __can_generate(integer_sequence<__simd_size_type, _Indices...>) noexcept
+{
+  return (true && ... && __is_well_formed<_Tp, _Generator, _Indices>);
+}
+
+template <typename _Tp, typename _Generator, __simd_size_type _Size>
+inline constexpr bool __can_generate_v =
+  __can_generate<_Tp, _Generator>(make_integer_sequence<__simd_size_type, _Size>());
+
+//----------------------------------------------------------------------------------------------------------------------
+// __is_compatible_range_v
+
+template <typename _Range>
+inline constexpr auto __static_range_size_v = ::cuda::std::ranges::__static_size_impl_v<remove_reference_t<_Range>>;
+
+template <typename _Range>
+_CCCL_CONCEPT __has_static_size = __static_range_size_v<_Range> != dynamic_extent;
+
+// GCC 13 rejects partial specializations of member variable templates
+template <typename _Range>
+inline constexpr bool __is_compatible_range_guard_v =
+  __has_static_size<_Range> && ::cuda::std::ranges::contiguous_range<_Range>
+  && ::cuda::std::ranges::sized_range<_Range>;
+
+template <typename _Tp, __simd_size_type _Size, typename _Range, bool = __is_compatible_range_guard_v<_Range>>
+inline constexpr bool __is_compatible_range_v = false;
+
+template <typename _Tp, __simd_size_type _Size, typename _Range>
+inline constexpr bool __is_compatible_range_v<_Tp, _Size, _Range, true> =
+  (__static_range_size_v<_Range> == _Size) //
+  && __is_vectorizable_v<::cuda::std::ranges::range_value_t<_Range>> //
+  && __explicitly_convertible_to<::cuda::std::ranges::range_value_t<_Range>, _Tp>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// [simd.flags] alignment assertion for load/store pointers
+
+template <typename _Vec, typename _Up, typename... _Flags>
+_CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unused]] const volatile _Up* __data) noexcept
+{
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    if constexpr (__has_overaligned_flag_v<_Flags...>)
+    {
+      _CCCL_ASSERT(::cuda::is_aligned(__data, __overaligned_alignment_v<_Flags...>),
+                   "flag_overaligned<N> requires data to be aligned to N");
+    }
+    if constexpr (__has_aligned_flag_v<_Flags...>)
+    {
+      _CCCL_ASSERT(::cuda::is_aligned(__data, alignment_v<_Vec, remove_cv_t<_Up>>),
+                   "flag_aligned requires data to be aligned to alignment_v<V, range_value_t<R>>");
+    }
+    _CCCL_ASSERT(::cuda::is_aligned(__data, alignof(_Up)), "data is not aligned to alignof(_Up)");
+  }
+}
+
+// used in load/store preconditions
+// e.g. char3 doesn't work: alignof(char3) == 1, sizeof(char3) == 3
+template <typename _TpIn>
+inline constexpr bool __is_cuda_vectorizable_v =
+  ::cuda::is_trivially_copyable_v<_TpIn> && ::cuda::is_power_of_two(sizeof(_TpIn));
+
+_CCCL_END_NAMESPACE_CUDA_STD_SIMD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___SIMD_UTILITY_H

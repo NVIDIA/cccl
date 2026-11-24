@@ -16,7 +16,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -47,10 +47,10 @@ struct __cccl_select<true>
 };
 
 template <bool _Bp, class _Tp = void>
-using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
 
 template <class _Tp, bool _Bp>
-using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
@@ -60,9 +60,9 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-#  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)                , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND                          &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, __cccl_enable_if_t < __VA_ARGS__ && _CcclTrue, int > = 0 >
+#  define _CCCL_AND           &&_CcclTrue, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
@@ -92,7 +92,7 @@ template <class _Tp, class... _Args>
 extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
+using __cccl_requires_expr_impl _CCCL_NODEBUG = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
 template <typename _Tp>
 _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
@@ -149,11 +149,11 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // - _Satisfies(CONCEPT...) EXPR...
 //
 // The last 4 are handled below:
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires   _CCCL_PP_CASE(REQUIRES)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept   _CCCL_PP_CASE(NOEXCEPT)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename   _CCCL_PP_CASE(TYPENAME)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as   _CCCL_PP_CASE(SAME_AS)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Satisfies _CCCL_PP_CASE(SATISFIES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires   _CCCL_PP_CASE(_CCCL_SWITCH_REQUIRES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept   _CCCL_PP_CASE(_CCCL_SWITCH_NOEXCEPT)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename   _CCCL_PP_CASE(_CCCL_SWITCH_TYPENAME)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as   _CCCL_PP_CASE(_CCCL_SWITCH_SAME_AS)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Satisfies _CCCL_PP_CASE(_CCCL_SWITCH_SATISFIES)
 
 // Converts "requires(ARGS...)" to "ARGS..."
 #define _CCCL_CONCEPT_EAT_REQUIRES_(...)         _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_REQUIRES_, __VA_ARGS__)
@@ -168,10 +168,10 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_TYPENAME_typename(...) __VA_ARGS__
 
 // Converts "[typename]opt TYPE..." to "typename TYPE..."
-#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_(...)              _CCCL_PP_SWITCH2(_CCCL_CONCEPT_TRY_ADD_TYPENAME, __VA_ARGS__)
-#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_SWITCH_typename    _CCCL_PP_CASE(TYPENAME)
-#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_CASE_DEFAULT(...)  typename __VA_ARGS__
-#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_CASE_TYPENAME(...) __VA_ARGS__
+#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_(...)           _CCCL_PP_SWITCH2(_CCCL_CONCEPT_TRY_ADD_TYPENAME, __VA_ARGS__)
+#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_SWITCH_typename _CCCL_PP_CASE(_CCCL_SWITCH_TYPENAME)
+#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_CASE__CCCL_SWITCH_DEFAULT(...)  typename __VA_ARGS__
+#define _CCCL_CONCEPT_TRY_ADD_TYPENAME_CASE__CCCL_SWITCH_TYPENAME(...) __VA_ARGS__
 
 // Converts "_Same_as(TYPE) EXPR..." to "EXPR..."
 #define _CCCL_CONCEPT_EAT_SAME_AS_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SAME_AS_, __VA_ARGS__)
@@ -188,13 +188,13 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_SATISFIES_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SATISFIES_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SATISFIES__Satisfies(...)
 
-// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
-// with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
+// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL
+// with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
 // expansion here.)
 #define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(...) \
-  _CCCL_PP_CAT(_CCCL_PP_,                              \
+  _CCCL_PP_CAT(_CCCL,                                  \
                _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_, __VA_ARGS__)))
-#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) EXPAND(__VA_ARGS__),
+#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) _PP_EXPAND(__VA_ARGS__),
 
 // Here are the implementations of the internal macros, first for when concepts
 // are available, and then for when they're not.
@@ -202,7 +202,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 // "_CCCL_CONCEPT_FRAGMENT(NAME, ARGS...)(REQS...)" expands into
 // "concept NAME = requires(ARGS...) { _CCCL_CONCEPT_REQUIREMENT_(REQS)... }"
-#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                concept _NAME = _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__
+#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...) concept _NAME = _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__
 #  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_requires(...) requires(__VA_ARGS__) _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_
 #  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_(...)         {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__)}
 
@@ -213,14 +213,15 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
     (_REQ);
 
 // The following macros handle the various special forms of requirements:
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_DEFAULT(_REQ)  _REQ
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_REQUIRES(_REQ) requires _CCCL_CONCEPT_EAT_REQUIRES_(_REQ)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_NOEXCEPT(_REQ) _CCCL_PP_EXPAND({ _CCCL_CONCEPT_EAT_NOEXCEPT_(_REQ) } noexcept)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_TYPENAME(_REQ) \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_DEFAULT(_REQ)  _REQ
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_REQUIRES(_REQ) requires _CCCL_CONCEPT_EAT_REQUIRES_(_REQ)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_NOEXCEPT(_REQ) \
+    _CCCL_PP_EXPAND({ _CCCL_CONCEPT_EAT_NOEXCEPT_(_REQ) } noexcept)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_TYPENAME(_REQ) \
     _CCCL_CONCEPT_TRY_ADD_TYPENAME_(_CCCL_CONCEPT_EAT_TYPENAME_(_REQ))
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SAME_AS(_REQ) \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SAME_AS(_REQ) \
     {_CCCL_CONCEPT_EAT_SAME_AS_(_REQ)}->_CCCL_CONCEPT_VSTD::same_as<_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ)>
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ) \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SATISFIES(_REQ) \
     {_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)}->_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ)
 
 #  define _CCCL_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
@@ -259,14 +260,15 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
     void(), _CCCL_PP_CAT(_CCCL_CONCEPT_REQUIREMENT_, _CCCL_PP_IS_PAREN(_REQ))(_REQ),
 
 // The following macros handle the various special forms of requirements:
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_DEFAULT(_REQ)  _CCCL_CONCEPT_IGNORE_RESULT_(_REQ)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_REQUIRES(_REQ) ::__cccl_requires<_CCCL_CONCEPT_EAT_REQUIRES_(_REQ)>
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_NOEXCEPT(_REQ) _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_TYPENAME(_REQ) \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_DEFAULT(_REQ) _CCCL_CONCEPT_IGNORE_RESULT_(_REQ)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_REQUIRES(_REQ) \
+    ::__cccl_requires<_CCCL_CONCEPT_EAT_REQUIRES_(_REQ)>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_NOEXCEPT(_REQ) _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_TYPENAME(_REQ) \
     static_cast<::__cccl_tag<_CCCL_CONCEPT_EAT_TYPENAME_(_REQ)>*>(nullptr)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SAME_AS(_REQ) \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SAME_AS(_REQ) \
     ::__cccl_requires<::cuda::std::same_as<_CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ)>>
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ)                                                               \
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SATISFIES(_REQ)                                                  \
     ::__cccl_requires < _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ) < decltype(_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)) \
       >>
 
@@ -315,28 +317,29 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
         _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_TPARAM_REFS _TY>*>(nullptr), 0); \
     struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                           \
     {                                                                                                                \
-      using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                         \
+      using __cccl_self_t _CCCL_NODEBUG = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                           \
       template <class _CCCL_REQUIRES_EXPR_TPARAM_DEFNS _TY>                                                          \
       _CCCL_API inline static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_REQUIREMENTS_
 
 // Expands "T1, T2, variadic T3" to ", class T1, class T2, class... T3"
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFNS(...)             _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFNS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, __VA_ARGS__)
 
 // Expands "TY" to ", class TY" and "variadic TY" to ", class... TY"
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN(_TY)              , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, _TY)
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_SWITCH_variadic   _CCCL_PP_CASE(VARIADIC)
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE_DEFAULT(_TY) class _TY
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE_VARIADIC(_TY) \
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN(_TY)  , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, _TY)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_SWITCH_variadic                _CCCL_PP_CASE(_CCCL_SWITCH_VARIADIC)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE__CCCL_SWITCH_DEFAULT(_TY) class _TY
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE__CCCL_SWITCH_VARIADIC(_TY) \
     class... _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
 
 // Expands "T1, T2, variadic T3" to ", T1, T2, T3..."
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REFS(...)              _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_REF, __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REFS(...)           _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_REF, __VA_ARGS__)
 
 // Expands "TY" to ", TY" and "variadic TY" to ", TY..."
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF(_TY)               , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_REF, _TY)
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_DEFAULT(_TY)  _TY
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)...
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF(_TY)            , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_REF, _TY)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic _CCCL_PP_CASE(_CCCL_SWITCH_VARIADIC)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE__CCCL_SWITCH_DEFAULT(_TY) _TY
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE__CCCL_SWITCH_VARIADIC(_TY) \
+    _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)...
 
 // NVRTC does not support __COUNTER__ so we need a better way of defining unique identifiers
 #  if _CCCL_COMPILER(NVRTC)
@@ -355,10 +358,11 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
       _CCCL_PP_EVAL(_CCCL_REQUIRES_EXPR_ID_CONCAT_ALL_IMPL, __VA_ARGS__, , , , , , , , , )
 
 // Expands "TY" to "TY" and "variadic TY" to "TY"
-#    define _CCCL_REQUIRES_EXPR_ID_IMPL(_TY)               , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_ID_IMPL, _TY)
-#    define _CCCL_REQUIRES_EXPR_ID_IMPL_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
-#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_DEFAULT(_TY)  _TY
-#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL(_TY)            , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_ID_IMPL, _TY)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_SWITCH_variadic _CCCL_PP_CASE(_CCCL_SWITCH_VARIADIC)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE__CCCL_SWITCH_DEFAULT(_TY) _TY
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE__CCCL_SWITCH_VARIADIC(_TY) \
+      _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
 
 #  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^^/ vvv !_CCCL_COMPILER(NVRTC)
 #    define _CCCL_REQUIRES_EXPR_ID(...) _CCCL_COUNTER()

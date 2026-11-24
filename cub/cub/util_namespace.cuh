@@ -15,7 +15,7 @@
 // version.cuh.
 #include <cub/version.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,12 +23,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
+
+#include <cuda/std/__cccl/preprocessor.h>
 
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users
 // that they must now define the qualifier macro, too.
 #if (defined(CUB_NS_PREFIX) || defined(CUB_NS_POSTFIX)) && !defined(CUB_NS_QUALIFIER)
 #  error CUB requires a definition of CUB_NS_QUALIFIER when CUB_NS_PREFIX/POSTFIX are defined.
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define THRUST_CUB_WRAPPED_NAMESPACE
 #endif
 
 /**
@@ -39,6 +45,10 @@
  */
 #ifdef THRUST_CUB_WRAPPED_NAMESPACE
 #  define CUB_WRAPPED_NAMESPACE THRUST_CUB_WRAPPED_NAMESPACE
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_WRAPPED_NAMESPACE
 #endif
 
 /**
@@ -57,6 +67,10 @@
 #  define CUB_NS_QUALIFIER ::CUB_WRAPPED_NAMESPACE::cub
 #endif
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_PREFIX
+#endif
+
 /**
  * \def CUB_NS_PREFIX
  * This macro is inserted prior to all `namespace cub { ... }` blocks. It is
@@ -66,6 +80,10 @@
  */
 #ifndef CUB_NS_PREFIX
 #  define CUB_NS_PREFIX
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_POSTFIX
 #endif
 
 /**
@@ -80,6 +98,10 @@
 #  define CUB_NS_POSTFIX
 #endif
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_QUALIFIER
+#endif
+
 /**
  * \def CUB_NS_QUALIFIER
  * This macro is used to qualify members of cub:: when accessing them from
@@ -92,16 +114,18 @@
 #  define CUB_NS_QUALIFIER ::cub
 #endif
 
+#define _CUB CUB_NS_QUALIFIER
+
 #if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
-#  if !defined(CUB_WRAPPED_NAMESPACE)
-#    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
+#  ifndef CUB_WRAPPED_NAMESPACE
+#    ifndef CUB_IGNORE_NAMESPACE_MAGIC_ERROR
 #      error "Disabling namespace magic is unsafe without wrapping namespace"
 #    endif // !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
 #  endif // !defined(CUB_WRAPPED_NAMESPACE)
 #  define CUB_DETAIL_MAGIC_NS_BEGIN
 #  define CUB_DETAIL_MAGIC_NS_END
 #else // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
-#  if defined(_NVHPC_CUDA)
+#  ifdef _NVHPC_CUDA
 #    define CUB_DETAIL_MAGIC_NS_BEGIN                                                                                  \
       inline namespace _CCCL_PP_CAT(                                                                                   \
         _CCCL_PP_CAT(_CCCL_PP_CAT(_V_, CUB_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST)), _NVHPC) \

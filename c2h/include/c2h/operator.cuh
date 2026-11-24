@@ -2,24 +2,64 @@
 // SPDX-License-Identifier: BSD-3-Clause
 #pragma once
 
-#include <cub/thread/thread_operators.cuh>
-
 #include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/type_traits>
 
 #include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 
 /***********************************************************************************************************************
  * CUB operator to identity
  **********************************************************************************************************************/
 
-template <typename Operator, typename T>
-inline constexpr T identity_v = cub::detail::identity_v<Operator, T>;
+template <typename Operator, typename T, typename = void>
+inline constexpr T identity_v = cuda::identity_element<Operator, T>();
 
 template <typename T>
 inline const T identity_v<cuda::std::plus<>, T> = T{}; // e.g. short2, float2, complex<__half> etc.
+
+/***********************************************************************************************************************
+ * half_t specializations
+ **********************************************************************************************************************/
+
+// The fp16/bf16 identity tables below are initialized from non-constexpr, non-noexcept constructors (and CUDA's
+// numeric_limits for __half/__nv_bfloat16), i.e. dynamic static initialization that clang-tidy conservatively flags as
+// potentially throwing.
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
+template <>
+inline const half_t identity_v<cuda::std::plus<>, half_t> = half_t{0.0f};
+
+template <>
+inline const half_t identity_v<cuda::std::multiplies<>, half_t> = half_t{1.0f};
+
+template <>
+inline const half_t identity_v<cuda::minimum<>, half_t> = cuda::std::numeric_limits<half_t>::max();
+
+template <>
+inline const half_t identity_v<cuda::maximum<>, half_t> = cuda::std::numeric_limits<half_t>::lowest();
+
+/***********************************************************************************************************************
+ * bfloat16_t specializations
+ **********************************************************************************************************************/
+
+template <>
+inline const bfloat16_t identity_v<cuda::std::plus<>, bfloat16_t> = bfloat16_t{0.0f};
+
+template <>
+inline const bfloat16_t identity_v<cuda::std::multiplies<>, bfloat16_t> = bfloat16_t{1.0f};
+
+template <>
+inline const bfloat16_t identity_v<cuda::minimum<>, bfloat16_t> = cuda::std::numeric_limits<bfloat16_t>::max();
+
+template <>
+inline const bfloat16_t identity_v<cuda::maximum<>, bfloat16_t> = cuda::std::numeric_limits<bfloat16_t>::lowest();
+
+/***********************************************************************************************************************
+ * short2, ushort2, float2 specializations
+ **********************************************************************************************************************/
 
 template <>
 inline constexpr short2 identity_v<cuda::maximum<>, short2> =
@@ -55,6 +95,7 @@ inline const __half2 identity_v<cuda::minimum<>, __half2> =
 template <>
 inline const __nv_bfloat162 identity_v<cuda::minimum<>, __nv_bfloat162> =
   __nv_bfloat162{cuda::std::numeric_limits<__nv_bfloat16>::max(), cuda::std::numeric_limits<__nv_bfloat16>::max()};
+// NOLINTEND(bugprone-throwing-static-initialization)
 
 template <template <typename> class... Policies>
 inline const c2h::custom_type_t<Policies...> identity_v<cuda::maximum<>, c2h::custom_type_t<Policies...>> =

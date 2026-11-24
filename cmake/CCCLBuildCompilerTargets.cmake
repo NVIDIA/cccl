@@ -12,7 +12,16 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(
+  CCCL_ENABLE_PRAGMA_SYSTEM_HEADER
+  "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible."
+  OFF
+)
 option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
+
+option(CCCL_ENABLE_FASTMATH "Enable fast math for internal CCCL testing." OFF)
+# Internal testing option; users should set CMAKE_CUDA_FLAGS instead.
+mark_as_advanced(CCCL_ENABLE_FASTMATH)
 
 function(
   cccl_build_compiler_interface
@@ -94,12 +103,24 @@ function(cccl_build_compiler_targets)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  # Some constexpr functions of libcu++ check for constant evaluation, but not all of their specializations can be
+  # constexpr, e.g. the operators of `cuda::std::complex<__half>`. Users do not see these warnings, because the headers
+  # are system headers, which _CCCL_NO_SYSTEM_HEADER below disables.
+  list(APPEND cuda_compile_options "--diag-suppress=3060,3206")
   if (CCCL_ENABLE_WERROR)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
+  if (CCCL_ENABLE_TILE)
+    list(APPEND cuda_compile_options "--enable-tile")
+  endif()
+  if (CCCL_ENABLE_FASTMATH)
+    list(APPEND cuda_compile_options "--use_fast_math")
+  endif()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+    # Ensure that we build our tests without treating ourself as system header
+    list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  endif()
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
@@ -178,6 +199,40 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
+    # Clang-only
+    append_option_if_available("-Wnvcc-compat" cxx_compile_options)
+    append_option_if_available("-Wimplicit-fallthrough" cxx_compile_options)
+    append_option_if_available(
+      "-fdiagnostics-show-template-tree"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wignored-qualifiers" cxx_compile_options)
+    append_option_if_available(
+      "-Wmissing-field-initializers"
+      cxx_compile_options
+    )
+    # Inundated with error: ISO C++11 requires at least one argument for the "..." in a
+    # variadic macro for _CCCL_REQUIRES_EXPR(), so cannot enable this.
+    #
+    # append_option_if_available("-pedantic" cxx_compile_options)
+    append_option_if_available("-Wsign-compare" cxx_compile_options)
+    append_option_if_available(
+      "-Warray-bounds-pointer-arithmetic"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wassign-enum" cxx_compile_options)
+    append_option_if_available("-Wformat-pedantic" cxx_compile_options)
+    append_option_if_available("-Walloc-size" cxx_compile_options)
+    append_option_if_available("-Walloc-zero" cxx_compile_options)
+    append_option_if_available("-Wtsan" cxx_compile_options)
+    append_option_if_available("-Wenum-conversion" cxx_compile_options)
+    append_option_if_available("-Wpacked" cxx_compile_options)
+    # Clang and GCC
+    append_option_if_available(
+      "-ftemplate-backtrace-limit=0"
+      cxx_compile_options
+    )
+    append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
     append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
@@ -188,9 +243,23 @@ function(cccl_build_compiler_targets)
       "-Wno-gnu-zero-variadic-macro-arguments"
       cxx_compile_options
     )
+    # clang added this to -Wall in LLVM 23, but it's basically unusable for GPU code
+    # because NVCC will make all the kernel call stubs static. So we must disable it. See
+    # https://github.com/llvm/llvm-project/issues/219968.
+    append_option_if_available("-Wno-unused-template" cxx_compile_options)
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)
+
+    # See the NVCC options above.
+    append_option_if_available(
+      "--diag_suppress=is_constant_evaluated_in_nonconstexpr_context"
+      cxx_compile_options
+    )
+    append_option_if_available(
+      "--diag_suppress=if_consteval_in_nonconstexpr_function"
+      cxx_compile_options
+    )
   endif()
 
   if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

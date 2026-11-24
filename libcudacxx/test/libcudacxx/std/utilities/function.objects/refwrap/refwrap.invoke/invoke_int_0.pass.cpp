@@ -24,34 +24,36 @@
 
 // 0 args, return int
 
-TEST_GLOBAL_VARIABLE int count = 0;
-
-__host__ __device__ int f_int_0()
+TEST_FUNC int f_int_0()
 {
   return 3;
 }
 
 struct A_int_0
 {
-  __host__ __device__ int operator()()
+  TEST_FUNC int operator()()
   {
     return 4;
   }
 };
 
-__host__ __device__ void test_int_0()
+TEST_FUNC void test_int_0()
 {
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!
   // function
   {
     cuda::std::reference_wrapper<int()> r1(f_int_0);
     assert(r1() == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     int (*fp)() = f_int_0;
     cuda::std::reference_wrapper<int (*)()> r1(fp);
     assert(r1() == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_int_0 a0;
@@ -59,21 +61,6 @@ __host__ __device__ void test_int_0()
     assert(r1() == 4);
   }
 }
-
-// 1 arg, return void
-
-__host__ __device__ void f_void_1(int i)
-{
-  count += i;
-}
-
-struct A_void_1
-{
-  __host__ __device__ void operator()(int i)
-  {
-    count += i;
-  }
-};
 
 int main(int, char**)
 {

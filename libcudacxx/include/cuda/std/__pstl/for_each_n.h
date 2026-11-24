@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,18 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/for_each_n.h>
+#    include <cuda/std/__pstl/cuda/for_each_n.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -45,10 +46,19 @@ _CCCL_TEMPLATE(class _Policy, class _Iter, class _Size, class _Fn)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
 _CCCL_HOST_API _Iter for_each_n([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
 {
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__for_each_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::for_each_n");
+
+    if (__orig_n == 0)
+    {
+      return __first;
+    }
+
     return __dispatch(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
   }
   else
@@ -64,6 +74,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_FOR_EACH_N_H

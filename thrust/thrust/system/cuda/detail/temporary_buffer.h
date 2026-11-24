@@ -1,24 +1,11 @@
-/*
- *  Copyright 2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,10 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/error.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -39,14 +27,15 @@ namespace cuda_cub
 // overloads should be selected.
 
 template <typename T>
-_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
+_CCCL_HOST_API ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
+get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
   cudaError_t status = cudaMallocAsync(&ptr, sizeof(T) * n, nullptr);
 
   if (status != cudaSuccess)
   {
-    cudaGetLastError(); // Clear the CUDA global error state.
+    static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
     // supported like Windows, so try again with cudaMalloc.
@@ -54,7 +43,7 @@ _CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(pa
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 
@@ -62,7 +51,7 @@ _CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(pa
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t)
+_CCCL_HOST_API void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
@@ -70,7 +59,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 
   if (status != cudaSuccess)
   {
-    cudaGetLastError(); // Clear the CUDA global error state.
+    static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
     // supported like Windows, so try again with cudaFree.
@@ -78,13 +67,13 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 }
 
 template <typename T>
-_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
+_CCCL_HOST_API ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
 get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
@@ -92,7 +81,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 
   if (status != cudaSuccess)
   {
-    cudaGetLastError(); // Clear the CUDA global error state.
+    static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
     // supported like Windows, so try again with cudaFree.
@@ -100,7 +89,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 
@@ -108,7 +97,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t)
+_CCCL_HOST_API void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
@@ -116,7 +105,7 @@ _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointe
 
   if (status != cudaSuccess)
   {
-    cudaGetLastError(); // Clear the CUDA global error state.
+    static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
     // supported like Windows, so try again with cudaMalloc.
@@ -124,7 +113,7 @@ _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointe
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 }

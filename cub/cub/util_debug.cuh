@@ -14,7 +14,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -39,16 +39,19 @@
  * Causes synchronization of the stream after every kernel launch to check
  * for errors. Also causes kernel launch configurations to be printed to the
  * console.
+ *
+ * Deprecated [Since 3.6]
  */
 #  define CUB_DEBUG_SYNC
 
 /**
  * @def CUB_DEBUG_ALL
  *
- * Causes host and device-side precondition assertions to be checked. Apart
- * from that, causes synchronization of the stream after every kernel launch to
- * check for errors. Also causes kernel launch configurations to be printed to
- * the console.
+ * Causes synchronization of the stream after every kernel launch to check
+ * for errors. Also causes kernel launch configurations to be printed to the
+ * console.
+ *
+ * Deprecated [Since 3.6]
  */
 #  define CUB_DEBUG_ALL
 
@@ -56,6 +59,14 @@
 
 // CUB_DEBUG_SYNC also enables CUB_DEBUG_LOG
 #ifdef CUB_DEBUG_SYNC
+
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: CUB_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1")
+#  else
+#    warning CUB_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1
+#  endif
+
 #  ifndef CUB_DEBUG_LOG
 #    define CUB_DEBUG_LOG
 #  endif
@@ -63,6 +74,14 @@
 
 // CUB_DEBUG_ALL = CUB_DEBUG_LOG + CUB_DEBUG_SYNC
 #ifdef CUB_DEBUG_ALL
+
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: CUB_DEBUG_ALL is deprecated. Please just define CUB_DEBUG_LOG and run your executable with CUDA_LAUNCH_BLOCKING=1")
+#  else
+#    warning CUB_DEBUG_ALL is deprecated. Please just define CUB_DEBUG_LOG and run your executable with CUDA_LAUNCH_BLOCKING=1
+#  endif
+
 #  ifndef CUB_DEBUG_LOG
 #    define CUB_DEBUG_LOG
 #  endif // CUB_DEBUG_LOG
@@ -77,7 +96,7 @@
 #endif
 
 #if defined(CUB_STDERR) || defined(CUB_DEBUG_LOG)
-#  include <cstdio>
+#  include <cuda/std/__host_stdlib/cstdio>
 #endif
 
 CUB_NAMESPACE_BEGIN
@@ -89,7 +108,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]] int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -102,9 +121,9 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
   #define CUB_TEMP_DEVICE_CODE last_error = cudaGetLastError()
   #endif
 
-  cudaError_t last_error = cudaSuccess;
+  cudaError_t last_error = cudaSuccess; // NOLINT(misc-const-correctness)
 
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (last_error = cudaGetLastError();),
     (CUB_TEMP_DEVICE_CODE;)
@@ -121,7 +140,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #ifdef CUB_STDERR
   if (error)
   {
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
        fflush(stderr);),
@@ -145,39 +164,43 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Debug macro
  */
 #ifndef CubDebug
-#  define CubDebug(e) CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)
+#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ _CUB::Debug((cudaError_t) (e), __FILE__, __LINE__)
 #endif
 
 /**
  * \brief Debug macro with exit
  */
 #ifndef CubDebugExit
-#  define CubDebugExit(e)                                               \
-    if (CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)) \
-    {                                                                   \
-      exit(1);                                                          \
+#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */ \
+    if (_CUB::Debug((cudaError_t) (e), __FILE__, __LINE__))           \
+    {                                                                 \
+      exit(1);                                                        \
     }
 #endif
 
 /**
  * \brief Log macro for printf statements.
  */
-#if !defined(_CubLog)
-#  define _CubLog(format, ...)                                    \
-    do                                                            \
-    {                                                             \
-      NV_IF_TARGET(                                               \
-        NV_IS_HOST,                                               \
-        (printf(format, __VA_ARGS__);),                           \
-        (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
-                blockIdx.z,                                       \
-                blockIdx.y,                                       \
-                blockIdx.x,                                       \
-                threadIdx.z,                                      \
-                threadIdx.y,                                      \
-                threadIdx.x,                                      \
-                __VA_ARGS__);));                                  \
-    } while (false)
-#endif
+#ifndef _CubLog
+#  if _CCCL_HOSTJIT()
+#    define _CubLog(format, ...) (void(0))
+#  else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv !_CCCL_HOSTJIT() vvv
+#    define _CubLog(format, ...)                                    \
+      do                                                            \
+      {                                                             \
+        NV_IF_ELSE_TARGET(                                          \
+          NV_IS_HOST,                                               \
+          (printf(format, __VA_ARGS__);),                           \
+          (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
+                  blockIdx.z,                                       \
+                  blockIdx.y,                                       \
+                  blockIdx.x,                                       \
+                  threadIdx.z,                                      \
+                  threadIdx.y,                                      \
+                  threadIdx.x,                                      \
+                  __VA_ARGS__);));                                  \
+      } while (false)
+#  endif // !_CCCL_HOSTJIT()
+#endif // !defined(_CubLog)
 
 CUB_NAMESPACE_END

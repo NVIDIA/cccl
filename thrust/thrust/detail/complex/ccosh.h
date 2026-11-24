@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2005 Bruce D. Evans and Steven G. Kargl
@@ -58,6 +45,7 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -72,11 +60,22 @@ namespace detail::complex
  * These values and the return value were taken from n1124.pdf.
  */
 
-_CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
 {
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023
-  double x, y, h;
-  uint32_t hx, hy, ix, iy, lx, ly;
+  double x;
+  double y;
+  double h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
+  uint32_t lx;
+  uint32_t ly;
 
   x = z.real();
   y = z.imag();
@@ -107,19 +106,17 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
       return (thrust::complex<double>(h * ::cuda::std::cos(y), ::cuda::std::copysign(h, x) * ::cuda::std::sin(y)));
     }
-    else if (ix < 0x4096bbaa)
+    if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
       thrust::complex<double> z_ = ldexp_cexp(thrust::complex<double>(::cuda::std::fabs(x), y), -1);
       z_.imag(::cuda::std::copysign(z_.imag(), x));
       return z_;
     }
-    else
-    {
-      /* x >= 1455: the result always overflows */
-      h = huge * x;
-      return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
-    }
+
+    /* x >= 1455: the result always overflows */
+    h = huge * x;
+    return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
   }
 
   /*
@@ -195,8 +192,9 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    */
   return (thrust::complex<double>((x * x) * (y - y), (x + x) * (y - y)));
 }
+// NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> ccos(const thrust::complex<double>& z)
 {
   /* ccos(z) = ccosh(I * z) */
   return (ccosh(thrust::complex<double>(-z.imag(), z.real())));
@@ -204,7 +202,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<doub
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> cos(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -212,7 +210,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> cosh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -220,13 +218,13 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<double> cos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> cos(const thrust::complex<double>& z)
 {
   return detail::complex::ccos(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<double> cosh(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> cosh(const thrust::complex<double>& z)
 {
   return detail::complex::ccosh(z);
 }

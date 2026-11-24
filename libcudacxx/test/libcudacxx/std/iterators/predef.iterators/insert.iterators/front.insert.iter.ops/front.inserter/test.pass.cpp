@@ -15,7 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 
 #  include "nasty_containers.h"
@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   cuda::std::front_insert_iterator<C> i = cuda::std::front_inserter(c);
   i                                     = 0;
@@ -34,7 +34,7 @@ __host__ __device__ void test(C c)
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test(cuda::std::list<int>());
   test(nasty_list<int>());
 #endif

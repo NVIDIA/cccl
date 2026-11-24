@@ -28,7 +28,13 @@ def greater_than_20(x):
     return x > 20
 
 
-select(squared_iter, d_out, d_num_selected, greater_than_20, len(d_in))
+select(
+    d_in=squared_iter,
+    d_out=d_out,
+    d_num_selected_out=d_num_selected,
+    cond=greater_than_20,
+    num_items=len(d_in),
+)
 
 # Get results
 num_selected = int(d_num_selected[0])

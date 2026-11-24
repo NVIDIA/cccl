@@ -57,12 +57,18 @@ void TestBinaryFunctional()
   {                                                                                                     \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                     \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                 \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional_arithmetic]")         \
+  {                                                                                                     \
+    Test##OperatorName##FunctionalHost();                                                               \
+  }                                                                                                     \
   void Test##OperatorName##FunctionalDevice()                                                           \
   {                                                                                                     \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                     \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional_arithmetic]")       \
+  {                                                                                                     \
+    Test##OperatorName##FunctionalDevice();                                                             \
+  }
 
 // op(T,T) -> T (for integer T only)
 #define DECLARE_BINARY_INTEGER_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                  \
@@ -70,12 +76,18 @@ void TestBinaryFunctional()
   {                                                                                                         \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                         \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                     \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional_arithmetic]")             \
+  {                                                                                                         \
+    Test##OperatorName##FunctionalHost();                                                                   \
+  }                                                                                                         \
   void Test##OperatorName##FunctionalDevice()                                                               \
   {                                                                                                         \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                         \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional_arithmetic]")           \
+  {                                                                                                         \
+    Test##OperatorName##FunctionalDevice();                                                                 \
+  }
 
 // Create the unit tests
 DECLARE_BINARY_ARITHMETIC_FUNCTIONAL_UNITTEST(plus, Plus);

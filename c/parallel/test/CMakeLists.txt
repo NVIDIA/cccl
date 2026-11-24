@@ -11,8 +11,13 @@ function(cccl_c_parallel_add_test target_name_var source)
   )
   set(target_name_var ${target_name} PARENT_SCOPE)
 
-  add_executable(${target_name} "${source}")
-  cccl_configure_target(${target_name} DIALECT 20)
+  cccl_add_executable(
+    ${target_name}
+    ADD_CTEST
+    NO_METATARGETS
+    DIALECT 20
+    SOURCES "${source}" "${CMAKE_CURRENT_LIST_DIR}/support/crash_report.cpp"
+  )
 
   set_target_properties(${target_name} PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
   target_link_libraries(
@@ -25,6 +30,14 @@ function(cccl_c_parallel_add_test target_name_var source)
       cccl.c2h.main
   )
 
+  if (WIN32)
+    # crash_report.cpp symbolizes the faulting stack via dbghelp.
+    target_link_libraries(${target_name} PRIVATE dbghelp)
+    # Sources are already compiled with /Z7, but without /DEBUG the linker emits
+    # no PDB and a crash report can only show module+offset. ~19 MB per test.
+    target_link_options(${target_name} PRIVATE /DEBUG)
+  endif()
+
   # Get the first CUDA include directory only
   list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
   target_compile_definitions(
@@ -36,8 +49,6 @@ function(cccl_c_parallel_add_test target_name_var source)
       TEST_CTK_PATH="-I${CUDA_FIRST_INCLUDE_DIR}"
       TEST_INCLUDE_PATH="${CMAKE_CURRENT_SOURCE_DIR}"
   )
-
-  add_test(NAME ${target_name} COMMAND ${target_name})
 endfunction()
 
 file(

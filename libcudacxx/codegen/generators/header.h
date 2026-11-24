@@ -33,7 +33,7 @@ inline void FormatHeader(std::ostream& out)
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,15 +44,15 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
-
+// IWYU pragma: begin_keep
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
-#include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
-#include <cuda/std/__atomic/functions/cuda_local.h>
+#include <cuda/std/__atomic/functions/backend.h>
+#include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
+// IWYU pragma: end_keep
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A type used by the pooling resource adaptors to fine-tune their
@@ -23,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,10 +18,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/memory_resource.h>
-
 #include <cuda/__cmath/pow2.h>
-#include <cuda/std/cstddef>
+#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -101,7 +87,7 @@ struct pool_options
    *
    *  /returns true if the options are self-consistent, false otherwise.
    */
-  bool validate() const
+  _CCCL_HOST_API bool validate() const
   {
     if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {
@@ -111,7 +97,10 @@ struct pool_options
     {
       return false;
     }
-    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
+
+    // Forcing the alignment to be always valid would be a breaking change, because if the user didn't set the
+    // alignment, this method would return false. So, we still accept 0.
+    if (!::cuda::__is_valid_alignment(alignment) && alignment != 0)
     {
       return false;
     }
@@ -157,12 +146,7 @@ struct pool_options
       return false;
     }
 
-    if (alignment > smallest_block_size)
-    {
-      return false;
-    }
-
-    return true;
+    return alignment <= smallest_block_size;
   }
 };
 

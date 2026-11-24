@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file binary_search.h
  *  \brief Search for values in sorted ranges.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -107,7 +94,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE ForwardIterator lower_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator lower_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -163,7 +150,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
-ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
+_CCCL_HOST_API ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
 
 /*! \p lower_bound is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>.
@@ -223,7 +210,7 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const L
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator lower_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator lower_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -283,7 +270,8 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
-ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
+_CCCL_HOST_API ForwardIterator
+lower_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
 
 /*! \p upper_bound is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>.
@@ -341,7 +329,7 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE ForwardIterator upper_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator upper_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -398,7 +386,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
-ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
+_CCCL_HOST_API ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
 
 /*! \p upper_bound is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>.
@@ -460,7 +448,7 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const L
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator upper_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator upper_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -522,7 +510,8 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
-ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
+_CCCL_HOST_API ForwardIterator
+upper_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
 
 /*! \p binary_search is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>.
@@ -579,7 +568,7 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE bool binary_search(
+_CCCL_HOST_DEVICE_API bool binary_search(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -635,7 +624,7 @@ _CCCL_HOST_DEVICE bool binary_search(
  *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
-bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
+_CCCL_HOST_API bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
 
 /*! \p binary_search is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>.
@@ -696,7 +685,7 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanCo
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE bool binary_search(
+_CCCL_HOST_DEVICE_API bool binary_search(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -757,7 +746,7 @@ _CCCL_HOST_DEVICE bool binary_search(
  *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
-bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
+_CCCL_HOST_API bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
 
 /*! \p equal_range is a version of binary search: it attempts to find
  * the element value in an ordered range <tt>[first, last)</tt>. The
@@ -827,7 +816,7 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, 
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -896,7 +885,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_rang
  *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
-::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
 
 /*! \p equal_range is a version of binary search: it attempts to find
@@ -978,7 +967,7 @@ equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparabl
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1059,7 +1048,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_rang
  *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
-::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
 
 /*! \addtogroup vectorized_binary_search Vectorized Searches
@@ -1141,7 +1130,7 @@ equal_range(ForwardIterator first, ForwardIterator last, const T& value, StrictW
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator lower_bound(
+_CCCL_HOST_DEVICE_API OutputIterator lower_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1212,7 +1201,7 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator lower_bound(
+_CCCL_HOST_API OutputIterator lower_bound(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -1296,7 +1285,7 @@ template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator lower_bound(
+_CCCL_HOST_DEVICE_API OutputIterator lower_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1373,7 +1362,7 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator lower_bound(
+_CCCL_HOST_API OutputIterator lower_bound(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -1451,7 +1440,7 @@ OutputIterator lower_bound(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator upper_bound(
+_CCCL_HOST_DEVICE_API OutputIterator upper_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1522,7 +1511,7 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator upper_bound(
+_CCCL_HOST_API OutputIterator upper_bound(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -1608,7 +1597,7 @@ template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator upper_bound(
+_CCCL_HOST_DEVICE_API OutputIterator upper_bound(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1685,7 +1674,7 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator upper_bound(
+_CCCL_HOST_API OutputIterator upper_bound(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -1764,7 +1753,7 @@ OutputIterator upper_bound(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator binary_search(
+_CCCL_HOST_DEVICE_API OutputIterator binary_search(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1836,7 +1825,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator binary_search(
+_CCCL_HOST_API OutputIterator binary_search(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -1923,7 +1912,7 @@ template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator binary_search(
+_CCCL_HOST_DEVICE_API OutputIterator binary_search(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -2001,7 +1990,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
  *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator binary_search(
+_CCCL_HOST_API OutputIterator binary_search(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator values_first,
@@ -2020,4 +2009,4 @@ OutputIterator binary_search(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/binary_search.inl>
+#include <thrust/detail/binary_search.inl> // IWYU pragma: export

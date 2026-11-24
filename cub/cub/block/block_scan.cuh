@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,15 +20,18 @@
 
 #include <cub/block/specializations/block_scan_raking.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,7 +41,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockScanAlgorithm enumerates alternative algorithms for cub::BlockScan to compute a
 //!        parallel prefix scan across a CUDA thread block.
-enum BlockScanAlgorithm
+enum BlockScanAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -103,22 +106,45 @@ enum BlockScanAlgorithm
   BLOCK_SCAN_WARP_SCANS,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_SCAN_RAKING:
-      return os << "BLOCK_SCAN_RAKING";
+      return "BLOCK_SCAN_RAKING";
     case BLOCK_SCAN_RAKING_MEMOIZE:
-      return os << "BLOCK_SCAN_RAKING_MEMOIZE";
+      return "BLOCK_SCAN_RAKING_MEMOIZE";
     case BLOCK_SCAN_WARP_SCANS:
-      return os << "BLOCK_SCAN_WARP_SCANS";
-    default:
-      return os << "<unknown BlockScanAlgorithm: " << static_cast<int>(algo) << ">";
+      return "BLOCK_SCAN_WARP_SCANS";
   }
+  return "<unknown BlockScanAlgorithm>";
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+} // namespace detail
+
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+{
+  return os << _CUB::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<_CUB::BlockScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  _CCCL_HOST_API auto format(const _CUB::BlockScanAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix
@@ -209,7 +235,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 template <typename T, int BlockDimX, BlockScanAlgorithm Algorithm = BLOCK_SCAN_RAKING, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockScan
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -232,7 +257,7 @@ private:
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
 
   /// Shared memory storage layout type for BlockScan
-  using _TempStorage = typename InternalBlockScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockScan::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -241,7 +266,7 @@ private:
   unsigned int linear_tid;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -249,27 +274,36 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -280,6 +314,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes one input element. The value of 0 is applied as the initial value, and is assigned
   //! to ``output`` in *thread*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @rowmajor
@@ -307,7 +344,7 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output item (may be aliased to `input`)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output)
   {
     T initial_value{};
 
@@ -319,6 +356,9 @@ public:
   //! Each thread contributes one input element.
   //! The value of 0 is applied as the initial value, and is assigned to ``output`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @rowmajor
@@ -350,7 +390,7 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, T& block_aggregate)
   {
     T initial_value{};
 
@@ -363,6 +403,9 @@ public:
   //! ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value returned by
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function
@@ -412,7 +455,8 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -425,6 +469,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @blocked
@@ -451,7 +498,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -459,8 +506,8 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output items (may be aliased to `input`)
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread])
   {
     T initial_value{};
 
@@ -472,6 +519,9 @@ public:
   //! Each thread contributes an array of consecutive input elements.
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @blocked
@@ -499,7 +549,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -510,9 +560,9 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
     T initial_value{};
@@ -526,6 +576,9 @@ public:
   //! Instead of using 0 as the block-wide prefix, the call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
@@ -563,7 +616,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam BlockPrefixCallbackOp
@@ -581,9 +634,9 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
+  template <int ItemsPerThread, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -595,6 +648,9 @@ public:
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -634,7 +690,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op);
   }
@@ -643,6 +699,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -692,7 +751,7 @@ public:
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op, block_aggregate);
@@ -703,6 +762,9 @@ public:
   //! Each thread contributes one input element. The call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value from
@@ -797,7 +859,7 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -810,6 +872,9 @@ public:
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -836,7 +901,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -856,24 +921,27 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -920,7 +988,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -943,18 +1011,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -963,6 +1031,9 @@ public:
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value
   //! returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
   //! block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the
@@ -1001,7 +1072,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1024,21 +1095,21 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(
-    T (&input)[ITEMS_PER_THREAD],
-    T (&output)[ITEMS_PER_THREAD],
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
     ScanOp scan_op,
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @}
@@ -1070,7 +1141,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op);
   }
@@ -1102,7 +1173,7 @@ public:
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_aggregate);
   }
@@ -1123,7 +1194,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1137,18 +1208,18 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @rst
@@ -1164,7 +1235,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1181,18 +1252,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @}
@@ -1204,6 +1275,9 @@ public:
   //! @rst
   //! Computes an inclusive block-wide prefix scan using addition (+)
   //! as the scan operator. Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -1230,7 +1304,7 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output item (may be aliased to `input`)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& output)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{});
   }
@@ -1239,6 +1313,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -1269,7 +1346,7 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, T& block_aggregate)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_aggregate);
   }
@@ -1280,6 +1357,9 @@ public:
   //! ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value returned by
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -1366,7 +1446,8 @@ public:
   //!   to the logical input sequence.
   //!   @endrst
   template <typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -1378,6 +1459,9 @@ public:
   //! @rst
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @granularity
@@ -1402,7 +1486,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -1410,24 +1494,24 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output items (may be aliased to `input`)
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread])
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0]);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1435,6 +1519,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @granularity
@@ -1461,7 +1548,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -1472,25 +1559,25 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T& block_aggregate)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0], block_aggregate);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1500,6 +1587,9 @@ public:
   //! Instead of using 0 as the block-wide prefix, the call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -1536,7 +1626,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam BlockPrefixCallbackOp
@@ -1553,25 +1643,25 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to the
   //!   logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
+  template <int ItemsPerThread, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0], block_prefix_callback_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 
@@ -1582,6 +1672,9 @@ public:
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -1617,7 +1710,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op);
   }
@@ -1626,6 +1719,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element. Also provides every thread with the block-wide
   //! ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -1679,7 +1775,7 @@ public:
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_aggregate);
   }
@@ -1689,6 +1785,9 @@ public:
   //! Each thread contributes one input element. The call-back functor ``block_prefix_callback_op``
   //! is invoked by the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor's input parameter
@@ -1747,7 +1846,7 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -1760,6 +1859,9 @@ public:
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1786,7 +1888,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1800,30 +1902,33 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1843,10 +1948,9 @@ public:
   //!     :start-after: example-begin inclusive-scan-array-init-value
   //!     :end-before: example-end inclusive-scan-array-init-value
   //!
-  //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1863,24 +1967,27 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1922,7 +2029,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1939,24 +2046,24 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op, block_aggregate);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan (with no initial value)
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1964,6 +2071,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1991,7 +2101,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -2012,18 +2122,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2032,6 +2142,9 @@ public:
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block,
   //! and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the
   //! thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value
@@ -2115,7 +2228,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -2138,27 +2251,27 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
-    T (&input)[ITEMS_PER_THREAD],
-    T (&output)[ITEMS_PER_THREAD],
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
     ScanOp scan_op,
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op, block_prefix_callback_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 

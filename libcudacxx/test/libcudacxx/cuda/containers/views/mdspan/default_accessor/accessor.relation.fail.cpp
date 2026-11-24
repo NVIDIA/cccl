@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <template <class> class Wrapper>
-__host__ __device__ void test_managed_conversions()
+TEST_FUNC void test_managed_conversions()
 {
   using HostOrDeviceAccessor = Wrapper<cuda::std::default_accessor<float>>;
   using ManagedAccessor      = cuda::managed_accessor<cuda::std::default_accessor<float>>;
@@ -21,7 +21,7 @@ __host__ __device__ void test_managed_conversions()
 }
 
 template <template <class> class WrapperA, template <class> class WrapperB>
-__host__ __device__ void test_host_device_conversions()
+TEST_FUNC void test_host_device_conversions()
 {
   using HostOrDeviceAccessor = WrapperA<cuda::std::default_accessor<float>>;
   using DeviceOrHostAccessor = WrapperB<cuda::std::default_accessor<float>>;

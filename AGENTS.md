@@ -13,7 +13,7 @@ CCCL is a collection of CUDA C++ libraries and Python packages:
 * **Thrust** — High-level parallel algorithms
 * **cudax** — Experimental features
 * **C Parallel Library** — C bindings for CCCL algorithms
-* **Python CCCL packages** (`cuda-cccl`) — Python bindings for parallel and cooperative primitives
+* **Python CCCL packages** (`cuda-cccl`) — Python APIs for parallel primitives and programmatic access to CCCL headers
 
 The repository uses **CMake** with the **Ninja** generator and provides standardized presets for consistent builds.
 
@@ -71,7 +71,7 @@ Common options:
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.0 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.4 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`
@@ -106,6 +106,18 @@ See `docs/cccl/development/build_and_bisect_tools.rst` for details.
 
 Always prefer targeted builds and tests, as full builds are time-consuming. If required tools or hardware are unavailable, note this in the PR but run as many relevant tests as possible.
 
+### Target Names
+
+Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests; targets created with `NO_METATARGETS`, such as the C Parallel tests, are the exception. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
+
+* CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_` or `test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`). CMake reads `%PARAM%` lines at configure time, so re-run CMake after changing them (see `docs/cccl/development/testing.rst`).
+* Thrust: `thrust.<host>.<device>.test.<name>`, e.g. `thrust.cpp.cuda.test.reduce`.
+* cudax: `cudax.test.<group>`; the groups are defined in `cudax/test/CMakeLists.txt`.
+* C Parallel: `cccl.c.parallel.test.<name>` for `c/parallel/test/test_<name>.cpp`.
+* libcudacxx: `libcudacxx.test.lit.precompile` precompiles every lit test.
+
+To check a name, run `ninja -t targets all | grep <name>` in the build tree.
+
 ### Targeted Build and Test Examples
 
 * **CUB** (`cub/`):
@@ -113,8 +125,8 @@ Always prefer targeted builds and tests, as full builds are time-consuming. If r
 ```bash
 ci/util/build_and_test_targets.sh \
   --preset cub-cpp20 \
-  --build-targets "cub.cpp20.test.iterator" \
-  --ctest-targets "cub.cpp20.test.iterator"
+  --build-targets "cub.test.iterator" \
+  --ctest-targets "cub.test.iterator"
 ```
 
 * **Thrust** (`thrust/`):
@@ -122,12 +134,12 @@ ci/util/build_and_test_targets.sh \
 ```bash
 ci/util/build_and_test_targets.sh \
   --preset thrust-cpp20 \
-  --build-targets "thrust.cpp20.test.reduce" \
-  --ctest-targets "thrust.cpp20.test.reduce"
+  --build-targets "thrust.cpp.cuda.test.reduce" \
+  --ctest-targets "thrust.cpp.cuda.test.reduce$"
 ```
 
 * **libcudacxx** (`libcudacxx/`):
-  Avoid the expensive `libcudacxx.cpp20.precompile.lit`. Instead, precompile and run a small set of lit tests:
+  Avoid the expensive `libcudacxx.test.lit.precompile`. Instead, precompile and run a small set of lit tests:
 
 ```bash
 ci/util/build_and_test_targets.sh \
@@ -141,8 +153,8 @@ ci/util/build_and_test_targets.sh \
 ```bash
 ci/util/build_and_test_targets.sh \
   --preset cudax \
-  --build-targets "cudax.cpp20.test.async_buffer" \
-  --ctest-targets "cudax.cpp20.test.async_buffer"
+  --build-targets "cudax.test.containers" \
+  --ctest-targets "cudax.test.containers"
 ```
 
 * **C Parallel API** (`c/parallel/`):
@@ -150,8 +162,8 @@ ci/util/build_and_test_targets.sh \
 ```bash
 ci/util/build_and_test_targets.sh \
   --preset cccl-c-parallel \
-  --build-targets "cccl.c.test.reduce" \
-  --ctest-targets "cccl.c.test.reduce"
+  --build-targets "cccl.c.parallel.test.reduce" \
+  --ctest-targets "cccl.c.parallel.test.reduce"
 ```
 
 ### Full Builds
@@ -201,12 +213,12 @@ Options:
 
 Python components require different parameters than C++ builds. Use `-py-version` instead of compiler flags.
 
-Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
+Supported versions: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
-* **cuda.coop** — Block/warp-level primitives
+* **cuda.stf._experimental** — Sequential Task Flow (CUDASTF) Python bindings in the `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -235,20 +247,15 @@ Requirements:
 
 * Python 3.10+
 * CUDA Toolkit 12.x or 13.x
-* NVIDIA GPU (CC 6.0+)
-* Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
-* CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
+* NVIDIA GPU (CC 7.5+)
+* Base dependencies: `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
+* CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda-mlir` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 
 ### Usage Examples
 
 ```python
 import cuda.compute
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
-
-from cuda import coop
-@cuda.jit
-def kernel(data):
-    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
@@ -259,23 +266,23 @@ include_paths = headers.get_include_paths()
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
 ./ci/test_cuda_compute_python.sh -py-version 3.10
-./ci/test_cuda_coop_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
 
 * `tests/compute` — Algorithms and iterators
-* `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `test_examples.py` — Runs compute/coop examples
+* `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
+* `test_examples.py` — Runs compute examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 
 ## Continuous Integration (CI)
 
-See `ci-overview.md` for detailed examples and troubleshooting guidance.
+See `docs/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
 
 CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
 
@@ -286,7 +293,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
-    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
+    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/project_files_and_dependencies.yaml` for dependency information.
     * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
   * Important rules:
     * PR merges are blocked while an override matrix is active.
@@ -315,22 +322,23 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`ci/inspect_changes.py`**
 
   * Detects which subprojects changed between commits.
-  * Defines internal dependencies between CCCL projects. If a project is marked dirty, all dependent projects are also marked dirty and tested.
+  * Reads project paths and dependencies from `ci/project_files_and_dependencies.yaml`. Each library is split into a public-header project and a tests/infra project. A change to a library's public headers runs the full matrix of every project that lists those headers in `full_dependencies` (the library's own tests/infra project and `tidy`), and a reduced ("lite") matrix for every project that lists them in `lite_dependencies` or reaches them through another dependency. A project reached both ways runs only its full matrix. A change confined to a library's tests does not trigger other libraries, only infra projects such as `tidy` and `packaging`. To see what a change selects, run `python3 ci/inspect_changes.py --refs origin/main HEAD`.
   * Allows `build-workflow.py` to skip unaffected jobs.
 
 ---
 
 ### Commit Message Controls
 
-Tags appended to the commit summary (case-sensitive) control CI behavior:
+Tags appended to the commit summary (case-sensitive) control PR CI behavior:
 
-* `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
+* `[bench-only]`: Skip all non-benchmark CI jobs. Equivalent to `[skip-matrix][skip-vdc][skip-docs]`.
+* `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs and devcontainers still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
-* `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
-* `[skip-matx]`: Skip building the MatX third-party smoke test.
-* `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
-* `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
+* `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
+* `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
+
+Third-party smoke tests (MatX, PyTorch, RAPIDS) run in nightly CI only.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 
@@ -349,13 +357,26 @@ pre-commit run --all-files
 pre-commit run --files <file1> <file2>
 ```
 
+Besides the formatters and linters, two repository-local hooks enforce conventions:
+
+* `check-cub-test-macros`: tests in `cub/test/` must be declared with `CUB_TEST`, `CUB_TEST_CASE`, or `CUB_TEST_LIST`, which take a `CUB_SMALL` or `CUB_LARGE` memory class. Raw `C2H_TEST*` and Catch2 `TEST_CASE`-style macros are rejected.
+* `check-ptx-umbrella`: every PTX wrapper in `libcudacxx/include/cuda/__ptx/{instructions,pragmas}/` needs a public `cuda/ptxs/` header, and `<cuda/ptx>` must include exactly the `cuda/ptxs/` headers.
+
+### Style Guidance
+
+When editing or reviewing CCCL code for style, read `.agent/skills/cccl-style/SKILL.md`. It routes to the common CCCL style reference, `docs/cccl/development/coding_conventions.rst`, and any path-specific style reference that applies to the files being changed.
+
+### Test Guidance
+
+When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills/cccl-test/SKILL.md`. It routes to the common CCCL test reference and any path-specific test reference that applies to the files being changed.
+
 ---
 
 ## General Guidelines
 
 * Validate changes with builds/tests; report results.
 * Run `pre-commit` before committing.
-* Review `CONTRIBUTING.md` and `ci-overview.md` before starting work.
+* Review `CONTRIBUTING.md` and `docs/infrastructure/ci/references/ci_overview.rst` before starting work.
 
 ### Performance Tips
 
@@ -370,16 +391,22 @@ pre-commit run --files <file1> <file2>
 
 ```
 cccl/
+├── .agent/skills/      # Agent skills (style, tests, review, benchmarking, SASS diff)
 ├── .github/            # Workflows
 ├── .devcontainer/      # Dev containers
 ├── libcudacxx/         # CUDA C++ Standard Library
 ├── cub/                # CUB primitives
 ├── thrust/             # Thrust algorithms
 ├── cudax/              # Experimental features
-├── c/                  # C Parallel library
-├── python/cuda_cccl/   # Python bindings
+├── c/                  # C libraries: parallel/ (v1), parallel.v2/, experimental/stf/
+├── c2h/                # Catch2 test harness shared by CUB, cudax, libcudacxx, and the C library
+├── nvbench_helper/     # NVBench glue for benchmarks
+├── benchmarks/         # Shared benchmark CMake and scripts
+├── python/             # Python packages: cuda_cccl, cuda_stf
 ├── ci/                 # Build/test scripts
+├── docs/               # Sphinx documentation sources
 ├── examples/           # Usage examples
+├── test/               # Cross-project tests (CUDA smoke tests, stdpar)
 └── CMakePresets.json   # Preset configurations
 ```
 
@@ -389,15 +416,15 @@ Python package layout:
 python/cuda_cccl/
 ├── cuda/
 │   ├── compute/
-│   ├── coop/
 │   └── cccl/
 │       ├── parallel/
-│       ├── cooperative/
 │       └── headers/
 ├── tests/
 ├── benchmarks/
 └── pyproject.toml
 ```
+
+`python/cuda_stf/` (`cuda.stf`) is a separate package with its own `pyproject.toml` and `tests/`.
 
 ---
 

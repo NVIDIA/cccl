@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file extrema.h
  *  \brief Functions for computing computing extremal values
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -89,7 +76,7 @@ using ::cuda::std::min;
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p min_element finds the smallest element in the range <tt>[first, last)</tt>.
@@ -130,7 +117,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p min_element finds the smallest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -198,7 +185,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -264,7 +251,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_API ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -308,7 +295,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
@@ -348,7 +335,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -416,7 +403,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -482,8 +469,9 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_API ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
  *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
@@ -524,9 +512,10 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
  *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
@@ -562,8 +551,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \endverbatim
  */
 template <typename ForwardIterator>
-::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
+minmax_element(ForwardIterator first, ForwardIterator last);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
  *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
@@ -629,12 +620,13 @@ template <typename ForwardIterator>
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   BinaryPredicate comp);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
  *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
@@ -693,7 +685,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \} // end extrema
@@ -702,4 +694,4 @@ minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/extrema.inl>
+#include <thrust/detail/extrema.inl> // IWYU pragma: export

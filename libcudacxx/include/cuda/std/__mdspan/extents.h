@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,16 +29,20 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
@@ -46,6 +50,13 @@
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -189,16 +200,16 @@ private:
   // Static values member
   static constexpr size_t __size_         = sizeof...(_Values);
   static constexpr size_t __size_dynamic_ = __count_dynamic_v<_TStatic, _DynTag, _Values...>;
-  using _StaticValues                     = __static_array<_TStatic, _Values...>;
-  using _DynamicValues                    = __possibly_empty_array<_TDynamic, __size_dynamic_>;
+  using _StaticValues _CCCL_NODEBUG       = __static_array<_TStatic, _Values...>;
+  using _DynamicValues _CCCL_NODEBUG      = __possibly_empty_array<_TDynamic, __size_dynamic_>;
 
   // static mapping of indices to the position in the dynamic values array
-  using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
+  using _DynamicIdxMap _CCCL_NODEBUG = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
-  template <size_t... Indices>
-  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
+  template <size_t... _Indices>
+  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<_Indices...>) noexcept
   {
-    return _DynamicValues{((void) Indices, 0)...};
+    return _DynamicValues{((void) _Indices, 0)...};
   }
 
 public:
@@ -241,19 +252,19 @@ public:
 
   // constructors from dynamic values only -- this covers the case for rank() == 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) _CCCL_AND(!__fold_and_v<__is_cuda_std_span_v<_DynVals>...>))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals) noexcept
       : _DynamicValues{static_cast<_TDynamic>(__vals)...}
   {}
 
   // constructors from all values -- here rank will be greater than 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) _CCCL_AND(!__fold_and_v<__is_cuda_std_span_v<_DynVals>...>))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals)
       : _DynamicValues{}
   {
     static_assert((sizeof...(_DynVals) == __size_), "Invalid number of values.");
-    _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
+    const _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
     for (size_t __i = 0; __i < __size_; __i++)
     {
       _TStatic __static_val = _StaticValues::__get(__i);
@@ -319,48 +330,20 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 
   template <class _To, class _From>
   inline constexpr bool __potentially_narrowing =
-    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+    static_cast<make_unsigned_t<_To>>(numeric_limits<_To>::max())
+    < static_cast<make_unsigned_t<_From>>(numeric_limits<_From>::max());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false
 // if _From is not an integral, we just check positivity
 _CCCL_TEMPLATE(class _To, class _From)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __is_representable_as([[maybe_unused]] _From __value)
 {
-  if constexpr (integral<_From>)
+  if constexpr (integral<_From> && !is_same_v<_From, bool>)
   {
-    if constexpr (is_signed_v<_From>)
-    {
-      if constexpr (__potentially_narrowing<_To, _From>)
-      {
-        using _To_u   = make_unsigned_t<_To>;
-        using _From_u = make_unsigned_t<_From>;
-        if (__value < 0)
-        {
-          return false;
-        }
-        return static_cast<_To_u>((numeric_limits<_To>::max)()) >= static_cast<_From_u>(__value);
-      }
-      else // !__potentially_narrowing<_To, _From>
-      {
-        return __value >= 0;
-      }
-    }
-    else // !is_signed_v<_From>
-    {
-      if constexpr (__potentially_narrowing<_To, _From>)
-      {
-        using _To_u   = make_unsigned_t<_To>;
-        using _From_u = make_unsigned_t<_From>;
-        return static_cast<_To_u>((numeric_limits<_To>::max)()) >= static_cast<_From_u>(__value);
-      }
-      else // !__potentially_narrowing<_To, _From>
-      {
-        return true;
-      }
-    }
+    using _FromInt = __make_nbit_int_t<__num_bits_v<_From>, is_signed_v<_From>>;
+    return ::cuda::std::in_range<_To>(static_cast<_FromInt>(__value));
   }
   else // !integral<_From>
   {
@@ -376,14 +359,14 @@ _CCCL_REQUIRES(integral<_To>)
 }
 
 _CCCL_TEMPLATE(class _To, class... _From)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(_From... __values)
 {
   return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(span<_From, _Size> __values)
 {
   for (size_t __i = 0; __i != _Size; __i++)
@@ -394,6 +377,25 @@ _CCCL_REQUIRES(integral<_To>)
     }
   }
   return true;
+}
+
+// ------------------------------------------------------------------
+// ------------ __mul_overflow --------------------------------------
+// ------------------------------------------------------------------
+
+// Multiplies two values and detects overflow. Returns true if overflow occurred.
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y, _Tp* __res) noexcept
+{
+  *__res = __x * __y;
+  return __x && ((*__res / __x) != __y);
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y) noexcept
+{
+  const auto __res = __x * __y;
+  return __x && ((__res / __x) != __y);
 }
 } // namespace __mdspan_detail
 
@@ -417,11 +419,9 @@ public:
   using size_type  = make_unsigned_t<index_type>;
   using rank_type  = size_t;
 
-  static_assert(is_integral_v<index_type> && !is_same_v<index_type, bool>,
-                "extents::index_type must be a signed or unsigned integer type");
-  static_assert(
-    __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
-    "extents ctor: arguments must be representable as index_type and nonnegative");
+  static_assert(__cccl_is_integer_v<index_type>, "extents::index_type must be a signed or unsigned integer type");
+  static_assert(((::cuda::std::in_range<index_type>(_Extents) || (_Extents == dynamic_extent)) && ...),
+                "extents ctor: arguments must be representable as index_type and nonnegative");
 
 private:
   static constexpr rank_type __rank_ = sizeof...(_Extents);
@@ -429,7 +429,7 @@ private:
     (rank_type(0) + ... + (static_cast<rank_type>(_Extents == dynamic_extent)));
 
   // internal storage type using __maybe_static_array
-  using _Values = __mdspan_detail::__maybe_static_array<_IndexType, size_t, dynamic_extent, _Extents...>;
+  using _Values _CCCL_NODEBUG = __mdspan_detail::__maybe_static_array<_IndexType, size_t, dynamic_extent, _Extents...>;
 
 public:
   // [mdspan.extents.obs], observers of multidimensional index space
@@ -559,13 +559,8 @@ private:
     {
       for (size_t __r = 0; __r != rank(); __r++)
       {
-        if constexpr (__mdspan_detail::__potentially_narrowing<index_type, _OtherIndexType>)
-        {
-          // Not catching this could lead to out of bounds errors later
-          // e.g. dextents<char,1>> e(dextents<unsigned,1>(200)) leads to an extent of -56 on e
-          _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.extent(__r)),
-                       "extents ctor: arguments must be representable as index_type and nonnegative");
-        }
+        _CCCL_ASSERT(::cuda::std::in_range<index_type>(__other.extent(__r)),
+                     "extents ctor: arguments must be representable as index_type and nonnegative");
 
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, extents<int, 10>> m = mdspan<int, dextents<int, 1>>(new int[5], 5);
@@ -617,9 +612,7 @@ public:
     {
       for (rank_type __r = 0; __r != __rank_; __r++)
       {
-        // avoid warning when comparing signed and unsigner integers and pick the wider of two types
-        using _CommonType = common_type_t<index_type, _OtherIndexType>;
-        if (static_cast<_CommonType>(__lhs.extent(__r)) != static_cast<_CommonType>(__rhs.extent(__r)))
+        if (::cuda::std::cmp_not_equal(__lhs.extent(__r), __rhs.extent(__r)))
         {
           return false;
         }
@@ -642,35 +635,6 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-// Recursive helper classes to implement dextents alias for extents
-namespace __mdspan_detail
-{
-template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
-struct __make_dextents;
-
-template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
-using __make_dextents_t = typename __make_dextents<_IndexType, _Rank, _Extents>::type;
-
-template <class _IndexType, size_t _Rank, size_t... _ExtentsPack>
-struct __make_dextents<_IndexType, _Rank, extents<_IndexType, _ExtentsPack...>>
-{
-  using type = __make_dextents_t<_IndexType, _Rank - 1, extents<_IndexType, dynamic_extent, _ExtentsPack...>>;
-};
-
-template <class _IndexType, size_t... _ExtentsPack>
-struct __make_dextents<_IndexType, 0, extents<_IndexType, _ExtentsPack...>>
-{
-  using type = extents<_IndexType, _ExtentsPack...>;
-};
-} // end namespace __mdspan_detail
-
-// [mdspan.extents.dextents], alias template
-template <class _IndexType, size_t _Rank>
-using dextents = __mdspan_detail::__make_dextents_t<_IndexType, _Rank>;
-
-template <size_t _Rank, class _IndexType = size_t>
-using dims = dextents<_IndexType, _Rank>;
-
 // nvcc cannot handle type conversions without this workaround
 struct __to_dynamic_extent
 {
@@ -680,10 +644,36 @@ struct __to_dynamic_extent
 
 // Deduction guide for extents
 template <class... _IndexTypes>
-_CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES extents(_IndexTypes...)
+  -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
 
 namespace __mdspan_detail
 {
+// ------------------------------------------------------------------
+// ------------ __required_span_size_is_representable ---------------
+// ------------------------------------------------------------------
+
+// Checks if the product of extents is representable as index_type without overflow
+template <class _Extents>
+[[nodiscard]] _CCCL_API constexpr bool __required_span_size_is_representable(const _Extents& __ext) noexcept
+{
+  using ::cuda::std::__mdspan_detail::__mul_overflow;
+  if constexpr (_Extents::rank() != 0)
+  {
+    using __index_type  = typename _Extents::index_type;
+    using __rank_type   = typename _Extents::rank_type;
+    __index_type __prod = __ext.extent(0);
+    for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
+    {
+      if (__mul_overflow(__prod, __ext.extent(__r), ::cuda::std::addressof(__prod)))
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
 // requiring that the indices are larger than 0 and smaller than
@@ -693,22 +683,11 @@ _CCCL_TEMPLATE(class _IndexType, class _From)
 _CCCL_REQUIRES(integral<_IndexType>)
 [[nodiscard]] _CCCL_API constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
 {
-  if constexpr (integral<_From>)
+  if constexpr (integral<_From> && !is_same_v<_From, bool>)
   {
-    if constexpr (is_signed_v<_From>)
-    {
-      if (__value < 0)
-      {
-        return false;
-      }
-      using _Tp = common_type_t<_IndexType, _From>;
-      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-    }
-    else
-    {
-      using _Tp = common_type_t<_IndexType, _From>;
-      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-    }
+    using _FromInt        = __make_nbit_int_t<__num_bits_v<_From>, is_signed_v<_From>>;
+    const auto __from_int = static_cast<_FromInt>(__value);
+    return ::cuda::std::cmp_greater_equal(__from_int, 0) && ::cuda::std::cmp_less(__from_int, __extent);
   }
   else
   {
@@ -731,7 +710,7 @@ template <size_t... _Idxs, class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
-  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ... && true);
+  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
 }
 
 template <class _Extents, class... _From>
@@ -743,6 +722,11 @@ template <class _Extents, class... _From>
 } // namespace __mdspan_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

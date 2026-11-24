@@ -22,7 +22,7 @@ struct Base
 struct Derived : Base
 {};
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::reverse_iterator<Base*> base;
   cuda::std::reverse_iterator<Derived*> derived;

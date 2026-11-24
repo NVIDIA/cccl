@@ -7,13 +7,16 @@ Math
    :hidden:
    :maxdepth: 1
 
+   math/abs_diff
    math/ceil_div
+   math/clamp
    math/round_up
    math/round_down
    math/ilog
    math/ipow
    math/pow2
    math/isqrt
+   math/min_max
    math/neg
    math/uabs
    math/fast_mod_div
@@ -29,10 +32,20 @@ Math
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
+   * - :ref:`abs_diff <libcudacxx-extended-api-math-abs-diff>`
+     - Absolute difference
+     - CCCL 3.6.0
+     - CUDA 13.6
+
    * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
      - Ceiling division
      - CCCL 2.7.0
      - CUDA 12.8
+
+   * - :ref:`clamp <libcudacxx-extended-api-math-clamp>`
+     - Clamp a value to a range, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`round_up <libcudacxx-extended-api-math-round-up>`
      - Round up to the next multiple
@@ -49,10 +62,20 @@ Math
      - CCCL 3.0.0
      - CUDA 13.0
 
+   * - :ref:`ceil_ilog2 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 2, rounded up
+     - CCCL 3.1.0
+     - CUDA 13.1
+
    * - :ref:`ilog10 <libcudacxx-extended-api-math-ilog>`
      - Integer logarithm to the base 10
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`ceil_ilog10 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 10, rounded up
+     - CCCL 3.5.0
+     - CUDA 13.5
 
    * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
      - Integer power
@@ -68,6 +91,16 @@ Math
      - Integer square root
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`max <libcudacxx-extended-api-math-min-max>`
+     - Larger of two values, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
+
+   * - :ref:`min <libcudacxx-extended-api-math-min-max>`
+     - Smaller of two values, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`neg <libcudacxx-extended-api-math-neg>`
      - Integer negation

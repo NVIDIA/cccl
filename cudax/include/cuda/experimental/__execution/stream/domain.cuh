@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,11 +24,13 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/compose.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -47,10 +49,10 @@ struct __tag_t
 struct __no_tag_t
 {};
 
-_CCCL_API auto __tag_of(::cuda::std::__ignore_t) -> __no_tag_t;
+_CCCL_HOST_DEVICE_API auto __tag_of(::cuda::std::__ignore_t) -> __no_tag_t;
 
 template <class _Sndr>
-_CCCL_API auto __tag_of(const _Sndr& __sndr) -> tag_of_t<_Sndr>;
+_CCCL_HOST_DEVICE_API auto __tag_of(const _Sndr& __sndr) -> tag_of_t<_Sndr>;
 
 template <class _Sndr>
 using __tag_of_t = decltype(__stream::__tag_of(declval<_Sndr>()));
@@ -76,7 +78,7 @@ struct __get_stream_fn
   _CCCL_TEMPLATE(class _Sndr, class _Env)
   _CCCL_REQUIRES((__callable<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>
                   || __callable<__get_stream_from_env_t, _Env>) )
-  _CCCL_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
   {
     if constexpr (__callable<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>)
     {
@@ -93,7 +95,7 @@ struct __get_stream_fn
 
 // Forward declaration of the __adapt function
 template <class _Sndr, class _GetStream = __get_stream_fn>
-_CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream = {}) noexcept(__nothrow_decay_copyable<_Sndr>);
+_CCCL_HOST_DEVICE_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream = {}) noexcept(__nothrow_decay_copyable<_Sndr>);
 } // namespace __stream
 
 _CCCL_GLOBAL_CONSTANT auto __get_stream = __stream::__get_stream_fn{};
@@ -107,7 +109,8 @@ struct stream_domain
   {
     // This is the default apply function that adapts a sender to a stream sender.
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+    _CCCL_HOST_DEVICE_API constexpr auto
+    operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_decay_copyable<_Sndr>)
     {
       return __stream::__adapt(static_cast<_Sndr&&>(__sndr));
@@ -117,7 +120,8 @@ struct stream_domain
   struct __apply_passthru_t
   {
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+    _CCCL_HOST_DEVICE_API constexpr auto
+    operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_movable<_Sndr>) -> _Sndr
     {
       return static_cast<_Sndr&&>(__sndr);
@@ -129,7 +133,7 @@ struct stream_domain
   {};
 
   template <class _Sndr, class _Env>
-  _CCCL_API static constexpr auto __transform_strategy() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr auto __transform_strategy() noexcept
   {
     if constexpr (__queryable_with<_Env, __stream::__adapted_t>)
     {
@@ -156,7 +160,7 @@ struct stream_domain
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
   _CCCL_REQUIRES(__callable<__apply_t<_Tag>, _Sndr, _Args...>)
-  _CCCL_API static constexpr auto
+  _CCCL_HOST_DEVICE_API static constexpr auto
   apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(__nothrow_callable<__apply_t<_Tag>, _Sndr, _Args...>)
     -> __call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
@@ -165,7 +169,7 @@ public:
 
   _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env, class _Apply = __transform_strategy_t<_Sndr, _Env>)
   _CCCL_REQUIRES(__callable<_Apply, _OpTag, _Sndr, const _Env&>)
-  _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) noexcept(
+  _CCCL_HOST_DEVICE_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) noexcept(
     __nothrow_callable<_Apply, _OpTag, _Sndr, const _Env&>) -> __call_result_t<_Apply, _OpTag, _Sndr, const _Env&>
   {
     return _Apply()(_OpTag(), static_cast<_Sndr&&>(__sndr), __env);

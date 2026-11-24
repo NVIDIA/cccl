@@ -1,43 +1,33 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/nvtx_policy.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/for_each.h>
 #include <thrust/system/detail/sequential/for_each.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(for_each.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(for_each.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/for_each.h>
 #  include <thrust/system/cuda/detail/for_each.h>
 #  include <thrust/system/omp/detail/for_each.h>
@@ -48,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each(
+_CCCL_HOST_DEVICE_API InputIterator for_each(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -61,19 +51,19 @@ _CCCL_HOST_DEVICE InputIterator for_each(
 }
 
 template <typename InputIterator, typename UnaryFunction>
-InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
+_CCCL_HOST_API InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
 {
   using System = typename thrust::iterator_system<InputIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::for_each");
   using thrust::system::detail::generic::select_system;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
   return thrust::for_each(select_system(system), first, last, f);
 } // end for_each()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each_n(
+_CCCL_HOST_DEVICE_API InputIterator for_each_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, UnaryFunction f)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::for_each_n");
@@ -83,13 +73,13 @@ _CCCL_HOST_DEVICE InputIterator for_each_n(
 } // end for_each_n()
 
 template <typename InputIterator, typename Size, typename UnaryFunction>
-InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f)
+_CCCL_HOST_API InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f)
 {
   using System = typename thrust::iterator_system<InputIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::for_each_n");
   using thrust::system::detail::generic::select_system;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
   return thrust::for_each_n(select_system(system), first, n, f);
 } // end for_each_n()
 

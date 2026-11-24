@@ -16,7 +16,7 @@
 // constexpr size_t index() const noexcept;
 
 #include <cuda/std/cassert>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
@@ -42,7 +42,7 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
+    static_assert(v.index() == 0);
   }
   {
     using V = cuda::std::variant<int, long>;
@@ -52,9 +52,9 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v(cuda::std::in_place_index<1>);
-    static_assert(v.index() == 1, "");
+    static_assert(v.index() == 1);
   }
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<int, cuda::std::string>;
     V v("abc");

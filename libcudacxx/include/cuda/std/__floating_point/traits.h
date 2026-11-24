@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__fwd/fp.h>
 
@@ -85,6 +84,11 @@ inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_e4m3> = true;
 template <>
 inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_e5m2> = true;
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_ue5m3> = true;
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 template <>

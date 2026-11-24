@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void checkCV()
+TEST_FUNC void checkCV()
 {
   cuda::std::span<int> sp;
   //  cuda::std::span<const          int>  csp;
@@ -64,7 +64,7 @@ __host__ __device__ void checkCV()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpan()
+TEST_FUNC constexpr bool testConstexprSpan()
 {
   cuda::std::span<T> s0{};
   cuda::std::span<T, 0> s1{};
@@ -78,7 +78,7 @@ __host__ __device__ constexpr bool testConstexprSpan()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpan()
+TEST_FUNC void testRuntimeSpan()
 {
   cuda::std::span<T> s0{};
   cuda::std::span<T, 0> s1{};

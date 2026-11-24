@@ -1,0 +1,77 @@
+=============== optional.disengaged begin ===============
+(const cuda::std::optional<int> &) <address> cuda::std::nullopt
+=============== optional.disengaged end ===============
+=============== optional.engaged_int begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 42
+}
+=============== optional.engaged_int end ===============
+=============== optional.engaged_double begin ===============
+(const cuda::std::optional<double> &) <address>: {
+  value = 3.1400000000000001
+}
+=============== optional.engaged_double end ===============
+=============== optional.engaged_zero begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 0
+}
+=============== optional.engaged_zero end ===============
+=============== optional.update.before begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 1
+}
+=============== optional.update.before end ===============
+=============== optional.update.after begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 2
+}
+=============== optional.update.after end ===============
+=============== optional.alias begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 17
+}
+=============== optional.alias end ===============
+=============== optional.nested begin ===============
+(const cuda::std::array<cuda::std::optional<int>, 2> &) <address>: {
+  [0] = {
+    value = 13
+  }
+  [1] = cuda::std::nullopt
+}
+=============== optional.nested end ===============
+=============== optional_ref.disengaged begin ===============
+(const cuda::std::optional<int &> &) <address> cuda::std::nullopt
+=============== optional_ref.disengaged end ===============
+=============== optional_ref.engaged begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 88
+}
+=============== optional_ref.engaged end ===============
+=============== optional_ref.engaged_zero begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 0
+}
+=============== optional_ref.engaged_zero end ===============
+=============== optional_ref.update.before begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 1
+}
+=============== optional_ref.update.before end ===============
+=============== optional_ref.update.after begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 2
+}
+=============== optional_ref.update.after end ===============
+=============== optional_ref.alias begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 88
+}
+=============== optional_ref.alias end ===============
+=============== optional_ref.nested begin ===============
+(const cuda::std::array<cuda::std::optional<int &>, 2> &) <address>: {
+  [0] = {
+    value = 88
+  }
+  [1] = cuda::std::nullopt
+}
+=============== optional_ref.nested end ===============

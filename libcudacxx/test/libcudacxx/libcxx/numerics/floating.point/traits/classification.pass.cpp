@@ -17,8 +17,10 @@
 
 #include <cuda/std/__floating_point/fp.h>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ void test_std_fp()
+TEST_FUNC void test_std_fp()
 {
   static_assert(cuda::std::__is_std_fp_v<T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
@@ -50,7 +52,7 @@ __host__ __device__ void test_std_fp()
 }
 
 template <class T>
-__host__ __device__ void test_ext_nv_fp()
+TEST_FUNC void test_ext_nv_fp()
 {
   static_assert(!cuda::std::__is_std_fp_v<T>);
   static_assert(cuda::std::__is_ext_nv_fp_v<T>);
@@ -82,7 +84,7 @@ __host__ __device__ void test_ext_nv_fp()
 }
 
 template <class T>
-__host__ __device__ void test_ext_compiler_fp()
+TEST_FUNC void test_ext_compiler_fp()
 {
   static_assert(!cuda::std::__is_std_fp_v<T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
@@ -114,7 +116,7 @@ __host__ __device__ void test_ext_compiler_fp()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_ext_cccl_fp()
+TEST_FUNC void test_ext_cccl_fp()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -167,6 +169,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E5M2()
   test_ext_nv_fp<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_ext_nv_fp<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_ext_nv_fp<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

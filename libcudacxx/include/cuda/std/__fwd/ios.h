@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base;
+class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base; // NOLINT(bugprone-forward-declaration-namespace)
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ios;
@@ -109,7 +109,7 @@ using u16streampos = fpos<mbstate_t>;
 using u32streampos = fpos<mbstate_t>;
 #endif // _CCCL_HAS_WCHAR_T()
 
-#if defined(_NEWLIB_VERSION)
+#ifdef _NEWLIB_VERSION
 // On newlib, off_t is 'long int'
 using streamoff = long int; // for char_traits in <string>
 #else

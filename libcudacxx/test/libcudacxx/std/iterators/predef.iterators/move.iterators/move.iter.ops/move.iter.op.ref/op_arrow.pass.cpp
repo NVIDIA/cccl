@@ -22,7 +22,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   char a[]                            = "123456789";
   cuda::std::move_iterator<char*> it1 = cuda::std::make_move_iterator(a);
@@ -36,7 +36,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

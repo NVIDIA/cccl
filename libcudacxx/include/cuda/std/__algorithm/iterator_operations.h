@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/iter_swap.h>
-#include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
@@ -53,13 +52,10 @@ template <>
 struct _IterOps<_RangeAlgPolicy>
 {
   template <class _Iter>
-  using __value_type = iter_value_t<_Iter>;
+  using __value_type _CCCL_NODEBUG = iter_value_t<_Iter>;
 
   template <class _Iter>
-  using __iterator_category = ::cuda::std::ranges::__iterator_concept<_Iter>;
-
-  template <class _Iter>
-  using __difference_type = iter_difference_t<_Iter>;
+  using __difference_type _CCCL_NODEBUG = iter_difference_t<_Iter>;
 
   static constexpr auto advance      = ::cuda::std::ranges::advance;
   static constexpr auto distance     = ::cuda::std::ranges::distance;
@@ -77,13 +73,10 @@ template <>
 struct _IterOps<_ClassicAlgPolicy>
 {
   template <class _Iter>
-  using __value_type = typename iterator_traits<_Iter>::value_type;
+  using __value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
 
   template <class _Iter>
-  using __iterator_category = typename iterator_traits<_Iter>::iterator_category;
-
-  template <class _Iter>
-  using __difference_type = typename iterator_traits<_Iter>::difference_type;
+  using __difference_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::difference_type;
 
   // advance
   template <class _Iter, class _Distance>
@@ -100,10 +93,10 @@ struct _IterOps<_ClassicAlgPolicy>
   }
 
   template <class _Iter>
-  using __deref_t = decltype(*::cuda::std::declval<_Iter&>());
+  using __deref_t _CCCL_NODEBUG = decltype(*::cuda::std::declval<_Iter&>());
 
   template <class _Iter>
-  using __move_t = decltype(::cuda::std::move(*::cuda::std::declval<_Iter&>()));
+  using __move_t _CCCL_NODEBUG = decltype(::cuda::std::move(*::cuda::std::declval<_Iter&>()));
 
   template <class _Iter>
   _CCCL_API constexpr static void __validate_iter_reference()
@@ -121,8 +114,7 @@ struct _IterOps<_ClassicAlgPolicy>
   _CCCL_API constexpr static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `::cuda::std::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
-    __move_t<_Iter>
-    __iter_move(_Iter&& __i)
+    __move_t<_Iter> __iter_move(_Iter&& __i)
   {
     __validate_iter_reference<_Iter>();
 
@@ -135,8 +127,7 @@ struct _IterOps<_ClassicAlgPolicy>
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to
     // that temporary. Note that the C++03 mode doesn't support `auto` as the return type.
-    __deref_t<_Iter>
-    __iter_move(_Iter&& __i)
+    __deref_t<_Iter> __iter_move(_Iter&& __i)
   {
     __validate_iter_reference<_Iter>();
 

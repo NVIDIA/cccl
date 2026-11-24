@@ -15,7 +15,7 @@
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 
-#if !defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifndef _CCCL_BUILTIN_ADDRESSOF
 #  define TEST_WORKAROUND_NO_ADDRESSOF
 #endif
 
@@ -56,13 +56,13 @@ struct SpecialMemberTest
 };
 
 template <class... Args>
-static __host__ __device__ void sink(Args&&...)
+static TEST_FUNC void sink(Args&&...)
 {}
 
 template <class... TestTypes>
 struct DoTestsMetafunction
 {
-  __host__ __device__ DoTestsMetafunction()
+  TEST_FUNC DoTestsMetafunction()
   {
     sink(SpecialMemberTest<TestTypes>{}...);
   }

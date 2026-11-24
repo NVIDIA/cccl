@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class It, class Sent>
-__host__ __device__ constexpr void test_unsized()
+TEST_FUNC constexpr void test_unsized()
 {
   static_assert(cuda::std::sentinel_for<Sent, It> && !cuda::std::sized_sentinel_for<Sent, It>);
   int a[3] = {1, 2, 3};
@@ -63,7 +63,7 @@ __host__ __device__ constexpr void test_unsized()
 }
 
 template <class It, class Sent>
-__host__ __device__ constexpr void test_sized()
+TEST_FUNC constexpr void test_sized()
 {
   static_assert(cuda::std::sized_sentinel_for<Sent, It>);
   int a[] = {1, 2, 3};
@@ -116,21 +116,21 @@ struct StrideCounter
   int* inc_;
   using value_type      = int;
   using difference_type = int;
-  __host__ __device__ explicit StrideCounter();
-  __host__ __device__ constexpr explicit StrideCounter(int* it, int* inc)
+  TEST_FUNC explicit StrideCounter();
+  TEST_FUNC constexpr explicit StrideCounter(int* it, int* inc)
       : it_(it)
       , inc_(inc)
   {}
-  __host__ __device__ constexpr auto& operator++()
+  TEST_FUNC constexpr auto& operator++()
   {
     ++it_;
     *inc_ += 1;
     return *this;
   }
-  __host__ __device__ StrideCounter operator++(int);
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ bool operator==(StrideCounter) const;
-  __host__ __device__ bool operator!=(StrideCounter) const;
+  TEST_FUNC StrideCounter operator++(int);
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC bool operator==(StrideCounter) const;
+  TEST_FUNC bool operator!=(StrideCounter) const;
 };
 static_assert(cuda::std::forward_iterator<StrideCounter>);
 static_assert(!cuda::std::sized_sentinel_for<StrideCounter, StrideCounter>);
@@ -140,17 +140,17 @@ struct SizedStrideCounter
   int* it_;
   int* minus_;
   using value_type = int;
-  __host__ __device__ explicit SizedStrideCounter();
-  __host__ __device__ constexpr explicit SizedStrideCounter(int* it, int* minus)
+  TEST_FUNC explicit SizedStrideCounter();
+  TEST_FUNC constexpr explicit SizedStrideCounter(int* it, int* minus)
       : it_(it)
       , minus_(minus)
   {}
-  __host__ __device__ SizedStrideCounter& operator++();
-  __host__ __device__ SizedStrideCounter operator++(int);
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ bool operator==(SizedStrideCounter) const;
-  __host__ __device__ bool operator!=(SizedStrideCounter) const;
-  __host__ __device__ constexpr int operator-(SizedStrideCounter rhs) const
+  TEST_FUNC SizedStrideCounter& operator++();
+  TEST_FUNC SizedStrideCounter operator++(int);
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC bool operator==(SizedStrideCounter) const;
+  TEST_FUNC bool operator!=(SizedStrideCounter) const;
+  TEST_FUNC constexpr int operator-(SizedStrideCounter rhs) const
   {
     *minus_ += 1;
     return static_cast<int>(it_ - rhs.it_);
@@ -159,7 +159,7 @@ struct SizedStrideCounter
 static_assert(cuda::std::forward_iterator<SizedStrideCounter>);
 static_assert(cuda::std::sized_sentinel_for<SizedStrideCounter, SizedStrideCounter>);
 
-__host__ __device__ constexpr void test_stride_counting()
+TEST_FUNC constexpr void test_stride_counting()
 {
   {
     int a[] = {1, 2, 3};
@@ -183,7 +183,7 @@ __host__ __device__ constexpr void test_stride_counting()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int a[] = {1, 2, 3};

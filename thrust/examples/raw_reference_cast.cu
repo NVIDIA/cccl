@@ -89,7 +89,7 @@ int main()
   thrust::sequence(A.begin(), A.end());
   thrust::fill(B.begin(), B.end(), 0);
 
-  std::cout << "Before A->B Copy" << std::endl;
+  std::cout << "Before A->B Copy" << '\n';
   print("A", A);
   print("B", B);
 
@@ -98,7 +98,7 @@ int main()
                    thrust::counting_iterator<int, System>(5),
                    copy_iterators<Iterator, Iterator>(A.begin(), B.begin()));
 
-  std::cout << "After A->B Copy" << std::endl;
+  std::cout << "After A->B Copy" << '\n';
   print("A", A);
   print("B", B);
 

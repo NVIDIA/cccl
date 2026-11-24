@@ -20,8 +20,8 @@ using namespace cuda::experimental::stf;
 // B += alpha*A;
 __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < N; i += nthreads)
   {
@@ -31,7 +31,8 @@ __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t 
 
 int main()
 {
-  double *d_ptrA, *d_ptrB;
+  double* d_ptrA;
+  double* d_ptrB;
   const size_t N     = 128 * 1024;
   const size_t NITER = 128;
 
@@ -42,7 +43,7 @@ int main()
   cudaStream_t stream;
   cuda_safe_call(cudaStreamCreate(&stream));
 
-  async_resources_handle handle;
+  const async_resources_handle handle;
   for (size_t i = 0; i < NITER; i++)
   {
     stream_ctx ctx(stream, handle);

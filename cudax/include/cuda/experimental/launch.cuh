@@ -11,10 +11,12 @@
 #ifndef __CUDAX_LAUNCH___
 #define __CUDAX_LAUNCH___
 
+// IWYU pragma: begin_exports
 #include <cuda/__launch/configuration.h>
 #include <cuda/__stream/launch_transform.h>
 
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_LAUNCH___

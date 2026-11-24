@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
@@ -37,15 +36,27 @@
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+#if _CCCL_FREESTANDING()
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // _CCCL_FREESTANDING()
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#ifdef __CUDACC_TILE__
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // defined(__CUDACC_TILE__)
+
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward_like.h>)
 #    include <__utility/forward_like.h>
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
-#  endif
+#  endif // _CCCL_HOSTED()
 #endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -61,7 +72,7 @@ using ::std::forward_like;
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() vvv
 
 template <class _Ap, class _Bp>
-using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
+using _ForwardLike _CCCL_NODEBUG = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>

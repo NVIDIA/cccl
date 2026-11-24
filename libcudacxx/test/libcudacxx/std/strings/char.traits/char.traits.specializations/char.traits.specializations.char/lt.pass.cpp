@@ -10,7 +10,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   assert(cuda::std::char_traits<char>::lt('\0', 'A') == ('\0' < 'A'));
   assert(cuda::std::char_traits<char>::lt('A', '\0') == ('A' < '\0'));

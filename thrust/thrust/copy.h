@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/copy.h
  *  \brief Copies elements from one range to another
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -92,8 +79,8 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API OutputIterator
+copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
      InputIterator first,
      InputIterator last,
      OutputIterator result);
@@ -148,8 +135,11 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
+_CCCL_HOST_DEVICE_API OutputIterator copy_n( // NOLINT(readability-redundant-declaration)
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  Size n,
+  OutputIterator result);
 
 /*! \p copy copies elements from the range [\p first, \p last) to the range
  *  [\p result, \p result + (\p last - \p first)). That is, it performs
@@ -198,7 +188,8 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator
+copy(InputIterator first, InputIterator last, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 /*! \p copy_n copies elements from the range <tt>[first, first + n)</tt> to the range
  *  <tt>[result, result + n)</tt>. That is, it performs the assignments <tt>*result = *first, *(result + 1) = *(first +
@@ -245,7 +236,8 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
+_CCCL_HOST_API OutputIterator
+copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 /*! \} // end copying
  */
@@ -316,7 +308,7 @@ OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -380,7 +372,11 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
+_CCCL_HOST_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred);
 
 /*! This version of \p copy_if copies elements from the range <tt>[first,last)</tt>
  *  to a range beginning at \p result, except that any element whose corresponding stencil
@@ -455,7 +451,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -526,13 +522,17 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
-copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred);
+_CCCL_HOST_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred);
 
 /*! \} // end stream_compaction
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy.h>
-#include <thrust/detail/copy_if.h>
+#include <thrust/detail/copy.h> // IWYU pragma: export
+#include <thrust/detail/copy_if.h> // IWYU pragma: export

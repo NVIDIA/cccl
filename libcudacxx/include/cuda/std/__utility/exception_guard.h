@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,7 +22,6 @@
 
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/ctad_support.h>
-#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //
 //    template <class Iterator, class Size, class OutputIterator>
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
-//        typedef typename iterator_traits<Iterator>::value_type value_type;
+//        using value_type = typename iterator_traits<Iterator>::value_type;
 //        __exception_guard guard([start=out, &out] {
 //            ::cuda::std::destroy(start, out);
 //        });
@@ -112,9 +111,9 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback) {}
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG explicit __exception_guard_noexceptions(_Rollback) {}
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG __exception_guard_noexceptions(
     __exception_guard_noexceptions&& __other) noexcept(is_nothrow_move_constructible_v<_Rollback>)
       : __completed_(__other.__completed_)
   {
@@ -125,12 +124,12 @@ struct __exception_guard_noexceptions
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG ~__exception_guard_noexceptions()
   {
     _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }
@@ -143,10 +142,10 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>
-using __exception_guard = __exception_guard_noexceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_noexceptions<_Rollback>;
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
 template <class _Rollback>
-using __exception_guard = __exception_guard_exceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_exceptions<_Rollback>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Rollback>

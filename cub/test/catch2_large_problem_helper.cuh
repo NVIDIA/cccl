@@ -30,10 +30,8 @@ struct concat_iterators_op
     {
       return first_it[i];
     }
-    else
-    {
-      return second_it[i - num_first_items];
-    }
+
+    return second_it[i - num_first_items];
   }
 };
 
@@ -66,8 +64,8 @@ struct flag_correct_writes_op
 };
 
 template <typename ExpectedValuesItT>
-flag_correct_writes_op<ExpectedValuesItT> static make_checking_write_op(
-  ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags)
+flag_correct_writes_op<ExpectedValuesItT> make_checking_write_op(
+  ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags) // NOLINT(readability-non-const-parameter)
 {
   return flag_correct_writes_op<ExpectedValuesItT>{expected_it, d_correctness_flags};
 }
@@ -103,7 +101,8 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
-    auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
+    auto correctness_flags_end =
+      correctness_flags.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
       thrust::equal(correctness_flags.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
@@ -120,11 +119,11 @@ struct large_problem_test_helper
       {
         if (((mismatch_value >> i) & 0x01u) == 0)
         {
-          bit_index = i;
+          bit_index = static_cast<int>(i);
           break;
         }
       }
-      const auto wrong_element_index = (mismatch_it - correctness_flags.cbegin()) * bits_per_element + bit_index;
+      const auto wrong_element_index = ((mismatch_it - correctness_flags.cbegin()) * bits_per_element) + bit_index;
       FAIL("First wrong output index: " << wrong_element_index);
     }
     if (num_elements % bits_per_element != 0)
@@ -132,7 +131,7 @@ struct large_problem_test_helper
       auto const last_element_flags = correctness_flags[num_elements / bits_per_element];
       for (std::uint32_t i = 0; i < (num_elements % bits_per_element); ++i)
       {
-        const auto element_index = (num_elements / bits_per_element) * bits_per_element + i;
+        const auto element_index = ((num_elements / bits_per_element) * bits_per_element) + i;
         INFO("First wrong output index: " << element_index);
         REQUIRE(((last_element_flags >> i) & 0x01u) == 0x01u);
       }

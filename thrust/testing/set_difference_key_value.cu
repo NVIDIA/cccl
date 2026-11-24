@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename U>
-void TestSetDifferenceKeyValue(size_t n)
+void test_set_difference_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -15,7 +15,8 @@ void TestSetDifferenceKeyValue(size_t n)
   thrust::host_vector<U> h_keys_b   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values_b = unittest::random_integers<U>(n);
 
-  thrust::host_vector<T> h_a(n), h_b(n);
+  thrust::host_vector<T> h_a(n);
+  thrust::host_vector<T> h_b(n);
   for (size_t i = 0; i < n; ++i)
   {
     h_a[i] = T(h_keys_a[i], h_values_a[i]);
@@ -41,6 +42,6 @@ void TestSetDifferenceKeyValue(size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_key_value);

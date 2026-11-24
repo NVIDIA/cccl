@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_no_sat_overflow_handler(const T overflow_ref, const T underflow_ref)
+TEST_FUNC void test_fp_no_sat_overflow_handler(const T overflow_ref, const T underflow_ref)
 {
   using Handler = cuda::std::__fp_overflow_handler<cuda::std::__fp_overflow_handler_kind::__no_sat>;
 
@@ -70,6 +70,11 @@ int main(int, char**)
     numeric_limits<__nv_fp8_e4m3>::quiet_NaN(),
     cuda::std::copysign(numeric_limits<__nv_fp8_e4m3>::quiet_NaN(), numeric_limits<__nv_fp8_e4m3>::lowest()));
 #endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_no_sat_overflow_handler(
+    numeric_limits<__nv_fp8_ue5m3>::quiet_NaN(),
+    cuda::std::copysign(numeric_limits<__nv_fp8_ue5m3>::quiet_NaN(), numeric_limits<__nv_fp8_ue5m3>::lowest()));
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_no_sat_overflow_handler(
     numeric_limits<__nv_fp8_e5m2>::infinity(),

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
-[[nodiscard]] _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
+[[nodiscard]] _CCCL_DEVICE_API inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
   barrier<thread_scope_block>& __b,
   ::cuda::std::ptrdiff_t __arrive_count_update,
   ::cuda::std::ptrdiff_t __transaction_count_update)
@@ -52,7 +52,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
   _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
-  barrier<thread_scope_block>::arrival_token __token = {};
+  barrier<thread_scope_block>::arrival_token __token = {}; // NOLINT(misc-const-correctness)
   // On architectures pre-sm90, arrive_tx is not supported.
   // We do not check for the statespace of the barrier here. This is
   // on purpose. This allows debugging tools like memcheck/racecheck

@@ -15,10 +15,28 @@
 
 #pragma once
 
-#include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
-#include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 
+#include <cuda/experimental/__stf/allocators/adapters.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
+
+#include <cstdlib>
 #include <map>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -103,8 +121,7 @@ public:
       graph_cache[hashValue] = inner_graph;
     }
 
-    cudaGraphNode_t c;
-    cuda_safe_call(cudaGraphAddChildGraphNode(&c, graph, nullptr, 0, *inner_graph));
+    ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(graph, nullptr, 0, *inner_graph);
   }
 
   /* This simply executes the algorithm within the existing context. This
@@ -250,6 +267,15 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
+
     auto current_data_place = gctx.default_exec_place().affine_data_place();
 
     // Call fun with all arguments transformed to logical data
@@ -274,21 +300,27 @@ public:
 
     if (!eg)
     {
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, [](cudaGraphExec_t* p) {
-        cudaGraphExecDestroy(*p);
-      });
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
@@ -306,6 +338,15 @@ public:
     // defer the allocations and deallocations to the cudaMallocAsync API
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
+
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
 
     auto current_place = gctx.default_exec_place();
 
@@ -327,22 +368,27 @@ public:
 
     if (!eg)
     {
-      auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-        cudaGraphExecDestroy(*pGraphExec);
-      };
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, cudaGraphExecDeleter);
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
 private:
@@ -353,7 +399,11 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      // A debugging aid that cannot write its file says so; it does not end the computation.
+      ON_THROW(notify)
+      {
+        cuda_try<cudaGraphDebugDotPrint>(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      };
     }
   }
 

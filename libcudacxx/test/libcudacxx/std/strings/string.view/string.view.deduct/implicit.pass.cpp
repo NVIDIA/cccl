@@ -19,14 +19,14 @@
 #include "literal.h"
 
 template <class CharT>
-__host__ __device__ constexpr void test_implicit_ctad()
+TEST_FUNC constexpr void test_implicit_ctad()
 {
   const CharT* str = TEST_STRLIT(CharT, "Hello world!");
   cuda::std::basic_string_view sv{str};
   static_assert(cuda::std::is_same_v<decltype(sv), cuda::std::basic_string_view<CharT>>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_implicit_ctad<char>();
 #if _CCCL_HAS_CHAR8_T()

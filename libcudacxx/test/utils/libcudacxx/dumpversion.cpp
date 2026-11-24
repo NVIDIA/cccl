@@ -16,7 +16,7 @@ int main()
   unsigned patch_level      = 0;
   unsigned default_dialect  = 3;
 
-#if defined(__NVCC__)
+#ifdef __NVCC__
   compiler_type = "nvcc";
   major_version = __CUDACC_VER_MAJOR__;
   minor_version = __CUDACC_VER_MINOR__;
@@ -27,12 +27,7 @@ int main()
   minor_version = ___NVCOMPILER_MINOR__;
   patch_level   = ___NVCOMPILER_PATCHLEVEL__;
 #elif defined(__clang__)
-// Treat Apple's LLVM fork differently.
-#  if defined(__apple_build_version__)
-  compiler_type = "apple-clang";
-#  else
   compiler_type = "clang";
-#  endif
   major_version = __clang_major__;
   minor_version = __clang_minor__;
   patch_level   = __clang_patchlevel__;
@@ -48,8 +43,8 @@ int main()
   patch_level   = __GNUC_PATCHLEVEL__;
 #endif
 
-#if defined(_MSC_VER)
-#  if !defined(_MSVC_LANG)
+#ifdef _MSC_VER
+#  ifndef _MSVC_LANG
   default_dialect = 3;
 #  elif _MSVC_LANG <= 201103L
   default_dialect = 11;

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__ranges/access.h>
@@ -34,19 +35,15 @@
 #include <cuda/std/__ranges/subrange.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
-
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
@@ -61,7 +58,8 @@ class reverse_view : public view_interface<reverse_view<_View>>
   // We cache begin() whenever ranges::next is not guaranteed O(1) to provide an
   // amortized O(1) begin() method.
   static constexpr bool _UseCache = !random_access_range<_View> && !common_range<_View>;
-  using _Cache = _If<_UseCache, __non_propagating_cache<reverse_iterator<iterator_t<_View>>>, __empty_cache>;
+  using _Cache _CCCL_NODEBUG =
+    _If<_UseCache, __non_propagating_cache<reverse_iterator<iterator_t<_View>>>, __empty_cache>;
   _CCCL_NO_UNIQUE_ADDRESS _Cache __cached_begin_ = _Cache();
   _CCCL_NO_UNIQUE_ADDRESS _View __base_          = _View();
 
@@ -106,7 +104,7 @@ public:
       }
     }
 
-    auto __tmp = ::cuda::std::make_reverse_iterator(
+    const auto __tmp = ::cuda::std::make_reverse_iterator(
       ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), ::cuda::std::ranges::end(__base_)));
     if constexpr (_UseCache)
     {
@@ -157,10 +155,18 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<reverse_view<_Tp>> = enable_borrowed_range<_Tp>;
+
+// This view preserves the size of its underlying range.
+template <class _View>
+inline constexpr size_t __static_size_v<reverse_view<_View>> = __static_size_v<_View>;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const reverse_view<_View>> =
+  (range<const reverse_view<_View>>) ? __static_size_v<const _View> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -192,44 +198,43 @@ inline constexpr bool
 template <class _Tp>
 struct __unwrapped_reverse_subrange
 {
-  using type = void; // avoid SFINAE-ing out the overload below -- let the concept requirements do it for better
-                     // diagnostics
+  using type _CCCL_NODEBUG = void; // avoid SFINAE-ing out the overload below -- let the concept requirements do it for
+                                   // better diagnostics
 };
 
 template <class _Iter, ::cuda::std::ranges::subrange_kind _Kind>
 struct __unwrapped_reverse_subrange<
   ::cuda::std::ranges::subrange<reverse_iterator<_Iter>, reverse_iterator<_Iter>, _Kind>>
 {
-  using type = ::cuda::std::ranges::subrange<_Iter, _Iter, _Kind>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter, _Iter, _Kind>;
 };
 
 template <class _Tp>
-using __unwrapped_reverse_subrange_t = typename __unwrapped_reverse_subrange<_Tp>::type;
+using __unwrapped_reverse_subrange_t _CCCL_NODEBUG = typename __unwrapped_reverse_subrange<_Tp>::type;
 
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__is_reverse_view<remove_cvref_t<_Range>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range) const
-    noexcept(noexcept(::cuda::std::forward<_Range>(__range).base()))
-      -> decltype(::cuda::std::forward<_Range>(__range).base())
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(noexcept(::cuda::std::forward<_Range>(__range).base()))
+    -> decltype(::cuda::std::forward<_Range>(__range).base())
   {
     return ::cuda::std::forward<_Range>(__range).base();
   }
 
   _CCCL_TEMPLATE(class _Range, class _UnwrappedSubrange = __unwrapped_reverse_subrange_t<remove_cvref_t<_Range>>)
   _CCCL_REQUIRES(__is_sized_reverse_subrange<remove_cvref_t<_Range>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range) const
-    noexcept(noexcept(_UnwrappedSubrange(__range.end().base(), __range.begin().base(), __range.size())))
-      -> _UnwrappedSubrange
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(
+    noexcept(_UnwrappedSubrange(__range.end().base(), __range.begin().base(), __range.size()))) -> _UnwrappedSubrange
   {
     return _UnwrappedSubrange(__range.end().base(), __range.begin().base(), __range.size());
   }
 
   _CCCL_TEMPLATE(class _Range, class _UnwrappedSubrange = __unwrapped_reverse_subrange_t<remove_cvref_t<_Range>>)
   _CCCL_REQUIRES(__is_unsized_reverse_subrange<remove_cvref_t<_Range>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range) const
-    noexcept(noexcept(_UnwrappedSubrange(__range.end().base(), __range.begin().base()))) -> _UnwrappedSubrange
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(
+    noexcept(_UnwrappedSubrange(__range.end().base(), __range.begin().base()))) -> _UnwrappedSubrange
   {
     return _UnwrappedSubrange(__range.end().base(), __range.begin().base());
   }
@@ -238,12 +243,13 @@ struct __fn : __range_adaptor_closure<__fn>
   _CCCL_REQUIRES(
     (!__is_reverse_view<remove_cvref_t<_Range>>) _CCCL_AND(!__is_sized_reverse_subrange<remove_cvref_t<_Range>>)
       _CCCL_AND(!__is_unsized_reverse_subrange<remove_cvref_t<_Range>>))
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range) const
-    noexcept(noexcept(reverse_view{::cuda::std::forward<_Range>(__range)})) -> reverse_view<all_t<_Range>>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(noexcept(reverse_view{
+    ::cuda::std::forward<_Range>(__range)})) -> reverse_view<all_t<_Range>>
   {
     return reverse_view{::cuda::std::forward<_Range>(__range)};
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
@@ -251,8 +257,6 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto reverse = __reverse::__fn{};
 } // namespace __cpo
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

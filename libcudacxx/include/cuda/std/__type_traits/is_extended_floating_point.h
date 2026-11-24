@@ -12,13 +12,15 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,6 +49,11 @@ template <>
 inline constexpr bool __is_extended_floating_point_v<__nv_fp8_e5m2> = true;
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+inline constexpr bool __is_extended_floating_point_v<__nv_fp8_ue5m3> = true;
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 template <>
 inline constexpr bool __is_extended_floating_point_v<__nv_fp8_e8m0> = true;
@@ -71,6 +78,9 @@ inline constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
 template <>
 inline constexpr bool __is_extended_floating_point_v<__float128> = true;
 #endif // _CCCL_HAS_FLOAT128()
+
+template <class _Tp>
+inline constexpr bool __is_cv_extended_floating_point_v = __is_extended_floating_point_v<::cuda::std::remove_cv_t<_Tp>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

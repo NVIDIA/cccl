@@ -25,14 +25,16 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2, class T>
-__host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
+TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
   assert(cuda::std::inner_product(first1, last1, first2, init) == x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int a[]     = {1, 2, 3, 4, 5, 6};
   int b[]     = {6, 5, 4, 3, 2, 1};
@@ -47,7 +49,8 @@ __host__ __device__ constexpr void test()
   test(Iter1(a), Iter1(a + sa), Iter2(b), 10, 66);
 }
 
-__host__ __device__ constexpr bool test()
+_CCCL_EXEC_CHECK_DISABLE
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>>();
@@ -79,12 +82,19 @@ __host__ __device__ constexpr bool test()
   test<const int*, random_access_iterator<const int*>>();
   test<const int*, const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -44,7 +44,7 @@
 #include "../CustomTestLayouts.h"
 #include "test_macros.h"
 
-__host__ __device__ void cant_construct_data_handle_type()
+TEST_FUNC void cant_construct_data_handle_type()
 {
   int data;
   cuda::
@@ -59,7 +59,7 @@ __host__ __device__ void cant_construct_data_handle_type()
   unused(m_c);
 }
 
-__host__ __device__ void mapping_constructible_despite_extents_compatibility()
+TEST_FUNC void mapping_constructible_despite_extents_compatibility()
 {
   int data;
   cuda::shared_memory_mdspan<int, cuda::std::extents<int>, always_convertible_layout> m(&data);

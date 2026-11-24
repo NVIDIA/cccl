@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/sort.h
  *  \brief Functions for reorganizing ranges into sorted order
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -84,9 +71,9 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                            RandomAccessIterator first,
-                            RandomAccessIterator last);
+_CCCL_HOST_DEVICE_API void sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                RandomAccessIterator first,
+                                RandomAccessIterator last);
 
 /*! \p sort sorts the elements in <tt>[first, last)</tt> into
  *  ascending order, meaning that if \c i and \c j are any two valid
@@ -129,7 +116,7 @@ _CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedP
  *  \endverbatim
  */
 template <typename RandomAccessIterator>
-void sort(RandomAccessIterator first, RandomAccessIterator last);
+_CCCL_HOST_API void sort(RandomAccessIterator first, RandomAccessIterator last);
 
 /*! \p sort sorts the elements in <tt>[first, last)</tt> into
  *  ascending order, meaning that if \c i and \c j are any two valid
@@ -179,7 +166,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      RandomAccessIterator first,
      RandomAccessIterator last,
@@ -228,7 +215,7 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
+_CCCL_HOST_DEVICE_API void sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
 
 /*! \p stable_sort is much like \c sort: it sorts the elements in
  *  <tt>[first, last)</tt> into ascending order, meaning that if \c i
@@ -280,9 +267,9 @@ _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator las
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                                   RandomAccessIterator first,
-                                   RandomAccessIterator last);
+_CCCL_HOST_DEVICE_API void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                       RandomAccessIterator first,
+                                       RandomAccessIterator last);
 
 /*! \p stable_sort is much like \c sort: it sorts the elements in
  *  <tt>[first, last)</tt> into ascending order, meaning that if \c i
@@ -329,7 +316,7 @@ _CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<D
  *  \endverbatim
  */
 template <typename RandomAccessIterator>
-void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
+_CCCL_HOST_API void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
 
 /*! \p stable_sort is much like \c sort: it sorts the elements in
  *  <tt>[first, last)</tt> into ascending order, meaning that if \c i
@@ -383,7 +370,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort(
+_CCCL_HOST_DEVICE_API void stable_sort(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
@@ -436,7 +423,7 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  \endverbatim
  */
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
-void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
+_CCCL_HOST_API void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
 
 ///////////////
 // Key Value //
@@ -503,7 +490,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWe
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -564,7 +551,8 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first);
+_CCCL_HOST_API void
+sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first);
 
 /*! \p sort_by_key performs a key-value sort. That is, \p sort_by_key sorts the
  *  elements in <tt>[keys_first, keys_last)</tt> and <tt>[values_first,
@@ -631,7 +619,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -695,10 +683,11 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-void sort_by_key(RandomAccessIterator1 keys_first,
-                 RandomAccessIterator1 keys_last,
-                 RandomAccessIterator2 values_first,
-                 StrictWeakOrdering comp);
+_CCCL_HOST_API void sort_by_key(
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first,
+  StrictWeakOrdering comp);
 
 /*! \p stable_sort_by_key performs a key-value sort. That is, \p stable_sort_by_key
  *  sorts the elements in <tt>[keys_first, keys_last)</tt> and <tt>[values_first,
@@ -763,7 +752,7 @@ void sort_by_key(RandomAccessIterator1 keys_first,
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -826,7 +815,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-void stable_sort_by_key(
+_CCCL_HOST_API void stable_sort_by_key(
   RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first);
 
 /*! \p stable_sort_by_key performs a key-value sort. That is, \p stable_sort_by_key
@@ -895,7 +884,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -960,10 +949,11 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-void stable_sort_by_key(RandomAccessIterator1 keys_first,
-                        RandomAccessIterator1 keys_last,
-                        RandomAccessIterator2 values_first,
-                        StrictWeakOrdering comp);
+_CCCL_HOST_API void stable_sort_by_key(
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first,
+  StrictWeakOrdering comp);
 
 /*! \} // end sorting
  */
@@ -1033,7 +1023,7 @@ void stable_sort_by_key(RandomAccessIterator1 keys_first,
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE bool is_sorted(
+_CCCL_HOST_DEVICE_API bool is_sorted(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is
@@ -1089,7 +1079,7 @@ _CCCL_HOST_DEVICE bool is_sorted(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-bool is_sorted(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API bool is_sorted(ForwardIterator first, ForwardIterator last);
 
 /*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
  *  order according to a user-defined comparison operation, and \c false otherwise.
@@ -1150,7 +1140,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
           ForwardIterator first,
           ForwardIterator last,
@@ -1210,7 +1200,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Compare>
-bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
+_CCCL_HOST_API bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
 
 /*! This version of \p is_sorted_until returns the last iterator \c i in <tt>[first,last]</tt> for
  *  which the range <tt>[first,last)</tt> is sorted using \c operator<. If <tt>distance(first,last) < 2</tt>,
@@ -1257,7 +1247,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
+_CCCL_HOST_DEVICE_API ForwardIterator is_sorted_until(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! This version of \p is_sorted_until returns the last iterator \c i in <tt>[first,last]</tt> for
@@ -1299,7 +1289,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
 
 /*! This version of \p is_sorted_until returns the last iterator \c i in <tt>[first,last]</tt> for
  *  which the range <tt>[first,last)</tt> is sorted using the function object \c comp. If <tt>distance(first,last) <
@@ -1349,7 +1339,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
+_CCCL_HOST_DEVICE_API ForwardIterator is_sorted_until(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1397,7 +1387,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Compare>
-ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp);
+_CCCL_HOST_API ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp);
 
 /*! \} // end predicates
  *  \} // end reductions
@@ -1405,4 +1395,4 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Com
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/sort.inl>
+#include <thrust/detail/sort.inl> // IWYU pragma: export

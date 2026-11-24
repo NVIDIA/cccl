@@ -20,6 +20,6 @@
 #  error "-DNVRTC_ONLY_MACRO was not passed properly"
 #endif // NVRTC_ONLY_MACRO != __CUDACC_RTC__
 
-#if defined(NVRTC_ONLY_MACRO)
+#ifdef NVRTC_ONLY_MACRO
 static_assert(NVRTC_ONLY_MACRO == 42);
 #endif // NVRTC_ONLY_MACRO

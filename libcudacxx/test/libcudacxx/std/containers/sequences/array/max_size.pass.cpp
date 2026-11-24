@@ -18,17 +18,17 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
-    typedef cuda::std::array<int, 2> C;
-    C c = {};
+    using C = cuda::std::array<int, 2>;
+    C c     = {};
     static_assert(noexcept(c.max_size()));
     assert(c.max_size() == 2);
   }
   {
-    typedef cuda::std::array<int, 0> C;
-    C c = {};
+    using C = cuda::std::array<int, 0>;
+    C c     = {};
     static_assert(noexcept(c.max_size()));
     assert(c.max_size() == 0);
   }
@@ -39,12 +39,12 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
 
   // Sanity check for constexpr in C++11
   {
     constexpr cuda::std::array<int, 3> array = {};
-    static_assert(array.max_size() == 3, "");
+    static_assert(array.max_size() == 3);
   }
 
   return 0;

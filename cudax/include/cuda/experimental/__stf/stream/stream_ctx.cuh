@@ -16,8 +16,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,20 +26,54 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
-#include <cuda/experimental/__stf/internal/acquire_release.cuh>
+#include <cuda/experimental/__stf/internal/acquire_release.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/reduction_base.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
-#include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <deque>
+#include <functional>
+#include <unordered_map>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__memory/unique_ptr.h>
+
+#  include <cuda/experimental/__stf/internal/data_interface.cuh>
+#  include <cuda/experimental/__stf/internal/slice.cuh>
+
+#  include <nv/target>
+
+#  include <tuple>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {
@@ -56,12 +91,12 @@ struct streamed_interface_of;
 class uncached_stream_allocator : public block_allocator_interface
 {
 public:
-  uncached_stream_allocator() = default;
+  _CCCL_HIDE_FROM_ABI uncached_stream_allocator() = default;
 
-  void*
+  _CCCL_HOST_API void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -80,15 +115,15 @@ public:
     return result;
   }
 
-  void deallocate(
+  _CCCL_HOST_API void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
       // Blocking deallocation - synchronize stream first, then free
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      cuda_try<cudaStreamSynchronize>(dstream.stream);
       memory_node.deallocate(ptr, sz, dstream.stream);
       return;
     }
@@ -104,12 +139,12 @@ public:
   }
 
   // Nothing is done as all deallocation are done immediately
-  event_list deinit(backend_ctx_untyped& /* ctx */) override
+  _CCCL_HOST_API event_list deinit(backend_ctx_untyped& /* ctx */) override
   {
     return event_list();
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "uncached stream allocator";
   }
@@ -119,6 +154,20 @@ public:
  *   CUDA events are used as synchronization primitives.
  *
  * This class is copyable, movable, and can be passed by value
+ *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `stream_ctx` instances synchronize the submission
+ * stream from `finalize()` and only return once all queued work has
+ * completed. Instances constructed with `stream_ctx(user_stream, handle)`
+ * instead bind the context to the caller-provided CUDA stream, set
+ * `blocking_finalize = false`, and make `finalize()` non-blocking: the
+ * remaining work and the context's resource-release callback are enqueued on
+ * `user_stream` and `finalize()` returns without synchronizing it. The
+ * caller must therefore drive `user_stream` to completion (e.g. via
+ * `cudaStreamSynchronize(user_stream)`) before observing results on the
+ * host or destroying any shared `async_resources_handle` that was passed
+ * to the context.
  */
 class stream_ctx : public backend_ctx<stream_ctx>
 {
@@ -137,12 +186,40 @@ public:
 
   /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
-  stream_ctx(async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API stream_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
   {}
-  stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
-      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
+  _CCCL_HOST_API stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
+      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle), !is_stream_capturing(user_stream)))
   {
+    // If ``user_stream`` is currently capturing a CUDA graph, avoid issuing
+    // any CUDA runtime initialization calls in the backend constructor: under
+    // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` such calls are
+    // rejected with ``cudaErrorStreamCaptureUnsupported`` and invalidate the
+    // in-progress capture. (The null/default stream is treated as
+    // ``not-capturing`` by ``cudaStreamIsCapturing``, so it goes through the
+    // normal init path.)
+
+    // When the caller supplies their own ``async_resources_handle``, its
+    // stream pool is very likely already populated with streams that carry
+    // residual work from previous contexts. Folding those streams into an
+    // on-going capture -- which STF would attempt the first time the pool is
+    // queried during task submission -- is rejected by CUDA with
+    // ``cudaErrorStreamCaptureIsolation``. Contexts created *without* an
+    // explicit handle get a fresh, empty pool and are capture-safe; that is
+    // the supported in-capture configuration.
+    if (state().user_provided_handle)
+    {
+      EXPECT(!is_stream_capturing(user_stream),
+             "stream_ctx(user_stream, handle): user_stream is in a CUDA graph "
+             "capture but a caller-provided async_resources_handle was "
+             "supplied. The handle's stream pool may carry uncaptured work "
+             "that cannot be legally joined into the on-going capture. Either "
+             "end the capture before constructing the context, or construct "
+             "the context without an explicit handle so a fresh empty pool is "
+             "used.");
+    }
+
     // We set the user stream as the entry point after the creation of the
     // context so that we can manipulate the object, not its shared_ptr
     // implementation
@@ -151,10 +228,10 @@ public:
 
   ///@}
 
-  void set_user_stream(cudaStream_t user_stream)
+  _CCCL_HOST_API void set_user_stream(cudaStream_t user_stream)
   {
     // TODO first introduce the user stream in our pool
-    auto dstream = decorated_stream(user_stream);
+    auto dstream = augmented_stream(user_stream);
 
     this->state().user_dstream = dstream;
 
@@ -176,14 +253,14 @@ public:
    * @brief Creates a task on the specified execution place
    */
   template <typename... Deps>
-  stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
-  deferred_stream_task<Deps...> deferred_task(exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API deferred_stream_task<Deps...> deferred_task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto result = deferred_stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
 
@@ -195,13 +272,13 @@ public:
   }
 
   template <typename... Deps>
-  deferred_stream_task<Deps...> deferred_task(task_dep<Deps>... deps)
+  _CCCL_HOST_API deferred_stream_task<Deps...> deferred_task(task_dep<Deps>... deps)
   {
     return deferred_task(exec_place::current_device(), mv(deps)...);
   }
 
   template <typename... Deps>
-  auto deferred_host_launch(task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_host_launch(task_dep<Deps>... deps)
   {
     auto result = deferred_host_launch_scope<Deps...>(this, mv(deps)...);
     int id      = result.get_mapping_id();
@@ -212,14 +289,15 @@ public:
     return result;
   }
 
-  cudaStream_t fence()
+  _CCCL_HOST_API cudaStream_t fence()
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
-    decorated_stream dstream =
+    augmented_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
-        : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
+        : exec_place::current_device().getStream(
+            async_resources().get_place_resources(), true /* stream for computation */);
 
     auto prereqs = get_state().insert_fence(*get_dot());
 
@@ -240,70 +318,63 @@ public:
   {
     struct payload_t : public deferred_stream_task<>::payload_t
     {
-      payload_t(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
+      _CCCL_HOST_API payload_t(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
           : task(ctx, mv(e_place), mv(shape), mv(deps)...)
       {}
 
       reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...> task;
       ::std::function<void(reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>&)> todo;
 
-      void set_symbol(::std::string s) override
+      _CCCL_HOST_API void set_symbol(::std::string s) override
       {
         task.set_symbol(mv(s));
       }
 
-      const ::std::string& get_symbol() const override
+      _CCCL_HOST_API const ::std::string& get_symbol() const override
       {
         return task.get_symbol();
       }
 
-      int get_mapping_id() const override
+      _CCCL_HOST_API int get_mapping_id() const override
       {
         return task.get_mapping_id();
       }
 
-      void run() override
+      _CCCL_HOST_API void run() override
       {
         todo(task);
       }
 
-      void populate_deps_scheduling_info() override
+      _CCCL_HOST_API void populate_deps_scheduling_info() override
       {
-        // Error checking copied from acquire() in acquire_release()
-
-        int index        = 0;
         const auto& deps = get_task_deps();
+        reserved::ensure_task_deps_initialized(deps);
         for (const auto& dep : deps)
         {
-          if (!dep.get_data().is_initialized())
-          {
-            fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-            abort();
-          }
           dep.set_symbol(dep.get_data().get_symbol());
           dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-          index++;
         }
       }
 
-      const task_dep_vector_untyped& get_task_deps() const override
+      _CCCL_HOST_API const task_dep_vector_untyped& get_task_deps() const override
       {
         return task.get_task_deps();
       }
 
-      void set_exec_place(exec_place e_place) override
+      _CCCL_HOST_API void set_exec_place(exec_place e_place) override
       {
         task.set_exec_place(mv(e_place));
       }
     };
 
-    payload_t& my_payload() const
+    _CCCL_HOST_API payload_t& my_payload() const
     {
       // Safe to do the cast because we've set the pointer earlier ourselves
       return *static_cast<payload_t*>(payload.get());
     }
 
   public:
+    _CCCL_HOST_API
     deferred_parallel_for_scope(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
         : deferred_stream_task<>(::std::make_shared<payload_t>(ctx, mv(e_place), mv(shape), mv(deps)...))
     {}
@@ -315,26 +386,26 @@ public:
      * @param s
      * @return deferred_parallel_for_scope&
      */
-    deferred_parallel_for_scope& set_symbol(::std::string s) &
+    _CCCL_HOST_API deferred_parallel_for_scope& set_symbol(::std::string s) &
     {
       payload->set_symbol(mv(s));
       return *this;
     }
 
-    deferred_parallel_for_scope&& set_symbol(::std::string s) &&
+    _CCCL_HOST_API deferred_parallel_for_scope&& set_symbol(::std::string s) &&
     {
       set_symbol(mv(s));
       return mv(*this);
     }
     ///@}
 
-    void populate_deps_scheduling_info()
+    _CCCL_HOST_API void populate_deps_scheduling_info()
     {
       payload->populate_deps_scheduling_info();
     }
 
     template <typename Fun>
-    void operator->*(Fun fun)
+    _CCCL_HOST_API void operator->*(Fun fun)
     {
       my_payload().todo = [f = mv(fun)](reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>& task) {
         task->*f;
@@ -347,66 +418,60 @@ public:
   {
     struct payload_t : public deferred_stream_task<>::payload_t
     {
-      payload_t(stream_ctx& ctx, task_dep<Data>... deps)
+      _CCCL_HOST_API payload_t(stream_ctx& ctx, task_dep<Data>... deps)
           : task(ctx, mv(deps)...)
       {}
 
       reserved::host_launch_scope<stream_ctx, false, Data...> task;
       ::std::function<void(reserved::host_launch_scope<stream_ctx, false, Data...>&)> todo;
 
-      void set_symbol(::std::string s) override
+      _CCCL_HOST_API void set_symbol(::std::string s) override
       {
         task.set_symbol(s);
       }
 
-      const ::std::string& get_symbol() const override
+      _CCCL_HOST_API const ::std::string& get_symbol() const override
       {
         return task.get_symbol();
       }
 
-      int get_mapping_id() const override
+      _CCCL_HOST_API int get_mapping_id() const override
       {
         return task.get_mapping_id();
       }
 
-      void run() override
+      _CCCL_HOST_API void run() override
       {
         todo(task);
       }
 
-      void populate_deps_scheduling_info() override
+      _CCCL_HOST_API void populate_deps_scheduling_info() override
       {
-        int index        = 0;
         const auto& deps = get_task_deps();
+        reserved::ensure_task_deps_initialized(deps);
         for (const auto& dep : deps)
         {
-          if (!dep.get_data().is_initialized())
-          {
-            fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-            abort();
-          }
           dep.set_symbol(dep.get_data().get_symbol());
           dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-          index++;
         }
       }
 
-      const task_dep_vector_untyped& get_task_deps() const override
+      _CCCL_HOST_API const task_dep_vector_untyped& get_task_deps() const override
       {
         return task.get_task_deps();
       }
 
-      void set_exec_place(exec_place) override {}
+      _CCCL_HOST_API void set_exec_place(exec_place) override {}
     };
 
-    payload_t& my_payload() const
+    _CCCL_HOST_API payload_t& my_payload() const
     {
       // Safe to do the cast because we've set the pointer earlier ourselves
       return *static_cast<payload_t*>(payload.get());
     }
 
   public:
-    deferred_host_launch_scope(stream_ctx& ctx, task_dep<Data>... deps)
+    _CCCL_HOST_API deferred_host_launch_scope(stream_ctx& ctx, task_dep<Data>... deps)
         : deferred_stream_task<>(::std::make_shared<payload_t>(ctx, mv(deps)...))
     {}
 
@@ -417,26 +482,26 @@ public:
      * @param s
      * @return deferred_host_launch_scope&
      */
-    deferred_host_launch_scope& set_symbol(::std::string s) &
+    _CCCL_HOST_API deferred_host_launch_scope& set_symbol(::std::string s) &
     {
       payload->set_symbol(mv(s));
       return *this;
     }
 
-    deferred_host_launch_scope&& set_symbol(::std::string s) &&
+    _CCCL_HOST_API deferred_host_launch_scope&& set_symbol(::std::string s) &&
     {
       set_symbol(mv(s));
       return mv(*this);
     }
     ///@}
 
-    void populate_deps_scheduling_info()
+    _CCCL_HOST_API void populate_deps_scheduling_info()
     {
       payload->populate_deps_scheduling_info();
     }
 
     template <typename Fun>
-    void operator->*(Fun fun)
+    _CCCL_HOST_API void operator->*(Fun fun)
     {
       my_payload().todo = [f = mv(fun)](reserved::host_launch_scope<stream_ctx, false, Data...>& task) {
         task->*f;
@@ -444,7 +509,7 @@ public:
     }
   };
 
-  void finalize()
+  _CCCL_HOST_API void finalize()
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
@@ -458,21 +523,34 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
-      cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
+      cuda_try<cudaStreamSynchronize>(state.submitted_stream);
     }
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
-  float get_submission_time_ms() const
+  _CCCL_HOST_API float get_submission_time_ms() const
   {
     assert(state().submitted_stream);
     return state().submission_time;
   }
 
-  void submit()
+  _CCCL_HOST_API void submit()
   {
     auto& state = this->state();
     _CCCL_ASSERT(!state.submitted_stream, "");
@@ -481,11 +559,43 @@ public:
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
 
+    // Submission timing forces the current device to 0; remember the caller's
+    // device so we can restore it on exit (0 means we never switched).
+    int prev_device = 0;
+
+    // The events are releases: a failing destroy leaks that event and is reported, one policy per
+    // release. Restoring the caller's device is not: if it fails, the caller continues on the wrong
+    // device and fails somewhere unrelated, so that one reports and aborts.
+    SCOPE(exit)
+    {
+      if (startEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(startEvent);
+        };
+      }
+      if (stopEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(stopEvent);
+        };
+      }
+      if (prev_device != 0)
+      {
+        ON_THROW(abort)
+        {
+          cuda_try<cudaSetDevice>(prev_device);
+        };
+      }
+    };
+
     ::std::unordered_map<int, reserved::reorderer_payload> payloads;
     if (reordering_tasks())
     {
       build_task_graph();
-      for (int id : state.deferred_tasks)
+      for (const int id : state.deferred_tasks)
       {
         const auto& t = state.task_map.at(id);
         payloads.emplace(id, t.get_reorderer_payload());
@@ -500,14 +610,16 @@ public:
         }
       }
 
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(fence()));
-      cuda_safe_call(cudaEventCreate(&startEvent));
-      cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, fence()));
+      prev_device = cuda_try<cudaGetDevice>();
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaStreamSynchronize>(fence());
+      // cudaEventCreate is an overload set; use cudaEventCreateWithFlags instead.
+      startEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      stopEvent  = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(startEvent, fence());
     }
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& task = state.task_map.at(id);
       task.run();
@@ -515,10 +627,10 @@ public:
 
     if (reordering_tasks())
     {
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
-      cuda_safe_call(cudaEventSynchronize(stopEvent));
-      cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaEventRecord>(stopEvent, fence());
+      cuda_try<cudaEventSynchronize>(stopEvent);
+      state.submission_time = cuda_try<cudaEventElapsedTime>(startEvent, stopEvent);
     }
 
     // Write-back data and erase automatically created data instances
@@ -532,10 +644,10 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_stage() {}
+  _CCCL_HOST_API void change_stage() {}
 
   template <typename S, typename... Deps>
-  auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
   {
     auto result = deferred_parallel_for_scope<S, null_partition, Deps...>(*this, mv(e_place), mv(shape), mv(deps)...);
     int id      = result.get_mapping_id();
@@ -546,65 +658,79 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto deferred_parallel_for(S shape, task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_parallel_for(S shape, task_dep<Deps>... deps)
   {
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
   }
 
   template <typename T>
-  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  _CCCL_HOST_API auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
+        cuda_try<cudaStreamSynchronize>(stream);
+      };
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = owning_container_of<T>::get_value(data);
-    };
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+        cuda_try<cudaStreamSynchronize>(stream);
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      return out;
+    }
   }
 
 private:
+  using base_impl = base::impl;
+
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
-  class impl : public base::impl
+  class impl : public base_impl
   {
   public:
-    impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : base::impl(mv(_async_resources))
+    _CCCL_HOST_API impl(async_resources_handle _async_resources = async_resources_handle(nullptr),
+                        bool initialize_cuda_runtime            = true)
+        : base_impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
 
-    void cleanup()
+    _CCCL_HOST_API void cleanup()
     {
       // Reset this object
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      base::impl::cleanup();
+      base_impl::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
-    void update_uncached_allocator(block_allocator_untyped custom) override
+    _CCCL_HOST_API void update_uncached_allocator(block_allocator_untyped custom) override
     {
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
+    _CCCL_HOST_API event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
+      auto e = reserved::record_event_in_stream(augmented_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
-    ::std::string to_string() const override
+    _CCCL_HOST_API ::std::string to_string() const override
     {
       return "stream backend context";
     }
 
     // We need to ensure all dangling events have been completed (eg. by having
     // the CUDA stream used in the finalization wait on these events)
-    bool track_dangling_events() const override
+    _CCCL_HOST_API bool track_dangling_events() const override
     {
       return true;
     }
@@ -616,18 +742,18 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<decorated_stream> user_dstream;
+    ::cuda::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
     bool blocking_finalize = true;
   };
 
-  impl& state()
+  _CCCL_HOST_API impl& state()
   {
     return dynamic_cast<impl&>(get_state());
   }
-  const impl& state() const
+  _CCCL_HOST_API const impl& state() const
   {
     return dynamic_cast<const impl&>(get_state());
   }
@@ -635,15 +761,16 @@ private:
   /// @brief Build the task graph by populating the predecessor and successor lists.
   /// The logic here is copied from acquire_release.h notify_access(), although this doesn't handle redux at the
   /// moment
-  void build_task_graph()
+  _CCCL_HOST_API void build_task_graph()
   {
     auto& state = this->state();
 
     // Maps from a logical data to its last writer. The int is the mapping_id
     ::std::unordered_map<::std::string, ::std::deque<int>> current_readers;
-    ::std::unordered_map<::std::string, int> current_writer, previous_writer;
+    ::std::unordered_map<::std::string, int> current_writer;
+    ::std::unordered_map<::std::string, int> previous_writer;
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& t = state.task_map.at(id);
       assert(id == t.get_mapping_id());
@@ -719,19 +846,11 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-UNITTEST("copyable stream_task")
-{
-  stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = t;
-  ctx.finalize();
-};
-
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = mv(t);
+  stream_task<> t           = ctx.task();
+  const stream_task<> t_cpy = mv(t);
   ctx.finalize();
 };
 
@@ -745,15 +864,25 @@ UNITTEST("logical_data_untyped moveable")
   class scalar
   {
   public:
-    scalar(stream_ctx& ctx)
+    _CCCL_HOST scalar(stream_ctx& ctx)
     {
-      size_t s       = sizeof(double);
-      double* h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      const size_t s = sizeof(double);
+      auto owner     = ::cuda::std::make_unique<double>();
+      double* h_addr = owner.get();
+      cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
+      // Unregister memory before owner deletes it on failure.
+      SCOPE(fail)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaHostUnregister>(h_addr);
+        };
+      };
       handle = ctx.logical_data(h_addr, 1);
+      owner.release();
     }
 
-    scalar& operator=(scalar&& rhs)
+    _CCCL_HOST scalar& operator=(scalar&& rhs) noexcept
     {
       handle = mv(rhs.handle);
       return *this;
@@ -785,7 +914,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-static __global__ void dummy() {}
+__global__ static void dummy() {} // NOLINT(cccl-hide-from-abi)
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")
@@ -814,7 +943,8 @@ UNITTEST("stream context basics")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
@@ -835,9 +965,11 @@ UNITTEST("stream context basics")
 UNITTEST("stream context after logical data")
 {
   stream_ctx ctx;
-  logical_data<slice<double>> handle_X, handle_Y;
+  logical_data<slice<double>> handle_X;
+  logical_data<slice<double>> handle_Y;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   handle_X = ctx.logical_data(X);
   handle_Y = ctx.logical_data(Y);
 
@@ -859,7 +991,8 @@ UNITTEST("set_symbol on stream_task and stream_task<>")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
@@ -884,11 +1017,11 @@ UNITTEST("non contiguous slice")
   int X[32 * 32];
 
   // Pinning non contiguous memory is extremely expensive, so we do it now
-  cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
+  cuda_try<cudaHostRegister>(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable);
 
-  for (size_t i = 0; i < 32 * 32; i++)
+  for (auto& x : X)
   {
-    X[i] = 1;
+    x = 1;
   }
 
   // Create a non-contiguous slice
@@ -910,13 +1043,13 @@ UNITTEST("non contiguous slice")
   {
     for (size_t i = 0; i < 32; i++)
     {
-      size_t ind   = i + 32 * j;
-      int expected = ((i < 24) ? 2 : 1);
+      const size_t ind   = i + (32 * j);
+      const int expected = ((i < 24) ? 2 : 1);
       EXPECT(X[ind] == expected);
     }
   }
 
-  cuda_safe_call(cudaHostUnregister(&X[0]));
+  cuda_try<cudaHostUnregister>(&X[0]);
 };
 
 UNITTEST("logical data from a shape of 2D slice")
@@ -983,7 +1116,7 @@ UNITTEST("const class containing a stream_ctx")
   struct foo
   {
     foo() = default;
-    stream_ctx& get_ctx() const
+    _CCCL_HOST stream_ctx& get_ctx() const
     {
       return ctx;
     }
@@ -1036,10 +1169,10 @@ UNITTEST("get logical_data from a task_dep")
   // Create a task dependency using that logical data
   auto d = lA.read();
 
-  logical_data_untyped ul = d.get_data();
+  const logical_data_untyped ul = d.get_data();
   EXPECT(ul == lA);
 
-  logical_data<T> lB = d.get_data();
+  const logical_data<T> lB = d.get_data();
   EXPECT(lB == lA);
 
   auto lC = logical_data<T>(d.get_data());
@@ -1054,10 +1187,13 @@ UNITTEST("get logical_data from a task_dep")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-inline void unit_test_pfor()
+_CCCL_HOST_API inline void unit_test_pfor()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1078,7 +1214,7 @@ UNITTEST("basic parallel_for test")
   unit_test_pfor();
 };
 
-inline void unit_test_pfor_integral_shape()
+_CCCL_HOST_API inline void unit_test_pfor_integral_shape()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
@@ -1101,7 +1237,7 @@ UNITTEST("parallel_for with integral shape")
   unit_test_pfor_integral_shape();
 };
 
-inline void unit_test_host_pfor()
+_CCCL_HOST_API inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
@@ -1122,7 +1258,7 @@ UNITTEST("basic parallel_for test on host")
   unit_test_host_pfor();
 };
 
-inline void unit_test_pfor_mix_host_dev()
+_CCCL_HOST_API inline void unit_test_pfor_mix_host_dev()
 {
   stream_ctx ctx;
 
@@ -1132,7 +1268,7 @@ inline void unit_test_pfor_mix_host_dev()
   auto lx = ctx.logical_data(X);
 
   ctx.parallel_for(lx.shape(), lx.write())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
-    sx(pos) = 17 * pos + 4;
+    sx(pos) = (17 * pos) + 4;
   };
 
   ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
@@ -1147,7 +1283,7 @@ inline void unit_test_pfor_mix_host_dev()
 
   for (size_t i = 0; i < N; i++)
   {
-    EXPECT(X[i] == (17 * i + 4) * (17 * i + 4) - 7);
+    EXPECT(X[i] == (((17 * i) + 4) * ((17 * i) + 4)) - 7);
   }
 }
 
@@ -1158,7 +1294,7 @@ UNITTEST("parallel_for host and device")
   unit_test_pfor_mix_host_dev();
 };
 
-inline void unit_test_untyped_place_pfor()
+_CCCL_HOST_API inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
@@ -1186,7 +1322,7 @@ UNITTEST("basic parallel_for test on host (untyped execution place)")
   unit_test_untyped_place_pfor();
 };
 
-inline void unit_test_pfor_grid()
+_CCCL_HOST_API inline void unit_test_pfor_grid()
 {
   stream_ctx ctx;
   auto where = exec_place::all_devices();
@@ -1208,7 +1344,7 @@ UNITTEST("basic parallel_for test on grid")
   unit_test_pfor_grid();
 };
 
-inline void unit_test_pfor_untyped_grid()
+_CCCL_HOST_API inline void unit_test_pfor_untyped_grid()
 {
   stream_ctx ctx;
 
@@ -1232,10 +1368,13 @@ UNITTEST("basic parallel_for test on grid")
   unit_test_pfor_untyped_grid();
 };
 
-inline void unit_test_launch()
+_CCCL_HOST_API inline void unit_test_launch()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };

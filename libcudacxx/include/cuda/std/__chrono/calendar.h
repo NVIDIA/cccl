@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,8 +33,8 @@ namespace chrono
 struct local_t
 {};
 
-template <class Duration>
-using local_time    = time_point<local_t, Duration>;
+template <class _Duration>
+using local_time    = time_point<local_t, _Duration>;
 using local_seconds = local_time<seconds>;
 using local_days    = local_time<days>;
 

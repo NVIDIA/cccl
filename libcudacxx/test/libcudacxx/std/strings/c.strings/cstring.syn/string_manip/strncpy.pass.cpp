@@ -16,13 +16,13 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t... N>
-__host__ __device__ constexpr bool equal_buffers(const char* lhs, const char* rhs, cuda::std::index_sequence<N...>)
+TEST_FUNC constexpr bool equal_buffers(const char* lhs, const char* rhs, cuda::std::index_sequence<N...>)
 {
   return ((lhs[N] == rhs[N]) && ...);
 }
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_strncpy(const char* str, cuda::std::size_t count, const char (&ref)[N])
+TEST_FUNC constexpr void test_strncpy(const char* str, cuda::std::size_t count, const char (&ref)[N])
 {
   char buff[N]{};
   for (cuda::std::size_t i = 0; i < N; ++i)
@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test_strncpy(const char* str, cuda::std::size
   assert(equal_buffers(buff, ref, cuda::std::make_index_sequence<N - 1>{}));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(
     cuda::std::is_same_v<char*,

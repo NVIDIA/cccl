@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, int Expected = sizeof(T) * CHAR_BIT>
-__host__ __device__ void test_num_bits()
+TEST_FUNC void test_num_bits()
 {
   static_assert(cuda::std::__num_bits_v<T> == Expected);
   static_assert(cuda::std::__num_bits_v<const T> == Expected);
@@ -64,6 +64,9 @@ int main(int, char**)
 #endif
 #if _CCCL_HAS_NVFP8_E5M2()
   test_num_bits<__nv_fp8_e5m2>();
+#endif
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_num_bits<__nv_fp8_ue5m3>();
 #endif
 #if _CCCL_HAS_NVFP8_E8M0()
   test_num_bits<__nv_fp8_e8m0>();

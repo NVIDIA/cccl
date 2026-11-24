@@ -8,7 +8,7 @@
 
 // <cuda/std/chrono>
 
-// typedef duration<signed integral type of at least 64 bits, nano> nanoseconds;
+// using nanoseconds = duration<signed integral type of at least 64 bits, nano>;
 
 #include <cuda/std/chrono>
 #include <cuda/std/limits>
@@ -16,13 +16,13 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::nanoseconds D;
-  typedef D::rep Rep;
-  typedef D::period Period;
-  static_assert(cuda::std::is_signed<Rep>::value, "");
-  static_assert(cuda::std::is_integral<Rep>::value, "");
-  static_assert(cuda::std::numeric_limits<Rep>::digits >= 63, "");
-  static_assert((cuda::std::is_same<Period, cuda::std::nano>::value), "");
+  using D      = cuda::std::chrono::nanoseconds;
+  using Rep    = D::rep;
+  using Period = D::period;
+  static_assert(cuda::std::is_signed<Rep>::value);
+  static_assert(cuda::std::is_integral<Rep>::value);
+  static_assert(cuda::std::numeric_limits<Rep>::digits >= 63);
+  static_assert((cuda::std::is_same<Period, cuda::std::nano>::value));
 
   return 0;
 }

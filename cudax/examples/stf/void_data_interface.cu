@@ -49,5 +49,9 @@ int main()
     return cuda_kernel_desc{dummy_kernel, 16, 128, 0};
   };
 
+  EXPECT(token.is_void_interface());
+  EXPECT(token2.is_void_interface());
+  EXPECT(token3.is_void_interface());
+
   ctx.finalize();
 }

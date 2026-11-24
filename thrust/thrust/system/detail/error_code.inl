@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,18 +15,23 @@
 
 #include <thrust/system/error_code.h>
 
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/enable_if.h>
+
+#include <string>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_code ::error_code()
+_CCCL_HOST_API inline error_code ::error_code()
     : m_val(0)
     , m_cat(&system_category())
 {
   ;
 } // end error_code::error_code()
 
-error_code ::error_code(int val, const error_category& cat)
+_CCCL_HOST_API inline error_code ::error_code(int val, const error_category& cat)
     : m_val(val)
     , m_cat(&cat)
 {
@@ -47,24 +39,27 @@ error_code ::error_code(int val, const error_category& cat)
 } // end error_code::error_code()
 
 template <typename ErrorCodeEnum>
-error_code ::error_code(ErrorCodeEnum e
+_CCCL_HOST_API error_code ::error_code(
+  ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
-                        ,
-                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>*
+  ,
+  ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_code(e);
-} // end error_code::error_code()
+  )
+    : error_code(make_error_code(e))
+{} // end error_code::error_code()
 
-void error_code ::assign(int val, const error_category& cat)
+_CCCL_HOST_API inline void error_code ::assign(int val, const error_category& cat)
 {
   m_val = val;
   m_cat = &cat;
 } // end error_code::assign()
 
+// The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
+// NOLINTBEGIN(misc-unconventional-assign-operator)
 template <typename ErrorCodeEnum>
+_CCCL_HOST_API
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
 ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code>&
@@ -76,44 +71,45 @@ error_code ::operator=(ErrorCodeEnum e)
   *this = make_error_code(e);
   return *this;
 } // end error_code::operator=()
+// NOLINTEND(misc-unconventional-assign-operator)
 
-void error_code ::clear()
+_CCCL_HOST_API inline void error_code ::clear()
 {
   m_val = 0;
   m_cat = &system_category();
 } // end error_code::clear()
 
-int error_code ::value() const
+_CCCL_HOST_API inline int error_code ::value() const
 {
   return m_val;
 } // end error_code::value()
 
-const error_category& error_code ::category() const
+_CCCL_HOST_API inline const error_category& error_code ::category() const
 {
   return *m_cat;
 } // end error_code::category()
 
-error_condition error_code ::default_error_condition() const
+_CCCL_HOST_API inline error_condition error_code ::default_error_condition() const
 {
   return category().default_error_condition(value());
 } // end error_code::default_error_condition()
 
-std::string error_code ::message() const
+_CCCL_HOST_API inline std::string error_code ::message() const
 {
   return category().message(value());
 } // end error_code::message()
 
-error_code ::operator bool() const
+_CCCL_HOST_API inline error_code ::operator bool() const
 {
   return value() != 0;
 } // end error_code::operator bool ()
 
-error_code make_error_code(errc::errc_t e)
+_CCCL_HOST_API error_code make_error_code(errc::errc_t e)
 {
   return error_code(static_cast<int>(e), generic_category());
 } // end make_error_code()
 
-bool operator<(const error_code& lhs, const error_code& rhs)
+_CCCL_HOST_API bool operator<(const error_code& lhs, const error_code& rhs)
 {
   bool result = lhs.category().operator<(rhs.category());
   result      = result || lhs.category().operator==(rhs.category());
@@ -121,48 +117,48 @@ bool operator<(const error_code& lhs, const error_code& rhs)
   return result;
 } // end operator==()
 
-template <typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec)
+template <typename CharT, typename Traits>
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec)
 {
   return os << ec.category().name() << ':' << ec.value();
 } // end operator<<()
 
-bool operator==(const error_code& lhs, const error_code& rhs)
+_CCCL_HOST_API bool operator==(const error_code& lhs, const error_code& rhs)
 {
   return lhs.category().operator==(rhs.category()) && lhs.value() == rhs.value();
 } // end operator==()
 
-bool operator==(const error_code& lhs, const error_condition& rhs)
+_CCCL_HOST_API bool operator==(const error_code& lhs, const error_condition& rhs)
 {
   return lhs.category().equivalent(lhs.value(), rhs) || rhs.category().equivalent(lhs, rhs.value());
 } // end operator==()
 
-bool operator==(const error_condition& lhs, const error_code& rhs)
+_CCCL_HOST_API bool operator==(const error_condition& lhs, const error_code& rhs)
 {
   return rhs.category().equivalent(lhs.value(), lhs) || lhs.category().equivalent(rhs, lhs.value());
 } // end operator==()
 
-bool operator==(const error_condition& lhs, const error_condition& rhs)
+_CCCL_HOST_API bool operator==(const error_condition& lhs, const error_condition& rhs)
 {
   return lhs.category().operator==(rhs.category()) && lhs.value() == rhs.value();
 } // end operator==()
 
-bool operator!=(const error_code& lhs, const error_code& rhs)
+_CCCL_HOST_API bool operator!=(const error_code& lhs, const error_code& rhs)
 {
   return !(lhs == rhs);
 } // end operator!=()
 
-bool operator!=(const error_code& lhs, const error_condition& rhs)
+_CCCL_HOST_API bool operator!=(const error_code& lhs, const error_condition& rhs)
 {
   return !(lhs == rhs);
 } // end operator!=()
 
-bool operator!=(const error_condition& lhs, const error_code& rhs)
+_CCCL_HOST_API bool operator!=(const error_condition& lhs, const error_code& rhs)
 {
   return !(lhs == rhs);
 } // end operator!=()
 
-bool operator!=(const error_condition& lhs, const error_condition& rhs)
+_CCCL_HOST_API bool operator!=(const error_condition& lhs, const error_condition& rhs)
 {
   return !(lhs == rhs);
 } // end operator!=()

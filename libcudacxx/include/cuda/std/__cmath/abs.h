@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,10 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,9 +38,40 @@
 #  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_fabsf128) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_FABSF128(...) __builtin_fabsf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_fabsf128) || _CCCL_COMPILER(GCC)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_fabsf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_FABSF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+#if _CCCL_TILE_COMPILATION()
+#  undef _CCCL_BUILTIN_FABSF
+#  undef _CCCL_BUILTIN_FABS
+#  undef _CCCL_BUILTIN_FABSL
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs
+
+// fabs for fp64 with integer instructions only: clears the sign bit as IEEE 754 abs, NaNs keep their payload and are
+// not quieted
+[[nodiscard]] _CCCL_DEVICE_API inline double __fp64_fabs_int(double __x) noexcept
+{
+  // On SM100+, the compiler recognizes clearing the sign bit of a 64-bit integer as fabs, which reintroduces fp64
+  // instructions. Clearing it in the high 32-bit half avoids that
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (return ::__hiloint2double(::__double2hiint(__x) & ::cuda::std::numeric_limits<int32_t>::max(),
+                               ::__double2loint(__x));),
+    (return ::cuda::std::__fp_from_storage<double>(
+              ::cuda::std::__fp_get_storage(__x) & ::cuda::std::__fp_exp_mant_mask_of_v<double>);))
+}
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
@@ -60,6 +94,14 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   }
   else
   {
+    if constexpr (is_same_v<_Tp, double>)
+    {
+      // fabs for fp64 with integer instructions on slow FP64 targets
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+      {
+        _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp64_fabs_int(__x);)
+      }
+    }
 #ifdef _CCCL_BUILTIN_FABSF
     if constexpr (is_same_v<_Tp, float>)
     {
@@ -94,6 +136,25 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       }
     }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+    if constexpr (is_same_v<_Tp, __float128>)
+    {
+#  ifdef _CCCL_BUILTIN_FABSF128
+      // nvcc doesn't support _CCCL_BUILTIN_FABSF128 in constexpr context
+#    if _CCCL_CUDA_COMPILER(NVCC)
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#    endif // _CCCL_CUDA_COMPILER(NVCC)
+      {
+        return static_cast<__float128>(_CCCL_BUILTIN_FABSF128(__x));
+      }
+#  else // ^^^ _CCCL_BUILTIN_FABSF128 ^^^ / vvv !_CCCL_BUILTIN_FABSF128 vvv
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_fabs(__x);))
+      }
+#  endif // ^^^ !_CCCL_BUILTIN_FABSF128 ^^^
+    }
+#endif // _CCCL_HAS_FLOAT128()
     const auto __val = ::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
     return ::cuda::std::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
   }

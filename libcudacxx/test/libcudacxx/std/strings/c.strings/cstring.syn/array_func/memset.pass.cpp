@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // void* memset(void* s, int c, size_t n);
 
 #include <cuda/std/cassert>
@@ -15,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ void test(int c)
+TEST_HOST_DEVICE_FUNC void test(int c)
 {
   T obj{};
   assert(cuda::std::memset(&obj, c, sizeof(T)) == &obj);

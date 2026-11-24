@@ -18,25 +18,25 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr void constexpr_test()
+TEST_FUNC constexpr void constexpr_test()
 {
   constexpr T array[1000] = {};
   static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(array, array)), const T*>);
   static_assert(noexcept(cuda::std::midpoint(array, array)));
 
-  static_assert(cuda::std::midpoint(array, array) == array, "");
-  static_assert(cuda::std::midpoint(array, array + 1000) == array + 500, "");
+  static_assert(cuda::std::midpoint(array, array) == array);
+  static_assert(cuda::std::midpoint(array, array + 1000) == array + 500);
 
-  static_assert(cuda::std::midpoint(array, array + 9) == array + 4, "");
-  static_assert(cuda::std::midpoint(array, array + 10) == array + 5, "");
-  static_assert(cuda::std::midpoint(array, array + 11) == array + 5, "");
-  static_assert(cuda::std::midpoint(array + 9, array) == array + 5, "");
-  static_assert(cuda::std::midpoint(array + 10, array) == array + 5, "");
-  static_assert(cuda::std::midpoint(array + 11, array) == array + 6, "");
+  static_assert(cuda::std::midpoint(array, array + 9) == array + 4);
+  static_assert(cuda::std::midpoint(array, array + 10) == array + 5);
+  static_assert(cuda::std::midpoint(array, array + 11) == array + 5);
+  static_assert(cuda::std::midpoint(array + 9, array) == array + 5);
+  static_assert(cuda::std::midpoint(array + 10, array) == array + 5);
+  static_assert(cuda::std::midpoint(array + 11, array) == array + 6);
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   T array[1000] = {}; // we need an array to make valid pointers
   static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(array, array)), T*>);
@@ -60,7 +60,7 @@ __host__ __device__ void runtime_test()
 }
 
 template <typename T>
-__host__ __device__ void pointer_test()
+TEST_FUNC void pointer_test()
 {
   runtime_test<T>();
   runtime_test<const T>();

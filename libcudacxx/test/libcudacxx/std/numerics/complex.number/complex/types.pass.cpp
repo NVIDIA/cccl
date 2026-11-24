@@ -13,7 +13,7 @@
 // class complex
 // {
 // public:
-//   typedef T value_type;
+//   using value_type = T;
 //   ...
 // };
 
@@ -23,10 +23,10 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  typedef cuda::std::complex<T> C;
-  static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
+  using C = cuda::std::complex<T>;
+  static_assert((cuda::std::is_same<typename C::value_type, T>::value));
 }
 
 int main(int, char**)

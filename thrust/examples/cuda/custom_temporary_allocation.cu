@@ -58,7 +58,7 @@ struct cached_allocator
 
   char* allocate(std::ptrdiff_t num_bytes)
   {
-    std::cout << "cached_allocator::allocate(): num_bytes == " << num_bytes << std::endl;
+    std::cout << "cached_allocator::allocate(): num_bytes == " << num_bytes << '\n';
 
     char* result = nullptr;
 
@@ -66,14 +66,14 @@ struct cached_allocator
     auto free_block_it = free_blocks.find(num_bytes);
     if (free_block_it != free_blocks.end())
     {
-      std::cout << "cached_allocator::allocate(): found a free block" << std::endl;
+      std::cout << "cached_allocator::allocate(): found a free block" << '\n';
       result = free_block_it->second;
       free_blocks.erase(free_block_it);
     }
     else
     {
       // No allocation of the right size exists, so create a new one with `thrust::cuda::malloc`.
-      std::cout << "cached_allocator::allocate(): allocating new block" << std::endl;
+      std::cout << "cached_allocator::allocate(): allocating new block" << '\n';
       // Allocate memory and convert the resulting `thrust::cuda::pointer` to a raw pointer.
       result = thrust::cuda::malloc<char>(num_bytes).get();
     }
@@ -86,7 +86,7 @@ struct cached_allocator
 
   void deallocate(char* ptr, size_t)
   {
-    std::cout << "cached_allocator::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << std::endl;
+    std::cout << "cached_allocator::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << '\n';
 
     // Erase the allocated block from the allocated blocks map.
     auto it = allocated_blocks.find(ptr);
@@ -108,7 +108,7 @@ private:
 
   void free_all()
   {
-    std::cout << "cached_allocator::free_all()" << std::endl;
+    std::cout << "cached_allocator::free_all()" << '\n';
 
     // Deallocate all outstanding blocks in both lists.
     for (auto [bytes, ptr] : free_blocks)
@@ -125,17 +125,17 @@ private:
 
 int main()
 {
-  std::size_t num_elements = 32768;
+  const std::size_t num_elements = 32768;
 
   thrust::host_vector<int> h_input(num_elements);
 
   // Generate random input.
   thrust::generate(h_input.begin(), h_input.end(), rand);
 
-  thrust::cuda::vector<int> d_input = h_input;
+  const thrust::cuda::vector<int> d_input = h_input;
   thrust::cuda::vector<int> d_result(num_elements);
 
-  std::size_t num_trials = 5;
+  const std::size_t num_trials = 5;
 
   cached_allocator alloc;
 

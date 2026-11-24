@@ -10,42 +10,45 @@
 
 // template <class T1, class T2> struct pair
 
-// void swap(pair& p);
+// constexpr void swap(pair& p);
 
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
+struct NotSwappable
+{
+  NotSwappable(const NotSwappable&)            = delete;
+  NotSwappable& operator=(const NotSwappable&) = delete;
+};
+
+template <class _Tp, class = void>
+constexpr bool can_member_swap = false;
+
+template <class _Tp>
+constexpr bool can_member_swap<_Tp, decltype(cuda::std::declval<_Tp&>().swap(cuda::std::declval<_Tp&>()))> = true;
+
 struct S
 {
   int i;
-  __host__ __device__ S()
+  TEST_FUNC constexpr S()
       : i(0)
   {}
-  __host__ __device__ S(int j)
+  TEST_FUNC constexpr S(int j)
       : i(j)
   {}
-  __host__ __device__ S* operator&()
-  {
-    assert(false);
-    return this;
-  }
-  __host__ __device__ S const* operator&() const
-  {
-    assert(false);
-    return this;
-  }
-  __host__ __device__ bool operator==(int x) const
+  TEST_FUNC constexpr bool operator==(int x) const
   {
     return i == x;
   }
 };
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
-    typedef cuda::std::pair<int, short> P1;
+    using P1 = cuda::std::pair<int, short>;
     P1 p1(3, static_cast<short>(4));
     P1 p2(5, static_cast<short>(6));
     p1.swap(p2);
@@ -54,8 +57,9 @@ int main(int, char**)
     assert(p2.first == 3);
     assert(p2.second == 4);
   }
+
   {
-    typedef cuda::std::pair<int, S> P1;
+    using P1 = cuda::std::pair<int, S>;
     P1 p1(3, S(4));
     P1 p2(5, S(6));
     p1.swap(p2);
@@ -64,6 +68,21 @@ int main(int, char**)
     assert(p2.first == 3);
     assert(p2.second == 4);
   }
+
+  return true;
+}
+
+static_assert(cuda::std::is_swappable_v<cuda::std::pair<int, int>>);
+static_assert(can_member_swap<cuda::std::pair<int, int>>);
+static_assert(
+  noexcept(cuda::std::declval<cuda::std::pair<int, int>&>().swap(cuda::std::declval<cuda::std::pair<int, int>&>())));
+static_assert(!cuda::std::is_swappable_v<cuda::std::pair<NotSwappable, int>>);
+static_assert(!can_member_swap<cuda::std::pair<NotSwappable, int>>);
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

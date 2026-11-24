@@ -25,23 +25,23 @@ template <bool IsNoexcept>
 struct View : cuda::std::ranges::view_base
 {
   int start_ = 0;
-  __host__ __device__ constexpr explicit View() noexcept(IsNoexcept){};
-  __host__ __device__ constexpr explicit View(int start)
+  TEST_FUNC constexpr explicit View() noexcept(IsNoexcept){};
+  TEST_FUNC constexpr explicit View(int start)
       : start_(start)
   {}
-  __host__ __device__ constexpr View(View&& other) noexcept(IsNoexcept)
+  TEST_FUNC constexpr View(View&& other) noexcept(IsNoexcept)
       : start_(cuda::std::exchange(other.start_, 0))
   {}
-  __host__ __device__ constexpr View& operator=(View&& other) noexcept(IsNoexcept)
+  TEST_FUNC constexpr View& operator=(View&& other) noexcept(IsNoexcept)
   {
     start_ = cuda::std::exchange(other.start_, 0);
     return *this;
   }
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return globalBuff + start_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return globalBuff + 8;
   }
@@ -57,23 +57,23 @@ template <bool IsNoexcept>
 struct CopyableView : cuda::std::ranges::view_base
 {
   int start_ = 0;
-  __host__ __device__ constexpr explicit CopyableView() noexcept(IsNoexcept){};
-  __host__ __device__ constexpr CopyableView(CopyableView const& other) noexcept(IsNoexcept)
+  TEST_FUNC constexpr explicit CopyableView() noexcept(IsNoexcept){};
+  TEST_FUNC constexpr CopyableView(CopyableView const& other) noexcept(IsNoexcept)
       : start_(other.start_)
   {}
-  __host__ __device__ constexpr CopyableView& operator=(CopyableView const& other) noexcept(IsNoexcept)
+  TEST_FUNC constexpr CopyableView& operator=(CopyableView const& other) noexcept(IsNoexcept)
   {
     start_ = other.start_;
     return *this;
   }
-  __host__ __device__ constexpr explicit CopyableView(int start) noexcept
+  TEST_FUNC constexpr explicit CopyableView(int start) noexcept
       : start_(start)
   {}
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return globalBuff + start_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return globalBuff + 8;
   }
@@ -89,21 +89,21 @@ struct MoveOnlyView : cuda::std::ranges::view_base
   MoveOnlyView(MoveOnlyView&&)                 = default;
   MoveOnlyView& operator=(MoveOnlyView&&)      = default;
 
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Range
 {
   int start_;
-  __host__ __device__ constexpr explicit Range(int start) noexcept
+  TEST_FUNC constexpr explicit Range(int start) noexcept
       : start_(start)
   {}
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return globalBuff + start_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return globalBuff + 8;
   }
@@ -112,14 +112,14 @@ struct Range
 struct BorrowableRange
 {
   int start_;
-  __host__ __device__ constexpr explicit BorrowableRange(int start) noexcept
+  TEST_FUNC constexpr explicit BorrowableRange(int start) noexcept
       : start_(start)
   {}
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return globalBuff + start_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return globalBuff + 8;
   }
@@ -129,11 +129,11 @@ inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowableRange> 
 
 struct RandomAccessRange
 {
-  __host__ __device__ constexpr auto begin()
+  TEST_FUNC constexpr auto begin()
   {
     return random_access_iterator<int*>(globalBuff);
   }
-  __host__ __device__ constexpr auto end()
+  TEST_FUNC constexpr auto end()
   {
     return sized_sentinel(random_access_iterator<int*>(globalBuff + 8));
   }
@@ -155,7 +155,7 @@ inline constexpr bool
   CanBePiped<View, T, cuda::std::void_t<decltype(cuda::std::declval<View>() | cuda::std::declval<T>())>> = true;
 #endif // TEST_STD_VER <= 2017
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::views::all(View<true>())), View<true>>);

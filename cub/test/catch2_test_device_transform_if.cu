@@ -6,22 +6,20 @@
 #include <cub/device/device_transform.cuh>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformIf, transform_if);
 
-using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
-
-C2H_TEST("DeviceTransform::TransformIf conditional BabelStream add",
+CUB_TEST("DeviceTransform::TransformIf conditional BabelStream add",
          "[device][transform_if]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
-         offset_types)
+         CUB_SMALL,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = ::cuda::std::int64_t;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);

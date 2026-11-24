@@ -56,7 +56,7 @@ int main(int, char**)
     using T = cuda::std::tuple<int>;
     constexpr T t0(2);
     constexpr T t = t0;
-    static_assert(cuda::std::get<0>(t) == 2, "");
+    static_assert(cuda::std::get<0>(t) == 2);
   }
   {
     using T = cuda::std::tuple<Empty>;

@@ -6,15 +6,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
 // class binomial_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 
 #include "random_utilities/test_distribution.h"
 #include "test_macros.h"
@@ -23,7 +27,7 @@ struct binomial_cdf
 {
   using P = cuda::std::binomial_distribution<>::param_type;
 
-  __host__ __device__ double operator()(cuda::std::int64_t x, P p) const
+  TEST_HOST_DEVICE_FUNC double operator()(cuda::std::int64_t x, P p) const
   {
     if (x < 0)
     {
@@ -47,7 +51,7 @@ struct binomial_cdf
   }
 };
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false; // Math functions cuda::std::log, cuda::std::exp are not yet
                                                       // constexpr

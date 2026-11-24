@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,48 +13,50 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
 #include <thrust/system/detail/errno.h>
 #include <thrust/system/error_code.h>
 
+#include <cuda/std/__functional/operations.h>
+
 #include <cstring>
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_category ::~error_category()
+_CCCL_HOST_API inline error_category::~error_category()
 {
   ;
 } // end error_category::~error_category()
 
-error_condition error_category ::default_error_condition(int ev) const
+_CCCL_HOST_API inline error_condition error_category::default_error_condition(int ev) const
 {
   return error_condition(ev, *this);
 } // end error_category::default_error_condition()
 
-bool error_category ::equivalent(int code, const error_condition& condition) const
+_CCCL_HOST_API inline bool error_category::equivalent(int code, const error_condition& condition) const
 {
   return default_error_condition(code) == condition;
 } // end error_condition::equivalent()
 
-bool error_category ::equivalent(const error_code& code, int condition) const
+_CCCL_HOST_API inline bool error_category::equivalent(const error_code& code, int condition) const
 {
-  bool result = (this->operator==(code.category())) && (code.value() == condition);
+  const bool result = (this->operator==(code.category())) && (code.value() == condition);
   return result;
 } // end error_code::equivalent()
 
-bool error_category ::operator==(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator==(const error_category& rhs) const
 {
   return this == &rhs;
 } // end error_category::operator==()
 
-bool error_category ::operator!=(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator!=(const error_category& rhs) const
 {
   return !this->operator==(rhs);
 } // end error_category::operator!=()
 
-bool error_category ::operator<(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator<(const error_category& rhs) const
 {
   return ::cuda::std::less<const error_category*>()(this, &rhs);
 } // end error_category::operator<()
@@ -77,14 +66,14 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category() {}
+  _CCCL_HIDE_FROM_ABI generic_error_category() = default;
 
-  inline virtual const char* name() const
+  _CCCL_HOST_API const char* name() const override
   {
     return "generic";
   }
 
-  inline virtual std::string message(int ev) const
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     static const std::string unknown_err("Unknown error");
 
@@ -101,19 +90,19 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category() {}
+  _CCCL_HIDE_FROM_ABI system_error_category() = default;
 
-  inline virtual const char* name() const
+  _CCCL_HOST_API const char* name() const override
   {
     return "system";
   }
 
-  inline virtual std::string message(int ev) const
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     return generic_category().message(ev);
   }
 
-  inline virtual error_condition default_error_condition(int ev) const
+  _CCCL_HOST_API error_condition default_error_condition(int ev) const override
   {
     using namespace errc;
 
@@ -282,13 +271,13 @@ public:
 }; // end system_category_result
 } // namespace detail
 
-inline const error_category& generic_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& generic_category()
 {
   static const detail::generic_error_category result;
   return result;
 }
 
-inline const error_category& system_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& system_category()
 {
   static const detail::system_error_category result;
   return result;

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/iterator_facade.h
  *  \brief A class which exposes a public interface for iterators
@@ -33,15 +20,20 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
+
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -95,7 +87,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  _CCCL_HOST_DEVICE_API friend bool
   operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
              iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -111,7 +103,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  _CCCL_HOST_DEVICE_API friend bool
   operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
              iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -127,7 +119,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  _CCCL_HOST_DEVICE_API friend bool
   operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -143,7 +135,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  inline _CCCL_HOST_DEVICE_API friend bool
   operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -159,7 +151,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  inline _CCCL_HOST_DEVICE_API friend bool
   operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
              iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -175,7 +167,7 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend bool
+  inline _CCCL_HOST_DEVICE_API friend bool
   operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
              iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -192,32 +184,32 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend detail::distance_from_result<
+  inline _CCCL_HOST_DEVICE_API friend detail::distance_from_result<
     iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
     iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>
   operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
   template <typename Facade>
-  _CCCL_HOST_DEVICE static typename Facade::reference dereference(Facade const& f)
+  _CCCL_HOST_DEVICE_API static typename Facade::reference dereference(Facade const& f)
   {
     return f.dereference();
   }
 
   template <typename Facade>
-  _CCCL_HOST_DEVICE static void increment(Facade& f)
+  _CCCL_HOST_DEVICE_API static void increment(Facade& f)
   {
     f.increment();
   }
 
   template <typename Facade>
-  _CCCL_HOST_DEVICE static void decrement(Facade& f)
+  _CCCL_HOST_DEVICE_API static void decrement(Facade& f)
   {
     f.decrement();
   }
 
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static bool equal(Facade1 const& f1, Facade2 const& f2)
+  _CCCL_HOST_DEVICE_API static bool equal(Facade1 const& f1, Facade2 const& f2)
   {
     return f1.equal(f2);
   }
@@ -238,7 +230,7 @@ class iterator_core_access
   // }
 
   template <class Facade>
-  _CCCL_HOST_DEVICE static void advance(Facade& f, typename Facade::difference_type n)
+  _CCCL_HOST_DEVICE_API static void advance(Facade& f, typename Facade::difference_type n)
   {
     f.advance(n);
   }
@@ -246,8 +238,8 @@ class iterator_core_access
   // Facade2 is convertible to Facade1,
   // so return Facade1's difference_type
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename Facade1::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::true_type)
+  _CCCL_HOST_DEVICE_API static typename Facade1::difference_type
+  distance_from(Facade1 const& f1, Facade2 const& f2, ::cuda::std::true_type)
   {
     return -f1.distance_to(f2);
   }
@@ -255,14 +247,14 @@ class iterator_core_access
   // Facade2 is not convertible to Facade1,
   // so return Facade2's difference_type
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename Facade2::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::false_type)
+  _CCCL_HOST_DEVICE_API static typename Facade2::difference_type
+  distance_from(Facade1 const& f1, Facade2 const& f2, ::cuda::std::false_type)
   {
     return f2.distance_to(f1);
   }
 
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename detail::distance_from_result<Facade1, Facade2>
+  _CCCL_HOST_DEVICE_API static detail::distance_from_result<Facade1, Facade2>
   distance_from(Facade1 const& f1, Facade2 const& f2)
   {
     // dispatch the implementation of this method upon whether or not
@@ -274,14 +266,14 @@ class iterator_core_access
   // Curiously Recurring Template interface.
   //
   template <typename Derived, typename Value, typename System, typename Traversal, typename Reference, typename Difference>
-  _CCCL_HOST_DEVICE static Derived&
+  _CCCL_HOST_DEVICE_API static Derived&
   derived(iterator_facade<Derived, Value, System, Traversal, Reference, Difference>& facade)
   {
     return *static_cast<Derived*>(&facade);
   }
 
   template <typename Derived, typename Value, typename System, typename Traversal, typename Reference, typename Difference>
-  _CCCL_HOST_DEVICE static Derived const&
+  _CCCL_HOST_DEVICE_API static Derived const&
   derived(iterator_facade<Derived, Value, System, Traversal, Reference, Difference> const& facade)
   {
     return *static_cast<Derived const*>(&facade);
@@ -319,19 +311,18 @@ template <typename Derived,
           typename Difference = ::cuda::std::ptrdiff_t>
 class iterator_facade
 {
-private:
   /*! \cond
    */
 
   //
   // Curiously Recurring Template interface.
   //
-  _CCCL_HOST_DEVICE Derived& derived()
+  _CCCL_HOST_DEVICE_API Derived& derived()
   {
     return *static_cast<Derived*>(this);
   }
 
-  _CCCL_HOST_DEVICE Derived const& derived() const
+  _CCCL_HOST_DEVICE_API Derived const& derived() const
   {
     return *static_cast<Derived const*>(this);
   }
@@ -368,7 +359,7 @@ public:
   /*! \p operator*() dereferences this \p iterator_facade.
    *  \return A reference to the element pointed to by this \p iterator_facade.
    */
-  _CCCL_HOST_DEVICE reference operator*() const
+  _CCCL_HOST_DEVICE_API reference operator*() const
   {
     return iterator_core_access::dereference(this->derived());
   }
@@ -385,7 +376,7 @@ public:
   /*! \p operator[] performs indexed dereference.
    *  \return A reference to the element \p n distance away from this \p iterator_facade.
    */
-  _CCCL_HOST_DEVICE reference operator[](difference_type n) const
+  _CCCL_HOST_DEVICE_API reference operator[](difference_type n) const
   {
     return *(this->derived() + n);
   }
@@ -393,7 +384,7 @@ public:
   /*! \p operator++ pre-increments this \p iterator_facade to refer to the element in the next position.
    *  \return <tt>*this</tt>
    */
-  _CCCL_HOST_DEVICE Derived& operator++()
+  _CCCL_HOST_DEVICE_API Derived& operator++()
   {
     iterator_core_access::increment(this->derived());
     return this->derived();
@@ -402,7 +393,7 @@ public:
   /*! \p operator++ post-increments this \p iterator_facade and returns a new \p iterator_facade referring to the
    * element in the next position. \return A copy of <tt>*this</tt> before increment.
    */
-  _CCCL_HOST_DEVICE Derived operator++(int)
+  _CCCL_HOST_DEVICE_API Derived operator++(int)
   {
     Derived tmp(this->derived());
     ++*this;
@@ -412,7 +403,7 @@ public:
   /*! \p operator-- pre-decrements this \p iterator_facade to refer to the element in the previous position.
    *  \return <tt>*this</tt>
    */
-  _CCCL_HOST_DEVICE Derived& operator--()
+  _CCCL_HOST_DEVICE_API Derived& operator--()
   {
     iterator_core_access::decrement(this->derived());
     return this->derived();
@@ -421,7 +412,7 @@ public:
   /*! \p operator-- post-decrements this \p iterator_facade and returns a new \p iterator_facade referring to the
    * element in the previous position. \return A copy of <tt>*this</tt> before decrement.
    */
-  _CCCL_HOST_DEVICE Derived operator--(int)
+  _CCCL_HOST_DEVICE_API Derived operator--(int)
   {
     Derived tmp(this->derived());
     --*this;
@@ -431,7 +422,7 @@ public:
   /*! \p operator+= increments this \p iterator_facade to refer to an element a given distance after its current
    * position. \param n The quantity to increment. \return <tt>*this</tt>
    */
-  _CCCL_HOST_DEVICE Derived& operator+=(difference_type n)
+  _CCCL_HOST_DEVICE_API Derived& operator+=(difference_type n)
   {
     iterator_core_access::advance(this->derived(), n);
     return this->derived();
@@ -440,7 +431,7 @@ public:
   /*! \p operator-= decrements this \p iterator_facade to refer to an element a given distance before its current
    * position. \param n The quantity to decrement. \return <tt>*this</tt>
    */
-  _CCCL_HOST_DEVICE Derived& operator-=(difference_type n)
+  _CCCL_HOST_DEVICE_API Derived& operator-=(difference_type n)
   {
     iterator_core_access::advance(this->derived(), -n);
     return this->derived();
@@ -450,7 +441,7 @@ public:
    * referring to the element at the given position before this \p iterator_facade. \param n The quantity to decrement
    *  \return An \p iterator_facade pointing \p n elements before this \p iterator_facade.
    */
-  _CCCL_HOST_DEVICE Derived operator-(difference_type n) const
+  _CCCL_HOST_DEVICE_API Derived operator-(difference_type n) const
   {
     Derived result(this->derived());
     return result -= n;
@@ -473,15 +464,13 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return iterator_core_access::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -496,15 +485,13 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return !iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return !iterator_core_access::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -519,16 +506,14 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-       > iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+       > iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -543,16 +528,14 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-       < iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+       < iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -567,16 +550,14 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-      >= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+      >= iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -591,16 +572,14 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  bool operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-      <= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+      <= iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 // Iterator difference
@@ -616,21 +595,21 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API inline
 
-// divine the type this operator returns
-detail::distance_from_result<iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
-                             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>
+  // divine the type this operator returns
+  detail::distance_from_result<iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
+                               iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>
 
-operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-          iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+  operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
+  return iterator_core_access::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }
 
 // Iterator addition
 template <typename Derived, typename Value, typename System, typename Traversal, typename Reference, typename Difference>
-inline _CCCL_HOST_DEVICE Derived
+_CCCL_HOST_DEVICE_API inline Derived
 operator+(iterator_facade<Derived, Value, System, Traversal, Reference, Difference> const& i,
           typename Derived::difference_type n)
 {
@@ -639,7 +618,7 @@ operator+(iterator_facade<Derived, Value, System, Traversal, Reference, Differen
 }
 
 template <typename Derived, typename Value, typename System, typename Traversal, typename Reference, typename Difference>
-inline _CCCL_HOST_DEVICE Derived
+_CCCL_HOST_DEVICE_API inline Derived
 operator+(typename Derived::difference_type n,
           iterator_facade<Derived, Value, System, Traversal, Reference, Difference> const& i)
 {

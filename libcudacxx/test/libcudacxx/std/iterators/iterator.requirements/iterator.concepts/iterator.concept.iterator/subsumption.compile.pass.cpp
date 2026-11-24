@@ -16,19 +16,21 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 // clang-format off
 template<cuda::std::weakly_incrementable>
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_FUNC constexpr bool check_subsumption() {
   return false;
 }
 
 template<cuda::std::input_or_output_iterator>
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_FUNC constexpr bool check_subsumption() {
   return true;
 }
 // clang-format on
 
-static_assert(check_subsumption<int*>(), "");
+static_assert(check_subsumption<int*>());
 
 int main(int, char**)
 {

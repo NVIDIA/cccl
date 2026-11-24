@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class Duration>
-__host__ __device__ void test(const Duration& f, const Duration& d)
+TEST_FUNC void test(const Duration& f, const Duration& d)
 {
   {
     using R = decltype(cuda::std::chrono::abs(f));
@@ -43,15 +43,15 @@ int main(int, char**)
   {
     //  9000000ms is 2 hours and 30 minutes
     constexpr cuda::std::chrono::hours h1 = cuda::std::chrono::abs(cuda::std::chrono::hours(-3));
-    static_assert(h1.count() == 3, "");
+    static_assert(h1.count() == 3);
     constexpr cuda::std::chrono::hours h2 = cuda::std::chrono::abs(cuda::std::chrono::hours(3));
-    static_assert(h2.count() == 3, "");
+    static_assert(h2.count() == 3);
   }
 
   {
     //  Make sure it works for durations that are not LCD'ed - example from LWG3091
     constexpr auto d = cuda::std::chrono::abs(cuda::std::chrono::duration<int, cuda::std::ratio<60, 100>>{2});
-    static_assert(d.count() == 2, "");
+    static_assert(d.count() == 2);
   }
 
   return 0;

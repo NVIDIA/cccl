@@ -18,8 +18,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +29,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <tuple>
 
 namespace cuda::experimental::stf
 {
@@ -83,19 +89,19 @@ auto remove_void_interface(Tuple&& tpl)
 {
   return tuple_transform(tpl, [](auto&& e) {
     const auto& probe = e;
-    if constexpr (::std::is_same_v<decltype(probe), const void_interface&>)
+    if constexpr (::cuda::std::is_same_v<decltype(probe), const void_interface&>)
     {
       return ::std::ignore;
     }
     else
     {
-      return ::std::forward<decltype(e)>(e);
+      return ::cuda::std::forward<decltype(e)>(e);
     }
   });
 }
 
 template <typename T>
-using remove_void_interface_t = decltype(remove_void_interface(::std::declval<T>()));
+using remove_void_interface_t = decltype(remove_void_interface(::cuda::std::declval<T>()));
 
 template <typename... Ts>
 using remove_void_interface_from_pack_t = remove_void_interface_t<::std::tuple<Ts...>>;

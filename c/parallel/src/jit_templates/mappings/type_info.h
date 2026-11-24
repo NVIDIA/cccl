@@ -24,14 +24,17 @@ struct parameter_mapping<cccl_type_info>
 {
   static const constexpr auto archetype = cccl_type_info_mapping<int>{};
 
-  template <typename TplId>
-  static std::string map(TplId, cccl_type_info arg)
+  template <typename TplId, typename ArgT>
+  static std::string map(TplId, ArgT arg)
   {
-    return std::format("cccl_type_info_mapping<{}>{{}}", cccl_type_enum_to_name(arg.type));
+    using traits       = arg_traits<cuda::std::decay_t<ArgT>>;
+    using storage_type = typename traits::storage_type;
+    const auto& value  = traits::unwrap(arg);
+    return std::format("cccl_type_info_mapping<{}>{{}}", cccl_type_enum_to_name<storage_type>(value.type));
   }
 
-  template <typename TplId>
-  static std::string aux(TplId, cccl_type_info)
+  template <typename TplId, typename ArgT>
+  static std::string aux(TplId, ArgT)
   {
     return {};
   }

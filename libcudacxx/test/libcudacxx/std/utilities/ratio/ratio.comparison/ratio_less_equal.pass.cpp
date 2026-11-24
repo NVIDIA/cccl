@@ -13,54 +13,62 @@
 #include "test_macros.h"
 
 template <class Rat1, class Rat2, bool result>
-__host__ __device__ void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert((result == cuda::std::ratio_less_equal<Rat1, Rat2>::value), "");
-  static_assert((result == cuda::std::ratio_less_equal_v<Rat1, Rat2>), "");
+  static_assert((result == cuda::std::ratio_less_equal<Rat1, Rat2>::value));
+  static_assert((result == cuda::std::ratio_less_equal_v<Rat1, Rat2>) );
+}
+
+TEST_FUNC constexpr bool test()
+{
+  {
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, 1>;
+    test<R1, R2, true>();
+  }
+  {
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    test<R1, R2, true>();
+  }
+  {
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    test<R1, R2, true>();
+  }
+  {
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    test<R1, R2, true>();
+  }
+  {
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, -1>;
+    test<R1, R2, false>();
+  }
+  {
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    test<R1, R2, false>();
+  }
+  {
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    test<R1, R2, true>();
+  }
+  {
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL>;
+    test<R1, R2, false>();
+  }
+
+  return true;
 }
 
 int main(int, char**)
 {
-  {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, 1> R2;
-    test<R1, R2, true>();
-  }
-  {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
-    test<R1, R2, true>();
-  }
-  {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
-    test<R1, R2, true>();
-  }
-  {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R2;
-    test<R1, R2, true>();
-  }
-  {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, -1> R2;
-    test<R1, R2, false>();
-  }
-  {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
-    test<R1, R2, false>();
-  }
-  {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
-    test<R1, R2, true>();
-  }
-  {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL> R2;
-    test<R1, R2, false>();
-  }
+  test();
+  static_assert(test());
 
   return 0;
 }

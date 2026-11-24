@@ -6,11 +6,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// the assert does not trigger
+
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-__device__ bool host_accessor_runtime_fail()
+TEST_DEVICE_FUNC bool host_accessor_runtime_fail()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;

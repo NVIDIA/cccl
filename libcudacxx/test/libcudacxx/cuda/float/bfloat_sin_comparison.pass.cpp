@@ -8,14 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc, nvcc-11, nvcc-12.0, nvcc-12.1
+// Fast device intrinsics do not produce bit-identical results to host math over every input.
+// UNSUPPORTED: fast-math
 
 #include <cuda/std/cmath>
 
 #include "host_device_comparison.h"
+#include "test_macros.h"
 
 struct func
 {
-  __host__ __device__ __nv_bfloat16 operator()(cuda::std::size_t i) const
+  TEST_HOST_DEVICE_FUNC __nv_bfloat16 operator()(cuda::std::size_t i) const
   {
     auto raw = __nv_bfloat16_raw();
     raw.x    = (unsigned short) i;

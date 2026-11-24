@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_copy_constructible.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
 
 #if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
   || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
@@ -39,6 +39,19 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+// However, NVRTC handles it specially
+#if _CCCL_FREESTANDING() && !_CCCL_COMPILER(NVRTC)
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif // _CCCL_ENABLE_FREESTANDING
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#ifdef __CUDACC_TILE__
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif // defined(__CUDACC_TILE__)
+
 #if _CCCL_COMPILER(CLANG, >=, 15)
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
 #else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
@@ -51,15 +64,27 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+#if _CCCL_FREESTANDING()
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
+#endif // _CCCL_FREESTANDING()
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#ifdef __CUDACC_TILE__
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
+#endif // defined(__CUDACC_TILE__)
+
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
-#    include <bits/move.h>
+#    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
-#  endif
+#  endif // _CCCL_HOSTED()
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 
 // _CCCL_MOVE macro always expands to std::move builtin, if available, and fallbacks to cuda::std::move otherwise.
@@ -93,7 +118,7 @@ using ::std::move;
       // vvv !_CCCL_HAS_BUILTIN_STD_MOVE() || !(_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC)) vvv
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
   return static_cast<remove_reference_t<_Tp>&&>(__t);
 }
@@ -113,7 +138,8 @@ using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible_v<_Tp> && is_copy_constructible_v<_Tp>, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr __move_if_noexcept_result_t<_Tp>
+move_if_noexcept(_Tp& __x) noexcept
 {
   return ::cuda::std::move(__x);
 }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,6 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,14 +33,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <>
 class barrier<thread_scope_thread, ::cuda::std::__empty_completion> : private barrier<thread_scope_block>
 {
-  using __base = barrier<thread_scope_block>;
+  using __base _CCCL_NODEBUG = barrier<thread_scope_block>;
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = thread_scope_thread;
+
   using __base::__base;
 
-  _CCCL_API inline friend void init(barrier* __b,
-                                    ::cuda::std::ptrdiff_t __expected,
-                                    ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
+  _CCCL_HOST_DEVICE_API inline friend void
+  init(barrier* __b,
+       ::cuda::std::ptrdiff_t __expected,
+       ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
     init(static_cast<__base*>(__b), __expected, __completion);
   }

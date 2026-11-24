@@ -15,7 +15,7 @@
 //   operator=(Cont::value_type&& value);
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 #  include <cuda/std/memory>
 #endif
@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   cuda::std::front_insert_iterator<C> i(c);
   i = typename C::value_type();
@@ -33,7 +33,7 @@ __host__ __device__ void test(C c)
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test(cuda::std::list<cuda::std::unique_ptr<int>>());
 #endif
 

@@ -23,10 +23,10 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<hours, decltype(cuda::std::chrono::make12(cuda::std::declval<hours>()))>);
   static_assert(noexcept(cuda::std::chrono::make12(cuda::std::declval<hours>())));
 
-  static_assert(cuda::std::chrono::make12(hours(0)) == hours(12), "");
-  static_assert(cuda::std::chrono::make12(hours(11)) == hours(11), "");
-  static_assert(cuda::std::chrono::make12(hours(12)) == hours(12), "");
-  static_assert(cuda::std::chrono::make12(hours(23)) == hours(11), "");
+  static_assert(cuda::std::chrono::make12(hours(0)) == hours(12));
+  static_assert(cuda::std::chrono::make12(hours(11)) == hours(11));
+  static_assert(cuda::std::chrono::make12(hours(12)) == hours(12));
+  static_assert(cuda::std::chrono::make12(hours(23)) == hours(11));
 
   assert(cuda::std::chrono::make12(hours(0)) == hours(12));
   for (int i = 1; i < 13; ++i)

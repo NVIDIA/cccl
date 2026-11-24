@@ -1,0 +1,295 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDASTF in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ * @brief Stream pool and augmented stream types used by places.
+ *
+ * Definitions of stream_pool::next() live in places.cuh (because we need to
+ * activate the place to create a stream in the appropriate CUDA context).
+ */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif
+
+#include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstddef/types.h>
+
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+
+#include <memory>
+#include <mutex>
+#include <vector>
+
+#include <cuda.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
+
+namespace cuda::experimental::places
+{
+using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::mv;
+
+class exec_place;
+
+/**
+ * @brief Is @p stream currently participating in a CUDA graph capture?
+ *
+ * Returns `false` for `nullptr` (the legacy default stream is never
+ * capturing).
+ */
+[[nodiscard]] inline bool is_stream_capturing(cudaStream_t stream)
+{
+  return cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone;
+}
+
+/**
+ * @brief Computes the CUDA device in which the stream was created
+ *
+ * The device is read from the stream's context through the driver API: the
+ * context is looked up with `cuStreamGetCtx`, made current, and asked for its
+ * device with `cuCtxGetDevice`. This is the path
+ * `stream_and_event::insert_dependency` has always run on captured streams,
+ * and it is accepted during thread-local, relaxed and global capture without
+ * invalidating it (verified on drivers 580 and 595).
+ *
+ * `cudaStreamGetDevice` / `cuStreamGetDevice` are deliberately not used:
+ * whether they are permitted during capture depends on the driver, not on the
+ * toolkit (rejected with `cudaErrorStreamCaptureUnsupported` by cudart 12.9 on
+ * driver 595 and by cudart 13.0 on driver 580, accepted on driver 615), and a
+ * rejection invalidates the capture, so there is no way to try them first.
+ *
+ * The context lookup is `cuda::stream_ref`'s: `cuStreamGetCtx_v2` on drivers
+ * 12.5 and newer, since the original `cuStreamGetCtx` returns
+ * `CUDA_ERROR_NOT_SUPPORTED` for green-context streams on CUDA 12 drivers,
+ * and the original query on older drivers, which have no such streams.
+ *
+ * Answering from a guess (the current device) instead of a query is what put
+ * transient events in the wrong device's context on multi-GPU systems
+ * (`cudaErrorInvalidResourceHandle` at event-record time).
+ */
+inline int get_device_from_stream(cudaStream_t stream)
+{
+  if (stream == nullptr)
+  {
+    return cuda_try<cudaGetDevice>();
+  }
+
+  // cuda::__ensure_current_context(stream_ref) makes the stream's context current and restores the
+  // previous one on scope exit. Its context lookup is the green-context aware one (cuStreamGetCtx_v2
+  // on 12.5+ drivers, cuStreamGetCtx before).
+  const ::cuda::__ensure_current_context guard{::cuda::stream_ref{stream}};
+  return ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
+}
+
+/** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
+inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
+
+/**
+ * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
+ * @param stream A valid CUDA stream, or nullptr.
+ * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
+ *
+ * When @p stream is participating in CUDA graph capture this returns
+ * k_no_stream_id; callers that cache syncs treat unknown ids as
+ * ``never skip cudaStreamWaitEvent`` (see async_resources_handle).
+ */
+inline unsigned long long get_stream_id(cudaStream_t stream)
+{
+  if (stream == nullptr)
+  {
+    return k_no_stream_id;
+  }
+
+  // Deliberately report an unknown id while capture is in flight: not
+  // because the query fails (``cuStreamGetId`` succeeds during capture),
+  // but because sync-skip caching must never elide a
+  // ``cudaStreamWaitEvent`` under capture: the wait IS the graph edge.
+  if (is_stream_capturing(stream))
+  {
+    return k_no_stream_id;
+  }
+  unsigned long long id = cuda_try<cuStreamGetId>(reinterpret_cast<CUstream>(stream));
+  _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
+  return id;
+}
+
+/**
+ * @brief A CUDA stream augmented with its pre-resolved driver identity and home device.
+ *
+ * Carries:
+ *  - the stream itself,
+ *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id when unknown,
+ *  - the device index on which the stream resides.
+ *
+ * The id and device are looked up at construction so downstream consumers
+ * (the stream-reuse logic in stream_task, the (src_id, dst_id)-keyed sync-skip
+ * cache in async_resources_handle, etc.) never have to re-pay the driver
+ * round-trip and can use the augmented stream as a cache key.
+ */
+struct augmented_stream
+{
+  augmented_stream() = default;
+
+  augmented_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
+      : stream(stream)
+      , id(id)
+      , dev_id(dev_id)
+  {}
+
+  /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
+  explicit augmented_stream(cudaStream_t stream)
+      : stream(stream)
+      , id(get_stream_id(stream))
+      , dev_id(-1)
+  {}
+
+  cudaStream_t stream   = nullptr;
+  unsigned long long id = k_no_stream_id;
+  int dev_id            = -1;
+};
+
+/**
+ * @brief A stream_pool object stores a set of streams associated to a specific
+ * CUDA context (device, green context, ...)
+ *
+ * This class uses a PIMPL idiom so that it is copyable and movable with shared
+ * semantics: copies refer to the same underlying pool of streams.
+ *
+ * When a slot is empty, next(place) activates the place (RAII guard) and calls
+ * place.create_stream(). Defined in places.cuh.
+ */
+class stream_pool
+{
+  struct impl
+  {
+    explicit impl(size_t n)
+        : payload(n, augmented_stream(nullptr, k_no_stream_id, -1))
+    {}
+
+    // Construct from an augmented stream, this is used to create a stream pool with a single stream.
+    explicit impl(augmented_stream ds)
+        : payload(1, mv(ds))
+        , externally_owned(true)
+    {}
+
+    // Release every stream the pool has lazily created. We intentionally
+    // skip entries that came from an externally-owned `decorated_stream`
+    // (single-stream pool built from a user-supplied stream, used for
+    // `exec_place::cuda_stream(s)`); those are not ours to destroy.
+    //
+    // `cudaStreamDestroy` is documented to be asynchronous when work is
+    // still pending on the stream: the call returns immediately and CUDA
+    // releases the stream's resources once the device has completed its
+    // pending work. That contract is what makes it safe to tear the pool
+    // down at the end of an STF context without blocking on a caller stream
+    // synchronize, as long as the outbound event chain has already been
+    // recorded back onto the user stream.
+    ~impl() noexcept
+    {
+      if (externally_owned)
+      {
+        return;
+      }
+
+      for (auto& ds : payload)
+      {
+        if (ds.stream != nullptr)
+        {
+          // Stream destruction can fail during CUDA runtime teardown; the
+          // destructor has no useful way to report or recover from that.
+          (void) cudaStreamDestroy(ds.stream);
+          ds.stream = nullptr;
+        }
+      }
+    }
+
+    impl(const impl&)            = delete;
+    impl& operator=(const impl&) = delete;
+
+    mutable ::std::mutex mtx;
+    ::std::vector<augmented_stream> payload;
+    size_t index          = 0;
+    bool externally_owned = false;
+  };
+
+  ::std::shared_ptr<impl> pimpl;
+
+public:
+  stream_pool() = default;
+
+  explicit stream_pool(size_t n)
+      : pimpl(::std::make_shared<impl>(n))
+  {}
+
+  // Construct from an augmented stream, this is used to create a stream pool with a single stream.
+  explicit stream_pool(augmented_stream ds)
+      : pimpl(::std::make_shared<impl>(mv(ds)))
+  {}
+
+  stream_pool(const stream_pool&)            = default;
+  stream_pool(stream_pool&&)                 = default;
+  stream_pool& operator=(const stream_pool&) = default;
+  stream_pool& operator=(stream_pool&&)      = default;
+
+  /**
+   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
+   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_scope and exec_place::create_stream().
+   */
+  augmented_stream next(const exec_place& place);
+
+  using iterator = ::std::vector<augmented_stream>::iterator;
+  iterator begin()
+  {
+    return pimpl->payload.begin();
+  }
+  iterator end()
+  {
+    return pimpl->payload.end();
+  }
+
+  /**
+   * @brief Number of streams in the pool
+   *
+   * CUDA streams are initialized lazily, so this gives the number of slots
+   * available in the pool, not the number of streams initialized.
+   */
+  size_t size() const
+  {
+    ::std::scoped_lock locker(pimpl->mtx);
+    return pimpl->payload.size();
+  }
+
+  explicit operator bool() const
+  {
+    return pimpl != nullptr;
+  }
+
+  bool operator==(const stream_pool& other) const
+  {
+    return pimpl == other.pimpl;
+  }
+
+  bool operator<(const stream_pool& other) const
+  {
+    return pimpl < other.pimpl;
+  }
+};
+} // namespace cuda::experimental::places

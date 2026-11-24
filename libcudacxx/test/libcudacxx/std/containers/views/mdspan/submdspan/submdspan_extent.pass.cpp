@@ -20,7 +20,7 @@ template <class Extent, class... Slices>
 _CCCL_CONCEPT can_submdspan_extents = _CCCL_REQUIRES_EXPR(
   (Extent, variadic Slices), const Extent& ext, Slices... slices)((cuda::std::submdspan_extents(ext, slices...)));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   { // single dimension, all static
     cuda::std::extents<size_t, 3> ext{};
@@ -464,6 +464,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

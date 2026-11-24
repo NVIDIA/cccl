@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,7 +26,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Type only used for logging purpose
-enum async_contract_fulfillment
+// Preserve namespace-level enumerators and implicit conversions for API compatibility.
+enum async_contract_fulfillment // NOLINT(cppcoreguidelines-use-enum-class)
 {
   none,
   async

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,17 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 template <class _Tp, class _Up>
-struct reference_constructs_from_temporary
-    : integral_constant<bool, _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(_Tp, _Up)>
+struct reference_constructs_from_temporary : bool_constant<_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(_Tp, _Up)>
 {};
 
 template <class _Tp, class _Up>

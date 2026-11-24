@@ -16,6 +16,12 @@
 // Use the CCCL compiler detection
 #define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
+
+// Lit defines this when the CUDA compiler uses --use_fast_math. Host checks still use ordinary math semantics.
+#ifndef TEST_HAS_CUDA_FAST_MATH
+#  define TEST_HAS_CUDA_FAST_MATH 0
+#endif
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -23,6 +29,13 @@
 #define TEST_DIAG_SUPPRESS_NVHPC(...) _CCCL_DIAG_SUPPRESS_NVHPC(__VA_ARGS__)
 #define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
+
+// Use the CCCL host device function
+#define TEST_FUNC             _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC      _CCCL_DEVICE
+#define TEST_TILE_FUNC        _CCCL_TILE
+#define TEST_TILE_DEVICE_FUNC _CCCL_TILE _CCCL_DEVICE
+#define TEST_HOST_DEVICE_FUNC _CCCL_HOST_DEVICE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -46,7 +59,7 @@
 // Use the CCCL spaceship detection
 #define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define TEST_IS_CONSTANT_EVALUATED() _CCCL_BUILTIN_IS_CONSTANT_EVALUATED()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -61,7 +74,7 @@
 // Attempt to deduce the GLIBC version
 #if __has_include(<features.h>) || defined(__linux__)
 #  include <features.h>
-#  if defined(__GLIBC_PREREQ)
+#  ifdef __GLIBC_PREREQ
 #    define TEST_HAS_GLIBC
 #    define TEST_GLIBC_PREREQ(major, minor) __GLIBC_PREREQ(major, minor)
 #  endif
@@ -70,12 +83,12 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__linux__)
+#ifdef __linux__
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
 // newlib, etc may all support these features but need to be configured.
-#  if defined(TEST_GLIBC_PREREQ)
+#  ifdef TEST_GLIBC_PREREQ
 #    if TEST_GLIBC_PREREQ(2, 17)
 #      define TEST_HAS_TIMESPEC_GET
 #      define TEST_HAS_C11_FEATURES
@@ -83,7 +96,7 @@
 #  endif
 #endif
 
-#if !_CCCL_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
+#if !_CCCL_HAS_FEATURE(cxx_rtti) && __cpp_rtti == 0 && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI
 #endif
 
@@ -94,36 +107,35 @@
 #define TEST_IGNORE_NODISCARD (void)
 
 #if TEST_COMPILER(NVRTC, >=, 13)
-#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION TEST_FUNC
 #else
 #  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 #endif
 
+// Include <intrin.h> for _ReadWriteBarrier.
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
-template <class Tp>
-inline void DoNotOptimize(Tp const& value)
-{
-  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
-  _ReadWriteBarrier();
-}
-#else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
-template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp const& value)
-{
-  asm volatile("" : : "r,m"(value) : "memory");
-}
+#endif // TEST_COMPILER(MSVC)
 
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp& value)
+TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
-#  if TEST_COMPILER(CLANG)
-  asm volatile("" : "+r,m"(value) : : "memory");
-#  else
-  asm volatile("" : "+m,r"(value) : : "memory");
-#  endif
+  [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
+
+#if !_CCCL_TILE_COMPILATION()
+  // Device path.
+  NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+#endif // !_CCCL_TILE_COMPILATION()
+
+  // Host path.
+#if TEST_COMPILER(CLANG)
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+r,m"(value) : : "memory"); }))
+#elif TEST_COMPILER(MSVC)
+  NV_IF_TARGET(NV_IS_HOST, ({ _ReadWriteBarrier(); }))
+#else
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+m,r"(value) : : "memory"); }))
+#endif
 }
-#endif // !TEST_COMPILER(MSVC)
 
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing
@@ -133,17 +145,25 @@ __host__ __device__ inline void DoNotOptimize(Tp& value)
 #  define _STATIC_MEMBER_IMPL(type) static type v;
 #endif
 
-#define STATIC_MEMBER_VAR(name, type)     \
-  __host__ __device__ static type& name() \
-  {                                       \
-    _STATIC_MEMBER_IMPL(type);            \
-    return v;                             \
+#define STATIC_MEMBER_VAR(name, type) \
+  TEST_FUNC static type& name()       \
+  {                                   \
+    _STATIC_MEMBER_IMPL(type);        \
+    return v;                         \
   }
 
 template <class... T>
-__host__ __device__ constexpr bool unused(T&&...)
+TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }
+
+// Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
+#  define TEST_HAS_CLASS_NTTP 1
+#else
+#  define TEST_HAS_CLASS_NTTP 0
+#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

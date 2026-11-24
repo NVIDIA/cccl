@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,22 +35,19 @@ template <typename _Fp>
 {
   if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
   {
-    return __t * __b + (1 - __t) * __a;
+    return (__t * __b) + ((1 - __t) * __a);
   }
 
   if (__t == 1)
   {
     return __b;
   }
-  const _Fp __x = __a + __t * (__b - __a);
+  const _Fp __x = __a + (__t * (__b - __a));
   if ((__t > 1) == (__b > __a))
   {
     return __b < __x ? __x : __b;
   }
-  else
-  {
-    return __x < __b ? __x : __b;
-  }
+  return __x < __b ? __x : __b;
 }
 
 [[nodiscard]] _CCCL_API constexpr float lerp(float __a, float __b, float __t) noexcept
@@ -90,7 +87,7 @@ _CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && 
                                 __promote_t<_A1, _A2, _A3>> lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>) );
   return ::cuda::std::__lerp((__result_type) __a, (__result_type) __b, (__result_type) __t);
 }
 

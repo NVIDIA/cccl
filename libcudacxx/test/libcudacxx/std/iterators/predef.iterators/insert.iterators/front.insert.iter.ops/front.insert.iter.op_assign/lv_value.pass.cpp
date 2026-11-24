@@ -16,7 +16,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 
 #  include "nasty_containers.h"
@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   const typename C::value_type v = typename C::value_type();
   cuda::std::front_insert_iterator<C> i(c);
@@ -38,15 +38,15 @@ class Copyable
   int data_;
 
 public:
-  __host__ __device__ Copyable()
+  TEST_FUNC Copyable()
       : data_(0)
   {}
-  __host__ __device__ ~Copyable()
+  TEST_FUNC ~Copyable()
   {
     data_ = -1;
   }
 
-  __host__ __device__ friend bool operator==(const Copyable& x, const Copyable& y)
+  TEST_FUNC friend bool operator==(const Copyable& x, const Copyable& y)
   {
     return x.data_ == y.data_;
   }
@@ -54,7 +54,7 @@ public:
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   test(cuda::std::list<Copyable>());
   test(nasty_list<Copyable>());
 #endif

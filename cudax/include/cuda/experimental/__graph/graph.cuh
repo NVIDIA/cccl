@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/swap.h>
 
+#include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
-
-#include <cuda_runtime_api.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -110,7 +109,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   {
     if (auto __exec = ::cuda::std::exchange(__exec_, nullptr))
     {
-      _CCCL_ASSERT_CUDA_API(cudaGraphExecDestroy, "cudaGraphDestroy failed", __exec);
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::experimental::__driver::__graphExecDestroyNoThrow, "Failed to destroy graph exec", __exec);
     }
   }
 
@@ -129,7 +129,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \throws cuda::std::cuda_error if `cudaGraphLaunch` fails.
   _CCCL_HOST_API void launch(stream_ref __stream)
   {
-    _CCCL_TRY_CUDA_API(cudaGraphLaunch, "cudaGraphLaunch failed", __exec_, __stream.get());
+    ::cuda::experimental::__driver::__graphLaunch(__exec_, __stream.get());
   }
 
 private:

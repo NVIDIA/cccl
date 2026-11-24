@@ -17,53 +17,50 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include "helper.h"
-#include "test_resources.h"
-#include "types.h"
+#include <test_resources.h>
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#include "helper.h"
+#include "types.h"
 
 C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
-  cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
-
   // Convert from a buffer that has more properties than the current one
-  using MatchingBuffer = typename extract_properties<TestT>::matching_vector;
+  using MatchingBuffer = typename extract_properties<Buffer>::matching_buffer;
+
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer construction with matching buffer")
   {
     { // can be copy constructed from empty input
       const MatchingBuffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(input);
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(input.empty());
+      const Buffer buf(input);
+      CHECK(buf.empty());
+      CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
       const MatchingBuffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Buffer buf(input);
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
-      CCCLRT_CHECK(equal_range(input));
+      const Buffer buf(input);
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
+      CHECK(equal_range(input));
     }
 
     { // can be move constructed with empty input
       MatchingBuffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(cuda::std::move(input));
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(input.empty());
+      const Buffer buf(cuda::std::move(input));
+      CHECK(buf.empty());
+      CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
@@ -72,11 +69,11 @@ C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
       // ensure that we steal the data
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
-      CCCLRT_CHECK(buf.size() == 6);
-      CCCLRT_CHECK(buf.data() == allocation);
-      CCCLRT_CHECK(input.size() == 0);
-      CCCLRT_CHECK(input.data() == nullptr);
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(buf.size() == 6);
+      CHECK(buf.data() == allocation);
+      CHECK(input.size() == 0);
+      CHECK(input.data() == nullptr);
+      CHECK(equal_range(buf));
     }
   }
 }

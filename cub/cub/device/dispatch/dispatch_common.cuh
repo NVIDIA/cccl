@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,5 +46,23 @@ enum class ForceInclusive
   Yes,
   No
 };
+
+// Options for specifying selection direction (e.g., for top-k selection).
+namespace detail::topk
+{
+enum class select
+{
+  // Select the elements with the lowest values
+  min,
+  // Select the elements with the highest values
+  max
+};
+} // namespace detail::topk
+
+namespace detail
+{
+struct use_default
+{};
+} // namespace detail
 
 CUB_NAMESPACE_END

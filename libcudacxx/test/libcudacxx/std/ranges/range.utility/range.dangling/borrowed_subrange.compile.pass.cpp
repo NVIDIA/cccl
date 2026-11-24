@@ -15,13 +15,15 @@
 #include <cuda/std/ranges>
 #include <cuda/std/span>
 #include <cuda/std/string_view>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/inplace_vector>
 #include <cuda/std/string_view>
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#include "test_macros.h"
+
+#ifdef _LIBCUDACXX_HAS_STRING
 static_assert(
   cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string>, cuda::std::ranges::dangling>);
 static_assert(
@@ -30,7 +32,7 @@ static_assert(
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::inplace_vector<int, 3>>,
                                  cuda::std::ranges::dangling>);
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string&>,
                                  cuda::std::ranges::subrange<cuda::std::string::iterator>>);
 #endif

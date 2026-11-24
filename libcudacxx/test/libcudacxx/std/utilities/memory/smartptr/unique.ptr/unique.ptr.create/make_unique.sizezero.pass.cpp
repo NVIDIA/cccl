@@ -14,6 +14,9 @@
 
 // Test the fix for https://llvm.org/PR54100
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
@@ -23,7 +26,7 @@ struct A
 {
   int m[0];
 };
-static_assert(sizeof(A) == 0, ""); // an extension supported by GCC and Clang
+static_assert(sizeof(A) == 0); // an extension supported by GCC and Clang
 
 int main(int, char**)
 {

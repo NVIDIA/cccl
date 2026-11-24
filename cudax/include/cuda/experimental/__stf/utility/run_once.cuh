@@ -16,8 +16,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +29,7 @@
 
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+#include <tuple>
 #include <unordered_map>
 
 namespace cuda::experimental::stf
@@ -83,7 +86,7 @@ public:
     }
     else
     {
-      using ReturnType = ::std::invoke_result_t<decltype(fun), Ts...>;
+      using ReturnType = ::cuda::std::invoke_result_t<decltype(fun), Ts...>;
       static ::std::unordered_map<::std::tuple<Ts...>, ReturnType, ::cuda::experimental::stf::hash<::std::tuple<Ts...>>>
         cache;
 
@@ -93,7 +96,7 @@ public:
       }
 
       // We only set the cache AFTER the end of the computation
-      auto result = ::std::apply(::std::forward<Fun&&>(fun), ::std::move(val));
+      auto result = ::std::apply(::cuda::std::forward<Fun&&>(fun), ::cuda::std::move(val));
 
       return cache[val] = mv(result);
     }
@@ -101,6 +104,6 @@ public:
 
 private:
   // Stores the arguments used to invoke the function.
-  [[no_unique_address]] ::std::tuple<Ts...> val;
+  _CCCL_NO_UNIQUE_ADDRESS ::std::tuple<Ts...> val;
 };
 } // end namespace cuda::experimental::stf

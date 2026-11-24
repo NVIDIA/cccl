@@ -22,12 +22,12 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
-  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
-  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It>>::value, "");
-  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It>>::value, "");
+  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value);
+  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It>>::value);
+  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It>>::value);
 
   char s[] = "123";
   {
@@ -44,12 +44,12 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class It>
-__host__ __device__ constexpr bool test_moveonly()
+TEST_FUNC constexpr bool test_moveonly()
 {
-  static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
-  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It>>::value, "");
-  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It>>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value);
+  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It>>::value);
+  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It>>::value);
 
   char s[] = "123";
   {
@@ -69,17 +69,17 @@ int main(int, char**)
   test<char*>();
   test<const char*>();
 
-  static_assert(test<cpp17_input_iterator<char*>>(), "");
-  static_assert(test<forward_iterator<char*>>(), "");
-  static_assert(test<bidirectional_iterator<char*>>(), "");
-  static_assert(test<random_access_iterator<char*>>(), "");
-  static_assert(test<char*>(), "");
-  static_assert(test<const char*>(), "");
+  static_assert(test<cpp17_input_iterator<char*>>());
+  static_assert(test<forward_iterator<char*>>());
+  static_assert(test<bidirectional_iterator<char*>>());
+  static_assert(test<random_access_iterator<char*>>());
+  static_assert(test<char*>());
+  static_assert(test<const char*>());
 
   test<contiguous_iterator<char*>>();
   test_moveonly<cpp20_input_iterator<char*>>();
-  static_assert(test<contiguous_iterator<char*>>(), "");
-  static_assert(test_moveonly<cpp20_input_iterator<char*>>(), "");
+  static_assert(test<contiguous_iterator<char*>>());
+  static_assert(test_moveonly<cpp20_input_iterator<char*>>());
 
   return 0;
 }

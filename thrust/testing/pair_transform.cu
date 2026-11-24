@@ -19,8 +19,8 @@ struct add_pairs
   template <typename Pair1, typename Pair2>
   _CCCL_HOST_DEVICE Pair1 operator()(const Pair1& x, const Pair2& y)
   {
-    using T1 = typename ::cuda::std::common_type<typename Pair1::first_type, typename Pair2::first_type>::type;
-    using T2 = typename ::cuda::std::common_type<typename Pair1::second_type, typename Pair2::second_type>::type;
+    using T1 = ::cuda::std::common_type_t<typename Pair1::first_type, typename Pair2::first_type>;
+    using T2 = ::cuda::std::common_type_t<typename Pair1::second_type, typename Pair2::second_type>;
 
     return cuda::std::make_pair(static_cast<T1>(x.first + y.first), static_cast<T2>(x.second + y.second));
   } // end operator()
@@ -47,7 +47,7 @@ struct TestPairTransform
     // zip up pairs on the device
     thrust::transform(d_p1.begin(), d_p1.end(), d_p2.begin(), d_result.begin(), make_pair_functor());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
 
     // add pairs on the host
     thrust::transform(h_result.begin(), h_result.end(), h_result.begin(), h_result.begin(), add_pairs());
@@ -55,8 +55,8 @@ struct TestPairTransform
     // add pairs on the device
     thrust::transform(d_result.begin(), d_result.end(), d_result.begin(), d_result.begin(), add_pairs());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
   }
 }; // end TestPairZip
-VariableUnitTest<TestPairTransform, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairTransform,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

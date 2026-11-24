@@ -21,14 +21,14 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_tie_constexpr()
+TEST_FUNC constexpr bool test_tie_constexpr()
 {
   {
     int i         = 42;
     double f      = 1.1;
     using ExpectT = cuda::std::tuple<int&, decltype(cuda::std::ignore)&, double&>;
     auto res      = cuda::std::tie(i, cuda::std::ignore, f);
-    static_assert(cuda::std::is_same<ExpectT, decltype(res)>::value, "");
+    static_assert(cuda::std::is_same<ExpectT, decltype(res)>::value);
     assert(&cuda::std::get<0>(res) == &i);
     assert(&cuda::std::get<1>(res) == &cuda::std::ignore);
     assert(&cuda::std::get<2>(res) == &f);
@@ -54,11 +54,11 @@ int main(int, char**)
     static constexpr int i                                  = 42;
     static constexpr double f                               = 1.1;
     constexpr cuda::std::tuple<const int&, const double&> t = cuda::std::tie(i, f);
-    static_assert(cuda::std::get<0>(t) == 42, "");
-    static_assert(cuda::std::get<1>(t) == 1.1, "");
+    static_assert(cuda::std::get<0>(t) == 42);
+    static_assert(cuda::std::get<1>(t) == 1.1);
   }
   {
-    static_assert(test_tie_constexpr(), "");
+    static_assert(test_tie_constexpr());
   }
 
   return 0;

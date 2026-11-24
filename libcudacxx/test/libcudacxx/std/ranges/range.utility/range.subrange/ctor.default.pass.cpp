@@ -23,12 +23,12 @@ struct NoDefaultIterator
 {
   using difference_type = cuda::std::ptrdiff_t;
   NoDefaultIterator()   = delete;
-  __host__ __device__ NoDefaultIterator& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ friend bool operator==(NoDefaultIterator const&, NoDefaultIterator const&);
+  TEST_FUNC NoDefaultIterator& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC friend bool operator==(NoDefaultIterator const&, NoDefaultIterator const&);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(NoDefaultIterator const&, NoDefaultIterator const&);
+  TEST_FUNC friend bool operator!=(NoDefaultIterator const&, NoDefaultIterator const&);
 #endif
 };
 static_assert(cuda::std::input_or_output_iterator<NoDefaultIterator>);
@@ -36,13 +36,13 @@ static_assert(cuda::std::input_or_output_iterator<NoDefaultIterator>);
 // A sentinel type for the above iterator
 struct Sentinel
 {
-  __host__ __device__ friend bool operator==(NoDefaultIterator const&, Sentinel const&);
-  __host__ __device__ friend bool operator==(Sentinel const&, NoDefaultIterator const&);
-  __host__ __device__ friend bool operator!=(NoDefaultIterator const&, Sentinel const&);
-  __host__ __device__ friend bool operator!=(Sentinel const&, NoDefaultIterator const&);
+  TEST_FUNC friend bool operator==(NoDefaultIterator const&, Sentinel const&);
+  TEST_FUNC friend bool operator==(Sentinel const&, NoDefaultIterator const&);
+  TEST_FUNC friend bool operator!=(NoDefaultIterator const&, Sentinel const&);
+  TEST_FUNC friend bool operator!=(Sentinel const&, NoDefaultIterator const&);
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     static_assert(!cuda::std::is_default_constructible_v<

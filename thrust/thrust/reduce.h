@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/reduce.h
  *  \brief Functions for reducing a range to a single value
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -88,7 +75,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE_API detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -134,7 +121,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \endverbatim
  */
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
+_CCCL_HOST_API detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -185,7 +172,7 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -231,7 +218,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  \endverbatim
  */
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init);
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -289,7 +276,7 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -345,7 +332,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  \endverbatim
  */
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -402,10 +389,11 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -462,10 +450,11 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -524,10 +513,11 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -586,10 +576,11 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -656,10 +647,11 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -720,14 +712,16 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
+_CCCL_HOST_API void
+reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -791,7 +785,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -801,7 +795,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -855,7 +849,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -864,7 +858,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -932,7 +926,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -943,7 +937,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -1004,7 +998,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -1014,7 +1008,7 @@ template <typename InputIterator1,
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c BinaryFunction \c binary_op and the result copied to \c values_output.
  *  Specifically, if consecutive key iterators \c i and \c (i + 1) are
@@ -1089,7 +1083,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -1101,7 +1095,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c BinaryFunction \c binary_op and the result copied to \c values_output.
  *  Specifically, if consecutive key iterators \c i and \c (i + 1) are
@@ -1169,7 +1163,7 @@ template <typename InputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -1183,4 +1177,4 @@ template <typename InputIterator1,
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/reduce.inl>
+#include <thrust/detail/reduce.inl> // IWYU pragma: export

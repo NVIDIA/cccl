@@ -40,24 +40,24 @@ int main(int, char**)
     constexpr local_days sd{}; // 1-Jan-1970 was a Thursday
     constexpr weekday wd{sd};
 
-    static_assert(wd.ok(), "");
-    static_assert(wd.c_encoding() == 4, "");
+    static_assert(wd.ok());
+    static_assert(wd.c_encoding() == 4);
   }
 
   {
     constexpr local_days sd{days{10957 + 32}}; // 2-Feb-2000 was a Wednesday
     constexpr weekday wd{sd};
 
-    static_assert(wd.ok(), "");
-    static_assert(wd.c_encoding() == 3, "");
+    static_assert(wd.ok());
+    static_assert(wd.c_encoding() == 3);
   }
 
   {
     constexpr local_days sd{days{-10957}}; // 2-Jan-1940 was a Tuesday
     constexpr weekday wd{sd};
 
-    static_assert(wd.ok(), "");
-    static_assert(wd.c_encoding() == 2, "");
+    static_assert(wd.ok());
+    static_assert(wd.c_encoding() == 2);
   }
 
   {

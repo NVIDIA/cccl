@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,12 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER)
+#ifndef CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
 _CCCL_WARNING("The <cuda/discard_memory> header is deprecated and will be removed in the next major release. The \
 contents were moved to <cuda/memory>. To ignore this message, define CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER.")
 #endif // !CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
 
+// IWYU pragma: begin_exports
 #include <cuda/__memory/discard_memory.h>
 #include <cuda/version>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_DISCARD_MEMORY

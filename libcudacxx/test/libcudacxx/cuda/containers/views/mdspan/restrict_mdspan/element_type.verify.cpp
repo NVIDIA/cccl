@@ -23,10 +23,10 @@
 class AbstractClass
 {
 public:
-  __host__ __device__ virtual void method() = 0;
+  TEST_FUNC virtual void method() = 0;
 };
 
-__host__ __device__ void not_abstract_class()
+TEST_FUNC void not_abstract_class()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // may not be an abstract class}}
@@ -34,7 +34,7 @@ __host__ __device__ void not_abstract_class()
   unused(m);
 }
 
-__host__ __device__ void not_array_type()
+TEST_FUNC void not_array_type()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // may not be an array type}}
@@ -42,7 +42,7 @@ __host__ __device__ void not_array_type()
   unused(m);
 }
 
-__host__ __device__ void element_type_mismatch()
+TEST_FUNC void element_type_mismatch()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // must match AccessorPolicy::element_type}}

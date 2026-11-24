@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include "catch2_test_warp_exchange.cuh"
+#include "cub_test_macros.h"
 
 namespace
 {
@@ -39,7 +40,8 @@ struct params_t
 };
 } // namespace
 
-C2H_TEST("Scatter to striped works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST(
+  "Scatter to striped works", "[exchange][warp][smem]", CUB_SMALL, inout_types, logical_warp_threads, items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -58,7 +60,8 @@ C2H_TEST("Scatter to striped works", "[exchange][warp][smem]", inout_types, logi
   REQUIRE(h_expected_output == d_out);
 }
 
-C2H_TEST("Blocked to striped works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST(
+  "Blocked to striped works", "[exchange][warp][smem]", CUB_SMALL, inout_types, logical_warp_threads, items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -78,7 +81,8 @@ C2H_TEST("Blocked to striped works", "[exchange][warp][smem]", inout_types, logi
   REQUIRE(h_expected_output == d_out);
 }
 
-C2H_TEST("Striped to blocked works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST(
+  "Striped to blocked works", "[exchange][warp][smem]", CUB_SMALL, inout_types, logical_warp_threads, items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2024 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 // Portions of this code are derived from
 //
@@ -27,7 +14,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,7 +24,6 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
@@ -49,39 +35,41 @@ namespace detail::functional
 template <typename Eval>
 struct actor : Eval
 {
-  constexpr actor() = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr actor() = default;
 
-  _CCCL_HOST_DEVICE actor(const Eval& base)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API actor(const Eval& base)
       : Eval(base)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto operator()(Ts&&... ts) const -> decltype(Eval::eval(THRUST_FWD(ts)...))
+  _CCCL_API auto operator()(Ts&&... ts) const -> decltype(Eval::eval(THRUST_FWD(ts)...))
   {
     return Eval::eval(THRUST_FWD(ts)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator=(const T& _1) const -> decltype(do_assign(*this, _1))
+  _CCCL_API auto operator=(const T& _1) const -> decltype(do_assign(*this, _1))
   {
     return do_assign(*this, _1);
   }
 };
 
-template <typename T>
-struct is_actor : ::cuda::std::false_type
-{};
-
-template <typename T>
-struct is_actor<actor<T>> : ::cuda::std::true_type
-{};
+template <class Eval>
+inline constexpr bool is_actor_v = false;
+template <class Eval>
+inline constexpr bool is_actor_v<actor<Eval>> = true;
 
 // a node selecting and returning one of the arguments to the entire expression template
 template <unsigned int Pos>
 struct argument
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  _CCCL_API auto eval(Ts&&... args) const
     -> decltype(::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
     return ::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...});
@@ -91,7 +79,7 @@ struct argument
 template <unsigned int Pos>
 struct placeholder
 {
-  using type = actor<argument<Pos>>;
+  using type _CCCL_NODEBUG = actor<argument<Pos>>;
 };
 
 // composition of actors/nodes
@@ -101,16 +89,19 @@ struct composite;
 template <typename Eval, typename SubExpr>
 struct composite<Eval, SubExpr>
 {
-  constexpr composite() = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
-  _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr& subexpr)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API composite(const Eval& eval, const SubExpr& subexpr)
       : m_eval(eval)
       , m_subexpr(subexpr)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  _CCCL_API auto eval(Ts&&... args) const
     -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr>().eval(THRUST_FWD(args)...)))
   {
     return m_eval.eval(m_subexpr.eval(THRUST_FWD(args)...));
@@ -124,20 +115,24 @@ private:
 template <typename Eval, typename SubExpr1, typename SubExpr2>
 struct composite<Eval, SubExpr1, SubExpr2>
 {
-  constexpr composite() = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
-  _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API composite(const Eval& eval, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
       : m_eval(eval)
       , m_subexpr1(subexpr1)
       , m_subexpr2(subexpr2)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  _CCCL_API auto eval(Ts&&... args) const
     -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr1>().eval(THRUST_FWD(args)...),
                                                   ::cuda::std::declval<SubExpr2>().eval(THRUST_FWD(args)...)))
   {
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     return m_eval.eval(m_subexpr1.eval(THRUST_FWD(args)...), m_subexpr2.eval(THRUST_FWD(args)...));
   }
 
@@ -154,14 +149,17 @@ struct actor;
 template <typename F>
 struct operator_adaptor : F
 {
-  constexpr operator_adaptor() = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr operator_adaptor() = default;
 
-  _CCCL_HOST_DEVICE operator_adaptor(F f)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API operator_adaptor(F f)
       : F(::cuda::std::move(f))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const -> decltype(F{}(THRUST_FWD(args)...))
+  _CCCL_API auto eval(Ts&&... args) const -> decltype(F{}(THRUST_FWD(args)...))
   {
     return static_cast<const F&>(*this)(THRUST_FWD(args)...);
   }
@@ -173,27 +171,28 @@ struct value
 {
   T m_val;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_HOST_DEVICE T eval(Ts&&...) const
+  _CCCL_API T eval(Ts&&...) const
   {
     return m_val;
   }
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::decay_t<T>>>
+_CCCL_API auto make_actor(T&& x) -> actor<value<::cuda::std::decay_t<T>>>
 {
   return {{THRUST_FWD(x)}};
 }
 
 template <typename Eval>
-_CCCL_HOST_DEVICE auto make_actor(actor<Eval> x) -> actor<Eval>
+_CCCL_API auto make_actor(actor<Eval> x) -> actor<Eval>
 {
   return x;
 }
 
 template <typename Eval, typename SubExpr>
-_CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr& subexpr)
+_CCCL_API auto compose(Eval e, const SubExpr& subexpr)
   -> decltype(actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr))>>{
     {{::cuda::std::move(e)}, make_actor(subexpr)}})
 {
@@ -202,7 +201,7 @@ _CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr& subexpr)
 }
 
 template <typename Eval, typename SubExpr1, typename SubExpr2>
-_CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
+_CCCL_API auto compose(Eval e, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
   -> decltype(actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr1)), decltype(make_actor(subexpr2))>>{
     {{::cuda::std::move(e)}, make_actor(subexpr1), make_actor(subexpr2)}})
 {

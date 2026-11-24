@@ -18,91 +18,93 @@
 #include <cuda/std/iterator>
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 struct range
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
 
 template <cuda::std::ranges::range R>
   requires cuda::std::input_iterator<cuda::std::ranges::iterator_t<R>>
-__host__ __device__ constexpr bool check_input_range_subsumption()
+TEST_FUNC constexpr bool check_input_range_subsumption()
 {
   return false;
 }
 
 template <cuda::std::ranges::input_range>
   requires true
-__host__ __device__ constexpr bool check_input_range_subsumption()
+TEST_FUNC constexpr bool check_input_range_subsumption()
 {
   return true;
 }
 
-static_assert(check_input_range_subsumption<range>(), "");
+static_assert(check_input_range_subsumption<range>());
 
 template <cuda::std::ranges::input_range R>
   requires cuda::std::forward_iterator<cuda::std::ranges::iterator_t<R>>
-__host__ __device__ constexpr bool check_forward_range_subsumption()
+TEST_FUNC constexpr bool check_forward_range_subsumption()
 {
   return false;
 }
 
 template <cuda::std::ranges::forward_range>
   requires true
-__host__ __device__ constexpr bool check_forward_range_subsumption()
+TEST_FUNC constexpr bool check_forward_range_subsumption()
 {
   return true;
 }
 
-static_assert(check_forward_range_subsumption<range>(), "");
+static_assert(check_forward_range_subsumption<range>());
 
 template <cuda::std::ranges::forward_range R>
   requires cuda::std::bidirectional_iterator<cuda::std::ranges::iterator_t<R>>
-__host__ __device__ constexpr bool check_bidirectional_range_subsumption()
+TEST_FUNC constexpr bool check_bidirectional_range_subsumption()
 {
   return false;
 }
 
 template <cuda::std::ranges::bidirectional_range>
   requires true
-__host__ __device__ constexpr bool check_bidirectional_range_subsumption()
+TEST_FUNC constexpr bool check_bidirectional_range_subsumption()
 {
   return true;
 }
 
-static_assert(check_bidirectional_range_subsumption<range>(), "");
+static_assert(check_bidirectional_range_subsumption<range>());
 
 template <cuda::std::ranges::bidirectional_range R>
   requires cuda::std::random_access_iterator<cuda::std::ranges::iterator_t<R>>
-__host__ __device__ constexpr bool check_random_access_range_subsumption()
+TEST_FUNC constexpr bool check_random_access_range_subsumption()
 {
   return false;
 }
 
 template <cuda::std::ranges::random_access_range>
   requires true
-__host__ __device__ constexpr bool check_random_access_range_subsumption()
+TEST_FUNC constexpr bool check_random_access_range_subsumption()
 {
   return true;
 }
 
-static_assert(check_random_access_range_subsumption<range>(), "");
+static_assert(check_random_access_range_subsumption<range>());
 
 template <cuda::std::ranges::random_access_range R>
   requires cuda::std::random_access_iterator<cuda::std::ranges::iterator_t<R>>
-__host__ __device__ constexpr bool check_contiguous_range_subsumption()
+TEST_FUNC constexpr bool check_contiguous_range_subsumption()
 {
   return false;
 }
 
 template <cuda::std::ranges::contiguous_range>
   requires true
-__host__ __device__ constexpr bool check_contiguous_range_subsumption()
+TEST_FUNC constexpr bool check_contiguous_range_subsumption()
 {
   return true;
 }
 
-static_assert(check_contiguous_range_subsumption<range>(), "");
+static_assert(check_contiguous_range_subsumption<range>());
 
 int main(int, char**)
 {

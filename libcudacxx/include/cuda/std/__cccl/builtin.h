@@ -15,7 +15,7 @@
 #include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
@@ -37,7 +38,7 @@
 //! * MSVC needs manual handling, has no real way of checking builtins so all is manual
 //! * GCC  needs manual handling, before gcc-10 as that finally supports __has_builtin
 //!
-//! In case compiler support for a builtin is advertised but leads to regressions we explicitly #undef the macro
+//! In case compiler support for a builtin is advertised but leads to regressions we explicitly undef the macro
 //!
 //! Finally, because `_CCCL_CHECK_BUILTIN` may lead to false positives, we move detection of new builtins over towards
 //! just using _CCCL_HAS_BUILTIN
@@ -66,29 +67,24 @@
 // https://bugs.llvm.org/show_bug.cgi?id=44517
 #define _CCCL_CHECK_BUILTIN(__x) (_CCCL_HAS_BUILTIN(__##__x) || _CCCL_HAS_KEYWORD(__##__x) || _CCCL_HAS_FEATURE(__x))
 
-// NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_lvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(...) __add_lvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_lvalue_reference)
+// libstdc++ conflicts with some of the builtins. Ensure that we do not use them if affected libstdc++ is present.
+#ifdef _CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS
+#  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) 1
+// We have seen at least one codegen bug in cudax::launch related to one of the builtins. Disable for older NVCC
+#elif _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) 1
+#else // ^^^ _CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS ^^^ / vvv !_CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS vvv
+#  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) \
+    (_CCCL_HOST_STD_LIB(LIBSTDCXX, <, __VA_ARGS__) && !_CCCL_CUDA_COMPILER(CLANG))
+#endif // !_CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS
 
-// NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_pointer) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_ADD_POINTER(...) __add_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_pointer)
-
-// NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_rvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(...) __add_rvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)
-
-// TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
-#if 0 // _CCCL_CHECK_BUILTIN(array_rank)
-#  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(array_rank)
-
-#if _CCCL_HAS_BUILTIN(__array_extent)
-#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__array_extent)
+#if _CCCL_COMPILER(GCC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
+// NVCC and NVRTC incorrectly reject the builtin if directly used in a SFINAE context. See nvbug6669680
+// GCC error: use of built-in trait in function signature; use library traits instead
+#  define _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() 1
+#else // ^^^ _CCCL_COMPILER(GCC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)  ^^^ / vvv other compilers vvv
+#  define _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() 0
+#endif // other compilers
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
@@ -96,52 +92,42 @@
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
 
-#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
-#elif _CCCL_COMPILER(GCC, >=, 13)
-#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
-#elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
-#else
-#  define _CCCL_BUILTIN_ASSUME(...)
-#endif // _CCCL_CHECK_BUILTIN(builtin_assume)
-
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
-#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
+// NVRTC supports __builtin_constant_p in CTK 13.4, but _CCCL_HAS_BUILTIN does not detect it.
+#if _CCCL_HAS_BUILTIN(__builtin_constant_p) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >=, 13, 4)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
+#endif // builtin_constant_p availability
+
+// NVCC doesn't recognize it in host/device code before 13.4
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CONSTANT_P
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
+
+#ifdef _CCCL_BUILTIN_CONSTANT_P
+#  define _CCCL_IS_CONSTANT_P(...) _CCCL_BUILTIN_CONSTANT_P(__VA_ARGS__)
+#else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
+#  define _CCCL_IS_CONSTANT_P(...) false
+#endif // ^^^ !_CCCL_BUILTIN_CONSTANT_P ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_expect)
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
+#else // ^^^ has __builtin_expect ^^^ / vvv no __builtin_expect vvv
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // ^^^ no __builtin_expect ^^^
+
+#if _CCCL_TILE_COMPILATION() // nvbug6100927:  __builtin_expect is unsupported in tile mode
+#  undef _CCCL_BUILTIN_EXPECT
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // _CCCL_TILE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf)
-
-#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_val)
-
-#if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
-#elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
-
-#if _CCCL_HAS_FLOAT128()
-#  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
-#    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
-#  endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
-
-// nvcc does not implement __builtin_huge_valf128
-#  if _CCCL_CUDA_COMPILER(NVCC)
-#    undef _CCCL_BUILTIN_HUGE_VALF128
-#  endif // _CCCL_CUDA_COMPILER(NVCC)
-#endif // _CCCL_HAS_FLOAT128()
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VALF() static_cast<float>(__INFINITY__)
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VALF ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
@@ -157,6 +143,20 @@
 // _MPtr2)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
+#if _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+#  define _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(...) __builtin_is_implicit_lifetime(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+
+// nvcc implements __builtin_is_implicit_lifetime since version 13.3.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+
+// nvcc thinks msvc doesn't support __builtin_is_implicit_lifetime. Remove once nvbug 6782340 is resolved.
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
     __builtin_is_pointer_interconvertible_with_class(_MPtr)
@@ -167,48 +167,38 @@
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
+#if _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+#  define _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF(...) __builtin_is_virtual_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+
+// nvcc < 13.3 doesn't implement __builtin_is_virtual_base_of
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nanf)
-
-#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NAN(...) __builtin_nan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nan)
-
-#if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANL(...) __builtin_nanl(__VA_ARGS__)
-#elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
-#endif // _CCCL_CHECK_BUILTIN(builtin_nanl)
-
-#if _CCCL_HAS_FLOAT128()
-#  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
-#    define _CCCL_BUILTIN_NANF128(...) __builtin_nanf128(__VA_ARGS__)
-#  endif // _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
-
-// nvcc does not implement __builtin_nanf128
-#  if _CCCL_CUDA_COMPILER(NVCC)
-#    undef _CCCL_BUILTIN_NANF128
-#  endif // _CCCL_CUDA_COMPILER(NVCC)
-#endif // _CCCL_HAS_FLOAT128()
+#  define _CCCL_BUILTIN_NANF() __builtin_nanf("")
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NANF() static_cast<float>(__NAN__)
+#endif // ^^^ has _CCCL_BUILTIN_NANF ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANSF(...) __builtin_nansf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANSF() __builtin_nansf("")
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansf)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nans) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANS(...) __builtin_nans(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANS() __builtin_nans("")
 #endif // _CCCL_CHECK_BUILTIN(builtin_nans)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nansl) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANSL(...) __builtin_nansl(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANSL() __builtin_nansl("")
 #elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_NANSL(...) static_cast<long double>(__builtin_nans(__VA_ARGS__))
+#  define _CCCL_BUILTIN_NANSL() static_cast<long double>(__builtin_nans(""))
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansl)
 
 #if _CCCL_HAS_FLOAT128()
 #  if _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
-#    define _CCCL_BUILTIN_NANSF128(...) __builtin_nansf128(__VA_ARGS__)
+#    define _CCCL_BUILTIN_NANSF128() __builtin_nansf128("")
 #  endif // _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
 
 // nvcc does not implement __builtin_nansf128
@@ -217,203 +207,19 @@
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // _CCCL_HAS_FLOAT128()
 
-#if _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
-#  define _CCCL_BUILTIN_MEMCMP(...) __builtin_memcmp(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
-
-#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_MEMCMP
-#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
-
-#if _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_MEMMOVE(...) __builtin_memmove(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
-
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_MEMMOVE
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete) \
-  && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
-#  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete)
-
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
 #else
 #  define _CCCL_BUILTIN_PREFETCH(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
-#if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
-
-#if _CCCL_CHECK_BUILTIN(has_nothrow_assign) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_assign) && gcc >= 4.3
-
-#if _CCCL_CHECK_BUILTIN(has_nothrow_constructor) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_constructor) && gcc >= 4.3
-
-#if _CCCL_CHECK_BUILTIN(has_nothrow_copy) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
-
-#if _CCCL_HAS_BUILTIN(__integer_pack)
-#  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__integer_pack)
-
-#if _CCCL_CHECK_BUILTIN(is_array)
-#  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_array)
-
-// clang prior to clang-19 gives wrong results for __is_array of _Tp[0]
-#if _CCCL_COMPILER(CLANG, <, 19)
-#  undef _CCCL_BUILTIN_IS_ARRAY
-#endif // clang < 19
-
-#if _CCCL_CHECK_BUILTIN(is_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, >=, 9)
-#  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
-
-#if _CCCL_HAS_BUILTIN(__is_const)
-#  define _CCCL_BUILTIN_IS_CONST(...) __is_const(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_const)
-
-#if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
-
-#if _CCCL_CHECK_BUILTIN(is_convertible_to) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_convertible_to)
-
-#if _CCCL_CHECK_BUILTIN(is_destructible) || _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_destructible)
-
-#if _CCCL_CHECK_BUILTIN(is_function)
-#  define _CCCL_BUILTIN_IS_FUNCTION(...) __is_function(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_function)
-
-// All current versions of NVCC give wrong results with __is_function
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_IS_FUNCTION
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(is_fundamental)
-#  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_fundamental)
-
-// clang prior to clang-10 gives wrong results for __is_fundamental
-#if _CCCL_COMPILER(CLANG, <, 10)
-#  undef _CCCL_BUILTIN_IS_FUNDAMENTAL
-#endif // clang < 10
-
-#if _CCCL_HAS_BUILTIN(__is_integral)
-#  define _CCCL_BUILTIN_IS_INTEGRAL(...) __is_integral(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_integral)
-
 #if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 
-#if _CCCL_CHECK_BUILTIN(is_lvalue_reference)
-#  define _CCCL_BUILTIN_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_lvalue_reference)
-
-#if _CCCL_HAS_BUILTIN(__is_member_function_pointer)
-#  define _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(...) __is_member_function_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_member_function_pointer)
-
-#if _CCCL_HAS_BUILTIN(__is_member_object_pointer)
-#  define _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(...) __is_member_object_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_member_object_pointer)
-
-#if _CCCL_HAS_BUILTIN(__is_member_pointer)
-#  define _CCCL_BUILTIN_IS_MEMBER_POINTER(...) __is_member_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_member_pointer)
-
-#if _CCCL_CHECK_BUILTIN(is_nothrow_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_assignable)
-
-#if _CCCL_CHECK_BUILTIN(is_nothrow_constructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_constructible)
-
-#if _CCCL_CHECK_BUILTIN(is_nothrow_destructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_destructible)
-
-#if _CCCL_CHECK_BUILTIN(is_object)
-#  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_object)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
-#  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_pointer)
-
 #if _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF(...) __is_pointer_interconvertible_base_of(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
-
-#if _CCCL_HAS_BUILTIN(__is_reference)
-#  define _CCCL_BUILTIN_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_reference)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_referenceable)
-#  define _CCCL_BUILTIN_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_referenceable)
-
-#if _CCCL_HAS_BUILTIN(__is_rvalue_reference)
-#  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_rvalue_reference)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
-#  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_scalar)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_signed)
-#  define _CCCL_BUILTIN_IS_SIGNED(...) __is_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_signed)
-
-#if _CCCL_CHECK_BUILTIN(is_unsigned)
-#  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_unsigned)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_void)
-#  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_void)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_volatile)
-#  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_volatile)
-
-#if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
-#  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
-#endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_signed)
-#  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_signed)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_unsigned)
-#  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
@@ -423,56 +229,17 @@
 #  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
 
-#if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
+#if _CCCL_HAS_BUILTIN(__builtin_clear_padding)
+#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_clear_padding(__VA_ARGS__)
+#elif _CCCL_COMPILER(MSVC, >=, 19, 27)
+#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_zero_non_value_bits(__VA_ARGS__)
+#endif // ^^^ has _CCCL_BUILTIN_CLEAR_PADDING ^^^
 
-#if _CCCL_HAS_BUILTIN(__remove_const) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_const)
-
-#if _CCCL_HAS_BUILTIN(__remove_cv) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_cv)
-
-#if _CCCL_HAS_BUILTIN(__remove_cvref) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_cvref)
-
-#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile that builtin
-#  undef _CCCL_BUILTIN_REMOVE_CVREF
-#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
-
-#if _CCCL_HAS_BUILTIN(__remove_extent) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_extent)
-
-#if _CCCL_HAS_BUILTIN(__remove_pointer) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_pointer)
-
-#if _CCCL_HAS_BUILTIN(__remove_reference)
-#  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference(__VA_ARGS__)
-#elif _CCCL_HAS_BUILTIN(__remove_reference_t) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_reference_t)
-
-#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile cuda::std::move with that
-#  undef _CCCL_BUILTIN_REMOVE_REFERENCE_T
-#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
-
-#if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_volatile)
-
-#if _CCCL_HAS_BUILTIN(__type_pack_element)
-#  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
-#endif // _CCCL_HAS_BUILTIN(__type_pack_element)
-
-// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
-#if _CCCL_CUDACC_BELOW(12, 2)
-#  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
-#endif // _CCCL_CUDACC_BELOW(12, 2)
+// nvcc doesn't support __builtin_clear_padding builtin in device code and crashes when __builtin_zero_non_value_bits is
+// used with arrays (nvbug 7043357).
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CLEAR_PADDING
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)
@@ -490,5 +257,12 @@
 #if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
+
+// The new __nv_atomic builtins are available when __CUDACC_DEVICE_ATOMIC_BUILTINS__ is defined
+#if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && _CCCL_PTX_ARCH() >= 600 && !_CCCL_COMPILER(MSVC)
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 1
+#else // ^^^ has intrinsics ^^^ / vvv no intrinsics
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 0
+#endif // no intrinsics
 
 #endif // __CCCL_BUILTIN_H

@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
+#include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/memory>
 #include <cuda/stream>
@@ -15,29 +16,31 @@
 #include <cooperative_groups.h>
 #include <testing.cuh>
 
+#include "test_macros.h"
+
 #if !_CCCL_CUDA_COMPILER(CLANG)
 
 __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
 {
-  CUDART(cudaStreamSynchronize(stream));
-  CCCLRT_CHECK(kernel_run_proof);
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
+  CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
 
 struct kernel_run_proof_check
 {
-  __device__ void operator()()
+  TEST_DEVICE_FUNC void operator()()
   {
-    CCCLRT_CHECK_DEVICE(kernel_run_proof);
+    REQUIRE_DEVICE(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
 
 struct functor_int_argument
 {
-  __device__ void operator()(int dummy)
+  TEST_DEVICE_FUNC void operator()(int dummy)
   {
     kernel_run_proof = true;
   }
@@ -47,10 +50,10 @@ template <unsigned int BlockSize>
 struct functor_taking_config
 {
   template <typename Config>
-  __device__ void operator()(Config config, int grid_size)
+  TEST_DEVICE_FUNC void operator()(Config config, int grid_size)
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == BlockSize);
-    CCCLRT_REQUIRE_DEVICE(cuda::block.count(cuda::grid, config) == grid_size);
+    REQUIRE_DEVICE(cuda::block.count(cuda::grid, config) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -80,11 +83,11 @@ template <typename SmemType>
 struct dynamic_smem_single
 {
   template <typename Config>
-  __device__ void operator()(Config config)
+  TEST_DEVICE_FUNC void operator()(Config config)
   {
     decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
+    REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -93,13 +96,13 @@ template <typename SmemType, size_t Extent>
 struct dynamic_smem_span
 {
   template <typename Config>
-  __device__ void operator()(Config config, int size)
+  TEST_DEVICE_FUNC void operator()(Config config, int size)
   {
     auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
-    CCCLRT_REQUIRE_DEVICE(dynamic_smem.size() == size);
-    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
+    REQUIRE_DEVICE(dynamic_smem.size() == size);
+    REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -130,8 +133,8 @@ struct launch_transform_to_int_convertible
     {
       // Check that the destructor runs after the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDART(cudaStreamSynchronize(stream_));
-      // CCCLRT_CHECK(kernel_run_proof);
+      // REQUIRE_CUDART(cudaStreamSynchronize(stream_));
+      // CHECK(kernel_run_proof);
     }
 
     // This is the value that will be passed to the kernel
@@ -156,7 +159,7 @@ void launch_smoke_test(cudaStream_t dst)
   // launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   // Spell out all overloads to make sure they compile, include a check for
   // implicit conversions
   {
@@ -258,15 +261,15 @@ C2H_CCCLRT_TEST("Launch smoke stream", "[launch]")
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamCreate(&stream));
+    REQUIRE_CUDART(cudaStreamCreate(&stream));
   }
 
   launch_smoke_test(stream);
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamSynchronize(stream));
-    CUDART(cudaStreamDestroy(stream));
+    REQUIRE_CUDART(cudaStreamSynchronize(stream));
+    REQUIRE_CUDART(cudaStreamDestroy(stream));
   }
 }
 
@@ -285,7 +288,7 @@ struct kernel_with_default_config
   }
 
   template <typename Config, typename ConfigCheckFn>
-  __device__ void operator()(Config config, ConfigCheckFn check_fn)
+  TEST_DEVICE_FUNC void operator()(Config config, ConfigCheckFn check_fn)
   {
     check_fn(config);
   }
@@ -294,10 +297,10 @@ struct kernel_with_default_config
 struct verify_callable
 {
   template <typename Config>
-  __device__ void operator()(Config config)
+  TEST_DEVICE_FUNC void operator()(Config config)
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 256);
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config) == 4);
+    REQUIRE(cuda::block.count(cuda::grid, config) == 4);
     cooperative_groups::this_grid().sync();
   }
 };
@@ -328,6 +331,211 @@ C2H_CCCLRT_TEST("Launch with default config", "")
     kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>(), cuda::cooperative_launch())};
     cuda::launch(stream, cuda::make_config(block, grid, cuda::cooperative_launch()), kernel, verify_callable{});
     stream.sync();
+  }
+}
+
+// Regression test: cuda::launch must work when the calling function has
+// a __restrict__-qualified pointer parameter. On some nvcc + host compiler
+// combos, __restrict__ survives through the type transformation pipeline
+// and causes a function pointer conversion failure in __get_kernel_launcher.
+struct restrict_assign_functor
+{
+  template <typename Config>
+  TEST_DEVICE_FUNC void operator()(Config config, int* __restrict__ dst)
+  {
+    *dst = 42;
+  }
+};
+
+// The __restrict__ on the function parameter is the trigger: on affected compilers,
+// it leaks into the template args of __get_kernel_launcher via cuda::launch.
+void launch_with_restrict_param(cuda::stream_ref stream, int* __restrict__ dst)
+{
+  auto config = cuda::make_config(cuda::grid_dims(1), cuda::block_dims<1>());
+  cuda::launch(stream, config, restrict_assign_functor{}, dst);
+}
+
+C2H_CCCLRT_TEST("Launch functor with __restrict__ pointer arg", "[launch]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  test::pinned<int> val{0};
+
+  launch_with_restrict_param(stream, val.get());
+  stream.sync();
+
+  CHECK(*val == 42);
+}
+
+C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[launch][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  cuda::stream stream{explicit_device};
+
+  int* device_value{};
+  {
+    cuda::__ensure_current_context guard(explicit_device);
+    REQUIRE_CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
+    REQUIRE_CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
+  }
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    auto config = cuda::make_config(cuda::grid_dims(1), cuda::block_dims<1>());
+    cuda::launch(stream, config, test::assign_42{}, device_value);
+  }
+
+  stream.sync();
+
+  int value{};
+  {
+    cuda::__ensure_current_context guard(explicit_device);
+    REQUIRE_CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
+    REQUIRE_CUDART(cudaFree(device_value));
+  }
+
+  CHECK(value == 42);
+}
+
+__managed__ cuda::std::size_t launched_nthreads;
+__managed__ cuda::std::size_t launched_nblocks;
+__managed__ cuda::std::size_t launched_nclusters;
+
+struct LaunchDimsFunctor
+{
+  template <class Config>
+  TEST_DEVICE_FUNC void operator()(const Config& config)
+  {
+    cuda::atomic_ref(launched_nthreads)++;
+
+    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+    {
+      cuda::atomic_ref(launched_nblocks)++;
+
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                        ({
+                          if (__clusterRelativeBlockRank() == 0)
+                          {
+                            cuda::atomic_ref(launched_nclusters)++;
+                          }
+                        }),
+                        ({ cuda::atomic_ref(launched_nclusters)++; }));
+    }
+  }
+};
+
+template <class GridDesc, class BlockDesc>
+void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, BlockDesc block_desc)
+{
+  launched_nthreads  = 0;
+  launched_nblocks   = 0;
+  launched_nclusters = 0;
+
+  const auto& grid_exts  = grid_desc.extents();
+  const auto& block_exts = block_desc.extents();
+
+  const auto config = cuda::make_config(grid_desc, block_desc);
+  cuda::launch(stream, config, LaunchDimsFunctor{});
+  stream.sync();
+
+  const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
+  CHECK(launched_nclusters == exp_nclusters);
+
+  const auto exp_nblocks = exp_nclusters;
+  CHECK(launched_nblocks == exp_nblocks);
+
+  const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
+  CHECK(launched_nthreads == exp_nthreads);
+}
+
+template <class GridDesc, class ClusterDesc, class BlockDesc>
+void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, ClusterDesc cluster_desc, BlockDesc block_desc)
+{
+  launched_nthreads  = 0;
+  launched_nblocks   = 0;
+  launched_nclusters = 0;
+
+  const auto& grid_exts    = grid_desc.extents();
+  const auto& cluster_exts = cluster_desc.extents();
+  const auto& block_exts   = block_desc.extents();
+
+  const auto config = cuda::make_config(grid_desc, cluster_desc, block_desc);
+  cuda::launch(stream, config, LaunchDimsFunctor{});
+  stream.sync();
+
+  const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
+  CHECK(launched_nclusters == exp_nclusters);
+
+  const auto exp_nblocks = exp_nclusters * cluster_exts.extent(0) * cluster_exts.extent(1) * cluster_exts.extent(2);
+  CHECK(launched_nblocks == exp_nblocks);
+
+  const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
+  CHECK(launched_nthreads == exp_nthreads);
+}
+
+C2H_TEST("Launch dims", "[launch]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+
+  test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::block_dims(dim3{10}));
+  test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::block_dims(dim3{3, 7}));
+  test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::block_dims(dim3{2, 7, 9}));
+
+  test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::block_dims<10>());
+  test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::block_dims<3, 7>());
+  test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::block_dims<2, 7, 9>());
+
+  test_launch_dims(stream, cuda::grid_dims<2>(), cuda::block_dims(dim3{10}));
+  test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::block_dims(dim3{3, 7}));
+  test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::block_dims(dim3{2, 7, 9}));
+
+  test_launch_dims(stream, cuda::grid_dims<2>(), cuda::block_dims<10>());
+  test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::block_dims<3, 7>());
+  test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::block_dims<2, 7, 9>());
+
+  if (cuda::device_attributes::compute_capability_major(stream.device()) >= 9)
+  {
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims(dim3{3}), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims(dim3{3}), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims<3, 7>());
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims<3>(), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims<1, 5>(), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims<3>(), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims<1, 5>(), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims(dim3{3}), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims(dim3{3}), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims<1, 5>(), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims<1, 5>(), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims<2, 7, 9>());
   }
 }
 

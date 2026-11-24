@@ -22,8 +22,8 @@
 struct View : cuda::std::ranges::view_interface<View>
 {
   int i;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct MoveOnlyView : View
@@ -36,7 +36,7 @@ _CCCL_CONCEPT HasBase = _CCCL_REQUIRES_EXPR((T), T&& t)((cuda::std::forward<T>(t
 
 struct Pred
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i > 5;
   }
@@ -48,7 +48,7 @@ static_assert(HasBase<cuda::std::ranges::take_while_view<View, Pred>&&>);
 static_assert(!HasBase<cuda::std::ranges::take_while_view<MoveOnlyView, Pred> const&>);
 static_assert(HasBase<cuda::std::ranges::take_while_view<MoveOnlyView, Pred>&&>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // const &
   {
@@ -95,6 +95,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

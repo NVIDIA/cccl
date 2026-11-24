@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,11 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
+#include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/iterator_facade.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -31,18 +33,22 @@ template <typename BinaryFunction, typename DifferenceT>
 class tabulate_output_iterator_proxy
 {
 public:
-  _CCCL_HOST_DEVICE tabulate_output_iterator_proxy(BinaryFunction fun, DifferenceT index)
+  _CCCL_HOST_DEVICE_API tabulate_output_iterator_proxy(BinaryFunction fun, DifferenceT index)
       : fun(fun)
       , index(index)
   {}
 
+  // Write-only proxy: assignment invokes fun with the index and the assigned value.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE tabulate_output_iterator_proxy operator=(const T& x)
+  _CCCL_HOST_DEVICE_API tabulate_output_iterator_proxy operator=(const T& x)
   {
     fun(index, x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   BinaryFunction fun;
@@ -104,8 +110,8 @@ inline constexpr bool is_proxy_reference_v<tabulate_output_iterator_proxy<Binary
 //!
 //! \see make_tabulate_output_iterator
 template <typename BinaryFunction, typename System = use_default, typename DifferenceT = ptrdiff_t>
-class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead") tabulate_output_iterator
-    : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
+class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead")
+tabulate_output_iterator : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
 {
 public:
   //! \cond
@@ -114,18 +120,18 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
-  tabulate_output_iterator() = default;
+  _CCCL_HIDE_FROM_ABI tabulate_output_iterator() = default;
 
   //!  This constructor takes as argument a \c BinaryFunction and copies it to a new \p tabulate_output_iterator
   //!
   //! \param fun A \c BinaryFunction called whenever a value is assigned to this \p tabulate_output_iterator.
-  _CCCL_HOST_DEVICE tabulate_output_iterator(BinaryFunction fun)
+  _CCCL_HOST_DEVICE_API tabulate_output_iterator(BinaryFunction fun)
       : fun(fun)
   {}
 
 private:
   //! \cond
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return detail::tabulate_output_iterator_proxy<BinaryFunction, DifferenceT>{fun, *this->base()};
   }
@@ -140,7 +146,7 @@ private:
 //! \see tabulate_output_iterator
 template <typename BinaryFunction>
 CCCL_DEPRECATED_BECAUSE("Use cuda::make_tabulate_output_iterator instead")
-_CCCL_HOST_DEVICE tabulate_output_iterator<BinaryFunction>
+_CCCL_HOST_DEVICE_API tabulate_output_iterator<BinaryFunction>
 make_tabulate_output_iterator(BinaryFunction fun)
 {
   return tabulate_output_iterator<BinaryFunction>(fun);

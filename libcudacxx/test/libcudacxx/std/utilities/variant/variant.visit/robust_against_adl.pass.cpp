@@ -27,20 +27,20 @@ struct Holder
 struct empty_visitor
 {
   template <class T>
-  __host__ __device__ constexpr void operator()(T) const noexcept
+  TEST_FUNC constexpr void operator()(T) const noexcept
   {}
 };
 
 struct holder_visitor
 {
   template <class T>
-  __host__ __device__ constexpr Holder<Incomplete>* operator()(T) const noexcept
+  TEST_FUNC constexpr Holder<Incomplete>* operator()(T) const noexcept
   {
     return nullptr;
   }
 };
 
-__host__ __device__ constexpr bool test(bool do_it)
+TEST_FUNC constexpr bool test(bool do_it)
 {
   if (do_it)
   {
@@ -56,6 +56,6 @@ __host__ __device__ constexpr bool test(bool do_it)
 int main(int, char**)
 {
   test(true);
-  static_assert(test(true), "");
+  static_assert(test(true));
   return 0;
 }

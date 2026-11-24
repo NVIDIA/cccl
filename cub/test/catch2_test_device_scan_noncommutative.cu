@@ -3,7 +3,7 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2_test_device_scan.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -47,7 +47,7 @@ struct bicyclic_monoid_op
 };
 }; // namespace impl
 
-C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]")
+CUB_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]", CUB_SMALL)
 {
   using pair_t = cuda::std::pair<unsigned, unsigned>;
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
@@ -61,7 +61,8 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
   pair_t* d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size{};
-  cudaError_t status1 = cub::DeviceScan::InclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, input.size());
+  const cudaError_t status1 =
+    cub::DeviceScan::InclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, input.size());
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
 
@@ -72,11 +73,11 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
 
   REQUIRE(d_tmp != nullptr);
 
-  cudaError_t status2 = cub::DeviceScan::InclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, input.size());
+  const cudaError_t status2 = cub::DeviceScan::InclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, input.size());
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<pair_t> h_output(output);
+  const c2h::host_vector<pair_t> h_output(output);
   c2h::host_vector<pair_t> h_input(input);
   c2h::host_vector<pair_t> h_expected(input.size());
 

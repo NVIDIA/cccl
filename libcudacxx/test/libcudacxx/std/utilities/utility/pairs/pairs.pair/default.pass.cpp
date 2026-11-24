@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: gcc-4
-
 // <utility>
 
 // template <class T1, class T2> struct pair
@@ -27,23 +25,23 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     P p;
     assert(p.first == 0.0f);
     assert(p.second == nullptr);
   }
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     constexpr P p;
-    static_assert(p.first == 0.0f, "");
-    static_assert(p.second == nullptr, "");
+    static_assert(p.first == 0.0f);
+    static_assert(p.second == nullptr);
   }
   {
     using NoDefault = ImplicitTypes::NoDefault;
     using P         = cuda::std::pair<int, NoDefault>;
-    static_assert(!cuda::std::is_default_constructible<P>::value, "");
+    static_assert(!cuda::std::is_default_constructible<P>::value);
     using P2 = cuda::std::pair<NoDefault, int>;
-    static_assert(!cuda::std::is_default_constructible<P2>::value, "");
+    static_assert(!cuda::std::is_default_constructible<P2>::value);
   }
   {
     struct Base
@@ -53,7 +51,7 @@ int main(int, char**)
     protected:
       Derived() = default;
     };
-    static_assert(!cuda::std::is_default_constructible<cuda::std::pair<Derived, int>>::value, "");
+    static_assert(!cuda::std::is_default_constructible<cuda::std::pair<Derived, int>>::value);
   }
 
   return 0;

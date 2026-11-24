@@ -20,8 +20,8 @@ int main(int, char**)
 {
   assert(cuda::std::chrono::duration_values<int>::zero() == 0);
   assert(cuda::std::chrono::duration_values<Rep>::zero() == 0);
-  static_assert(cuda::std::chrono::duration_values<int>::zero() == 0, "");
-  static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0, "");
+  static_assert(cuda::std::chrono::duration_values<int>::zero() == 0);
+  static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0);
 
   static_assert(noexcept(cuda::std::chrono::duration_values<int>::zero()));
   static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::zero()));

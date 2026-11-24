@@ -1,0 +1,31 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDAX_HIERARCHY
+#define _CUDAX_HIERARCHY
+
+#include <cuda/std/detail/__config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// IWYU pragma: begin_exports
+#include <cuda/hierarchy>
+
+#include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+// IWYU pragma: end_exports
+
+#endif // _CUDAX_HIERARCHY

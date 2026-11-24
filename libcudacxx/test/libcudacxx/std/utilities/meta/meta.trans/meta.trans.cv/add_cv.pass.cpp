@@ -15,14 +15,14 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_add_cv_imp()
+TEST_FUNC void test_add_cv_imp()
 {
   static_assert(cuda::std::is_same_v<const volatile U, typename cuda::std::add_cv<T>::type>);
   static_assert(cuda::std::is_same_v<const volatile U, cuda::std::add_cv_t<T>>);
 }
 
 template <class T>
-__host__ __device__ void test_add_cv()
+TEST_FUNC void test_add_cv()
 {
   test_add_cv_imp<T, const volatile T>();
   test_add_cv_imp<const T, const volatile T>();

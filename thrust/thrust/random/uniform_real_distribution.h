@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file uniform_real_distribution.h
  *  \brief A uniform distribution of real-valued numbers
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,9 +18,9 @@
 #endif // no system header
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__utility/pair.h>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -65,23 +52,23 @@ namespace random
  *    thrust::uniform_real_distribution<float> dist(-7,13);
  *
  *    // write a random number from the range [-7,13) to standard output
- *    std::cout << dist(rng) << std::endl;
+ *    std::cout << dist(rng) << '\n';
  *
  *    // write the range of the distribution, just in case we forgot
- *    std::cout << dist.min() << std::endl;
+ *    std::cout << dist.min() << '\n';
  *
  *    // -7.0 is printed
  *
- *    std::cout << dist.max() << std::endl;
+ *    std::cout << dist.max() << '\n';
  *
  *    // 13.0 is printed
  *
  *    // write the parameters of the distribution (which happen to be the bounds) to standard output
- *    std::cout << dist.a() << std::endl;
+ *    std::cout << dist.a() << '\n';
  *
  *    // -7.0 is printed
  *
- *    std::cout << dist.b() << std::endl;
+ *    std::cout << dist.b() << '\n';
  *
  *    // 13.0 is printed
  *
@@ -114,18 +101,18 @@ public:
    *  \param b The smallest number larger than the largest floating point number to potentially produce. Defaults to
    * \c 1.0.
    */
-  _CCCL_HOST_DEVICE explicit uniform_real_distribution(RealType a = 0.0, RealType b = 1.0);
+  _CCCL_HOST_DEVICE_API explicit uniform_real_distribution(RealType a = 0.0, RealType b = 1.0);
 
   /*! This constructor creates a new \p uniform_real_distribution from a \p param_type object
    *  encapsulating the range of the distribution.
    *
    *  \param parm A \p param_type object encapsulating the parameters (i.e., the range) of the distribution.
    */
-  _CCCL_HOST_DEVICE explicit uniform_real_distribution(const param_type& parm);
+  _CCCL_HOST_DEVICE_API explicit uniform_real_distribution(const param_type& parm);
 
   /*! This does nothing.  It is included to conform to the requirements of the RandomDistribution concept.
    */
-  _CCCL_HOST_DEVICE void reset();
+  _CCCL_HOST_DEVICE_API void reset();
 
   // generating functions
 
@@ -135,7 +122,7 @@ public:
    *  \param urng The \p UniformRandomNumberGenerator to use as a source of randomness.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng);
 
   /*! This method produces a new uniform random integer as if by creating a new \p uniform_real_distribution
    *  from the given \p param_type object, and calling its <tt>operator()</tt> method with the given
@@ -146,7 +133,7 @@ public:
    *              to draw from.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
 
   // property functions
 
@@ -155,41 +142,41 @@ public:
    *
    *  \return The lower bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type a() const;
+  _CCCL_HOST_DEVICE_API result_type a() const;
 
   /*! This method returns the value of the parameter with which this \p uniform_real_distribution
    *  was constructed.
    *
    *  \return The upper bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type b() const;
+  _CCCL_HOST_DEVICE_API result_type b() const;
 
   /*! This method returns a \p param_type object encapsulating the parameters with which this
    *  \p uniform_real_distribution was constructed.
    *
    *  \return A \p param_type object enapsulating the half-open interval of this \p uniform_real_distribution.
    */
-  _CCCL_HOST_DEVICE param_type param() const;
+  _CCCL_HOST_DEVICE_API param_type param() const;
 
   /*! This method changes the parameters of this \p uniform_real_distribution using the values encapsulated
    *  in a given \p param_type object.
    *
    *  \param parm A \p param_type object encapsulating the new half-open interval of this \p uniform_real_distribution.
    */
-  _CCCL_HOST_DEVICE void param(const param_type& parm);
+  _CCCL_HOST_DEVICE_API void param(const param_type& parm);
 
   /*! This method returns the smallest floating point number this \p uniform_real_distribution can potentially produce.
    *
    *  \return The lower bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the smallest number larger than largest floating point number this \p
    * uniform_real_distribution can potentially produce.
    *
    *  \return The upper bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! \cond
    */
@@ -199,7 +186,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const uniform_real_distribution& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const uniform_real_distribution& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -216,7 +203,7 @@ private:
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template <typename RealType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator==(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs);
 
 /*! This function checks two \p uniform_real_distributions for inequality.
@@ -225,7 +212,7 @@ operator==(const uniform_real_distribution<RealType>& lhs, const uniform_real_di
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template <typename RealType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator!=(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs);
 
 /*! This function streams a uniform_real_distribution to a \p std::basic_ostream.
@@ -234,7 +221,7 @@ operator!=(const uniform_real_distribution<RealType>& lhs, const uniform_real_di
  *  \return \p os
  */
 template <typename RealType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_real_distribution<RealType>& d);
 
 /*! This function streams a uniform_real_distribution in from a std::basic_istream.
@@ -243,7 +230,7 @@ operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_real_distributio
  *  \return \p is
  */
 template <typename RealType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, uniform_real_distribution<RealType>& d);
 
 /*! \} // end random_number_distributions
@@ -254,4 +241,4 @@ using random::uniform_real_distribution;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/uniform_real_distribution.inl>
+#include <thrust/random/detail/uniform_real_distribution.inl> // IWYU pragma: export

@@ -4,6 +4,8 @@
 #include <thrust/reduce.h>
 #include <thrust/system/cuda/execution_policy.h>
 
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <cassert>
 #include <future>
 
@@ -30,7 +32,7 @@ __global__ void reduce_kernel(Iterator first, Iterator last, T init, BinaryOpera
 
 int main()
 {
-  size_t n = 1 << 20;
+  const size_t n = 1 << 20;
   thrust::device_vector<unsigned int> data(n, 1);
   thrust::device_vector<unsigned int> result(1, 0);
 
@@ -38,7 +40,7 @@ int main()
 
   // create a CUDA stream
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamCreate, "cudaStreamCreate failed", &s);
 
   // launch a CUDA kernel with only 1 thread on our stream
 #ifdef THRUST_EXAMPLE_DEVICE_SIDE
@@ -48,22 +50,22 @@ int main()
 #endif
 
   // wait for the stream to finish
-  cudaStreamSynchronize(s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "cudaStreamSynchronize failed", s);
 
   // our result should be ready
   assert(result[0] == n);
 
-  cudaStreamDestroy(s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamDestroy, "cudaStreamDestroy failed", s);
 
   // reset the result
   result[0] = 0;
 
   // method 2: use std::async to create asynchrony
   // copy all the algorithm parameters
-  auto begin        = data.begin();
-  auto end          = data.end();
-  unsigned int init = 0;
-  auto binary_op    = cuda::std::plus<unsigned int>();
+  auto begin              = data.begin();
+  auto end                = data.end();
+  const unsigned int init = 0;
+  auto binary_op          = cuda::std::plus<unsigned int>();
 
   // std::async captures the algorithm parameters by value
   // use std::launch::async to ensure the creation of a new thread

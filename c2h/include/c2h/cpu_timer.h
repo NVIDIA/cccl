@@ -53,9 +53,9 @@ public:
     return static_cast<std::uint64_t>(us.count());
   }
 
-  void print_elapsed_seconds(const std::string& label)
+  void print_elapsed_seconds(const std::string& label) const
   {
-    printf("%0.6f s: %s\n", this->elapsed_us() / 1000000.f, label.c_str());
+    printf("%0.6f s: %s\n", static_cast<float>(this->elapsed_us()) / 1000000.f, label.c_str());
   }
 
   void print_elapsed_seconds_and_reset(const std::string& label)

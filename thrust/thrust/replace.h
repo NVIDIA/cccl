@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file replace.h
  *  \brief Functions for replacing elements in a range with a particular value
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -90,7 +77,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         ForwardIterator first,
         ForwardIterator last,
@@ -143,7 +130,7 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
-void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value);
+_CCCL_HOST_API void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value);
 
 /*! \p replace_if replaces every element in the range <tt>[first, last)</tt> for which
  *  \p pred returns \c true with \p new_value. That is: for every iterator \c i, if
@@ -209,7 +196,7 @@ void replace(ForwardIterator first, ForwardIterator last, const T& old_value, co
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -274,7 +261,7 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate, typename T>
-void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value);
+_CCCL_HOST_API void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value);
 
 /*! \p replace_if replaces every element in the range <tt>[first, last)</tt> for which
  *  <tt>pred(*s)</tt> returns \c true with \p new_value. That is: for every iterator
@@ -348,7 +335,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -422,7 +409,8 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value);
+_CCCL_HOST_API void
+replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value);
 
 /*! \p replace_copy copies elements from the range <tt>[first, last)</tt> to the range
  *  <tt>[result, result + (last-first))</tt>, except that any element equal to \p old_value
@@ -482,7 +470,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stenc
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -543,7 +531,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value);
 
 /*! \p replace_copy_if copies elements from the range <tt>[first, last)</tt> to the range
@@ -617,7 +605,7 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -691,7 +679,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, const T& new_value);
 
 /*! This version of \p replace_copy_if copies elements from the range <tt>[first, last)</tt> to the range
@@ -776,7 +764,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename Predicate,
           typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -857,7 +845,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
-OutputIterator replace_copy_if(
+_CCCL_HOST_API OutputIterator replace_copy_if(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -871,4 +859,4 @@ OutputIterator replace_copy_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/replace.inl>
+#include <thrust/detail/replace.inl> // IWYU pragma: export

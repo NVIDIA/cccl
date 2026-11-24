@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,10 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_volatile.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <typename _Tp>
+using __unv _CCCL_NODEBUG = remove_volatile_t<_Tp>;
 
 template <typename _Tp>
 struct __atomic_ptr_skip
@@ -44,12 +48,12 @@ struct __atomic_ptr_skip<_Tp*>
 template <typename _Tp>
 struct __atomic_ptr_skip<_Tp[]>
 {};
-template <typename _Tp, int n>
-struct __atomic_ptr_skip<_Tp[n]>
+template <typename _Tp, int _Np>
+struct __atomic_ptr_skip<_Tp[_Np]>
 {};
 
 template <typename _Tp>
-using __atomic_ptr_skip_t = __atomic_ptr_skip<remove_cvref_t<_Tp>>;
+using __atomic_ptr_skip_t _CCCL_NODEBUG = __atomic_ptr_skip<remove_cvref_t<_Tp>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,12 +24,12 @@
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
@@ -42,14 +42,15 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
   return __result;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b)
 {
   if (__first != __last)
   {
-    typename iterator_traits<_InputIterator>::value_type __init = *__first;
-    *__result++                                                 = __init;
+    const typename iterator_traits<_InputIterator>::value_type __init = *__first;
+    *__result++                                                       = __init;
     if (++__first != __last)
     {
       return ::cuda::std::inclusive_scan(__first, __last, __result, __b, __init);

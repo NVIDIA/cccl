@@ -10,6 +10,9 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __global__ void kernel()
@@ -24,12 +27,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    nblocks = atoi(argv[1]);
+    nblocks = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    block_size = atoi(argv[2]);
+    block_size = ::std::stoi(argv[2]);
   }
 
   // At most 1 buffer is allocated at the same time
@@ -58,7 +61,7 @@ int main(int argc, char** argv)
 
   if (argc > 3)
   {
-    std::cout << "Generating DOT output in " << argv[3] << std::endl;
+    std::cout << "Generating DOT output in " << argv[3] << '\n';
     ctx.print_to_dot(argv[3]);
   }
 

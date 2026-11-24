@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,14 +22,14 @@
 #endif // no system header
 
 #if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_optional
+#  if __cpp_lib_optional >= 201606L
 #    include <optional>
-#  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
-#    include <exception>
-#  endif // !__cpp_lib_optional
+#  else // ^^^ __cpp_lib_optional >= 201606L ^^^ / vvv __cpp_lib_optional < 201606L vvv
+#    include <cuda/std/__host_stdlib/exception>
+#  endif // ^^^ __cpp_lib_optional < 201606L ^^^
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 
 #include <nv/target>
 
@@ -38,11 +38,11 @@
 #if _CCCL_HAS_EXCEPTIONS()
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
-#  ifdef __cpp_lib_optional
+#  if __cpp_lib_optional >= 201606L
 
 using ::std::bad_optional_access;
 
-#  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
+#  else // ^^^ __cpp_lib_optional >= 201606L ^^^ / vvv __cpp_lib_optional < 201606L vvv
 class _CCCL_TYPE_VISIBILITY_DEFAULT bad_optional_access : public ::std::exception
 {
 public:
@@ -51,7 +51,7 @@ public:
     return "bad access to cuda::std::optional";
   }
 };
-#  endif // !__cpp_lib_optional
+#  endif // ^^^ __cpp_lib_optional < 201606L ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 #endif // _CCCL_HAS_EXCEPTIONS()

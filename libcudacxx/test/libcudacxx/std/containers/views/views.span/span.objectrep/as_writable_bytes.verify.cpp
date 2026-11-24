@@ -25,7 +25,7 @@ TEST_GLOBAL_VARIABLE constexpr int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 struct A
 {};
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   cuda::std::as_writable_bytes(cuda::std::span<const int>()); // expected-error {{no matching function for call to
                                                               // 'as_writable_bytes'}}

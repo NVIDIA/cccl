@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,16 +22,17 @@
 
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/from_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__system_error/errc.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
@@ -53,26 +54,24 @@ __from_chars_char_to_value(char __c, int __base) noexcept
   {
     return {'0' <= __c && __c < '0' + __base, __c - '0'};
   }
-  else if ('0' <= __c && __c <= '9')
+  if ('0' <= __c && __c <= '9')
   {
     return {true, __c - '0'};
   }
-  else if ('a' <= __c && __c < 'a' + __base - 10)
+  if ('a' <= __c && __c < 'a' + __base - 10)
   {
     return {true, __c - 'a' + 10};
   }
-  else
-  {
-    return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
-  }
+  return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr from_chars_result
 __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, int __base) noexcept
 {
-  bool __overflow  = false;
-  const char* __it = __first;
+  const auto __unsigned_base = static_cast<_Tp>(__base);
+  bool __overflow            = false;
+  const char* __it           = __first;
   for (; __it != __last; ++__it)
   {
     const auto __digit = ::cuda::std::__from_chars_char_to_value(*__it, __base);
@@ -82,15 +81,20 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
     }
     if (!__overflow)
     {
-      const auto __new_value = static_cast<_Tp>(__value * _Tp(__base) + _Tp(__digit.__value_));
-      if (__new_value < __value)
+      const auto __unsigned_digit = static_cast<_Tp>(__digit.__value_);
+      const auto __product        = ::cuda::mul_overflow<_Tp>(__value, __unsigned_base);
+      const auto __sum            = ::cuda::add_overflow<_Tp>(__product.value, __unsigned_digit);
+      if (__product.overflow || __sum.overflow)
       {
         __overflow = true;
       }
-      __value = __new_value;
+      else
+      {
+        __value = __sum.value;
+      }
     }
   }
-  return {__it, (__overflow) ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
+  return {__it, __overflow ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -106,11 +110,11 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
 
   if constexpr (is_signed_v<_Tp>)
   {
-    bool __neg = (__first < __last && *__first == '-');
-    __ret      = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
+    const bool __neg = (__first < __last && *__first == '-');
+    __ret            = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
-      const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
+      const auto __max = ::cuda::uabs(__neg ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
       if (__result > __max)
       {
         __ret.ec = errc::result_out_of_range;

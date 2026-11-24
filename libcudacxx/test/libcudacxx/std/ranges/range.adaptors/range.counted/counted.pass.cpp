@@ -23,30 +23,30 @@
 struct RvalueConvertible
 {
   RvalueConvertible(const RvalueConvertible&) = delete;
-  __host__ __device__ operator int() &&;
+  TEST_FUNC operator int() &&;
 };
 
 struct LvalueConvertible
 {
   LvalueConvertible(const LvalueConvertible&) = delete;
-  __host__ __device__ operator int() &;
+  TEST_FUNC operator int() &;
 };
 
 struct OnlyExplicitlyConvertible
 {
-  __host__ __device__ explicit operator int() const;
+  TEST_FUNC explicit operator int() const;
 };
 
 template <class... Ts>
 _CCCL_CONCEPT CountedInvocable =
   _CCCL_REQUIRES_EXPR((variadic Ts), Ts&&... ts)((cuda::std::views::counted(cuda::std::forward<Ts>(ts)...)));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
   {
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
     static_assert(
       cuda::std::addressof(cuda::std::views::counted) == cuda::std::addressof(cuda::std::ranges::views::counted));
 #endif // _CCCL_BUILTIN_ADDRESSOF
@@ -244,7 +244,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

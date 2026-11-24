@@ -3,21 +3,26 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 #include <cuda/warp>
 
+#include "clear_padding_test_helpers.h"
 #include "test_macros.h"
 
 template <typename T>
-__device__ void test_types(T valueA = T{}, T valueB = T{1})
+TEST_DEVICE_FUNC void test_types(T valueA = T{}, T valueB = T{1})
 {
   for (int i = 1; i < 32; ++i)
   {
@@ -31,8 +36,76 @@ __device__ void test_types(T valueA = T{}, T valueB = T{1})
   }
 }
 
+TEST_DEVICE_FUNC uint32_t make_low_mask(unsigned count)
+{
+  return count == 32 ? 0xFFFFFFFF : ((1u << count) - 1);
+}
+
+TEST_DEVICE_FUNC void test_bool()
+{
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    auto mask = cuda::device::lane_mask{make_low_mask(i)};
+    if (threadIdx.x < i)
+    {
+      assert(cuda::device::warp_match_all(false, mask));
+      assert(cuda::device::warp_match_all(true, mask));
+      auto value = threadIdx.x == 0;
+      assert(cuda::device::warp_match_all(value, mask) == (i == 1));
+    }
+  }
+}
+
+template <typename T>
+TEST_DEVICE_FUNC void test_array()
+{
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    if (threadIdx.x < i)
+    {
+      auto mask = cuda::device::lane_mask{make_low_mask(i)};
+      T value{};
+      assert(cuda::device::warp_match_all(value, mask));
+
+      // only the last element
+      const auto byte                                         = static_cast<unsigned char>(threadIdx.x % 2);
+      reinterpret_cast<unsigned char*>(&value)[sizeof(T) - 1] = byte;
+      assert(cuda::device::warp_match_all(value, mask) == (i == 1));
+    }
+  }
+}
+
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
+template <class T>
+TEST_DEVICE_FUNC void test_padded_array()
+{
+  T value[2][2];
+  cuda::std::memset(value, static_cast<int>(threadIdx.x), sizeof(value));
+  for (auto& row : value)
+  {
+    for (auto& element : row)
+    {
+      element.a = 42;
+      element.b = 3;
+    }
+  }
+  unsigned char original[sizeof(value)];
+  cuda::std::memcpy(original, value, sizeof(value));
+  assert(cuda::device::warp_match_all(value[0][0]));
+  assert(cuda::device::warp_match_all(value));
+  assert(cuda::std::memcmp(original, value, sizeof(value)) == 0);
+
+  value[1][1].b = static_cast<char>(threadIdx.x % 2);
+  assert(!cuda::device::warp_match_all(value[1][1]));
+  assert(!cuda::device::warp_match_all(value));
+}
+#endif // _CCCL_BUILTIN_CLEAR_PADDING
+
 __global__ void test_kernel()
 {
+  test_bool();
+  test_array<unsigned char[3]>();
+  test_array<uint32_t[2][3]>();
   test_types<uint8_t>();
   test_types<uint16_t>();
   test_types<uint32_t>();
@@ -43,6 +116,10 @@ __global__ void test_kernel()
   test_types(char3{0, 0, 0}, char3{1, 1, 1});
   using array_t = cuda::std::array<char, 6>;
   test_types(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
+  test_padded_array<WithPadding>();
+  test_padded_array<RelaxedWithPadding>();
+#endif
 }
 
 int main(int, char**)

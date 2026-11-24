@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __host__ __device__ double X0(int i)
@@ -28,20 +30,20 @@ int main(int argc, char** argv)
 {
   stream_ctx ctx;
 
-  double lower_level          = -1.0;
-  double upper_level          = 1.0;
+  const double lower_level    = -1.0;
+  const double upper_level    = 1.0;
   constexpr size_t num_levels = 21;
 
   size_t N = 128 * 1024UL;
   if (argc > 1)
   {
-    N = size_t(atoll(argv[1]));
+    N = size_t(::std::stoll(argv[1]));
   }
 
   int check = 1;
   if (argc > 2)
   {
-    check = atoi(argv[2]);
+    check = ::std::stoi(argv[2]);
   }
 
   // fprintf(stderr, "SIZE %s\n", pretty_print_bytes(N * sizeof(double)).c_str());
@@ -51,22 +53,23 @@ int main(int argc, char** argv)
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
+    X[i] = X0(static_cast<int>(i));
   }
 
   // If we were to register each part one by one, there could be pages which
   // cross multiple parts, and the pinning operation would fail.
-  cuda_safe_call(cudaHostRegister(&X[0], N * sizeof(double), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(X.data(), N * sizeof(double), cudaHostRegisterPortable));
 
-  auto lX = ctx.logical_data(&X[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
   lX.set_symbol("X");
 
-  auto lhisto = ctx.logical_data(&histo[0], num_levels - 1);
+  auto lhisto = ctx.logical_data(histo.data(), num_levels - 1);
   lhisto.set_symbol("histogram");
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -80,9 +83,9 @@ int main(int argc, char** argv)
   auto spec = con<8>(con(BLOCK_THREADS, mem((num_levels - 1) * sizeof(size_t))));
 
   ctx.launch(spec, where, lX.read(), lhisto.write())->*[=] _CCCL_DEVICE(auto th, auto x, auto histo) {
-    size_t block_id = th.rank(0);
+    const size_t block_id = th.rank(0);
 
-    slice<size_t> smem_hist = th.template storage<size_t>(1);
+    const slice<size_t> smem_hist = th.template storage<size_t>(1);
     assert(smem_hist.size() == (num_levels - 1));
 
     /* Thread local histogram */
@@ -103,10 +106,10 @@ int main(int argc, char** argv)
 
     for (size_t i = th.rank(); i < x.size(); i += th.size())
     {
-      double xi = x(i);
+      const double xi = x(i);
       if (xi >= lower_level && xi < upper_level)
       {
-        size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
+        const size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
         local_hist[bin]++;
       }
     }
@@ -117,7 +120,7 @@ int main(int argc, char** argv)
     /* Each thread contributes to an histogram in shared memory */
     for (size_t k = 0; k < num_levels - 1; k++)
     {
-      atomicAdd((unsigned long long*) &smem_hist[k], local_hist[k]);
+      atomicAdd(reinterpret_cast<unsigned long long*>(&smem_hist[k]), local_hist[k]);
     }
 
     // histo was zero'ed
@@ -137,6 +140,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float ms = 0;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
   // fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
@@ -145,17 +150,17 @@ int main(int argc, char** argv)
   {
     // fprintf(stderr, "Checking result...\n");
     size_t refhist[num_levels - 1];
-    for (size_t i = 0; i < num_levels - 1; i++)
+    for (auto& h : refhist)
     {
-      refhist[i] = 0;
+      h = 0;
     }
 
     for (size_t i = 0; i < N; i++)
     {
-      double xi = X[i];
+      const double xi = X[i];
       if (xi >= lower_level && xi < upper_level)
       {
-        size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
+        const size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
         refhist[bin]++;
       }
     }

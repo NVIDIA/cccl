@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_storage()
+TEST_FUNC void test_fp_storage()
 {
   using Storage = cuda::std::__fp_storage_of_t<T>;
   static_assert(cuda::std::is_integral_v<Storage>);
@@ -57,6 +57,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_storage<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_storage<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_fp_storage<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

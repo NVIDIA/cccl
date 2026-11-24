@@ -9,6 +9,9 @@
 // UNSUPPORTED: c++17
 // XFAIL: dylib-has-no-filesystem
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // File clock is unsupported in NVRTC
 // UNSUPPORTED: nvrtc
 
@@ -25,7 +28,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::file_clock C;
+  using C = cuda::std::chrono::file_clock;
   static_assert(noexcept(C::now()));
 
   C::time_point t1 = C::now();

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,19 +19,24 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
-#include <cub/detail/type_traits.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/warp/warp_reduce.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,23 +44,26 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+namespace detail
+{
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalThreadsPerBlock4B Threads per thread block
  * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           BlockReduceAlgorithm BlockAlgorithm,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentReducePolicy : ScalingType
+          typename ScalingType = MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_reduce_policy : ScalingType
 {
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
@@ -66,43 +74,34 @@ struct AgentReducePolicy : ScalingType
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") = detail::agent_reduce_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  VectorLoadLength,
+  BlockAlgorithm,
+  LoadModifier,
+  ScalingType>;
+
 namespace detail
 {
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-
-/**
- * Parameterizable tuning policy type for AgentReduce
- * @tparam BlockThreads Threads per thread block
- * @tparam WarpThreads Threads per warp
- * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
- * @tparam ComputeT Dominant compute type
- * @tparam VectorLoadLength Number of items per vectorized load
- * @tparam LoadModifier Cache load modifier for reading input elements
- */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int WarpThreads,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           CacheLoadModifier LoadModifier>
-struct AgentWarpReducePolicy
+struct agent_warp_reduce_policy
 {
   /// Number of threads per warp
   static constexpr int WARP_THREADS = WarpThreads;
@@ -111,11 +110,14 @@ struct AgentWarpReducePolicy
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
 
-  /// Number of items per thread
+  /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
+  /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>::ITEMS_PER_THREAD;
+    ::cuda::std::conditional_t<::cuda::std::is_void_v<ComputeT>,
+                               NoScaling<0, NominalItemsPerThread4B>,
+                               MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
@@ -128,6 +130,17 @@ struct AgentWarpReducePolicy
 
   static_assert((BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
+using AgentWarpReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") = detail::
+  agent_warp_reduce_policy<ThreadsPerBlock, WarpThreads, NominalItemsPerThread4B, ComputeT, VectorLoadLength, LoadModifier>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -192,24 +205,26 @@ struct AgentReduceImpl
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
 
-  /// Input iterator wrapper type (for applying cache modifier)
-  // Wrap the native input pointer with CacheModifiedInputIterator
-  // or directly use the supplied input iterator type
-  using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
-                     InputIteratorT>;
+  /// Input iterator with the cache modifier (also unwraps contiguous iterators to pointers)
+  using cache_modified_input_iterator_t =
+    try_make_cache_modified_iterator_t<AgentReducePolicy::LOAD_MODIFIER, InputIteratorT>;
 
   /// Constants
-  static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
+  static constexpr int vec_size         = (::cuda::std::min) (ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
-  // Can vectorize according to the policy if the input iterator is a native
-  // pointer to a primitive type
+  // Vectorize if the policy asks for vector loads (vec_size > 1) and the input is a contiguous range of small trivially
+  // copyable values
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>) && is_primitive<InputT>::value;
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    && (is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
+         // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
+         // TODO(bgruber): this should be decided by tuning
+         &&sizeof(InputT)
+         <= 8;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
@@ -220,16 +235,14 @@ struct AgentReduceImpl
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
   //---------------------------------------------------------------------
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
-  InputIteratorT d_in; ///< Input data to reduce
-  WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
+  cache_modified_input_iterator_t d_in; ///< Input data to reduce
   ReductionOp reduction_op; ///< Binary reduction operator
   TransformOp transform_op; ///< Transform operator
   unsigned int lane_id; ///< Local thread index inside a Warp or Block
@@ -244,7 +257,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in.ptr);
     }
     else
     {
@@ -262,11 +275,10 @@ struct AgentReduceImpl
    * @param d_in Input data to reduce
    * @param reduction_op Binary reduction operator
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(d_in)
-      , d_wrapped_in(d_in)
+      , d_in(_CUB::detail::try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)
@@ -283,47 +295,32 @@ struct AgentReduceImpl
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
   template <int IsFirstTile, bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
   {
+    // load items in striped fashion and reduce items within each thread stripe
+    AccumT items[ITEMS_PER_THREAD];
     if constexpr (CanVectorize)
     {
-      // Fabricate a vectorized input iterator
-      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
-      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
-        reinterpret_cast<VectorT*>(d_in_unqualified));
-
-      // Load items as vector items
       InputT input_items[ITEMS_PER_THREAD];
-      VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-
-      // Alias items as an array of VectorT and load it in striped fashion
-      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < words; ++i)
-      {
-        vec_items[i] = d_vec_in[NumThreads * i];
-      }
+      // IsAligned checked that the range starts aligned to VectorT, and full tiles are whole tiles further
+      // lane_id is the warp lane for a warp agent and the block thread id otherwise.
+      _CUB::detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
+        static_cast<int>(lane_id), d_in.ptr + block_offset, input_items);
 
       // Convert from input type to output type
-      AccumT items[ITEMS_PER_THREAD];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; ++i)
       {
         items[i] = transform_op(input_items[i]);
       }
-
-      // Reduce items within each thread stripe
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
     else
     {
-      // Scalar path: load items in striped fashion and reduce items within each thread stripe
-      AccumT items[ITEMS_PER_THREAD];
-      load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      _CUB::detail::load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
     }
+    // Reduce items within each thread stripe
+    thread_aggregate =
+      IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**
@@ -333,7 +330,8 @@ struct AgentReduceImpl
    * @param valid_items The number of valid items in the tile
    */
   template <int IsFirstTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumePartialTile(AccumT& thread_aggregate, OffsetT block_offset, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ConsumePartialTile(AccumT& thread_aggregate, OffsetT block_offset, int valid_items)
   {
     // Partial tile
     int thread_offset = lane_id;
@@ -341,14 +339,14 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_aggregate = transform_op(d_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]);
+      const InputT item(d_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;
@@ -364,14 +362,14 @@ struct AgentReduceImpl
    * @param even_share GridEvenShare descriptor
    */
   template <bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
   {
     AccumT thread_aggregate{};
 
     if (even_share.block_end - even_share.block_offset < TILE_ITEMS)
     {
       // First tile isn't full (not all threads have valid items)
-      int valid_items = even_share.block_end - even_share.block_offset;
+      int valid_items = even_share.block_end - even_share.block_offset; // NOLINT(misc-const-correctness)
       ConsumePartialTile<true>(thread_aggregate, even_share.block_offset, valid_items);
 
       // For Warp Reduction, we need to explicitly handle the valid_items,
@@ -396,7 +394,7 @@ struct AgentReduceImpl
    * @param[in] block_offset Threadblock begin offset (inclusive)
    * @param[in] block_end Threadblock end offset (exclusive)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset, OffsetT block_end)
   {
     GridEvenShare<OffsetT> even_share;
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
@@ -410,7 +408,7 @@ struct AgentReduceImpl
    * Reduce a contiguous segment of input tiles
    * @param[in] even_share GridEvenShare descriptor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeTiles(GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeTiles(GridEvenShare<OffsetT>& even_share)
   {
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
@@ -425,7 +423,8 @@ private:
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
   template <bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
   {
     // At least one full block
     ConsumeFullTile<true, CanVectorize>(thread_aggregate, even_share.block_offset);
@@ -456,7 +455,7 @@ private:
     // Consume a partially-full tile
     if (even_share.block_offset < even_share.block_end)
     {
-      int valid_items = even_share.block_end - even_share.block_offset;
+      const int valid_items = even_share.block_end - even_share.block_offset;
       ConsumePartialTile<false>(thread_aggregate, even_share.block_offset, valid_items);
     }
   }
@@ -515,7 +514,7 @@ struct AgentReduce
                     BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
                     AgentReducePolicy::BLOCK_THREADS>;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,
@@ -579,7 +578,7 @@ struct AgentWarpReduce
                     AgentReducePolicy::WARP_THREADS,
                     true>;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentWarpReduce(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentWarpReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,

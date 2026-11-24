@@ -13,8 +13,10 @@
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt, class Int>
-__host__ __device__ constexpr void test_int_conversion_operator()
+TEST_FUNC constexpr void test_int_conversion_operator()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -29,7 +31,7 @@ __host__ __device__ constexpr void test_int_conversion_operator()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_format()
+TEST_FUNC constexpr void test_format()
 {
   test_int_conversion_operator<Fmt, bool>();
 
@@ -60,7 +62,7 @@ __host__ __device__ constexpr void test_format()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_format<cuda::std::__fp_format::__binary16>();
   test_format<cuda::std::__fp_format::__binary32>();
@@ -73,6 +75,7 @@ __host__ __device__ constexpr bool test()
   test_format<cuda::std::__fp_format::__fp80_x86>();
 #endif // _CCCL_HAS_INT128()
   test_format<cuda::std::__fp_format::__fp8_nv_e4m3>();
+  test_format<cuda::std::__fp_format::__fp8_nv_ue5m3>();
   test_format<cuda::std::__fp_format::__fp8_nv_e5m2>();
   test_format<cuda::std::__fp_format::__fp8_nv_e8m0>();
   test_format<cuda::std::__fp_format::__fp6_nv_e2m3>();

@@ -28,23 +28,23 @@ struct HasTupleElement<I, C, cuda::std::void_t<decltype(cuda::std::tuple_element
 struct SomeObject
 {};
 
-static_assert(!HasTupleElement<0, SomeObject>::value, "");
-static_assert(!HasTupleElement<1, SomeObject>::value, "");
-static_assert(!HasTupleElement<3, SomeObject>::value, "");
+static_assert(!HasTupleElement<0, SomeObject>::value);
+static_assert(!HasTupleElement<1, SomeObject>::value);
+static_assert(!HasTupleElement<3, SomeObject>::value);
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using C = cuda::std::complex<T>;
 
-  static_assert(HasTupleElement<0, C>::value, "");
-  static_assert(HasTupleElement<1, C>::value, "");
+  static_assert(HasTupleElement<0, C>::value);
+  static_assert(HasTupleElement<1, C>::value);
 
   static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<0, C>::type>);
   static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<1, C>::type>);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<float>();
   test<double>();

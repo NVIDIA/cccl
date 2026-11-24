@@ -16,8 +16,10 @@
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt, class Fp>
-__host__ __device__ constexpr void test_fp_conversion_operator()
+TEST_FUNC constexpr void test_fp_conversion_operator()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -30,7 +32,7 @@ __host__ __device__ constexpr void test_fp_conversion_operator()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_format()
+TEST_FUNC constexpr void test_format()
 {
   // standard floating point types
   test_fp_conversion_operator<Fmt, float>();
@@ -53,6 +55,9 @@ __host__ __device__ constexpr void test_format()
   // #if _CCCL_HAS_NVFP8_E5M2()
   //   test_fp_conversion_operator<Fmt, __nv_fp8_e5m2>();
   // #endif // _CCCL_HAS_NVFP8_E5M2()
+  // #if _CCCL_HAS_NVFP8_UE5M3()
+  //   test_fp_conversion_operator<Fmt, __nv_fp8_ue5m3>();
+  // #endif // _CCCL_HAS_NVFP8_UE5M3()
   // #if _CCCL_HAS_NVFP8_E8M0()
   //   test_fp_conversion_operator<Fmt, __nv_fp8_e8m0>();
   // #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -90,7 +95,7 @@ __host__ __device__ constexpr void test_format()
   test_fp_conversion_operator<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp4_nv_e2m1>>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_format<cuda::std::__fp_format::__binary16>();
   test_format<cuda::std::__fp_format::__binary32>();

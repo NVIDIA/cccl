@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,41 +13,44 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/remove.h>
 #include <thrust/system/detail/generic/remove.h>
 
+#include <cuda/__functional/equal_to_value.h>
+#include <cuda/std/__functional/not_fn.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 remove(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
 {
-  thrust::detail::equal_to_value<T> pred{value};
+  const ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_if(exec, first, last, pred);
 } // end remove()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator remove_copy(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
   OutputIterator result,
   const T& value)
 {
-  thrust::detail::equal_to_value<T> pred{value};
+  const ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_copy_if(exec, first, last, result, pred);
 } // end remove_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 remove_if(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   using InputType = thrust::detail::it_value_t<ForwardIterator>;
@@ -73,7 +63,7 @@ remove_if(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, 
 } // end remove_if()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator remove_if(
+_CCCL_HOST_DEVICE_API ForwardIterator remove_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -90,7 +80,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
 } // end remove_if()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -105,7 +95,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

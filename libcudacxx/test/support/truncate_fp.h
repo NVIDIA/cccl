@@ -9,20 +9,20 @@
 #include <cuda/std/detail/__config>
 
 #if _CCCL_HAS_LONG_DOUBLE()
-__host__ __device__ inline long double truncate_fp(long double val)
+TEST_FUNC inline long double truncate_fp(long double val)
 {
   volatile long double sink = val;
   return sink;
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-__host__ __device__ inline double truncate_fp(double val)
+TEST_FUNC inline double truncate_fp(double val)
 {
   volatile double sink = val;
   return sink;
 }
 
-__host__ __device__ inline float truncate_fp(float val)
+TEST_FUNC inline float truncate_fp(float val)
 {
   volatile float sink = val;
   return sink;

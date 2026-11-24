@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,8 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_member_function.h>
+
+// IWYU pragma: begin_keep
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/copy_cv.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+// IWYU pragma: end_keep
 
 // inspired by Roman Perepelitsa's presentation from comp.lang.c++.moderated
 // based on the implementation here: http://www.rsdn.ru/forum/cpp/2759773.1.aspx
@@ -44,18 +36,6 @@ U const& operator,(U const&, void_exp_result<T>);
 
 template <typename T, typename U>
 U& operator,(U&, void_exp_result<T>);
-
-template <typename src_type, typename dest_type>
-struct clone_constness
-{
-  using type = dest_type;
-};
-
-template <typename src_type, typename dest_type>
-struct clone_constness<const src_type, dest_type>
-{
-  using type = const dest_type;
-};
 } // namespace detail::is_call_possible_detail
 THRUST_NAMESPACE_END
 
@@ -78,7 +58,7 @@ THRUST_NAMESPACE_END
       no member_function_name(...) const;                                                                              \
     };                                                                                                                 \
                                                                                                                        \
-    using derived_type = typename thrust::detail::is_call_possible_detail::clone_constness<T, derived>::type;          \
+    using derived_type = ::cuda::std::__copy_cv_t<T, derived>;                                                         \
                                                                                                                        \
     template <typename U, typename Result>                                                                             \
     struct return_value_check                                                                                          \
@@ -96,7 +76,7 @@ THRUST_NAMESPACE_END
       static no deduce(no);                                                                                            \
     };                                                                                                                 \
                                                                                                                        \
-    template <bool has_the_member_of_interest, typename F>                                                             \
+    template <bool HasTheMemberOfInterest, typename F>                                                                 \
     struct impl                                                                                                        \
     {                                                                                                                  \
       static const bool value = false;                                                                                 \
@@ -158,5 +138,5 @@ THRUST_NAMESPACE_END
                                                                                                                        \
   public:                                                                                                              \
     static const bool value = impl<trait_name##_has_member<T, Signature>::value, Signature>::value;                    \
-    using type              = thrust::detail::integral_constant<bool, value>;                                          \
+    using type              = ::cuda::std::bool_constant<value>;                                                       \
   };

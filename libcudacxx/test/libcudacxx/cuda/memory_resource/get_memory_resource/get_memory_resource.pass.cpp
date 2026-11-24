@@ -8,41 +8,47 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/__functional/call_or.h>
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct test_resource
 {
-  __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  __host__ __device__ void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
+  TEST_HOST_DEVICE_FUNC void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  __host__ __device__ void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ bool operator==(const test_resource& other) const
+  TEST_HOST_DEVICE_FUNC bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  __host__ __device__ bool operator!=(const test_resource& other) const
+  TEST_HOST_DEVICE_FUNC bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }
@@ -50,7 +56,47 @@ struct test_resource
   int _val = 0;
 };
 
-__host__ __device__ void test()
+struct derived_resource
+    : test_resource
+    , cuda::mr::memory_resource_base<derived_resource>
+{};
+
+using get_memory_resource_list = cuda::execution::property_key_list<cuda::mr::get_memory_resource_t>;
+
+static_assert(cuda::std::execution::__detail::__has_property_keys<derived_resource>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::any_resource<>>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::any_synchronous_resource<>>);
+static_assert(cuda::std::execution::__detail::__has_property_keys<cuda::mr::resource_ref<>>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::synchronous_resource_ref<>>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<derived_resource>, get_memory_resource_list>);
+static_assert(
+  cuda::std::is_same_v<cuda::execution::property_keys_t<cuda::mr::resource_ref<>>, get_memory_resource_list>);
+
+using owning_any_env      = cuda::std::execution::env<cuda::mr::any_resource<>>;
+using owning_resource_env = cuda::std::execution::env<derived_resource>;
+using resource_env        = cuda::std::execution::env<cuda::mr::resource_ref<>>;
+using get_memory_resource_env_list =
+  cuda::execution::property_key_list<cuda::execution::property_query<cuda::mr::get_memory_resource_t>>;
+static_assert(
+  cuda::std::is_same_v<cuda::execution::property_keys_t<owning_any_env>, cuda::execution::property_key_list<>>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<owning_resource_env>, get_memory_resource_env_list>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<resource_env>, get_memory_resource_env_list>);
+
+static_assert(cuda::std::execution::__queryable_with<const derived_resource&, cuda::mr::get_memory_resource_t>);
+static_assert(cuda::std::execution::__queryable_with<const cuda::mr::resource_ref<>&, cuda::mr::get_memory_resource_t>);
+
+using resource_ref = cuda::mr::resource_ref<>;
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<resource_ref&>())), resource_ref&>);
+static_assert(cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<const resource_ref&>())),
+                                   resource_ref>);
+static_assert(cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<derived_resource&>())),
+                                   derived_resource&>);
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<const derived_resource&>())),
+                       const derived_resource&>);
+
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_resource invalid_resource{42};
   { // Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue
@@ -58,7 +104,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      TEST_HOST_DEVICE_FUNC const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -77,7 +123,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource get_memory_resource() const noexcept
+      TEST_HOST_DEVICE_FUNC test_resource get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -96,7 +142,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource get_memory_resource() noexcept
+      TEST_HOST_DEVICE_FUNC test_resource get_memory_resource() noexcept
       {
         return res_;
       }
@@ -113,7 +159,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_HOST_DEVICE_FUNC const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -132,7 +178,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_HOST_DEVICE_FUNC test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -152,7 +198,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
+      TEST_HOST_DEVICE_FUNC const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
       {
         return res_;
       }
@@ -169,12 +215,12 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      TEST_HOST_DEVICE_FUNC const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
 
-      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_HOST_DEVICE_FUNC test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -189,31 +235,114 @@ __host__ __device__ void test()
     assert(val.res_ == res_query);
   }
 
+  { // Can call get_memory_resource directly on a synchronous_resource (returns ref to itself)
+    struct sync_only_resource
+    {
+      TEST_HOST_DEVICE_FUNC void* allocate_sync(std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      TEST_HOST_DEVICE_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+
+      TEST_HOST_DEVICE_FUNC bool operator==(const sync_only_resource&) const noexcept
+      {
+        return true;
+      }
+
+      TEST_HOST_DEVICE_FUNC bool operator!=(const sync_only_resource&) const noexcept
+      {
+        return false;
+      }
+    };
+    static_assert(::cuda::mr::synchronous_resource<sync_only_resource>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, sync_only_resource&>);
+
+    sync_only_resource val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    static_assert(cuda::std::is_same_v<decltype(res), sync_only_resource&>);
+    assert(&res == &val);
+  }
+
+  { // Can call get_memory_resource directly on a full async resource (returns ref to itself)
+    static_assert(::cuda::mr::resource<test_resource>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, test_resource&>);
+
+    test_resource val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    static_assert(cuda::std::is_same_v<decltype(res), test_resource&>);
+    assert(&res == &val);
+  }
+
+  { // A resource with get_memory_resource method uses the method, not the direct path
+    struct resource_with_method
+    {
+      test_resource inner_{};
+
+      TEST_HOST_DEVICE_FUNC void* allocate_sync(std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      TEST_HOST_DEVICE_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+
+      TEST_HOST_DEVICE_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      TEST_HOST_DEVICE_FUNC void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
+
+      TEST_HOST_DEVICE_FUNC bool operator==(const resource_with_method&) const noexcept
+      {
+        return true;
+      }
+
+      TEST_HOST_DEVICE_FUNC bool operator!=(const resource_with_method&) const noexcept
+      {
+        return false;
+      }
+
+      TEST_HOST_DEVICE_FUNC const test_resource& get_memory_resource() const noexcept
+      {
+        return inner_;
+      }
+    };
+    static_assert(::cuda::mr::resource<resource_with_method>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const resource_with_method&>);
+
+    resource_with_method val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    // Should return the inner resource via get_memory_resource(), not val itself
+    static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
+    assert(&res == &val.inner_);
+  }
+
   { // Cannot call get_memory_resource on an env with a non-async resource
     struct with_get_resource_non_async
     {
       struct resource
       {
-        __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+        TEST_HOST_DEVICE_FUNC void* allocate_sync(std::size_t, std::size_t)
         {
           return nullptr;
         }
 
-        __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+        TEST_HOST_DEVICE_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
-        __host__ __device__ bool operator==(const resource&) const noexcept
+        TEST_HOST_DEVICE_FUNC bool operator==(const resource&) const noexcept
         {
           return true;
         }
 
-        __host__ __device__ bool operator!=(const resource&) const noexcept
+        TEST_HOST_DEVICE_FUNC bool operator!=(const resource&) const noexcept
         {
           return false;
         }
       };
       resource res_{};
 
-      __host__ __device__ resource get_memory_resource() const noexcept
+      TEST_HOST_DEVICE_FUNC resource get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -226,9 +355,21 @@ __host__ __device__ void test()
   }
 }
 
+void test_resource_ref()
+{
+  test_resource resource{};
+
+  cuda::mr::resource_ref<> resource_ref{resource};
+  const auto& const_resource_ref = resource_ref;
+  auto queried_resource_ref      = cuda::mr::get_memory_resource(const_resource_ref);
+  static_assert(cuda::std::is_same_v<decltype(queried_resource_ref), cuda::mr::resource_ref<>>);
+  assert(queried_resource_ref == resource_ref);
+}
+
 int main(int argc, char** argv)
 {
   test();
+  NV_IF_TARGET(NV_IS_HOST, (test_resource_ref();))
 
   return 0;
 }

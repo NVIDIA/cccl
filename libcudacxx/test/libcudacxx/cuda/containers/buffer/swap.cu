@@ -20,28 +20,24 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 C2H_CCCLRT_TEST("cuda::buffer swap", "[container][buffer]", test_types)
 {
-  using TestT     = c2h::get<0, TestType>;
-  using Resource  = typename extract_properties<TestT>::resource;
-  using Buffer    = typename extract_properties<TestT>::buffer;
-  using T         = typename Buffer::value_type;
-  using size_type = typename Buffer::size_type;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
 
-  cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  Resource resource = extract_properties<Buffer>::get_resource();
+  // NOLINTBEGIN(cccl-simplify-type-traits)
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())), void>);
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())), void>);
+  // NOLINTEND(cccl-simplify-type-traits)
   STATIC_REQUIRE(noexcept(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())));
   STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())));
 
@@ -52,43 +48,43 @@ C2H_CCCLRT_TEST("cuda::buffer swap", "[container][buffer]", test_types)
   {
     Buffer vec_large{stream, resource, 42, cuda::no_init};
 
-    CCCLRT_CHECK(vec_large.size() == 42);
-    CCCLRT_CHECK(vec_small.size() == 5);
-    CCCLRT_CHECK(vec_large.size() == 42);
-    CCCLRT_CHECK(vec_small.size() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
 
     vec_large.swap(vec_small);
-    CCCLRT_CHECK(vec_small.size() == 42);
-    CCCLRT_CHECK(vec_large.size() == 5);
-    CCCLRT_CHECK(vec_small.size() == 42);
-    CCCLRT_CHECK(vec_large.size() == 5);
+    CHECK(vec_small.size() == 42);
+    CHECK(vec_large.size() == 5);
+    CHECK(vec_small.size() == 42);
+    CHECK(vec_large.size() == 5);
 
     swap(vec_large, vec_small);
-    CCCLRT_CHECK(vec_large.size() == 42);
-    CCCLRT_CHECK(vec_small.size() == 5);
-    CCCLRT_CHECK(vec_large.size() == 42);
-    CCCLRT_CHECK(vec_small.size() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
   }
 
   SECTION("Can swap buffer without allocation")
   {
     Buffer vec_no_allocation{stream, resource, 0, cuda::no_init};
 
-    CCCLRT_CHECK(vec_no_allocation.size() == 0);
-    CCCLRT_CHECK(vec_small.size() == 5);
-    CCCLRT_CHECK(vec_no_allocation.size() == 0);
-    CCCLRT_CHECK(vec_small.size() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
 
     vec_no_allocation.swap(vec_small);
-    CCCLRT_CHECK(vec_small.size() == 0);
-    CCCLRT_CHECK(vec_no_allocation.size() == 5);
-    CCCLRT_CHECK(vec_small.size() == 0);
-    CCCLRT_CHECK(vec_no_allocation.size() == 5);
+    CHECK(vec_small.size() == 0);
+    CHECK(vec_no_allocation.size() == 5);
+    CHECK(vec_small.size() == 0);
+    CHECK(vec_no_allocation.size() == 5);
 
     swap(vec_no_allocation, vec_small);
-    CCCLRT_CHECK(vec_no_allocation.size() == 0);
-    CCCLRT_CHECK(vec_small.size() == 5);
-    CCCLRT_CHECK(vec_no_allocation.size() == 0);
-    CCCLRT_CHECK(vec_small.size() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
   }
 }

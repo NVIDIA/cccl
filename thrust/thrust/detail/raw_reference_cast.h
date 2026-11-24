@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,8 +17,10 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -75,13 +64,13 @@ struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
-    : ::cuda::std::add_lvalue_reference<typename pointer_element<typename T::pointer>::type>
+    : ::cuda::std::add_lvalue_reference<typename ::cuda::std::pointer_traits<typename T::pointer>::element_type>
 {};
 
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cuda::std::remove_cv_t<T>>>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 } // namespace raw_reference_detail
 
@@ -109,20 +98,20 @@ namespace raw_reference_detail
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
 struct raw_reference_tuple_helper
-    : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, ::cuda::std::type_identity<T>>
+    : ::cuda::std::conditional_t<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, ::cuda::std::type_identity<T>>
 {};
 
 // recurse on tuples
 template <typename... Ts>
 struct raw_reference_tuple_helper<::cuda::std::tuple<Ts...>>
 {
-  using type = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 template <typename... Ts>
 struct raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>
 {
-  using type = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 } // namespace raw_reference_detail
 
@@ -138,39 +127,40 @@ private:
   using tuple_type = ::cuda::std::tuple<Ts...>;
 
 public:
-  using type = typename eval_if<can_unwrap<tuple_type>,
-                                raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
-                                ::cuda::std::add_lvalue_reference<tuple_type>>::type;
+  using type = typename ::cuda::std::conditional_t<can_unwrap<tuple_type>,
+                                                   raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
+                                                   ::cuda::std::add_lvalue_reference<tuple_type>>::type;
 };
 
 template <typename... Ts>
 struct raw_reference<tuple_of_iterator_references<Ts...>>
 {
-  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
+  using type _CCCL_NODEBUG =
+    typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
 };
 } // namespace detail
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
-  return t;
+  return ::cuda::std::forward<T>(t);
 }
 
 template <typename... Ts>
-_CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
+_CCCL_HOST_DEVICE_API auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
   typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
 {
   if constexpr (detail::can_unwrap<detail::tuple_of_iterator_references<Ts...>>)

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/iter_swap.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
@@ -63,7 +62,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
 _CCCL_API constexpr void __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
-  using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_BidirectionalIterator>;
   ::cuda::std::__reverse_impl<_AlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), _IterCategory());
 }
 

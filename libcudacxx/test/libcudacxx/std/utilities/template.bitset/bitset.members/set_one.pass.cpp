@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_set_one()
+TEST_FUNC constexpr void test_set_one()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -33,7 +33,7 @@ __host__ __device__ constexpr void test_set_one()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_set_one<0>();
   test_set_one<1>();
@@ -51,7 +51,7 @@ int main(int, char**)
 {
   test();
   test_set_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

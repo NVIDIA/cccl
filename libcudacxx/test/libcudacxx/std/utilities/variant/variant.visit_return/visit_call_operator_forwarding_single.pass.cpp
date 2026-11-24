@@ -25,7 +25,7 @@
 #include "variant_test_helpers.h"
 
 template <typename ReturnType>
-__host__ __device__ void test_call_operator_forwarding()
+TEST_FUNC void test_call_operator_forwarding()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An allocator which allocates storage with \p device_malloc.
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,8 +21,11 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__new/bad_alloc.h>
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -44,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename>
 class device_ptr;
 template <typename T>
-device_ptr<T> device_malloc(const std::size_t n);
+device_ptr<T> device_malloc(std::size_t n); // NOLINT(readability-redundant-declaration)
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \addtogroup allocators Allocators
@@ -114,20 +104,20 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator() {}
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator() = default;
 
   /*! No-argument destructor has no effect. */
-  _CCCL_HOST_DEVICE inline ~device_malloc_allocator() {}
+  _CCCL_HIDE_FROM_ABI ~device_malloc_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator(device_malloc_allocator const&) {}
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator(device_malloc_allocator const&) = default;
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>
-  _CCCL_HOST_DEVICE inline device_malloc_allocator(device_malloc_allocator<U> const&)
+  _CCCL_HOST_DEVICE_API device_malloc_allocator(device_malloc_allocator<U> const&)
   {}
 
-  device_malloc_allocator& operator=(const device_malloc_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator& operator=(const device_malloc_allocator&) = default;
 
   /*! Returns the address of an allocated object.
    *  \return <tt>&r</tt>.
@@ -136,7 +126,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline pointer address(reference r)
+  _CCCL_HOST_DEVICE_API pointer address(reference r)
   {
     return &r;
   }
@@ -148,7 +138,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline const_pointer address(const_reference r)
+  _CCCL_HOST_DEVICE_API const_pointer address(const_reference r)
   {
     return &r;
   }
@@ -162,11 +152,11 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(0)))
+  _CCCL_HOST_API pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
   {
     if (cnt > this->max_size())
     {
-      ::cuda::std::__throw_bad_alloc();
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     return pointer(device_malloc<T>(cnt));
@@ -182,7 +172,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
+  _CCCL_HOST_API void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     device_free(p);
   } // end deallocate()
@@ -190,7 +180,7 @@ public:
   /*! Returns the largest value \c n for which <tt>allocate(n)</tt> might succeed.
    *  \return The largest value \c n for which <tt>allocate(n)</tt> might succeed.
    */
-  inline size_type max_size() const
+  _CCCL_HOST_API size_type max_size() const
   {
     return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
@@ -202,7 +192,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator==(device_malloc_allocator const&) const
+  _CCCL_HOST_DEVICE_API bool operator==(device_malloc_allocator const&) const
   {
     return true;
   }
@@ -214,7 +204,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator!=(device_malloc_allocator const& a) const
+  _CCCL_HOST_DEVICE_API bool operator!=(device_malloc_allocator const& a) const
   {
     return !operator==(a);
   }

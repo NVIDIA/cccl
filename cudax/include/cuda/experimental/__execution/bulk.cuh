@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,19 +22,23 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__hierarchy/hierarchy_dimensions.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward_like.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/diagnostics.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
@@ -44,8 +48,10 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
-#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
+
+#include <nv/target>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -71,25 +77,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   [[nodiscard]] _CCCL_HOST_API static constexpr auto __get_launch_config(_Shape __shape) noexcept
   {
-    constexpr int __block_threads = 256;
-    const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
-    auto __dims                   = ::cuda::make_hierarchy(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    constexpr int __threads_per_block = 256;
+    const int __grid_blocks           = ::cuda::ceil_div(static_cast<int>(__shape), __threads_per_block);
+    auto __dims = ::cuda::make_hierarchy(block_dims<__threads_per_block>(), grid_dims(__grid_blocks));
     return make_config(__dims, cooperative_launch());
   }
 
   using __launch_config_t = decltype(__get_launch_config(_Shape()));
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_launch_config_t) const noexcept -> __launch_config_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_launch_config_t) const noexcept -> __launch_config_t
   {
-    NV_IF_TARGET(NV_IS_HOST,
-                 (return __get_launch_config(__shape_);),
-                 (_CCCL_ASSERT(false, "cannot get a launch configuration from device"); ::cuda::std::terminate();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __get_launch_config(__shape_);), ({
+                        _CCCL_ASSERT(false, "cannot get a launch configuration from device");
+                        ::cuda::std::terminate();
+                      }))
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
       -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
@@ -113,7 +120,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __transform_value_completion_fn
   {
     template <class... _Ts>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const
     {
       // The function objects passed to the "chunked" and "unchunked" flavors of bulk have
       // different signatures, so we need to type-check them separately.
@@ -153,17 +160,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     using receiver_concept = receiver_t;
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __err) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __err) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__err));
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -179,14 +186,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     using operation_state_concept = operation_state_t;
     using __rcvr_t                = typename _BulkTag::template __rcvr_t<_Shape, _Fn, _Rcvr>;
 
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Shape __shape, _Fn __fn)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Shape __shape, _Fn __fn)
         : __state_{static_cast<_Rcvr&&>(__rcvr), __shape, static_cast<_Fn&&>(__fn)}
         , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{{&__state_}})}
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__opstate_);
     }
@@ -199,7 +206,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr) &&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr) &&
     {
       static_assert(__is_sender<_Sndr>);
 
@@ -214,13 +221,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr) const&
     {
       return __closure_base_t(*this)(static_cast<_Sndr&&>(__sndr));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
     {
       return static_cast<__closure_base_t&&>(__self)(static_cast<_Sndr&&>(__sndr));
     }
@@ -237,7 +244,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     using sender_concept = sender_t;
 
     template <class _Self, class... _Env>
-    [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
     {
       _CUDAX_LET_COMPLETIONS(
         auto(__child_completions) = execution::get_child_completion_signatures<_Self, _Sndr, _Env...>())
@@ -251,7 +258,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     // constrain these functions with !same_as<_BulkTag, bulk_t>.
     _CCCL_TEMPLATE(class _Rcvr)
     _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>{
         static_cast<_Sndr&&>(__sndr_),
@@ -262,13 +269,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
 
     _CCCL_TEMPLATE(class _Rcvr)
     _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>{
         __sndr_, static_cast<_Rcvr&&>(__rcvr), __state_.__shape_, __state_.__fn_};
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __bulk::__attrs_t<_Sndr, _Shape>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __bulk::__attrs_t<_Sndr, _Shape>
     {
       return {__state_.__shape_, __sndr_};
     }
@@ -282,7 +290,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // predecessor sender, a policy, a shape, and a function, and returns a sender that can
   // be connected to a receiver.
   template <class _Sndr, class _Policy, class _Shape, class _Fn>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(_Sndr&& __sndr, _Policy __policy, _Shape __shape, _Fn __fn) const
   {
     return (static_cast<_Sndr&&>(__sndr) | (*this)(__policy, __shape, static_cast<_Fn&&>(__fn)));
   }
@@ -290,7 +299,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // This function call operator creates a sender adaptor closure object that can appear
   // on the right-hand side of a pipe operator, like: sndr | bulk(par, shape, fn).
   template <class _Policy, class _Shape, class _Fn>
-  [[nodiscard]] _CCCL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
   {
     static_assert(::cuda::std::integral<_Shape>);
     static_assert(::cuda::std::is_execution_policy_v<_Policy>);
@@ -319,7 +328,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Values>
-    _CCCL_API void set_value(_Values&&... __values) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_Values&&... __values) noexcept
     {
       _CCCL_TRY //
       {
@@ -336,7 +345,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
     }
   };
 
-  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool __is_chunked() noexcept
   {
     return true;
   }
@@ -357,7 +366,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Values>
-    _CCCL_API void set_value(_Values&&... __values) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_Values&&... __values) noexcept
     {
       _CCCL_TRY //
       {
@@ -385,7 +394,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t : __bulk_t::__closure_base_t<_Policy, _Shape, _Fn>
   {};
 
-  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool __is_chunked() noexcept
   {
     return false;
   }
@@ -412,7 +421,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Ts>
-    _CCCL_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
+    _CCCL_HOST_DEVICE_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
       __nothrow_callable<_Fn&, _Shape, decltype(__values)&...>)
     {
       for (; __begin != __end; ++__begin)
@@ -428,7 +437,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
     static_assert(__same_as<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
@@ -444,7 +453,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
                         __chunked_fn_t{::cuda::std::forward_like<_Sndr>(__fn)});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool __is_chunked() noexcept
   {
     return false;
   }

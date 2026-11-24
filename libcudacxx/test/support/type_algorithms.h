@@ -28,36 +28,36 @@ using concatenate_t = typename concatenate<Types...>::type;
 
 // for_each takes a type_list calls f with each element as the first template argument
 template <class... Types, class Functor>
-__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f);
+TEST_FUNC constexpr void for_each(type_list<Types...>, Functor f);
 
 // impl
 template <class... Types>
 struct concatenate<type_list<Types...>>
 {
-  using type = type_list<Types...>;
+  using type _CCCL_NODEBUG = type_list<Types...>;
 };
 
 template <class... Types1, class... Types2>
 struct concatenate<type_list<Types1...>, type_list<Types2...>>
 {
-  using type = type_list<Types1..., Types2...>;
+  using type _CCCL_NODEBUG = type_list<Types1..., Types2...>;
 };
 
 template <class... Types1, class... Types2, class... Rest>
 struct concatenate<type_list<Types1...>, type_list<Types2...>, Rest...>
 {
-  using type = concatenate_t<type_list<Types1..., Types2...>, Rest...>;
+  using type _CCCL_NODEBUG = concatenate_t<type_list<Types1..., Types2...>, Rest...>;
 };
 
 template <class... Types>
-__host__ __device__ constexpr void swallow(Types...)
+TEST_FUNC constexpr void swallow(Types...)
 {}
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
 
 template <class... Types, class Functor>
-__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f)
+TEST_FUNC constexpr void for_each(type_list<Types...>, Functor f)
 {
   swallow((f.template operator()<Types>(), 0)...);
 }
@@ -67,7 +67,7 @@ _CCCL_DIAG_POP
 template <class T>
 struct type_identity
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <class Func>
@@ -76,20 +76,20 @@ struct apply_type_identity
   Func func_;
 
   _CCCL_EXEC_CHECK_DISABLE
-  __host__ __device__ apply_type_identity(Func func)
+  TEST_FUNC apply_type_identity(Func func)
       : func_(func)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... Args>
-  __host__ __device__ decltype(auto) operator()() const
+  TEST_FUNC decltype(auto) operator()() const
   {
     return func_(type_identity<Args>{}...);
   }
 };
 
 template <class T>
-apply_type_identity(T) -> apply_type_identity<T>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES apply_type_identity(T) -> apply_type_identity<T>;
 
 template <template <class...> class T, class... Args>
 struct partial_instantiation
@@ -152,7 +152,7 @@ struct type_list_as_pointers;
 template <class... Types>
 struct type_list_as_pointers<type_list<Types...>>
 {
-  using type = type_list<Types*...>;
+  using type _CCCL_NODEBUG = type_list<Types*...>;
 };
 
 template <class T>

@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2011 David Schultz
@@ -57,25 +44,36 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
 using thrust::complex;
 
-_CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
+_CCCL_HOST_DEVICE_API inline complex<float> ctanhf(const complex<float>& z)
 {
-  float x, y;
-  float t, beta, s, rho, denom;
-  uint32_t hx, ix;
+  float x;
+  float y;
+  float t;
+  float beta;
+  float s;
+  float rho;
+  float denom;
+  uint32_t hx;
+  uint32_t ix;
 
   x = z.real();
   y = z.imag();
@@ -101,20 +99,21 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 
   if (ix >= 0x41300000)
   { /* x >= 11 */
-    float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
+    const float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
     return (complex<float>(::cuda::std::copysignf(1.0f, x),
                            4.0f * ::cuda::std::sinf(y) * ::cuda::std::cosf(y) * exp_mx * exp_mx));
   }
 
   t     = ::cuda::std::tanf(y);
-  beta  = 1.0f + t * t;
+  beta  = 1.0f + (t * t);
   s     = ::cuda::std::sinhf(x);
-  rho   = ::cuda::std::sqrtf(1.0f + s * s);
-  denom = 1.0f + beta * s * s;
+  rho   = ::cuda::std::sqrtf(1.0f + (s * s));
+  denom = 1.0f + (beta * s * s);
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }
+// NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> ctanf(complex<float> z)
 {
   z = ctanhf(complex<float>(-z.imag(), z.real()));
   return (complex<float>(z.imag(), -z.real()));
@@ -122,13 +121,13 @@ _CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> tan(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> tan(const complex<float>& z)
 {
   return detail::complex::ctanf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> tanh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> tanh(const complex<float>& z)
 {
   return detail::complex::ctanhf(z);
 }

@@ -18,7 +18,7 @@
 #include "types.h"
 
 template <class T, class U>
-__host__ __device__ constexpr void testType(U u)
+TEST_FUNC constexpr void testType(U u)
 {
   // Test that this generally does the right thing.
   // Test with only one argument.
@@ -47,7 +47,7 @@ __host__ __device__ constexpr void testType(U u)
 struct X
 {};
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testType<SomeInt>(SomeInt(10));
   testType<SomeInt>(IntComparableWith(SomeInt(10)));
@@ -77,7 +77,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -13,10 +13,10 @@
 
 class Clock
 {
-  typedef std::chrono::nanoseconds duration;
-  typedef duration::rep rep;
-  typedef duration::period period;
-  typedef std::chrono::time_point<Clock, duration> time_point;
+  using duration              = std::chrono::nanoseconds;
+  using rep                   = duration::rep;
+  using period                = duration::period;
+  using time_point            = std::chrono::time_point<Clock, duration>;
   static const bool is_steady = false;
 
   static time_point now();

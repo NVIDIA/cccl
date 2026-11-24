@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,6 +22,7 @@
 
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -30,6 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4389) // '==': signed/unsigned mismatch
 _CCCL_DIAG_SUPPRESS_MSVC(4018) // '<': signed/unsigned mismatch
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // '==': conversion from 'const double' to 'int', possible loss of data
 
 template <class _Tp, class _Up, class = void>
 inline constexpr bool __is_cpp17_equality_comparable_v = false;

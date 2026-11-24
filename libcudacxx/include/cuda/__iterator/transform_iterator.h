@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -42,7 +44,6 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -61,7 +62,7 @@ struct __transform_iterator_category_base<_Fn,
                                           _Iter,
                                           ::cuda::std::enable_if_t<::cuda::std::__has_forward_traversal<_Iter>>>
 {
-  using _Cat = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
 
   using iterator_category = ::cuda::std::conditional_t<
     ::cuda::std::is_reference_v<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
@@ -148,7 +149,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!   thrust::reduce(cuda::transform_iterator{v.begin(), square{}},
 //!                  cuda::transform_iterator{v.end(),   square{}});
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! @endcode
@@ -158,7 +159,7 @@ class transform_iterator : public __transform_iterator_category_base<_Fn, _Iter>
   static_assert(::cuda::std::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a functor object");
   static_assert(::cuda::std::regular_invocable<_Fn&, ::cuda::std::iter_reference_t<_Iter>>,
                 "cuda::transform_iterator requires that _Fn is invocable with iter_reference_t<_Iter>");
-  static_assert(::cuda::std::__can_reference<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
+  static_assert(::cuda::std::__referenceable<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
                 "cuda::transform_iterator requires that the return type of _Fn is referenceable");
 
   // Not a base because then the friend operators would be ambiguous
@@ -232,6 +233,18 @@ public:
   {
     return ::cuda::std::move(__iter());
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+  //! @brief Rebuilds the stored iterator in place over the storage at @p __ptr.
+  //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
@@ -531,6 +544,48 @@ template <class _Fn, class _Iter>
 //! @}
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! transform_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for transform_iterator
+template <class _Diff, class _Fn, class _Iter>
+_CCCL_HOST_API constexpr void advance(::cuda::transform_iterator<_Fn, _Iter>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::iter_difference_t<_Iter>
+distance(::cuda::transform_iterator<_Fn, _Iter> __first, ::cuda::transform_iterator<_Fn, _Iter> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_iterator<_Fn, _Iter>
+next(::cuda::transform_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_iterator<_Fn, _Iter>
+prev(::cuda::transform_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

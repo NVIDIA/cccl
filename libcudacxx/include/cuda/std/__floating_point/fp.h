@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/__floating_point/cccl_fp.h>
@@ -36,5 +37,6 @@
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__floating_point/traits.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD___FLOATING_POINT_FP_H

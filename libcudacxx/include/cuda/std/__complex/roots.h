@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,11 +23,13 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/math.h>
 #include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // code than rsqrt(x) for fp64. While rqsrtf is better for fp32.
 // So only specialize for fp32.
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt(_Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp __internal_rsqrt(_Tp __x) noexcept
 {
   if constexpr (is_same_v<_Tp, float>)
   {
@@ -52,7 +54,7 @@ template <class _Tp>
 // sqrt
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sqrt(const complex<_Tp>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> sqrt(const complex<_Tp>& __x) noexcept
 {
   using __uint_t = __fp_storage_of_t<_Tp>;
 
@@ -183,7 +185,7 @@ template <class _Tp>
 
   // (__im_scaled) can have under/overflowed when scaled so we go back to using (__im) briefly.
   // Multiply by (__im) last to avoid over/underflow:
-  const _Tp __hard_part = (__im) * (__ldexp_combined * __sqrt_easy_part);
+  const _Tp __hard_part = __im * (__ldexp_combined * __sqrt_easy_part);
 
   __easy_part = __ldexp_factor_2 * ::cuda::std::sqrt(__easy_part);
 
@@ -194,21 +196,21 @@ template <class _Tp>
   return complex<_Tp>{__ans_re, ::cuda::std::copysign(__ans_im, __im)};
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
-{
-  return complex<__nv_bfloat16>{::cuda::std::sqrt(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::sqrt(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
+{
+  return complex<__nv_bfloat16>{::cuda::std::sqrt(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

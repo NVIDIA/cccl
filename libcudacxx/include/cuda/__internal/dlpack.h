@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,15 +23,21 @@
 
 #if _CCCL_HAS_DLPACK()
 
-#  include <dlpack/dlpack.h>
+#  if __has_include(<dlpack/dlpack.h>)
+#    include <dlpack/dlpack.h>
+#  elif __has_include(<dlpack.h>)
+#    include <dlpack.h>
+#  endif
 
 #  define _CCCL_DLPACK_AT_LEAST(_MAJOR, _MINOR) \
     (DLPACK_MAJOR_VERSION > (_MAJOR) || (DLPACK_MAJOR_VERSION == (_MAJOR) && DLPACK_MINOR_VERSION >= (_MINOR)))
 #  define _CCCL_DLPACK_BELOW(_MAJOR, _MINOR) (!_CCCL_DLPACK_AT_LEAST(_MAJOR, _MINOR))
 
 #  if DLPACK_MAJOR_VERSION != 1
-#    error "Unsupported DLPack version, only version 1 is currently supported"
-#  endif // DLPACK_MAJOR_VERSION != 1
+#    define _CCCL_HAS_DLPACK_VERSION_1() 0
+#  else
+#    define _CCCL_HAS_DLPACK_VERSION_1() 1
+#  endif
 
 #endif // _CCCL_HAS_DLPACK()
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file reverse.h
  *  \brief Reverses the order of a range
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -77,9 +64,9 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                               BidirectionalIterator first,
-                               BidirectionalIterator last);
+_CCCL_HOST_DEVICE_API void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                   BidirectionalIterator first,
+                                   BidirectionalIterator last);
 
 /*! \p reverse reverses a range. That is: for every <tt>i</tt> such that
  *  <tt>0 <= i <= (last - first) / 2</tt>, it exchanges <tt>*(first + i)</tt>
@@ -114,7 +101,7 @@ _CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<Deriv
  *  \endverbatim
  */
 template <typename BidirectionalIterator>
-void reverse(BidirectionalIterator first, BidirectionalIterator last);
+_CCCL_HOST_API void reverse(BidirectionalIterator first, BidirectionalIterator last);
 
 /*! \p reverse_copy differs from \p reverse only in that the reversed range
  *  is written to a different output range, rather than inplace.
@@ -168,7 +155,7 @@ void reverse(BidirectionalIterator first, BidirectionalIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,
@@ -220,7 +207,8 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
  *  \endverbatim
  */
 template <typename BidirectionalIterator, typename OutputIterator>
-OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator
+reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
 
 /*!
  * \} end group reordering
@@ -228,4 +216,4 @@ OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator l
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/reverse.inl>
+#include <thrust/detail/reverse.inl> // IWYU pragma: export

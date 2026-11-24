@@ -23,8 +23,8 @@ struct S2
 {
   int i;
 
-  __host__ __device__ int& f();
-  __host__ __device__ double g(int x) const;
+  TEST_FUNC int& f();
+  TEST_FUNC double g(int x) const;
 };
 struct S3
 {
@@ -85,71 +85,71 @@ struct identity
 };
 
 template <template <typename> class Modifier = identity>
-__host__ __device__ void CheckSameAs()
+TEST_FUNC void CheckSameAs()
 {
-  static_assert(same_as<typename Modifier<int>::type, typename Modifier<int>::type>, "");
-  static_assert(same_as<typename Modifier<S1>::type, typename Modifier<S1>::type>, "");
-  static_assert(same_as<typename Modifier<S2>::type, typename Modifier<S2>::type>, "");
-  static_assert(same_as<typename Modifier<S3>::type, typename Modifier<S3>::type>, "");
-  static_assert(same_as<typename Modifier<S4>::type, typename Modifier<S4>::type>, "");
-  static_assert(same_as<typename Modifier<S5>::type, typename Modifier<S5>::type>, "");
-  static_assert(same_as<typename Modifier<C1>::type, typename Modifier<C1>::type>, "");
-  static_assert(same_as<typename Modifier<C2>::type, typename Modifier<C2>::type>, "");
-  static_assert(same_as<typename Modifier<C3>::type, typename Modifier<C3>::type>, "");
-  static_assert(same_as<typename Modifier<C4<int>>::type, typename Modifier<C4<int>>::type>, "");
-  static_assert(same_as<typename Modifier<C4<int&>>::type, typename Modifier<C4<int&>>::type>, "");
-  static_assert(same_as<typename Modifier<C4<int&&>>::type, typename Modifier<C4<int&&>>::type>, "");
-  static_assert(same_as<typename Modifier<C5<int>>::type, typename Modifier<C5<int>>::type>, "");
-  static_assert(same_as<typename Modifier<C5<int&>>::type, typename Modifier<C5<int&>>::type>, "");
-  static_assert(same_as<typename Modifier<C5<int&&>>::type, typename Modifier<C5<int&&>>::type>, "");
-  static_assert(same_as<typename Modifier<C6<int>>::type, typename Modifier<C6<int>>::type>, "");
-  static_assert(same_as<typename Modifier<C6<int&>>::type, typename Modifier<C6<int&>>::type>, "");
-  static_assert(same_as<typename Modifier<C6<int&&>>::type, typename Modifier<C6<int&&>>::type>, "");
+  static_assert(same_as<typename Modifier<int>::type, typename Modifier<int>::type>);
+  static_assert(same_as<typename Modifier<S1>::type, typename Modifier<S1>::type>);
+  static_assert(same_as<typename Modifier<S2>::type, typename Modifier<S2>::type>);
+  static_assert(same_as<typename Modifier<S3>::type, typename Modifier<S3>::type>);
+  static_assert(same_as<typename Modifier<S4>::type, typename Modifier<S4>::type>);
+  static_assert(same_as<typename Modifier<S5>::type, typename Modifier<S5>::type>);
+  static_assert(same_as<typename Modifier<C1>::type, typename Modifier<C1>::type>);
+  static_assert(same_as<typename Modifier<C2>::type, typename Modifier<C2>::type>);
+  static_assert(same_as<typename Modifier<C3>::type, typename Modifier<C3>::type>);
+  static_assert(same_as<typename Modifier<C4<int>>::type, typename Modifier<C4<int>>::type>);
+  static_assert(same_as<typename Modifier<C4<int&>>::type, typename Modifier<C4<int&>>::type>);
+  static_assert(same_as<typename Modifier<C4<int&&>>::type, typename Modifier<C4<int&&>>::type>);
+  static_assert(same_as<typename Modifier<C5<int>>::type, typename Modifier<C5<int>>::type>);
+  static_assert(same_as<typename Modifier<C5<int&>>::type, typename Modifier<C5<int&>>::type>);
+  static_assert(same_as<typename Modifier<C5<int&&>>::type, typename Modifier<C5<int&&>>::type>);
+  static_assert(same_as<typename Modifier<C6<int>>::type, typename Modifier<C6<int>>::type>);
+  static_assert(same_as<typename Modifier<C6<int&>>::type, typename Modifier<C6<int&>>::type>);
+  static_assert(same_as<typename Modifier<C6<int&&>>::type, typename Modifier<C6<int&&>>::type>);
 
-  static_assert(same_as<typename Modifier<void>::type, typename Modifier<void>::type>, "");
+  static_assert(same_as<typename Modifier<void>::type, typename Modifier<void>::type>);
 }
 
 template <template <typename> class Modifier1, template <typename> class Modifier2>
-__host__ __device__ void CheckNotSameAs()
+TEST_FUNC void CheckNotSameAs()
 {
-  static_assert(!same_as<typename Modifier1<int>::type, typename Modifier2<int>::type>, "");
-  static_assert(!same_as<typename Modifier1<S1>::type, typename Modifier2<S1>::type>, "");
-  static_assert(!same_as<typename Modifier1<S2>::type, typename Modifier2<S2>::type>, "");
-  static_assert(!same_as<typename Modifier1<S3>::type, typename Modifier2<S3>::type>, "");
-  static_assert(!same_as<typename Modifier1<S4>::type, typename Modifier2<S4>::type>, "");
-  static_assert(!same_as<typename Modifier1<S5>::type, typename Modifier2<S5>::type>, "");
-  static_assert(!same_as<typename Modifier1<C1>::type, typename Modifier2<C1>::type>, "");
-  static_assert(!same_as<typename Modifier1<C2>::type, typename Modifier2<C2>::type>, "");
-  static_assert(!same_as<typename Modifier1<C3>::type, typename Modifier2<C3>::type>, "");
-  static_assert(!same_as<typename Modifier1<C4<int>>::type, typename Modifier2<C4<int>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C4<int&>>::type, typename Modifier2<C4<int&>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C4<int&&>>::type, typename Modifier2<C4<int&&>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C5<int>>::type, typename Modifier2<C5<int>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C5<int&>>::type, typename Modifier2<C5<int&>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C5<int&&>>::type, typename Modifier2<C5<int&&>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C6<int>>::type, typename Modifier2<C6<int>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C6<int&>>::type, typename Modifier2<C6<int&>>::type>, "");
-  static_assert(!same_as<typename Modifier1<C6<int&&>>::type, typename Modifier2<C6<int&&>>::type>, "");
+  static_assert(!same_as<typename Modifier1<int>::type, typename Modifier2<int>::type>);
+  static_assert(!same_as<typename Modifier1<S1>::type, typename Modifier2<S1>::type>);
+  static_assert(!same_as<typename Modifier1<S2>::type, typename Modifier2<S2>::type>);
+  static_assert(!same_as<typename Modifier1<S3>::type, typename Modifier2<S3>::type>);
+  static_assert(!same_as<typename Modifier1<S4>::type, typename Modifier2<S4>::type>);
+  static_assert(!same_as<typename Modifier1<S5>::type, typename Modifier2<S5>::type>);
+  static_assert(!same_as<typename Modifier1<C1>::type, typename Modifier2<C1>::type>);
+  static_assert(!same_as<typename Modifier1<C2>::type, typename Modifier2<C2>::type>);
+  static_assert(!same_as<typename Modifier1<C3>::type, typename Modifier2<C3>::type>);
+  static_assert(!same_as<typename Modifier1<C4<int>>::type, typename Modifier2<C4<int>>::type>);
+  static_assert(!same_as<typename Modifier1<C4<int&>>::type, typename Modifier2<C4<int&>>::type>);
+  static_assert(!same_as<typename Modifier1<C4<int&&>>::type, typename Modifier2<C4<int&&>>::type>);
+  static_assert(!same_as<typename Modifier1<C5<int>>::type, typename Modifier2<C5<int>>::type>);
+  static_assert(!same_as<typename Modifier1<C5<int&>>::type, typename Modifier2<C5<int&>>::type>);
+  static_assert(!same_as<typename Modifier1<C5<int&&>>::type, typename Modifier2<C5<int&&>>::type>);
+  static_assert(!same_as<typename Modifier1<C6<int>>::type, typename Modifier2<C6<int>>::type>);
+  static_assert(!same_as<typename Modifier1<C6<int&>>::type, typename Modifier2<C6<int&>>::type>);
+  static_assert(!same_as<typename Modifier1<C6<int&&>>::type, typename Modifier2<C6<int&&>>::type>);
 }
 
 #if TEST_STD_VER > 2017
 // Checks subsumption works as intended
 _CCCL_TEMPLATE(class T, class U)
 _CCCL_REQUIRES(same_as<T, U>)
-__host__ __device__ void SubsumptionTest();
+TEST_FUNC void SubsumptionTest();
 
 // clang-format off
 _CCCL_TEMPLATE(class T, class U)
   _CCCL_REQUIRES( same_as<T, U> && true)
-__host__ __device__ int SubsumptionTest();
+TEST_FUNC int SubsumptionTest();
 // clang-format on
 
-static_assert(same_as<int, decltype(SubsumptionTest<int, int>())>, "");
-static_assert(same_as<int, decltype(SubsumptionTest<void, void>())>, "");
-static_assert(same_as<int, decltype(SubsumptionTest<int (*)(), int (*)()>())>, "");
-static_assert(same_as<int, decltype(SubsumptionTest<double (&)(int), double (&)(int)>())>, "");
-static_assert(same_as<int, decltype(SubsumptionTest<int S2::*, int S2::*>())>, "");
-static_assert(same_as<int, decltype(SubsumptionTest<int& (S2::*) (), int& (S2::*) ()>())>, "");
+static_assert(same_as<int, decltype(SubsumptionTest<int, int>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<void, void>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<int (*)(), int (*)()>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<double (&)(int), double (&)(int)>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<int S2::*, int S2::*>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<int& (S2::*) (), int& (S2::*) ()>())>);
 #endif
 
 int main(int, char**)
@@ -176,24 +176,24 @@ int main(int, char**)
     CheckSameAs<cuda::std::add_pointer>();
 
     // Checks concrete types are identical
-    static_assert(same_as<void, void>, "");
+    static_assert(same_as<void, void>);
 
     using Void = void;
-    static_assert(same_as<void, Void>, "");
+    static_assert(same_as<void, Void>);
 
-    static_assert(same_as<int[1], int[1]>, "");
-    static_assert(same_as<int[2], int[2]>, "");
+    static_assert(same_as<int[1], int[1]>);
+    static_assert(same_as<int[2], int[2]>);
 
-    static_assert(same_as<int (*)(), int (*)()>, "");
-    static_assert(same_as<void (&)(), void (&)()>, "");
-    static_assert(same_as<S1& (*) (S1), S1& (*) (S1)>, "");
-    static_assert(same_as<C1& (&) (S1, int), C1& (&) (S1, int)>, "");
+    static_assert(same_as<int (*)(), int (*)()>);
+    static_assert(same_as<void (&)(), void (&)()>);
+    static_assert(same_as<S1& (*) (S1), S1& (*) (S1)>);
+    static_assert(same_as<C1& (&) (S1, int), C1& (&) (S1, int)>);
 
-    static_assert(same_as<int S2::*, int S2::*>, "");
-    static_assert(same_as<double S2::*, double S2::*>, "");
+    static_assert(same_as<int S2::*, int S2::*>);
+    static_assert(same_as<double S2::*, double S2::*>);
 
-    static_assert(same_as<int& (S2::*) (), int& (S2::*) ()>, "");
-    static_assert(same_as<double& (S2::*) (int), double& (S2::*) (int)>, "");
+    static_assert(same_as<int& (S2::*) (), int& (S2::*) ()>);
+    static_assert(same_as<double& (S2::*) (int), double& (S2::*) (int)>);
   }
 
   { // Checks that `T` and `T&` are distinct types
@@ -234,40 +234,40 @@ int main(int, char**)
   }
 
   { // Checks different type names are distinct types
-    static_assert(!same_as<S1, C1>, "");
-    static_assert(!same_as<C4<int>, C5<int>>, "");
-    static_assert(!same_as<C4<int>, C5<int>>, "");
-    static_assert(!same_as<C5<int, double>, C5<double, int>>, "");
+    static_assert(!same_as<S1, C1>);
+    static_assert(!same_as<C4<int>, C5<int>>);
+    static_assert(!same_as<C4<int>, C5<int>>);
+    static_assert(!same_as<C5<int, double>, C5<double, int>>);
 
-    static_assert(!same_as<int&, const int&>, "");
-    static_assert(!same_as<int&, volatile int&>, "");
-    static_assert(!same_as<int&, const volatile int&>, "");
+    static_assert(!same_as<int&, const int&>);
+    static_assert(!same_as<int&, volatile int&>);
+    static_assert(!same_as<int&, const volatile int&>);
 
-    static_assert(!same_as<int&&, const int&>, "");
-    static_assert(!same_as<int&&, volatile int&>, "");
-    static_assert(!same_as<int&&, const volatile int&>, "");
+    static_assert(!same_as<int&&, const int&>);
+    static_assert(!same_as<int&&, volatile int&>);
+    static_assert(!same_as<int&&, const volatile int&>);
 
-    static_assert(!same_as<int&, const int&&>, "");
-    static_assert(!same_as<int&, volatile int&&>, "");
-    static_assert(!same_as<int&, const volatile int&&>, "");
+    static_assert(!same_as<int&, const int&&>);
+    static_assert(!same_as<int&, volatile int&&>);
+    static_assert(!same_as<int&, const volatile int&&>);
 
-    static_assert(!same_as<int&&, const int&&>, "");
-    static_assert(!same_as<int&&, volatile int&&>, "");
-    static_assert(!same_as<int&&, const volatile int&&>, "");
+    static_assert(!same_as<int&&, const int&&>);
+    static_assert(!same_as<int&&, volatile int&&>);
+    static_assert(!same_as<int&&, const volatile int&&>);
 
-    static_assert(!same_as<void, int>, "");
+    static_assert(!same_as<void, int>);
 
-    static_assert(!same_as<int[1], int[2]>, "");
-    static_assert(!same_as<double[1], int[2]>, "");
+    static_assert(!same_as<int[1], int[2]>);
+    static_assert(!same_as<double[1], int[2]>);
 
-    static_assert(!same_as<int* (*) (), const int* (*) ()>, "");
-    static_assert(!same_as<void (&)(), void (&)(S1)>, "");
-    static_assert(!same_as<S1 (*)(S1), S1& (*) (S1)>, "");
-    static_assert(!same_as<C3 (&)(int), C1& (&) (S1, int)>, "");
+    static_assert(!same_as<int* (*) (), const int* (*) ()>);
+    static_assert(!same_as<void (&)(), void (&)(S1)>);
+    static_assert(!same_as<S1 (*)(S1), S1& (*) (S1)>);
+    static_assert(!same_as<C3 (&)(int), C1& (&) (S1, int)>);
 
-    static_assert(!same_as<int S2::*, double S2::*>, "");
+    static_assert(!same_as<int S2::*, double S2::*>);
 
-    static_assert(!same_as<int& (S2::*) (), double& (S2::*) (int)>, "");
+    static_assert(!same_as<int& (S2::*) (), double& (S2::*) (int)>);
   }
 
   return 0;

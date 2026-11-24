@@ -12,7 +12,7 @@
 // template<class T, T... I>
 // struct integer_sequence
 // {
-//     typedef T type;
+//     using type = T;
 //
 //     static constexpr size_t size() noexcept;
 // };

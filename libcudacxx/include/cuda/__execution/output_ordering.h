@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,12 +25,27 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_one_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
+//! @brief Requirement describing the order in which an algorithm writes its results to the output (e.g. the top-k
+//! elements of cub::DeviceBatchedTopK).
+//!
+//! The available options are:
+//! - output_ordering::unsorted: the results may be written in any order.
+//! - output_ordering::sorted: the results are written sorted by key. Among elements that compare
+//!   equal, their relative order is unspecified.
+//! - output_ordering::stable_sorted: the results are written sorted by key and, among elements that
+//!   compare equal, their relative order matches the order of their source indices (smaller source index first).
 namespace output_ordering
 {
 struct __get_output_ordering_t;
@@ -38,7 +53,8 @@ struct __get_output_ordering_t;
 enum class __output_ordering_t
 {
   __sorted,
-  __unsorted
+  __unsorted,
+  __stable_sorted
 };
 
 template <__output_ordering_t _Guarantee>
@@ -53,10 +69,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __output_ordering_holder_t
   }
 };
 
-using sorted_t   = __output_ordering_holder_t<__output_ordering_t::__sorted>;
-using unsorted_t = __output_ordering_holder_t<__output_ordering_t::__unsorted>;
+using sorted_t        = __output_ordering_holder_t<__output_ordering_t::__sorted>;
+using stable_sorted_t = __output_ordering_holder_t<__output_ordering_t::__stable_sorted>;
+using unsorted_t      = __output_ordering_holder_t<__output_ordering_t::__unsorted>;
 
 _CCCL_GLOBAL_CONSTANT sorted_t sorted{};
+_CCCL_GLOBAL_CONSTANT stable_sorted_t stable_sorted{};
 _CCCL_GLOBAL_CONSTANT unsorted_t unsorted{};
 
 struct __get_output_ordering_t
@@ -81,6 +99,11 @@ _CCCL_GLOBAL_CONSTANT auto __get_output_ordering = __get_output_ordering_t{};
 } // namespace output_ordering
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -28,9 +28,9 @@ constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<con
 struct foo
 {};
 
-static_assert(!WhatNoexcept<foo>, "");
-static_assert(WhatNoexcept<cuda::std::bad_expected_access<int>>, "");
-static_assert(WhatNoexcept<cuda::std::bad_expected_access<foo>>, "");
+static_assert(!WhatNoexcept<foo>);
+static_assert(WhatNoexcept<cuda::std::bad_expected_access<int>>);
+static_assert(WhatNoexcept<cuda::std::bad_expected_access<foo>>);
 #endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)

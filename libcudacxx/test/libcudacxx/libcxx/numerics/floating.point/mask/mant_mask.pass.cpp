@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr bool test_fp_mant_mask(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC constexpr bool test_fp_mant_mask(cuda::std::__fp_storage_t<Fmt> expected)
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -42,6 +42,7 @@ static_assert(test_fp_mant_mask<cuda::std::__fp_format::__bfloat16>(0x007fu));
 static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp80_x86>(0xffffffffffffffffull));
 #endif // _CCCL_HAS_INT128()
 static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp8_nv_e4m3>(0x07u));
+static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp8_nv_ue5m3>(0x07u));
 static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp8_nv_e5m2>(0x03u));
 static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp8_nv_e8m0>(0x00u));
 static_assert(test_fp_mant_mask<cuda::std::__fp_format::__fp6_nv_e2m3>(0x07u));

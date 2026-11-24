@@ -1,18 +1,5 @@
-/*
- *  Copyright 2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/transform_input_output_iterator.h
 //! \brief An iterator which adapts another iterator by applying transform functions when reading and writing
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +18,12 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/__functional/invoke.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -46,38 +38,42 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
 class transform_input_output_iterator_proxy
 {
   using iterator_value_type = it_value_t<Iterator>;
-  using Value               = invoke_result_t<InputFunction, iterator_value_type>;
+  using Value               = ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy(
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy(
     const Iterator& io, InputFunction input_function, OutputFunction output_function)
       : io(io)
       , input_function(input_function)
       , output_function(output_function)
   {}
 
-  transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE operator Value() const
+  _CCCL_HOST_DEVICE_API operator Value() const
   {
     return input_function(*io);
   }
 
+  // Read-write proxy: assignment transforms x and forwards it to the wrapped iterator.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy operator=(const T& x)
   {
     *io = output_function(x);
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
   {
     *io = output_function(x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   Iterator io;
@@ -91,12 +87,15 @@ struct make_transform_input_output_iterator_base
 {
 private:
   using iterator_value_type = it_value_t<Iterator>;
+  // Doxygen 1.9.6 misparses the qualified trait when it appears directly inside
+  // iterator_adaptor's template arguments.
+  using value_type = ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
   using type =
     iterator_adaptor<transform_input_output_iterator<InputFunction, OutputFunction, Iterator>,
                      Iterator,
-                     invoke_result_t<InputFunction, iterator_value_type>,
+                     value_type,
                      use_default,
                      use_default,
                      transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>>;
@@ -173,7 +172,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
-  transform_input_output_iterator() = default;
+  _CCCL_HIDE_FROM_ABI transform_input_output_iterator() = default;
 
   //!  This constructor takes as argument a \c Iterator an \c InputFunction and an
   //! \c OutputFunction and copies them to a new \p transform_input_output_iterator
@@ -182,7 +181,7 @@ public:
   //!           OutputFunction will be written to
   //! \param input_function An \c InputFunction to be executed on values read from the iterator
   //! \param output_function An \c OutputFunction to be executed on values written to the iterator
-  _CCCL_HOST_DEVICE
+  _CCCL_HOST_DEVICE_API
   transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
       : super_t(io)
       , input_function(input_function)
@@ -192,7 +191,7 @@ public:
   //! \cond
 
 private:
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return detail::transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>(
       this->base_reference(), input_function, output_function);
@@ -213,7 +212,7 @@ private:
 //! \param output_function An \c OutputFunction to be executed on values written to the iterator
 //! \see transform_input_output_iterator
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE
+transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE_API
 make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
 {
   return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);

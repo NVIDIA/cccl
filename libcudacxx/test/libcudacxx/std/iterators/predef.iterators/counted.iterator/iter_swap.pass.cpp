@@ -24,45 +24,44 @@ class HasNoexceptIterSwap
   int* it_;
 
 public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef int element_type;
-  typedef typename cuda::std::iterator_traits<int*>::difference_type difference_type;
-  typedef int* pointer;
-  typedef int& reference;
+  using iterator_category = cuda::std::input_iterator_tag;
+  using value_type        = int;
+  using element_type      = int;
+  using difference_type   = typename cuda::std::iterator_traits<int*>::difference_type;
+  using pointer           = int*;
+  using reference         = int&;
 
-  __host__ __device__ constexpr int* base() const
+  TEST_FUNC constexpr int* base() const
   {
     return it_;
   }
 
   HasNoexceptIterSwap() = default;
-  __host__ __device__ __host__ __device__ explicit constexpr HasNoexceptIterSwap(int* it)
+  TEST_FUNC TEST_FUNC explicit constexpr HasNoexceptIterSwap(int* it)
       : it_(it)
   {}
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr HasNoexceptIterSwap& operator++()
+  TEST_FUNC constexpr HasNoexceptIterSwap& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr HasNoexceptIterSwap operator++(int)
+  TEST_FUNC constexpr HasNoexceptIterSwap operator++(int)
   {
     HasNoexceptIterSwap tmp(*this);
     ++(*this);
     return tmp;
   }
 
-  __host__ __device__ friend void iter_swap(const HasNoexceptIterSwap&, const HasNoexceptIterSwap&) noexcept(IsNoexcept)
-  {}
+  TEST_FUNC friend void iter_swap(const HasNoexceptIterSwap&, const HasNoexceptIterSwap&) noexcept(IsNoexcept) {}
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

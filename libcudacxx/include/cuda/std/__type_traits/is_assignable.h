@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,24 +21,27 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(is_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, >=, 9)
+#  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename, typename _Tp>
 struct __select_2nd
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 #if defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable : public bool_constant<_CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2)>
 {};
 
 template <class _T1, class _T2>

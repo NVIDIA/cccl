@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // Figure out what the underlying type for `memory_order` would be if it were
 // declared as an unscoped enum (accounting for -fshort-enums). Use this result
 // to pin the underlying type in C++20.
-enum __legacy_memory_order
+enum __legacy_memory_order // NOLINT(cppcoreguidelines-use-enum-class)
 {
   __mo_relaxed,
   __mo_consume,
@@ -62,10 +62,11 @@ enum __legacy_memory_order
   __mo_seq_cst
 };
 
-using __memory_order_underlying_t = underlying_type<__legacy_memory_order>::type;
+using __memory_order_underlying_t _CCCL_NODEBUG = underlying_type_t<__legacy_memory_order>;
 
 #if _CCCL_STD_VER >= 2020
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 enum class memory_order : __memory_order_underlying_t
 {
   relaxed = __mo_relaxed,
@@ -85,7 +86,7 @@ inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
-using memory_order = enum memory_order {
+using memory_order = enum memory_order { // NOLINT(cppcoreguidelines-use-enum-class,readability-enum-initial-value)
   memory_order_relaxed = __mo_relaxed,
   memory_order_consume = __mo_consume,
   memory_order_acquire = __mo_acquire,
@@ -96,7 +97,7 @@ using memory_order = enum memory_order {
 
 #endif // _CCCL_STD_VER >= 2020
 
-_CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
+_CCCL_HOST_DEVICE_API inline int __cuda_atomic_stronger_order(int __a, int __b)
 {
   int const __max = __a > __b ? __a : __b;
   if (__max != __ATOMIC_RELEASE)
@@ -107,7 +108,7 @@ _CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __order)
+_CCCL_HOST_DEVICE_API constexpr int __atomic_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed
@@ -121,7 +122,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQ_REL : __ATOMIC_CONSUME))));
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_order __order)
+_CCCL_HOST_DEVICE_API constexpr int __atomic_failure_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed
@@ -135,7 +136,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
 }
 
-static_assert((is_same_v<underlying_type<memory_order>::type, __memory_order_underlying_t>),
+static_assert(is_same_v<underlying_type_t<memory_order>, __memory_order_underlying_t>,
               "unexpected underlying type for std::memory_order");
 
 _CCCL_END_NAMESPACE_CUDA_STD

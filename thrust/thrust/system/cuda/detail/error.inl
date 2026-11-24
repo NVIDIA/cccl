@@ -1,24 +1,11 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,17 +14,20 @@
 #endif // no system header
 
 #include <thrust/system/cuda/error.h>
+#include <thrust/system/error_code.h>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_code make_error_code(cuda::errc::errc_t e)
+_CCCL_HOST_API error_code make_error_code(cuda::errc::errc_t e)
 {
   return error_code(static_cast<int>(e), cuda_category());
 } // end make_error_code()
 
-error_condition make_error_condition(cuda::errc::errc_t e)
+_CCCL_HOST_API error_condition make_error_condition(cuda::errc::errc_t e)
 {
   return error_condition(static_cast<int>(e), cuda_category());
 } // end make_error_condition()
@@ -47,14 +37,14 @@ namespace cuda_cub::detail
 class cuda_error_category : public error_category
 {
 public:
-  inline cuda_error_category() {}
+  _CCCL_HIDE_FROM_ABI cuda_error_category() = default;
 
-  inline virtual const char* name() const
+  _CCCL_HOST_API const char* name() const override
   {
     return "cuda";
   }
 
-  inline virtual std::string message(int ev) const
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     char const* const unknown_str  = "unknown error";
     char const* const unknown_name = "cudaErrorUnknown";
@@ -63,7 +53,7 @@ public:
     return std::string(c_name ? c_name : unknown_name) + ": " + (c_str ? c_str : unknown_str);
   }
 
-  inline virtual error_condition default_error_condition(int ev) const
+  _CCCL_HOST_API error_condition default_error_condition(int ev) const override
   {
     using namespace cuda::errc;
 
@@ -77,7 +67,7 @@ public:
 }; // end cuda_error_category
 } // end namespace cuda_cub::detail
 
-const error_category& cuda_category()
+_CCCL_PUBLIC_HOST_API const error_category& cuda_category()
 {
   static const thrust::system::cuda_cub::detail::cuda_error_category result;
   return result;

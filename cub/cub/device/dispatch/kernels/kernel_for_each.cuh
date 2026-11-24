@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,7 +16,11 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
+#include <cub/util_arch.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -27,7 +31,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/cstddef> // size_t
 
 CUB_NAMESPACE_BEGIN
 
@@ -36,19 +39,19 @@ namespace detail::for_each
 template <class Fn>
 struct first_parameter
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <class C, class R, class A>
 struct first_parameter<R (C::*)(A)>
 {
-  using type = A;
+  using type _CCCL_NODEBUG = A;
 };
 
 template <class C, class R, class A>
 struct first_parameter<R (C::*)(A) const>
 {
-  using type = A;
+  using type _CCCL_NODEBUG = A;
 };
 
 template <class Fn>
@@ -75,9 +78,7 @@ struct has_unique_value_overload<
 // The trait below checks if the freedom to copy trivial types can be regained.
 template <typename Value, typename Fn>
 using can_regain_copy_freedom =
-  ::cuda::std::integral_constant<
-    bool,
-    ::cuda::std::is_trivially_constructible_v<Value> &&
+  ::cuda::std::bool_constant<::cuda::std::is_trivially_constructible_v<Value> &&
     ::cuda::std::is_trivially_copy_assignable_v<Value> &&
     ::cuda::std::is_trivially_move_assignable_v<Value> &&
     ::cuda::std::is_trivially_destructible_v<Value> &&
@@ -85,39 +86,46 @@ using can_regain_copy_freedom =
 // clang-format on
 
 // This kernel is used when the block size is not known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
+template <class PolicySelector, class OffsetT, class OpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires for_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+_CCCL_KERNEL_ATTRIBUTES void dynamic_kernel(const OffsetT num_items, OpT op)
 {
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  static constexpr ForPolicy policy = _CUB::detail::current_policy<PolicySelector>();
+  using agent_policy_t              = policy_t<policy.threads_per_block, policy.items_per_thread>;
+  using agent_t                     = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
-  const auto block_threads  = static_cast<OffsetT>(blockDim.x);
-  const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
-  const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
-  const auto num_remaining  = num_items - tile_base;
-  const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+  const auto threads_per_block = static_cast<OffsetT>(blockDim.x);
+  const auto items_per_tile    = policy.items_per_thread * threads_per_block;
+  const auto tile_base         = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
+  const auto num_remaining     = num_items - tile_base;
+  const auto items_in_tile     = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
-    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, threads_per_block);
   }
   else
   {
-    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, threads_per_block);
   }
 }
 
 // This kernel is used when the block size is known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES //
-__launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
-  void static_kernel(OffsetT num_items, OpT op)
+template <class PolicySelector, class OffsetT, class OpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires for_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+_CCCL_KERNEL_ATTRIBUTES //
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block)) //
+  void static_kernel(const OffsetT num_items, OpT op)
 {
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  static constexpr ForPolicy policy = _CUB::detail::current_policy<PolicySelector>();
+  using agent_policy_t              = policy_t<policy.threads_per_block, policy.items_per_thread>;
+  using agent_t                     = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
-  constexpr auto block_threads  = active_policy_t::block_threads;
-  constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
+  constexpr auto items_per_tile = policy.items_per_thread * policy.threads_per_block;
 
   const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining = num_items - tile_base;
@@ -125,11 +133,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 
   if (items_in_tile == items_per_tile)
   {
-    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, policy.threads_per_block);
   }
   else
   {
-    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, policy.threads_per_block);
   }
 }
 
@@ -168,12 +176,12 @@ _CCCL_DEVICE_API auto extent_at(ExtentType extents, FastDivModType dynamic_exten
 template <int Start, int End, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE_API auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
 {
-  if constexpr (cub::detail::are_extents_in_range_static<ExtentType>(Start, End))
+  if constexpr (_CUB::detail::are_extents_in_range_static<ExtentType>(Start, End))
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    auto sub_size             = cub::detail::size_range(extents, Start, End);
+    auto sub_size             = _CUB::detail::size_range(extents, Start, End);
     return static_cast<unsigned_index_type>(sub_size);
   }
   else
@@ -202,8 +210,9 @@ coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_siz
   using extent_index_type = typename ExtentType::index_type;
   constexpr auto start    = IsLayoutRight ? Position + 1 : 0;
   constexpr auto end      = IsLayoutRight ? ExtentType::rank() : Position;
-  return static_cast<extent_index_type>((index / get_extents_sub_size<start, end>(extents, extent_sub_size))
-                                        % extent_at<Position>(extents, dynamic_extent));
+  return static_cast<extent_index_type>(
+    (index / _CUB::detail::for_each::get_extents_sub_size<start, end>(extents, extent_sub_size))
+    % _CUB::detail::for_each::extent_at<Position>(extents, dynamic_extent));
 }
 
 // Function object wrapper for applying operations with multi-dimensional coordinate conversion.
@@ -226,7 +235,7 @@ struct op_wrapper_extents_t
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
-       coordinate_at<IsLayoutRight, Positions>(
+       _CUB::detail::for_each::coordinate_at<IsLayoutRight, Positions>(
          i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 
@@ -236,7 +245,7 @@ struct op_wrapper_extents_t
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
-       coordinate_at<IsLayoutRight, Positions>(
+       _CUB::detail::for_each::coordinate_at<IsLayoutRight, Positions>(
          i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 

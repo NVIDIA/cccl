@@ -16,7 +16,7 @@
 // constexpr bool valueless_by_exception() const noexcept;
 
 #include <cuda/std/cassert>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
@@ -42,14 +42,14 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(!v.valueless_by_exception(), "");
+    static_assert(!v.valueless_by_exception());
   }
   {
     using V = cuda::std::variant<int, long>;
     V v;
     assert(!v.valueless_by_exception());
   }
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<int, long, cuda::std::string>;
     const V v("abc");

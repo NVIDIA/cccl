@@ -13,7 +13,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/grid/grid_mapping.cuh>
-#include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,48 +48,42 @@ CUB_NAMESPACE_BEGIN
  * Before invoking a child grid, a parent thread will typically construct an
  * instance of GridEvenShare.  The instance can be passed to child thread blocks
  * which can initialize their per-thread block offsets using \p BlockInit().
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename OffsetT>
 struct GridEvenShare
 {
 private:
-  int total_tiles;
-  int big_shares;
-  OffsetT big_share_items;
-  OffsetT normal_share_items;
-  OffsetT normal_base_offset;
+  int total_tiles{0};
+  int big_shares{0};
+  OffsetT big_share_items{0};
+  OffsetT normal_share_items{0};
+  OffsetT normal_base_offset{0};
 
 public:
   /// Total number of input items
-  OffsetT num_items;
+  OffsetT num_items{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Grid size in thread blocks
-  int grid_size;
+  int grid_size{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
-  OffsetT block_offset;
+  OffsetT block_offset{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
-  OffsetT block_end;
+  OffsetT block_end{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Stride between input tiles
-  OffsetT block_stride;
+  OffsetT block_stride{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /**
    * \brief Constructor.
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare()
-      : total_tiles(0)
-      , big_shares(0)
-      , big_share_items(0)
-      , normal_share_items(0)
-      , normal_base_offset(0)
-      , num_items(0)
-      , grid_size(0)
-      , block_offset(0)
-      , block_end(0)
-      , block_stride(0)
-  {}
+  _CCCL_HIDE_FROM_ABI GridEvenShare() = default;
 
   /**
    * @brief Dispatch initializer. To be called prior to kernel launch.
@@ -105,7 +98,7 @@ public:
    * @param tile_items
    *   Number of data items per input tile
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
   {
     if (num_items_ <= 0 || max_grid_size <= 0 || tile_items <= 0)
     {
@@ -116,13 +109,13 @@ public:
       return;
     }
 
-    this->block_offset = num_items_; // Initialize past-the-end
-    this->block_end    = num_items_; // Initialize past-the-end
-    this->num_items    = num_items_;
-    this->total_tiles  = static_cast<int>(
-      ::cuda::std::min(OffsetT{::cuda::std::numeric_limits<int>::max()}, ::cuda::ceil_div(num_items_, tile_items)));
-    this->grid_size         = ::cuda::std::min(total_tiles, max_grid_size);
-    int avg_tiles_per_block = total_tiles / grid_size;
+    this->block_offset            = num_items_; // Initialize past-the-end
+    this->block_end               = num_items_; // Initialize past-the-end
+    this->num_items               = num_items_;
+    this->total_tiles             = static_cast<int>((
+      ::cuda::std::min) (OffsetT{(::cuda::std::numeric_limits<int>::max)()}, ::cuda::ceil_div(num_items_, tile_items)));
+    this->grid_size               = (::cuda::std::min) (total_tiles, max_grid_size);
+    const int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
     this->normal_share_items = static_cast<OffsetT>(avg_tiles_per_block) * tile_items;
@@ -135,10 +128,10 @@ public:
    *        for a "raking" access pattern in which each thread block is assigned a
    *        consecutive sequence of input tiles.
    */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
+  template <int TileItems>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
   {
-    block_stride = TILE_ITEMS;
+    block_stride = TileItems;
     if (block_id < big_shares)
     {
       // This thread block gets a big share of grains (avg_tiles_per_block + 1)
@@ -150,7 +143,7 @@ public:
       // This thread block gets a normal share of grains (avg_tiles_per_block)
       block_offset = normal_base_offset + (block_id * normal_share_items);
       // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + ::cuda::std::min(num_items - block_offset, normal_share_items);
+      block_end = block_offset + (::cuda::std::min) (num_items - block_offset, normal_share_items);
     }
     // Else default past-the-end
   }
@@ -160,12 +153,12 @@ public:
    *        pattern in which each thread block is assigned a consecutive sequence
    *        of input tiles.
    */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  template <int TileItems>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
-    block_stride = grid_size * TILE_ITEMS;
-    block_offset = (block_id * TILE_ITEMS);
+    block_stride = grid_size * OffsetT{TileItems};
+    block_offset = block_id * OffsetT{TileItems};
     block_end    = num_items;
   }
 
@@ -174,10 +167,10 @@ public:
    *        pattern in which the input tiles assigned to each thread block are
    *        separated by a stride equal to the the extent of the grid.
    */
-  template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
+  template <int TileItems, GridMappingStrategy STRATEGY>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit()
   {
-    BlockInit<TILE_ITEMS>(blockIdx.x, detail::constant_v<STRATEGY>);
+    BlockInit<TileItems>(blockIdx.x, detail::constant_v<STRATEGY>);
   }
 
   /**
@@ -191,12 +184,12 @@ public:
    * @param[in] block_end
    *   Threadblock end offset (exclusive)
    */
-  template <int TILE_ITEMS, typename OffsetT1 = OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
+  template <int TileItems, typename OffsetT1 = OffsetT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
   {
     this->block_offset = block_offset;
     this->block_end    = block_end;
-    this->block_stride = TILE_ITEMS;
+    this->block_stride = TileItems;
   }
 };
 

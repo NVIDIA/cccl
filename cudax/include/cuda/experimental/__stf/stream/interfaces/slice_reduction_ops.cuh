@@ -17,7 +17,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/slice.cuh>
 #include <cuda/experimental/__stf/stream/reduction.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -114,7 +122,7 @@ public:
     if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
-      cuda_safe_call(cudaStreamSynchronize(s));
+      cuda_try<cudaStreamSynchronize>(s);
       // slice_print(in, "in before op");
       // slice_print(inout, "inout before op");
 
@@ -159,7 +167,7 @@ public:
     if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
-      cuda_safe_call(cudaStreamSynchronize(s));
+      cuda_try<cudaStreamSynchronize>(s);
       if constexpr (dimensions == 1)
       {
         for (size_t i = 0; i < out.extent(0); i++)

@@ -47,7 +47,7 @@ struct output_iterator_t
 {
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = cuda::std::size_t;
-  using value_type        = void;
+  using value_type        = typename decltype(AssignTV)::Type;
   using reference =
     output_iterator_proxy_t<Tag, Iterator.size, Iterator.alignment, typename decltype(AssignTV)::Type, Iterator.assign>;
   using pointer = reference*;
@@ -94,6 +94,19 @@ struct output_iterator_traits
     if (it.type == cccl_iterator_kind_t::CCCL_POINTER)
     {
       return cuda::std::make_optional(specialization{cccl_type_enum_to_name(assign_t.type, true), ""});
+    }
+
+    return cuda::std::nullopt;
+  }
+
+  template <typename Tag, typename StorageT, typename AssignStorageT>
+  static cuda::std::optional<specialization>
+  special(tagged_arg<StorageT, cccl_iterator_t> it, tagged_arg<AssignStorageT, cccl_type_info> assign_t)
+  {
+    if (it.value.type == cccl_iterator_kind_t::CCCL_POINTER)
+    {
+      return cuda::std::make_optional(
+        specialization{cccl_type_enum_to_name<AssignStorageT>(assign_t.value.type, true), ""});
     }
 
     return cuda::std::nullopt;

@@ -38,7 +38,7 @@ struct Checkpoint
     {
       s << " '" << msg << "'";
     }
-    s << std::endl;
+    s << '\n';
   }
 };
 
@@ -53,7 +53,7 @@ inline void clearCheckpoint()
   globalCheckpoint() = Checkpoint();
 }
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  define CHECKPOINT_FUNCTION_NAME __PRETTY_FUNCTION__
 #else
 #  define CHECKPOINT_FUNCTION_NAME __func__
@@ -76,7 +76,7 @@ inline void checkpointSignalHandler(int signal)
 
 inline bool initCheckpointHandler()
 {
-  typedef void (*HandlerT)(int);
+  using HandlerT     = void (*)(int);
   static bool isInit = false;
   if (isInit)
   {

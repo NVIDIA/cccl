@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17, c++20
-
 // <memory>
 
 // allocation_result<T*> allocate_at_least(size_t n)
@@ -19,81 +17,70 @@
 #include <cuda/std/concepts>
 
 #include "count_new.h"
+#include "test_macros.h"
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-static const bool UsingAlignedNew = true;
-#else
-static const bool UsingAlignedNew = false;
-#endif
-
-#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-static const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
-#else
-static const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
-#endif
-
-static const cuda::std::size_t OverAligned = MaxAligned * 2;
+TEST_GLOBAL_VARIABLE int AlignedType_constructed = 0;
 
 template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
-  char data;
-  static int constructed;
-  __host__ __device__ AlignedType()
+  char data[Align];
+
+  TEST_FUNC AlignedType()
   {
-    ++constructed;
+    ++AlignedType_constructed;
   }
-  __host__ __device__ AlignedType(AlignedType const&)
+  TEST_FUNC AlignedType(AlignedType const&)
   {
-    ++constructed;
+    ++AlignedType_constructed;
   }
-  __host__ __device__ ~AlignedType()
+  TEST_FUNC ~AlignedType()
   {
-    --constructed;
+    --AlignedType_constructed;
   }
 };
-template <cuda::std::size_t Align>
-int AlignedType<Align>::constructed = 0;
 
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned()
+TEST_FUNC void test_aligned()
 {
-  typedef AlignedType<Align> T;
-  T::constructed = 0;
+  using T                 = AlignedType<Align>;
+  AlignedType_constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
-  const bool IsOverAlignedType = Align > MaxAligned;
-  const bool ExpectAligned     = IsOverAlignedType && UsingAlignedNew;
+  const bool IsOverAlignedType = Align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+  const bool ExpectAligned     = IsOverAlignedType;
   {
     assert(globalMemCounter.checkOutstandingNewEq(0));
-    assert(T::constructed == 0);
-    globalMemCounter.last_new_size                                         = 0;
-    globalMemCounter.last_new_align                                        = 0;
-    cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
+    assert(AlignedType_constructed == 0);
+    globalMemCounter.last_new_size  = 0;
+    globalMemCounter.last_new_align = 0;
+    decltype(auto) ap               = a.allocate_at_least(3);
+    static_assert(cuda::std::same_as<cuda::std::allocation_result<T*>, decltype(ap)>);
     assert(ap.count >= 3);
-    DoNotOptimize(ap);
+    NV_IF_TARGET(NV_IS_HOST, DoNotOptimize(ap);)
     assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(globalMemCounter.checkNewCalledEq(1));
     assert(globalMemCounter.checkAlignedNewCalledEq(ExpectAligned));
     assert(globalMemCounter.checkLastNewSizeEq(3 * sizeof(T)));
     assert(globalMemCounter.checkLastNewAlignEq(ExpectAligned ? Align : 0));
-    assert(T::constructed == 0);
+    assert(AlignedType_constructed == 0);
     globalMemCounter.last_delete_align = 0;
     a.deallocate(ap.ptr, 3);
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(globalMemCounter.checkDeleteCalledEq(1));
     assert(globalMemCounter.checkAlignedDeleteCalledEq(ExpectAligned));
     assert(globalMemCounter.checkLastDeleteAlignEq(ExpectAligned ? Align : 0));
-    assert(T::constructed == 0);
+    assert(AlignedType_constructed == 0);
   }
 }
 
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr()
+TEST_FUNC _CCCL_CONSTEXPR_CXX20_ALLOCATION bool test_aligned_constexpr()
 {
-  typedef AlignedType<Align> T;
+  using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
-  cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
+  decltype(auto) ap = a.allocate_at_least(3);
+  static_assert(cuda::std::same_as<cuda::std::allocation_result<T*>, decltype(ap)>);
   assert(ap.count >= 3);
   a.deallocate(ap.ptr, 3);
 
@@ -107,17 +94,19 @@ int main(int, char**)
   test_aligned<4>();
   test_aligned<8>();
   test_aligned<16>();
-  test_aligned<MaxAligned>();
-  test_aligned<OverAligned>();
-  test_aligned<OverAligned * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>();
 
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
   static_assert(test_aligned_constexpr<1>());
   static_assert(test_aligned_constexpr<2>());
   static_assert(test_aligned_constexpr<4>());
   static_assert(test_aligned_constexpr<8>());
   static_assert(test_aligned_constexpr<16>());
-  static_assert(test_aligned_constexpr<MaxAligned>());
-  static_assert(test_aligned_constexpr<OverAligned>());
-  static_assert(test_aligned_constexpr<OverAligned * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>());
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
   return 0;
 }

@@ -12,24 +12,26 @@
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 struct Sent
 {
   bool b; // deliberately uninitialised
 
-  __host__ __device__ friend constexpr bool operator==(int*, const Sent& s)
+  TEST_FUNC friend constexpr bool operator==(int*, const Sent& s)
   {
     return s.b;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, int*)
+  TEST_FUNC friend constexpr bool operator==(const Sent& s, int*)
   {
     return s.b;
   }
-  __host__ __device__ friend constexpr bool operator!=(int*, const Sent& s)
+  TEST_FUNC friend constexpr bool operator!=(int*, const Sent& s)
   {
     return !s.b;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int*)
+  TEST_FUNC friend constexpr bool operator!=(const Sent& s, int*)
   {
     return !s.b;
   }
@@ -38,17 +40,17 @@ struct Sent
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ Sent end()
+  TEST_FUNC Sent end()
   {
     return Sent{};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using R        = cuda::std::ranges::take_while_view<Range, bool (*)(int)>;
@@ -63,7 +65,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -31,25 +31,25 @@ struct ThrowingCopyNoexceptDecrement
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ ThrowingCopyNoexceptDecrement();
-  __host__ __device__ ThrowingCopyNoexceptDecrement(const ThrowingCopyNoexceptDecrement&);
+  TEST_FUNC ThrowingCopyNoexceptDecrement();
+  TEST_FUNC ThrowingCopyNoexceptDecrement(const ThrowingCopyNoexceptDecrement&);
 
-  __host__ __device__ int& operator*() const noexcept
+  TEST_FUNC int& operator*() const noexcept
   {
     static int x;
     return x;
   }
 
-  __host__ __device__ ThrowingCopyNoexceptDecrement& operator++();
-  __host__ __device__ ThrowingCopyNoexceptDecrement operator++(int);
-  __host__ __device__ ThrowingCopyNoexceptDecrement& operator--() noexcept;
-  __host__ __device__ ThrowingCopyNoexceptDecrement operator--(int) noexcept;
+  TEST_FUNC ThrowingCopyNoexceptDecrement& operator++();
+  TEST_FUNC ThrowingCopyNoexceptDecrement operator++(int);
+  TEST_FUNC ThrowingCopyNoexceptDecrement& operator--() noexcept;
+  TEST_FUNC ThrowingCopyNoexceptDecrement operator--(int) noexcept;
 
 #if TEST_STD_VER > 2017
   bool operator==(const ThrowingCopyNoexceptDecrement&) const = default;
 #else
-  __host__ __device__ bool operator==(const ThrowingCopyNoexceptDecrement&) const;
-  __host__ __device__ bool operator!=(const ThrowingCopyNoexceptDecrement&) const;
+  TEST_FUNC bool operator==(const ThrowingCopyNoexceptDecrement&) const;
+  TEST_FUNC bool operator!=(const ThrowingCopyNoexceptDecrement&) const;
 #endif
 };
 
@@ -58,25 +58,25 @@ struct NoexceptCopyThrowingDecrement
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ NoexceptCopyThrowingDecrement();
-  __host__ __device__ NoexceptCopyThrowingDecrement(const NoexceptCopyThrowingDecrement&) noexcept;
+  TEST_FUNC NoexceptCopyThrowingDecrement();
+  TEST_FUNC NoexceptCopyThrowingDecrement(const NoexceptCopyThrowingDecrement&) noexcept;
 
-  __host__ __device__ int& operator*() const
+  TEST_FUNC int& operator*() const
   {
     static int x;
     return x;
   }
 
-  __host__ __device__ NoexceptCopyThrowingDecrement& operator++();
-  __host__ __device__ NoexceptCopyThrowingDecrement operator++(int);
-  __host__ __device__ NoexceptCopyThrowingDecrement& operator--();
-  __host__ __device__ NoexceptCopyThrowingDecrement operator--(int);
+  TEST_FUNC NoexceptCopyThrowingDecrement& operator++();
+  TEST_FUNC NoexceptCopyThrowingDecrement operator++(int);
+  TEST_FUNC NoexceptCopyThrowingDecrement& operator--();
+  TEST_FUNC NoexceptCopyThrowingDecrement operator--(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(const NoexceptCopyThrowingDecrement&) const = default;
 #else
-  __host__ __device__ bool operator==(const NoexceptCopyThrowingDecrement&) const;
-  __host__ __device__ bool operator!=(const NoexceptCopyThrowingDecrement&) const;
+  TEST_FUNC bool operator==(const NoexceptCopyThrowingDecrement&) const;
+  TEST_FUNC bool operator!=(const NoexceptCopyThrowingDecrement&) const;
 #endif
 };
 
@@ -85,29 +85,29 @@ struct NoexceptCopyAndDecrement
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ NoexceptCopyAndDecrement();
-  __host__ __device__ NoexceptCopyAndDecrement(const NoexceptCopyAndDecrement&) noexcept;
+  TEST_FUNC NoexceptCopyAndDecrement();
+  TEST_FUNC NoexceptCopyAndDecrement(const NoexceptCopyAndDecrement&) noexcept;
 
-  __host__ __device__ int& operator*() const noexcept
+  TEST_FUNC int& operator*() const noexcept
   {
     static int x;
     return x;
   }
 
-  __host__ __device__ NoexceptCopyAndDecrement& operator++();
-  __host__ __device__ NoexceptCopyAndDecrement operator++(int);
-  __host__ __device__ NoexceptCopyAndDecrement& operator--() noexcept;
-  __host__ __device__ NoexceptCopyAndDecrement operator--(int) noexcept;
+  TEST_FUNC NoexceptCopyAndDecrement& operator++();
+  TEST_FUNC NoexceptCopyAndDecrement operator++(int);
+  TEST_FUNC NoexceptCopyAndDecrement& operator--() noexcept;
+  TEST_FUNC NoexceptCopyAndDecrement operator--(int) noexcept;
 
 #if TEST_STD_VER > 2017
   bool operator==(const NoexceptCopyAndDecrement&) const = default;
 #else
-  __host__ __device__ bool operator==(const NoexceptCopyAndDecrement&) const;
-  __host__ __device__ bool operator!=(const NoexceptCopyAndDecrement&) const;
+  TEST_FUNC bool operator==(const NoexceptCopyAndDecrement&) const;
+  TEST_FUNC bool operator!=(const NoexceptCopyAndDecrement&) const;
 #endif
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // Can use `iter_swap` with a regular array.
   {

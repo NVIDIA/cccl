@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file functional.h
  *  \brief Function objects and tools for manipulating them
@@ -22,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,9 +18,11 @@
 #endif // no system header
 
 #include <thrust/detail/functional/actor.h>
+#include <thrust/detail/type_deduction.h>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -105,7 +94,7 @@ template <typename T = void>
 struct square
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
+  _CCCL_HOST_DEVICE_API constexpr T operator()(const T& x) const
   {
     return x * x;
   }
@@ -118,7 +107,7 @@ struct square<void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
+  _CCCL_HOST_DEVICE_API constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
   {
     return x * x;
   }
@@ -248,7 +237,7 @@ struct project1st
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
+  _CCCL_HOST_DEVICE_API constexpr const T1& operator()(const T1& lhs _CCCL_LIFETIMEBOUND, const T2& /*rhs*/) const
   {
     return lhs;
   }
@@ -260,7 +249,7 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
     -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
@@ -297,7 +286,7 @@ struct project2nd
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
+  _CCCL_HOST_DEVICE_API constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs _CCCL_LIFETIMEBOUND) const
   {
     return rhs;
   }
@@ -309,7 +298,7 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
     -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);
@@ -332,7 +321,8 @@ using ::cuda::std::not_fn;
 _CCCL_TEMPLATE(class _Fn)
 _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
                  _CCCL_AND ::cuda::std::is_move_constructible_v<::cuda::std::decay_t<_Fn>>)
-[[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead") _CCCL_API constexpr auto not_fn(_Fn&& __f)
+[[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead") _CCCL_HOST_DEVICE_API constexpr auto
+not_fn(_Fn&& __f)
 {
   return ::cuda::std::not_fn(::cuda::std::forward<_Fn>(__f));
 }
@@ -479,4 +469,4 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/functional/operators.h>
+#include <thrust/detail/functional/operators.h> // IWYU pragma: export
