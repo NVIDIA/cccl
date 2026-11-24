@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,33 +13,34 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
       InputIterator first,
       InputIterator last,
       const EqualityComparable& value);
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
          InputIterator first,
          InputIterator last,
          Predicate pred);
 
 template <typename InputIterator, typename EqualityComparable>
-thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
 count(InputIterator first, // NOLINT(readability-redundant-declaration)
       InputIterator last,
       const EqualityComparable& value);
 
 template <typename InputIterator, typename Predicate>
-thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
 count_if(InputIterator first, InputIterator last, Predicate pred); // NOLINT(readability-redundant-declaration)
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/count.inl>
+#include <thrust/detail/count.inl> // IWYU pragma: export

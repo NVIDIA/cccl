@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -187,7 +187,7 @@ public:
   // Constructor
   //---------------------------------------------------------------------
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
@@ -207,10 +207,10 @@ public:
   //! @param output_begin_idx
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
-    const OffsetT segment_items = ::cuda::std::max(input_end_idx, input_begin_idx) - input_begin_idx;
+    const OffsetT segment_items = (::cuda::std::max) (input_end_idx, input_begin_idx) - input_begin_idx;
     const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
 
     AccumT exclusive_prefix{};
@@ -279,7 +279,7 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -309,7 +309,7 @@ public:
         temp_storage.fixed_size_mask = 1u;
       }
 
-      n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
+      n_segments               = (::cuda::std::min) (n_segments, static_cast<int>(NumSegments));
       const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
@@ -323,7 +323,7 @@ public:
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
         const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
-        const OffsetT segment_size = ::cuda::std::max(input_segment_end, input_segment_begin) - input_segment_begin;
+        const OffsetT segment_size = (::cuda::std::max) (input_segment_end, input_segment_begin) - input_segment_begin;
 
         block_offset_scan_t offset_scanner(temp_storage.reused.offset_scan);
 
@@ -416,7 +416,7 @@ public:
 
 private:
   template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments_chunked(
     const SearcherT& searcher,
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -548,7 +548,7 @@ private:
             typename ScanOpTy,
             bool IsInclusive = is_inclusive,
             bool HasInit     = has_init>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_first_tile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_first_tile(
     ScannerT& scanner,
     ItemTy (&items)[items_per_thread],
     InitValueTy init_value,
@@ -576,7 +576,7 @@ private:
   }
 
   template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
     if constexpr (IsInclusive)
@@ -623,7 +623,7 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().block.threads_p
 
   struct policy_getter
   {
-    constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }

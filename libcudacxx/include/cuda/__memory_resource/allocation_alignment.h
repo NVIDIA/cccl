@@ -23,7 +23,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -83,7 +83,7 @@ struct allocation_alignment_t
 _CCCL_GLOBAL_CONSTANT auto allocation_alignment = allocation_alignment_t{};
 
 //! @brief Returns true if \p __alignment is a power of two and not less than \p __min_alignment.
-_CCCL_HOST_DEVICE constexpr bool
+_CCCL_HOST_DEVICE_API constexpr bool
 __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
 {
   return __alignment >= __min_alignment && __alignment != 0 && (__alignment & (__alignment - 1)) == 0;

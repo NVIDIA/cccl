@@ -10,7 +10,7 @@
 // don't want to #include any headers other than the one being tested.
 //
 // This is only implemented for MSVC/GCC/Clang.
-#if defined(_MSC_VER) // MSVC
+#ifdef _MSC_VER // MSVC
 
 // Fake up an error for MSVC
 #  define CUDAX_MACRO_CHECK_IMPL(msg)             \
@@ -50,17 +50,17 @@
 
 #include <@header@>
 
-#if defined(CCCL_DISABLE_BF16_SUPPORT)
-#  if defined(__CUDA_BF16_TYPES_EXIST__)
+#ifdef CCCL_DISABLE_BF16_SUPPORT
+#  ifdef __CUDA_BF16_TYPES_EXIST__
 #    error We should not include cuda_bf16.h when BF16 support is disabled
 #  endif // __CUDA_BF16_TYPES_EXIST__
 #endif // CCCL_DISABLE_BF16_SUPPORT
 
-#if defined(CCCL_DISABLE_FP16_SUPPORT)
-#  if defined(__CUDA_FP16_TYPES_EXIST__)
+#ifdef CCCL_DISABLE_FP16_SUPPORT
+#  ifdef __CUDA_FP16_TYPES_EXIST__
 #    error We should not include cuda_fp16.h when half support is disabled
 #  endif // __CUDA_FP16_TYPES_EXIST__
-#  if defined(__CUDA_BF16_TYPES_EXIST__)
+#  ifdef __CUDA_BF16_TYPES_EXIST__
 #    error We should not include cuda_bf16.h when half support is disabled
 #  endif // __CUDA_BF16_TYPES_EXIST__
 #endif // CCCL_DISABLE_FP16_SUPPORT

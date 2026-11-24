@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -53,10 +53,11 @@ enum class status_action
   abort,
 };
 
+// Empty by-value tags do not need device storage or its host-registration declarations.
 //! @brief Constant of type `cuda::return_status_t`.
-_CCCL_GLOBAL_CONSTANT return_status_t return_status{};
+inline constexpr return_status_t return_status{};
 //! @brief Constant of type `cuda::ignore_status_t`.
-_CCCL_GLOBAL_CONSTANT ignore_status_t ignore_status{};
+inline constexpr ignore_status_t ignore_status{};
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -16,6 +16,8 @@
     __device__ constexpr composite_mapping(const Mappings&... mappings)
       : /*mappings_*/{mappings...}
     {}
+
+    [[nodiscard]] __device__ constexpr const cuda::std::tuple<Mappings...>& get() const [[lifetimebound]];
   };
 
   template <typename... Mappings>

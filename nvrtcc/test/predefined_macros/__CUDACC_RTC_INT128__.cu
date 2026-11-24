@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__CUDACC_RTC__)
+#ifdef __CUDACC_RTC__
 #  define EXPECT_CUDACC_RTC_INT128
 #endif // __CUDACC_RTC__
 #include "../common/check_predefined_macros.h"
 
-#if defined(EXPECT_CUDACC_RTC_INT128)
+#ifdef EXPECT_CUDACC_RTC_INT128
 __global__ void kernel(__int128* value)
 {
   *value = __int128{1};

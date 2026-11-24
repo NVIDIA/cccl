@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -123,7 +123,7 @@ struct DeviceMergeSort
 {
 private:
   // Name reported for NVTX ranges
-  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  _CCCL_HOST_DEVICE_API static constexpr auto GetName() -> const char*
   {
     return "cub::DeviceMergeSort";
   }

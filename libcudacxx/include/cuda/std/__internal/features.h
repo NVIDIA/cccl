@@ -12,7 +12,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifndef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
 #elif _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
@@ -83,7 +83,7 @@
 #endif // ^^^ no constexpr allocations ^^^
 
 // Enable removed C++17 features
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 #  define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 
@@ -110,6 +110,14 @@
 #define _CCCL_HAS_SIMD_8BIT()                                                                  \
   ((_CCCL_HAS_SIMD_8BIT_PTX() || _CCCL_HAS_SIMD_8BIT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
+
+// 8-bit arithmetic and saturating addition are supported on SM107f in PTX ISA 9.4
+#if __cccl_ptx_isa >= 940ULL
+#  define _CCCL_DISPATCH_SIMD_8BIT_TARGET(...) \
+    NV_DISPATCH_TARGET(NV_HAS_FEATURE_SM_107f, (__VA_ARGS__), NV_HAS_FEATURE_SM_120f, (__VA_ARGS__))
+#else
+#  define _CCCL_DISPATCH_SIMD_8BIT_TARGET(...) NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (__VA_ARGS__))
+#endif
 
 // TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD SAT intrinsics
 #define _CCCL_HAS_SIMD_SAT_INTRINSICS() 0

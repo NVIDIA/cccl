@@ -8,16 +8,21 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
@@ -119,7 +124,7 @@ public:
   //! \endcond
 
   //! Default constructor initializes this \p constant_iterator's constant using its default constructor
-  constant_iterator() = default;
+  _CCCL_HIDE_FROM_ABI constant_iterator() = default;
 
   //! Copy constructor copies the value of another \p constant_iterator with related System type.
   //!
@@ -128,7 +133,7 @@ public:
             detail::enable_if_convertible_t<iterator_system_t<constant_iterator<Value, Incrementable, OtherSystem>>,
                                             iterator_system_t<super_t>,
                                             int> = 0>
-  _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
+  _CCCL_HOST_DEVICE_API constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
       : super_t(rhs.base())
       , m_value(rhs.value())
   {}
@@ -139,7 +144,7 @@ public:
   //! \p v The value of this \p constant_iterator's constant value.
   //! \p i The index of this \p constant_iterator in a sequence. Defaults to the value returned by \c Incrementable's
   //! null constructor. For example, when <tt>Incrementable == int</tt>, \c 0.
-  _CCCL_HOST_DEVICE constant_iterator(value_type const& v, incrementable const& i = incrementable())
+  _CCCL_HOST_DEVICE_API constant_iterator(value_type const& v, incrementable const& i = incrementable())
       : super_t(base_iterator(i))
       , m_value(v)
   {}
@@ -151,14 +156,14 @@ public:
   //! \p i The index of this \p constant_iterator in a sequence. Defaults to the value returned by \c Incrementable's
   //! null constructor. For example, when <tt>Incrementable == int</tt>, \c 0.
   template <typename OtherValue, typename OtherIncrementable>
-  _CCCL_HOST_DEVICE constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
+  _CCCL_HOST_DEVICE_API constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
       : super_t(base_iterator(i))
       , m_value(v)
   {}
 
   //! This method returns the value of this \p constant_iterator's constant value. \return A \c const reference to this
   //! \p constant_iterator's constant value.
-  _CCCL_HOST_DEVICE Value const& value() const
+  _CCCL_HOST_DEVICE_API Value const& value() const
   {
     return m_value;
   }
@@ -166,7 +171,7 @@ public:
   //! \cond
 
 private: // Core iterator interface
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return m_value;
   }
@@ -190,8 +195,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES constant_iterator(ValueT) -> constant_iterator<
 //! \return A new \p constant_iterator with constant value & index as given by \p x & \p i.
 //! \see constant_iterator
 template <typename ValueT, typename IndexT>
-CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead") inline
-  _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead") inline _CCCL_HOST_DEVICE_API
+  constant_iterator<ValueT, IndexT>
   make_constant_iterator(ValueT x, IndexT i = int())
 {
   return constant_iterator<ValueT, IndexT>(x, i);
@@ -204,7 +209,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead") inline
 //! \return A new \p constant_iterator with constant value equal to \p x and index equal to \c 0.
 //! \see constant_iterator
 template <typename V>
-CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead") inline _CCCL_HOST_DEVICE constant_iterator<V>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead") inline _CCCL_HOST_DEVICE_API constant_iterator<V>
 make_constant_iterator(V x)
 {
   return constant_iterator<V>(x, 0);

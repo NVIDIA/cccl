@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.flags], load and store flags
 //
@@ -25,7 +25,7 @@
 // [simd.flags.oper], flags operators
 // template<class... Other> friend constexpr flags<Flags..., Other...> operator|(flags, flags<Other...>);
 
-#include <cuda/std/__simd_>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

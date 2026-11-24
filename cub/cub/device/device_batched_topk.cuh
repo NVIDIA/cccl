@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -227,7 +227,8 @@ _CCCL_HOST_API cudaError_t dispatch_batched_topk(
     // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
     // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
     // conservative 64-bit upper bound here.
-    constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
+    constexpr auto total_num_items =
+      ::cuda::args::immediate{(::cuda::std::numeric_limits<::cuda::std::int64_t>::max)()};
 
     return _CUB::detail::batched_topk::
       dispatch<requested_determinism_t::value, requested_tie_break_t::value, requested_order_t::value>(

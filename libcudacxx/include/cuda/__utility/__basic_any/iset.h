@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -113,7 +113,7 @@ struct __iset_vptr : __base_vptr
 {
   using __iset_vtable _CCCL_NODEBUG = __vtable_for<__iset_<_Interfaces...>>;
 
-  __iset_vptr() = default;
+  _CCCL_HIDE_FROM_ABI __iset_vptr() = default;
 
   _CCCL_HOST_DEVICE_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
       : __base_vptr(__vptr)

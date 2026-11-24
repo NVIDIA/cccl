@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -248,7 +248,7 @@ struct agent_batched_topk_worker_per_segment
         const key_t padding_key =
           (direction == detail::topk::select::max)
             ? ::cuda::std::numeric_limits<key_t>::lowest()
-            : (::cuda::std::numeric_limits<key_t>::max)(); // NOLINT(readability-redundant-parentheses)
+            : (::cuda::std::numeric_limits<key_t>::max)();
 
         // Dereference iterator-of-iterators to get the segment specific iterator
         auto block_keys_in = d_key_segments_it[segment_id];

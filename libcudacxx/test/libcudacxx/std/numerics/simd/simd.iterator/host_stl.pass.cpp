@@ -10,12 +10,12 @@
 
 // UNSUPPORTED: nvrtc
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.iterator], host STL iterator operations for __simd_iterator
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include <iterator>

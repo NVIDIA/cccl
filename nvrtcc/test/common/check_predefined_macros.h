@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !defined(__NVRTCC__)
+#ifndef __NVRTCC__
 #  error "missing __NVRTCC__ definition"
 #endif // !__NVRTCC__
 
@@ -20,27 +20,27 @@
 #  error "__NVCC__ and __CUDACC_RTC__ should never be defined at the same time"
 #endif // __NVCC__ != !__CUDACC_RTC__
 
-#if !defined(__CUDACC__)
+#ifndef __CUDACC__
 #  error "missing __CUDACC__ definition"
 #endif // !__CUDACC__
 
-#if !defined(__CUDA_ARCH_LIST__)
+#ifndef __CUDA_ARCH_LIST__
 #  error "missing __CUDA_ARCH_LIST__ definition."
 #endif // !__CUDA_ARCH_LIST__
 
-#if !defined(__CUDACC_VER_MAJOR__)
+#ifndef __CUDACC_VER_MAJOR__
 #  error "missing __CUDACC_VER_MAJOR__ definition"
 #endif // !__CUDACC_VER_MAJOR__
 
-#if !defined(__CUDACC_VER_MINOR__)
+#ifndef __CUDACC_VER_MINOR__
 #  error "missing __CUDACC_VER_MINOR__ definition"
 #endif // !__CUDACC_VER_MINOR__
 
-#if !defined(__CUDACC_VER_BUILD__)
+#ifndef __CUDACC_VER_BUILD__
 #  error "missing __CUDACC_VER_BUILD__ definition"
 #endif // !__CUDACC_VER_BUILD__
 
-#if !defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#ifndef __NVCC_DIAG_PRAGMA_SUPPORT__
 #  error "missing __NVCC_DIAG_PRAGMA_SUPPORT__ definition"
 #endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
 

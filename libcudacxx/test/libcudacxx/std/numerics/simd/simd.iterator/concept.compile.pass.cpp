@@ -11,14 +11,14 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.iterator], ranges iterator/sentinel concept conformance for
 // basic_vec::iterator, basic_vec::const_iterator, basic_mask::iterator,
 // basic_mask::const_iterator against cuda::std::default_sentinel_t.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/iterator>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

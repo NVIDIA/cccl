@@ -8,7 +8,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -53,7 +53,7 @@ struct find_sort_policy_index
 {
 private:
   template <int Index>
-  [[nodiscard]] static constexpr int find_index()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int find_index()
   {
     if constexpr (Index >= sorted_output_policy_count)
     {
@@ -149,7 +149,7 @@ private:
   static constexpr topk_policy active_policy             = PolicyGetter{}();
 
   template <int Index>
-  [[nodiscard]] static constexpr int find_index()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int find_index()
   {
     if constexpr (Index >= active_policy.baseline.worker_per_segment_policies.size())
     {

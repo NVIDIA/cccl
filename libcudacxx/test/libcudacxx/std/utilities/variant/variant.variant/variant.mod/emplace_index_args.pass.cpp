@@ -48,7 +48,7 @@ TEST_FUNC void test_emplace_sfinae()
     static_assert(emplace_exists<V, ic<2>, int*>);
     static_assert(!emplace_exists<V, ic<3>>, "cannot construct");
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int, int&, const int&, int&&, TestTypes::NoCtors>;
     static_assert(emplace_exists<V, ic<0>>);
@@ -105,7 +105,7 @@ TEST_FUNC void test_basic()
     assert(cuda::std::get<4>(v) == "aaa");
     assert(&ref3 == &cuda::std::get<4>(v));*/
   }
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int, long, const int&, int&&, TestTypes::NoCtors>; //,
                                                                                     // cuda::std::string>;

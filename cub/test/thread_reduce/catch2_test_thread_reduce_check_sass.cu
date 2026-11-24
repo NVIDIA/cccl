@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 // #define CCCL_CHECK_SASS
 
-#if defined(CCCL_CHECK_SASS)
+#ifdef CCCL_CHECK_SASS
 
 #  include <cub/detail/type_traits.cuh>
 #  include <cub/thread/thread_reduce.cuh>
