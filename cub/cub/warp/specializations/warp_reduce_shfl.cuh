@@ -54,6 +54,15 @@ template <typename ReductionOp, typename T>
 inline constexpr bool is_warp_vote_all_op =
   ::cuda::std::is_same_v<T, bool> && ::cuda::__is_cuda_std_logical_and_v<ReductionOp, T>;
 
+template <typename T>
+inline constexpr bool is_16bit_integer_v = ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) == 2;
+
+template <typename T>
+inline constexpr bool has_16bit_member_v = is_16bit_integer_v<T>;
+
+template <typename K, typename V>
+inline constexpr bool has_16bit_member_v<KeyValuePair<K, V>> = is_16bit_integer_v<K> || is_16bit_integer_v<V>;
+
 // WarpReduceShfl provides SHFL-based reduction of items partitioned across a warp
 template <typename T, int LogicalWarpThreads>
 struct WarpReduceShfl
@@ -234,11 +243,29 @@ struct WarpReduceShfl
   template <typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduce(T& input, ReductionOp reduction_op, const int last_lane)
   {
-    // capture clause prevents regressions
-    ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
-      value = ReduceStep(value, reduction_op, last_lane, 1u << step);
-      input = value;
-    });
+    // TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
+    // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
+    if constexpr (has_16bit_member_v<T>)
+    {
+      // A captureless lambda avoids extra packing for 16-bit scan-by-key accumulators.
+      // See https://github.com/NVIDIA/cccl/pull/12736.
+      ::cuda::static_for<steps>(
+        [](auto step, WarpReduceShfl& self, T& input, auto reduction_op, const int last_lane) {
+          input = self.ReduceStep(input, reduction_op, last_lane, 1 << step);
+        },
+        *this,
+        input,
+        reduction_op,
+        last_lane);
+    }
+    else
+    {
+      // capture clause prevents regressions
+      ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
+        value = ReduceStep(value, reduction_op, last_lane, 1u << step);
+        input = value;
+      });
+    }
   }
 
   // Unrolls the reduction steps when all lanes are valid: no range check, only lane 0 holds the result
