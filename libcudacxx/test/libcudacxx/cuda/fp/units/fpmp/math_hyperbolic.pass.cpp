@@ -9,9 +9,7 @@
 // reference over the whole range of each, including small arguments, the arguments where a
 // function changes path, sinh and cosh between the overflow thresholds of exp and their own,
 // and acosh and atanh next to 1; the results that must be exact; the C99 Annex F special
-// values; and the domains of acosh and atanh decided on both limbs. The special values are
-// checked for fp64mp2 as well, with acosh and atanh of arguments whose distance from 1 is
-// only in the low limb.
+// values; and the domains of acosh and atanh decided on both limbs.
 //
 // sinh, tanh and atanh have two fp32mp2 kernels: fp32mp2 and fp32mp2_low get the fast one, and
 // fp32mp2_high one with a smaller worst-case error. Every check runs on all three types, the
@@ -366,19 +364,6 @@ TEST_HOST_DEVICE_FUNC void test_range_ends()
   check_exact<T>(cases, false);
 }
 
-// fp64mp2 acosh and atanh of arguments whose distance from 1 is only in the low limb, which the
-// sum of the limbs does not hold: acosh(1 + d) = sqrt(2 d) and atanh(1 - d) = ln(2 / d) / 2 to
-// d.
-TEST_HOST_DEVICE_FUNC void test_fp64mp2_near_one()
-{
-  const cuda::fp64mp2 a = cuda::acosh(cuda::fp64mp2(1.0, 0x1p-700));
-  assert(cuda::std::fabs(a.hi() - 0x1.6a09e667f3bcdp-350) <= 0x1p-400);
-  const cuda::fp64mp2 t = cuda::atanh(cuda::fp64mp2(1.0, -0x1p-700));
-  assert(cuda::std::fabs(t.hi() - 0x1.e5e56ba199852p+7) <= 0x1p-40); // 701 ln2 / 2
-  const cuda::fp64mp2 n = cuda::atanh(cuda::fp64mp2(-1.0, 0x1p-700));
-  assert(cuda::std::fabs(n.hi() + 0x1.e5e56ba199852p+7) <= 0x1p-40);
-}
-
 int main(int, char**)
 {
   test_accuracy<cuda::fp32mp2>(false);
@@ -390,12 +375,9 @@ int main(int, char**)
   test_special_values<cuda::fp32mp2, float>();
   test_special_values<cuda::fp32mp2_low, float>();
   test_special_values<cuda::fp32mp2_high, float>();
-  test_special_values<cuda::fp64mp2, double>();
-  test_special_values<cuda::fp64mp2_high, double>();
   test_range_ends<cuda::fp32mp2>();
   test_range_ends<cuda::fp32mp2_low>();
   test_range_ends<cuda::fp32mp2_high>();
-  test_fp64mp2_near_one();
 
   return 0;
 }

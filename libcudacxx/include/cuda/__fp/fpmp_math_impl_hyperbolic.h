@@ -210,13 +210,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(sinh, _CCCL_FPMP_SINHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
-  // sinh(+-0) = +-0: the conversions do not keep the sign of zero
-  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(sinh)
@@ -394,7 +387,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cosh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(cosh, _CCCL_FPMP_COSHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(cosh)
@@ -477,13 +469,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_tanh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(tanh, _CCCL_FPMP_TANHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
-  // tanh(+-0) = +-0: the conversions do not keep the sign of zero
-  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
@@ -762,13 +747,6 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_asinh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   _CCCL_FPMP_CALL_FP64MP2_MATH(asinh, _CCCL_FPMP_ASINHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
-  // asinh(+-0) = +-0: the conversions do not keep the sign of zero
-  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(asinh)
@@ -851,41 +829,11 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
  * --------------------------------------------------------------------
  * Inverse hyperbolic cosine acosh(x) (fp64mp2) - binary128 wrapper
  * --------------------------------------------------------------------
- * Near 1 the function depends on d = x - 1, which the sum of the limbs in binary128 (or
- * binary64) drops when the low limb is beyond its precision: acosh((1, 1e-200)) came out
- * as 0. d is formed from the limbs instead (the high limbs subtract exactly), which also
- * decides the domain on both limbs.
- *
- * In binary64, acosh(x) = log1p(d + sqrt(d (d + 2))) below 2^26 and log1p(d) + ln2 from
- * there, which is ln(2x) to double precision. That is one log1p for every x, so the threads
- * of a warp stay on one path.
- * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_acosh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-#  if (_CCCL_FPMP_FP128_QUAD_BODIES == 1)
-  if (__x_hi >= 1.0 && __x_hi < 2.0)
-  {
-    const __fpmp_fp128 __d = static_cast<__fpmp_fp128>(__x_hi - 1.0) + static_cast<__fpmp_fp128>(__x_lo);
-    ::cuda::__fpmp2_from_quad(
-      _CCCL_FPMP_LOG1PQ(__d + _CCCL_FPMP_SQRTQ(__d * (__d + static_cast<__fpmp_fp128>(2)))), __res_hi, __res_lo);
-  }
-  else
-  {
-    _CCCL_FPMP_CALL_FP64MP2_MATH(acosh, _CCCL_FPMP_ACOSHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  }
-#  else
-  constexpr double __ln2 = 0x1.62e42fefa39efp-1;
-  const double __d       = (__x_hi - 1.0) + __x_lo;
-  // x >= 2^26, on the bits: a negative x compares below as an integer, and NaN gives NaN either way
-  const bool __large = ::cuda::std::bit_cast<int64_t>(__x_hi) >= ::cuda::std::bit_cast<int64_t>(0x1p26);
-  const double __t   = __large ? __d : __d + ::sqrt(__d * (__d + 2.0));
-  // x < 1 is outside the domain, and d (d + 2) is positive again below -1
-  const double __r = ::log1p(::cuda::std::signbit(__d) ? ::cuda::std::__fp_nan<double>() : __t);
-  ::cuda::__fpmp2_from_double(__large ? __r + __ln2 : __r, __res_hi, __res_lo);
-#  endif
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
+  _CCCL_FPMP_CALL_FP64MP2_MATH(acosh, _CCCL_FPMP_ACOSHQ, __x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(acosh)
@@ -984,52 +932,11 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
  * --------------------------------------------------------------------
  * Inverse hyperbolic tangent atanh(x) (fp64mp2) - binary128 wrapper
  * --------------------------------------------------------------------
- * For |x| >= 1/2 the function depends on 1 - |x|, which the sum of the limbs in binary128 (or
- * binary64) drops when the low limb is beyond its precision: atanh((1, -1e-200)) came out as
- * +inf. 1 - |x| is formed from the limbs instead (the high limbs subtract exactly), which
- * also decides the domain on both limbs.
- *
- * In binary128, atanh(|x|) = (log1p(|x|) - ln(1 - |x|)) / 2 there. In binary64,
- * atanh(|x|) = log1p(t) / 2 for every x, with t = 2|x| / (1 - |x|) from 1/2 and
- * t = 2|x| + 2|x|^2 / (1 - |x|) below, which keeps the relative accuracy of a small x. That
- * is one log1p for every x, so the threads of a warp stay on one path.
- * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_atanh(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  const uint64_t __x_bits = ::cuda::std::bit_cast<uint64_t>(__x_hi);
-  const bool __neg        = (__x_bits >> 63) != 0;
-  const double __a_hi     = ::cuda::std::bit_cast<double>(__x_bits & 0x7FFFFFFFFFFFFFFFull);
-  const double __a_lo     = __neg ? -__x_lo : __x_lo;
-  // |x_hi| >= 1/2, or NaN
-  const bool __from_half = ::cuda::__internal_fpmp2_abs_bits2(__x_hi) >= ::cuda::__fpmp2_half_bits2;
-#  if (_CCCL_FPMP_FP128_QUAD_BODIES == 1)
-  if (__from_half)
-  {
-    const __fpmp_fp128 __a = static_cast<__fpmp_fp128>(__a_hi) + static_cast<__fpmp_fp128>(__a_lo);
-    const __fpmp_fp128 __d = static_cast<__fpmp_fp128>(1.0 - __a_hi) - static_cast<__fpmp_fp128>(__a_lo);
-    const __fpmp_fp128 __r = (_CCCL_FPMP_LOG1PQ(__a) - _CCCL_FPMP_LOGQ(__d)) / static_cast<__fpmp_fp128>(2);
-    ::cuda::__fpmp2_from_quad(__neg ? -__r : __r, __res_hi, __res_lo);
-  }
-  else
-  {
-    _CCCL_FPMP_CALL_FP64MP2_MATH(atanh, _CCCL_FPMP_ATANHQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  }
-  // atanh(+-0) = +-0: the conversions do not keep the sign of zero
-  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
-#  else
-  const double __a = __a_hi + __a_lo;
-  const double __d = (1.0 - __a_hi) - __a_lo;
-  const double __q = (__a + __a) / __d;
-  const double __r = 0.5 * ::log1p(__from_half ? __q : __a * __q + (__a + __a));
-  ::cuda::__fpmp2_from_double(__neg ? -__r : __r, __res_hi, __res_lo); // keeps the sign of zero
-#  endif
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
+  _CCCL_FPMP_CALL_FP64MP2_MATH(atanh, _CCCL_FPMP_ATANHQ, __x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(atanh)

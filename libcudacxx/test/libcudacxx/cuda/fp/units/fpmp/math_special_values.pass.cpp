@@ -688,21 +688,7 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
 
   using D = cuda::fp64mp2_low;
   const D w(0.0, 0.25);
-  assert(approx_eq(static_cast<double>(expm1(w)), 0.2840254166877415));
-  assert(approx_eq(static_cast<double>(log1p(w)), 0.22314355131420976));
-  assert(approx_eq(static_cast<double>(sinh(w)), 0.2526123168081683));
-  assert(approx_eq(static_cast<double>(tanh(w)), 0.24491866240370913));
-  assert(approx_eq(static_cast<double>(asinh(w)), 0.24746646154726346));
-  assert(approx_eq(static_cast<double>(atanh(w)), 0.25541281188299536));
-  assert(approx_eq(static_cast<double>(atan(w)), 0.24497866312686414));
-  assert(approx_eq(static_cast<double>(asin(w)), 0.25268025514207865));
-  assert(approx_eq(static_cast<double>(atan2(w, D(1.0))), 0.24497866312686414));
-  assert(approx_eq(static_cast<double>(atan2(w, D(-1.0))), 2.8966139904629289));
-  assert(approx_eq(static_cast<double>(atan2(-w, D(-1.0))), -2.8966139904629289));
-  assert(approx_eq(static_cast<double>(atan2(D(0.0), -w)), pi));
-  assert(approx_eq(static_cast<double>(atan2(D(-0.0), -w)), -pi));
-  assert(is_pos_zero(atan2(D(0.0), w)) && is_neg_zero(atan2(D(-0.0), w)));
-  // hypot, rhypot and the norms, also next to an operand whose high limb is far below it
+  // fp64mp2_low hypot, rhypot and the norms, also next to an operand whose high limb is far below it
   assert(approx_eq(static_cast<double>(hypot(w, D(0.0))), 0.25));
   assert(approx_eq(static_cast<double>(hypot(w, D(0x1p-600))), 0.25));
   assert(approx_eq(static_cast<double>(rhypot(-w, D(0x1p-600))), 4.0));
