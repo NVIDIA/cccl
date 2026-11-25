@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T, size_t Extent>
-cuda::std::span<T, Extent> createImplicitSpan(T* first, T* last)
+TEST_FUNC cuda::std::span<T, Extent> createImplicitSpan(T* first, T* last)
 {
   return {first, last}; // expected-error {{chosen constructor is explicit in copy-initialization}}
 }

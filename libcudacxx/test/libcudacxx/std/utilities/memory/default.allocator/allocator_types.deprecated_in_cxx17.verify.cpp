@@ -29,6 +29,8 @@
 
 #include <cuda/std/__memory_>
 
+#include "test_macros.h"
+
 TEST_FUNC void f()
 {
   {

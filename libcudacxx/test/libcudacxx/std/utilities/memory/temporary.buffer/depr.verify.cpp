@@ -8,14 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
+// We don't expose get_temporary_buffer()
+// UNSUPPORTED: true
+
 // Ensure allocator<void> is deprecated
 
 #include <cuda/std/algorithm>
 
+#include "test_macros.h"
+
 TEST_FUNC void test()
 {
-  auto a = cuda::std::get_temporary_buffer<int>(1); // expected-warning {{'get_temporary_buffer<int>' is deprecated}}
-  cuda::std::return_temporary_buffer(a.first); // expected-warning {{'return_temporary_buffer<int>' is deprecated}}
+  auto a = cuda::std::get_temporary_buffer<int>(1); // expected-warning
+  cuda::std::return_temporary_buffer(a.first); // expected-warning
 }
 
 int main(int, char**)
