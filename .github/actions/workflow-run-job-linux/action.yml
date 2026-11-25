@@ -144,8 +144,11 @@ runs:
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
           echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
           echo ""
-          echo "2. Run the failed command inside the same Docker container used by this CI job:"
-          echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
+          echo "2. Download the workflow artifact containing this run's devcontainer configs:"
+          echo "   gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name workflow --dir workflow"
+          echo ""
+          echo "3. Run the failed command inside the same Docker container used by this CI job:"
+          echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} --extra-devcontainers workflow/.devcontainer -- ${COMMAND}"
           echo ""
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
@@ -202,6 +205,7 @@ runs:
         # Initialize artifact paths, vars, etc shared with the devcontainer:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
+        ci/util/workflow/initialize.sh
 
         # Launch this container using the host's docker daemon
         ( # Subshell to contain the set -x log
@@ -210,6 +214,7 @@ runs:
             --docker \
             --cuda $JOB_CUDA \
             --host $JOB_HOST \
+            --extra-devcontainers "${WORKFLOW_DIR}/.devcontainer" \
             ${cuda_ext_request:-} \
             ${tidy_ext_request:-} \
             "${gpu_request[@]}" \

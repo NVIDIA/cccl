@@ -26,6 +26,7 @@ jobs:
   dispatch-pcs:
     name: ${{ matrix.id }}
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:

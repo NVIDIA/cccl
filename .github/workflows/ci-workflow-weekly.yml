@@ -24,6 +24,26 @@ defaults:
 
 on:
   workflow_dispatch:
+    inputs:
+      matrix_ref:
+        description: >
+          Commit SHA or ref in this repo containing the CI matrix.
+          Setting matrix_ref overrides ci_profile.
+        type: string
+        required: false
+      matrix_path:
+        description: >
+          Path to the CI matrix file, relative to the repository root.
+          Setting matrix_path overrides ci_profile.
+        type: string
+        required: false
+      ci_profile:
+        description: >
+          Profile to select from the CI_MATRICES repository variable.
+          If set, the CI_MATRICES repository variable is checked.
+        type: string
+        default: "weekly"
+        required: false
   schedule:
     - cron: "0 8 * * 0" # Every Sunday at 00:00 PST, 03:00 EST, 08:00 UTC
 
@@ -34,10 +54,17 @@ jobs:
 
   matrix-build:
     name: Build & dispatch CI matrix
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     uses: ./.github/workflows/ci-matrix-build.yml
     secrets: inherit
     with:
       workflows: weekly
+      ci_profile: ${{ inputs.ci_profile || 'weekly' }}
+      matrix_ref: ${{ inputs.matrix_ref }}
+      matrix_path: ${{ inputs.matrix_path }}
 
   # This analyzes the current run. Keep every job whose failures should be
   # included in this job's direct or transitive `needs` so log collection starts
