@@ -103,8 +103,7 @@ dot(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
 
     if constexpr (__has_dp4a || __has_dp2a)
     {
-      NV_IF_TARGET(NV_IS_DEVICE,
-                   (return __simd_binary_reduce_impl(__lhs, __rhs, __init, __dot_operation<_Tp, _Up>{});)) // ADL
+      NV_IF_TARGET(NV_IS_DEVICE, (return __simd_dot_impl(__lhs, __rhs, __init, __dot_operation<_Tp, _Up>{});)) // ADL
     }
   }
 #endif // _CCCL_HAS_SIMD_IDOT()
