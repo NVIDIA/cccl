@@ -18,11 +18,15 @@ toolkit installations.
 from __future__ import annotations
 
 import ctypes
+import json
 import os
 import re
+import subprocess
+import sys
 import threading
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 _CUDART_VERSION = re.compile(
@@ -131,34 +135,31 @@ def _library_dirs(root: Path) -> tuple[Path, ...]:
     """List existing library directories for supported toolkit layouts."""
 
     result: list[Path] = []
-    names = ("lib", "lib64", "bin")
-    if os.name == "nt":
-        names += ("bin/x64", "bin/x86_64")
-    for name in names:
+    for name in ("lib", "lib64", "bin"):
         candidate = root / name
         if candidate.is_dir():
             result.append(candidate)
     return tuple(result)
 
 
-def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
-    """Locate compiler libraries beside the selected CUDA headers.
+def _toolkit_root(include_dir: Path) -> Path:
+    """Identify the header installation, including CUDA 12 sibling wheels."""
 
-    CUDA 12 wheels split runtime, compiler, and linker files into sibling
-    packages. Treat their shared ``nvidia`` directory as the installation
-    root; do not search other Python environments for missing components.
-    """
-
-    toolkit_root = include_dir.parent.resolve()
+    root = include_dir.parent.resolve()
     if (
         include_dir.name == "include"
-        and toolkit_root.name == "cuda_runtime"
-        and toolkit_root.parent.name == "nvidia"
+        and root.name == "cuda_runtime"
+        and root.parent.name == "nvidia"
     ):
-        # CUDA 12 wheels install Toolkit components into sibling namespace
-        # packages below one ``site-packages/nvidia`` anchor. Treat that anchor
-        # as the Toolkit root without searching any other site-packages tree.
-        toolkit_root = toolkit_root.parent
+        return root.parent
+    return root
+
+
+def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
+    """Locate compiler libraries beside the selected CUDA headers."""
+
+    toolkit_root = _toolkit_root(include_dir)
+    if toolkit_root != include_dir.parent:
         return _ToolkitLibraryLayout(
             toolkit_root=toolkit_root,
             nvrtc_dirs=_library_dirs(toolkit_root / "cuda_nvrtc"),
@@ -176,11 +177,6 @@ def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
 def _library_names(kind: str, major: int) -> tuple[str, ...]:
     """Name platform libraries for the requested major release."""
 
-    if os.name == "nt":
-        version = major * 10
-        if kind == "nvrtc":
-            return (f"nvrtc64_{version}_0.dll",)
-        return (f"nvJitLink_{version}_0.dll",)
     if kind == "nvrtc":
         return (f"libnvrtc.so.{major}",)
     return (f"libnvJitLink.so.{major}",)
@@ -194,6 +190,101 @@ def _nvrtc_builtins_names(major: int, minor: int) -> tuple[str, ...]:
     return (f"libnvrtc-builtins.so.{major}.{minor}",)
 
 
+# Pathfinder locates a Windows DLL by loading it. Probe in a disposable process
+# so a missing component or a DLL from another toolkit cannot claim this one.
+_WINDOWS_PATHFINDER_PROBE = """
+import json
+import site
+import sys
+paths, names, wheel_site = json.load(sys.stdin)
+sys.path[:] = paths
+site.PREFIXES[:] = [wheel_site] if wheel_site else []
+from cuda.pathfinder import load_nvidia_dynamic_lib
+print(json.dumps([load_nvidia_dynamic_lib(name).abs_path for name in names]))
+"""
+
+
+def _windows_compiler_paths(
+    toolkit_root: Path, names: tuple[str, ...], wheel_site: Path | None = None
+) -> list[str | None]:
+    """Scope Pathfinder discovery to the selected installation."""
+
+    env = os.environ.copy()
+    env.pop("CONDA_PREFIX", None)
+    env.pop("CUDA_HOME", None)
+    env.update(CUDA_PATH=str(toolkit_root), PATH="")
+    probe = subprocess.run(
+        [sys.executable, "-I", "-c", _WINDOWS_PATHFINDER_PROBE],
+        input=json.dumps(
+            (sys.path, names, str(wheel_site) if wheel_site else None)
+        ),
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if probe.returncode:
+        raise RuntimeError(
+            f"Windows CUDA Pathfinder probe failed for {toolkit_root}: "
+            f"{probe.stderr.strip() or f'exit code {probe.returncode}'}"
+        )
+    return json.loads(probe.stdout)
+
+
+@lru_cache(maxsize=1)
+def _windows_toolkit_candidates(
+    include_dir: Path, major: int, minor: int
+) -> _ToolkitRootCandidates:
+    """Cache a complete same-root set only after validating the probe result."""
+
+    toolkit_root = _toolkit_root(include_dir)
+    nvrtc_root = nvjitlink_root = toolkit_root
+    if toolkit_root != include_dir.parent:
+        nvrtc_root /= "cuda_nvrtc"
+        nvjitlink_root /= "nvjitlink"
+        # Pathfinder caches CUDA_PATH in each interpreter. CUDA 12 wheels
+        # put the two DLLs under different component roots.
+        (nvrtc_path,) = _windows_compiler_paths(nvrtc_root, ("nvrtc",))
+        (nvjitlink_path,) = _windows_compiler_paths(
+            nvjitlink_root, ("nvJitLink",)
+        )
+    else:
+        wheel_site = (
+            toolkit_root.parent.parent
+            if toolkit_root.parent.name == "nvidia"
+            and toolkit_root.name == f"cu{major}"
+            else None
+        )
+        nvrtc_path, nvjitlink_path = _windows_compiler_paths(
+            toolkit_root, ("nvrtc", "nvJitLink"), wheel_site
+        )
+    libraries = []
+    for kind, raw_path, root in (
+        ("NVRTC", nvrtc_path, nvrtc_root),
+        ("nvJitLink", nvjitlink_path, nvjitlink_root),
+    ):
+        if raw_path is None or not Path(raw_path).is_absolute():
+            raise RuntimeError(
+                f"Windows CUDA Pathfinder returned no absolute path for "
+                f"{kind} in {toolkit_root}: {raw_path!r}"
+            )
+        path = Path(_exact_candidate_path(Path(raw_path), root))
+        if not path.is_file():
+            raise RuntimeError(f"missing {kind} DLL: {path}")
+        libraries.append(path)
+    nvrtc, nvjitlink = libraries
+    (builtins_name,) = _nvrtc_builtins_names(major, minor)
+    builtins = nvrtc.with_name(builtins_name)
+    if not builtins.is_file():
+        raise RuntimeError(
+            f"NVRTC candidate without adjacent builtins ({builtins_name}): "
+            f"{nvrtc}"
+        )
+    _exact_candidate_path(builtins, nvrtc_root)
+    return _ToolkitRootCandidates(
+        toolkit_root, ((nvrtc, builtins),), (nvjitlink,)
+    )
+
+
 def _toolkit_root_candidates(
     include_dir: Path,
     *,
@@ -204,9 +295,15 @@ def _toolkit_root_candidates(
 
     Pair NVRTC with builtins in the same directory, then look for nvJitLink in
     that installation. Return either the candidates or a missing-file
-    diagnostic. This stage checks paths only; loading and version checks
-    happen later.
+    diagnostic. Windows Pathfinder probes DLLs in a helper process. The
+    calling process loads and checks the selected libraries later.
     """
+
+    if os.name == "nt":
+        try:
+            return _windows_toolkit_candidates(include_dir, major, minor), ""
+        except (OSError, RuntimeError, ValueError) as exc:
+            return None, str(exc)
 
     layout = _toolkit_library_layout(include_dir)
     nvrtc_pairs: list[tuple[Path, Path]] = []
@@ -294,7 +391,7 @@ def _exact_candidate_path(candidate: Path, toolkit_root: Path) -> str:
 
     exact_path = Path(os.path.realpath(candidate))
     try:
-        exact_path.relative_to(toolkit_root.resolve())
+        exact_path.relative_to(toolkit_root)
     except ValueError as exc:
         raise RuntimeError(
             f"resolved CUDA Toolkit library escapes {toolkit_root}: "
@@ -483,7 +580,7 @@ def preload_toolkit_compiler_libraries(
     # a later include root must not silently replace it, even at the same
     # reported Toolkit version.
     primary_include = cuda_include_dirs[0]
-    primary_root = _toolkit_library_layout(primary_include).toolkit_root
+    primary_root = _toolkit_root(primary_include)
     candidate, diagnostic = _toolkit_root_candidates(
         primary_include,
         major=major,
@@ -491,9 +588,9 @@ def preload_toolkit_compiler_libraries(
     )
     if candidate is None:
         other_roots = tuple(
-            _toolkit_library_layout(include_dir).toolkit_root
+            root
             for include_dir in cuda_include_dirs[1:]
-            if _toolkit_library_layout(include_dir).toolkit_root != primary_root
+            if (root := _toolkit_root(include_dir)) != primary_root
         )
         ignored = (
             "; later ordered CUDA header roots are not eligible: "
@@ -562,7 +659,7 @@ def preload_toolkit_compiler_libraries(
             for kind in ("nvrtc", "nvJitLink")
         }
         actual_paths = {
-            kind: os.path.realpath(result.abs_path)
+            kind: os.path.realpath(result.abs_path) if result.abs_path else None
             for kind, result in loaded.items()
         }
         for kind, exact_path in exact_paths.items():
