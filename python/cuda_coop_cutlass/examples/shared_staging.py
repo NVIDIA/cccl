@@ -5,8 +5,8 @@
 """Stage a masked global tile with CuTe, then load shared values cooperatively.
 
 The example uses separate Int32 source, shared, and output storage. Every
-logical group has its own contiguous tile. Native copy uses striped thread
-ownership; returning Load can then select blocked or striped ownership.
+group has its own tile. The native copy reads in striped order, and Load
+then returns a blocked or a striped payload.
 """
 
 import cutlass
@@ -51,7 +51,7 @@ def stage_and_reload(
         shared_row[item] = cutlass.Int32(_DEFAULT)
         predicates[item] = rank + item * width < valid_items
     cute.basic_copy_if(predicates, source_row, shared_row)
-    # Returning Load may read shared values written by other threads.
+    # Load may read shared values written by other threads.
     cute.arch.sync_threads()
 
     if cutlass.const_expr(width == _THREADS):

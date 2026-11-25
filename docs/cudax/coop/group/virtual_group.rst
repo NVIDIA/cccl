@@ -12,7 +12,7 @@
   {
   public:
     using unit_level      = Unit;
-    using bound_level     = typename ParentGroup::bound_level;
+    using boundary_level     = typename ParentGroup::boundary_level;
     using hierarchy_type  = typename ParentGroup::hierarchy_type;
 
     template <typename Mapping>

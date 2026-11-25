@@ -45,14 +45,14 @@ def run_example():
         prepare(workspace)
         storage.sync()
         value = workspace[63 - thread]
-        # Every thread must finish reading before the collective can overwrite
-        # these same bytes with its scratch. The input now lives in registers.
+        # Every thread must finish reading before the sum overwrites these
+        # bytes with its scratch. The input now lives in registers.
         storage.sync()
         total = coop.sum(block, value, temp_storage=storage)
         storage.sync()
 
-        # Reinitialize the shared view for the next native phase. The separate
-        # native allocation retains its values across the collective.
+        # Fill the reserved tensor again for the next native step. The tensor
+        # from SmemAllocator kept its values across the sum.
         workspace[thread] = cutlass.Float32(thread + 101)
         storage.sync()
         output = cute.make_tensor(destination, cute.make_layout(129))

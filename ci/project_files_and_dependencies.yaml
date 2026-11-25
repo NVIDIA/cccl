@@ -183,6 +183,7 @@ projects:
       - 'ci/windows/build_cuda_coop_cutlass\.ps1$'
       - 'ci/cuda_coop_cutlass_requirements\.txt$'
       - 'ci/validate_cuda_coop_cutlass_artifacts\.py$'
+      - 'ci/verify_cuda_coop_cutlass_index\.py$'
       - 'ci/test/test_cuda_coop_cutlass_ci\.py$'
 
   packaging:

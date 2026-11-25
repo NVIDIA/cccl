@@ -2,12 +2,101 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate Exchange operands and adapt register payloads.
+"""``exchange`` and ``shuffle`` move values between the threads of a group.
 
-Adapt register containers to initialized ThreadData and classify their dtypes.
-The plan selects the block or warp specialization and its owned scratch;
-lowering emits the CuTe call and C++ wrapper.
+Both work on values the threads already hold in registers, such as a payload
+from :func:`~cuda.coop.cutlass.load`, and the results stay in registers.
+
+``exchange`` changes which thread holds each item of a :term:`tile`. In a
+:term:`blocked` layout each thread holds neighboring elements of the tile,
+and in a :term:`striped` layout neighboring threads do.
+
+.. figure:: visualizations/exchange-striped.svg
+   :alt: Two rows of eight threads with two items each, joined by a band
+         of shared scratch. In the top row thread 0 holds 0 and 8, thread 1
+         holds 1 and 9, and so on up to thread 7 with 7 and 15. In the
+         bottom row thread 0 holds 0 and 1, thread 1 holds 2 and 3, and so
+         on up to thread 7 with 14 and 15.
+   :width: 100%
+
+   ``exchange`` with ``mode="striped_to_blocked"`` on eight threads with
+   two items each. Each number is an item's position in the tile. Thread 0
+   holds positions 0 and 8 before the call and 0 and 1 after it.
+
+For a group of ``G`` threads with ``K`` items each, item ``i`` of the thread
+with rank ``t`` holds this tile position:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Layout
+     - Tile position
+   * - Blocked
+     - ``t * K + i``
+   * - Striped
+     - ``t + i * G``
+   * - Warp-striped
+     - Striped inside each warp of a block: ``w * 32 * K + l + i * 32``,
+       for lane ``l`` of warp ``w``
+
+On a block, the tile is the block's ``G * K`` items. Each warp or group of
+lanes has a tile of its own, with ``G`` the group's size and ``t`` the
+thread's rank in its group.
+
+The four layout modes convert a payload from one layout to another. The four
+scatter modes send items to the tile positions that ``ranks`` gives for
+them:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 38 14 48
+
+   * - ``mode``
+     - Groups
+     - What it does
+   * - ``"striped_to_blocked"`` (default)
+     - All
+     - Turns a striped payload into a blocked one.
+   * - ``"blocked_to_striped"``
+     - All
+     - Turns a blocked payload into a striped one.
+   * - ``"warp_striped_to_blocked"``
+     - Blocks
+     - Turns a warp-striped payload into a blocked one.
+   * - ``"blocked_to_warp_striped"``
+     - Blocks
+     - Turns a blocked payload into a warp-striped one.
+   * - ``"scatter_to_blocked"``
+     - Blocks
+     - Sends each item to the position in ``ranks``. The result is blocked.
+   * - ``"scatter_to_striped"``
+     - Blocks
+     - Sends each item to the position in ``ranks``. The result is striped.
+   * - ``"scatter_to_striped_guarded"``
+     - Blocks
+     - The same as ``"scatter_to_striped"`` for the items whose rank in
+       ``ranks`` is zero or more. It skips the items with a negative rank.
+   * - ``"scatter_to_striped_flagged"``
+     - Blocks
+     - The same as ``"scatter_to_striped"`` for the items whose flag in
+       ``valid_flags`` is nonzero. It skips the items with a zero flag.
+
+Nothing records which layout a payload has, and ``exchange`` moves the items
+as the mode says. In a group of more than one thread with more than one item
+each, ``"striped_to_blocked"`` on a payload that is already blocked returns
+the items in the wrong order, without an error. A payload loaded with
+``algorithm="striped"`` is striped, and a scan reads a blocked one, so a
+kernel that does both calls ``exchange`` in between.
 """
+
+# Implementation notes.
+#
+# Validate Exchange operands and adapt register payloads.
+#
+# Adapt register containers to initialized ThreadData and classify their
+# dtypes. The plan selects the block or warp specialization and its owned
+# scratch; lowering emits the CuTe call and C++ wrapper.
 
 from __future__ import annotations
 
@@ -111,83 +200,131 @@ def exchange(
     | None = None,
     warp_time_slicing: bool = False,
 ) -> ThreadData:
-    """Exchange register payloads, including ranked block scatters.
+    """Rearrange the items that the threads of a group hold.
 
-    Every group member must call, including members whose scatter items are
-    all invalid. For ``G`` threads and ``K`` items per thread, blocked order
-    assigns logical element ``rank * K + item`` to a slot; striped order
-    assigns ``item * G + rank``. Exchange rearranges registers without loading
-    or storing a memory tile.
+    Each thread passes its payload and receives a new one. The table of
+    modes at the top of :ref:`Data rearrangement <coop-cutlass-exchange>`
+    says what each mode does.
 
     Parameters
     ----------
     group : ThreadGroup
-        Complete block, physical warp, or logical warp with a power-of-two
-        width from 1 through 32. Warp operations require an enclosing block
-        size divisible by 32.
-    value : ThreadData, CuTe register tensor, or TensorSSA
-        Fixed-size per-thread payload. Register tensors and ``TensorSSA`` values
-        are converted with :meth:`cuda.coop.cutlass.ThreadData.from_payload`.
-        Every member must supply the same dtype and extent. Supported dtypes
-        are signed and unsigned 8-, 16-, 32-, and 64-bit integers, ``Float32``,
-        and ``Float64``. Scalar inputs are unsupported.
+        ``this_block()``, ``this_warp()``, or ``this_warp().group_by(n)``
+        with ``n`` of 1, 2, 4, 8, 16 or 32. Any other group is rejected
+        when the kernel is compiled. Every thread of the group makes the
+        call, on every trip of a loop that contains it, including a thread
+        whose items a scatter skips. On a warp or a group of lanes, the
+        other groups of the block can skip the call. A warp group needs a
+        block whose size is a multiple of 32.
+    value : ThreadData, CuTe register tensor or TensorSSA
+        A payload. A register tensor or ``TensorSSA`` is read as a payload,
+        and the result is a ``ThreadData`` that ``to_register_tensor`` or
+        ``to_tensor_ssa`` converts back. One scalar per thread is rejected
+        when the kernel is compiled: pass a payload of one item. A tensor
+        in global or shared memory is rejected when the kernel is compiled,
+        so read it with :func:`~cuda.coop.cutlass.load` first. An item has
+        one of the ten element types listed under
+        :ref:`ThreadData <coop-thread-data>`.
     mode : str, optional
-        Compile-time conversion, default ``"striped_to_blocked"``. All groups
-        also support ``"blocked_to_striped"``. Blocks additionally support
-        ``"blocked_to_warp_striped"`` and
-        ``"warp_striped_to_blocked"``, which stripe within each physical warp
-        and require a block size divisible by 32. Block scatter modes are
-        ``"scatter_to_blocked"``, ``"scatter_to_striped"``,
-        ``"scatter_to_striped_guarded"``, and ``"scatter_to_striped_flagged"``.
-        Physical and logical warps support only ``"striped_to_blocked"`` and
-        ``"blocked_to_striped"``; their enclosing block must contain complete
-        physical warps.
-    ranks : ThreadData, CuTe register tensor, or TensorSSA, optional
-        Destination ranks, required for every scatter mode and rejected for
-        layout conversions. Must have a signed integer dtype and the same
-        per-thread extent as ``value``. Valid ranks must be distinct across
-        the block and lie in ``[0, block_tile_size)``. Guarded scatter skips
-        negative ranks. Other scatter modes require each participating item's
-        rank to be in range. ``None`` is the default.
-    valid_flags : ThreadData, CuTe register tensor, or TensorSSA, optional
-        Per-item flags, required for ``"scatter_to_striped_flagged"`` and
-        rejected for other modes. Must have an integer, non-boolean dtype and
-        the same extent as ``value``. Only items with nonzero flags scatter;
-        their ranks must be distinct and in range. ``None`` is the default.
+        A Python string. The default is ``"striped_to_blocked"``. A block
+        takes all eight modes. ``"warp_striped_to_blocked"`` and
+        ``"blocked_to_warp_striped"`` need a block size that is a multiple
+        of 32, and the other six take a block of any size. A warp or a
+        group of lanes takes ``"striped_to_blocked"`` and
+        ``"blocked_to_striped"``. A mode that the group does not take is
+        rejected when the kernel is compiled.
+    ranks : ThreadData, CuTe register tensor or TensorSSA, optional
+        For ``"scatter_to_blocked"``, ``"scatter_to_striped"``,
+        ``"scatter_to_striped_guarded"`` and
+        ``"scatter_to_striped_flagged"``, which need it. The four layout
+        modes take ``None``.
+
+        A payload with the item count of ``value``. Item ``i`` of ``ranks``
+        is the tile position that item ``i`` of ``value`` goes to. The
+        element type is ``Int8``, ``Int16``, ``Int32`` or ``Int64``,
+        whatever the element type of ``value``. Another item count or
+        element type is rejected when the kernel is compiled. Choose a type
+        that holds ``G * K - 1`` for a block of ``G`` threads with ``K``
+        items each: ``Int8`` reaches 128 tile positions.
+
+        ``"scatter_to_blocked"`` and ``"scatter_to_striped"`` write every
+        item. ``"scatter_to_striped_guarded"`` writes the items whose rank
+        is zero or more, and ``"scatter_to_striped_flagged"`` writes the
+        items whose flag is nonzero. The ranks of the written items must be
+        distinct and from 0 to ``G * K - 1``, so with the first two modes
+        they name each tile position once.
+
+        Nothing checks the rank values, when the kernel is compiled or
+        while it runs. Two written items with the same rank leave the
+        result undefined. Without ``warp_time_slicing``, a written item
+        whose rank is outside the range is stored in shared memory outside
+        the call's scratch. That includes a rank of ``G * K`` or more with
+        ``"scatter_to_striped_guarded"``.
+    valid_flags : ThreadData, CuTe register tensor or TensorSSA, optional
+        For ``"scatter_to_striped_flagged"``, which needs it. Every other
+        mode takes ``None``. A payload with the item count of ``value`` and
+        one of the eight integer element types. Another item count or
+        element type is rejected when the kernel is compiled. That includes
+        ``Boolean``, the type of a comparison such as ``x > 0``. Item ``i``
+        of ``value`` is written when item ``i`` of ``valid_flags`` is
+        nonzero, and its rank is ignored when the flag is zero.
     warp_time_slicing : bool, optional
-        Compile-time option, default ``False``. Reuse block exchange scratch
-        across warps to reduce shared memory usage at the cost of additional
-        synchronization. Requires a block; guarded and flagged scatter do
-        not support it.
+        For blocks. A Python bool, ``False`` by default. A block's scratch
+        holds the whole tile. With ``True`` it holds the items of one warp,
+        and the warps of the block take turns, with a block barrier between
+        turns. The result is the same, and the call uses less shared memory
+        on a block of more than 32 threads.
+        ``"scatter_to_striped_guarded"``, ``"scatter_to_striped_flagged"``,
+        warps and groups of lanes take ``False``.
 
     Returns
     -------
     cuda.coop.cutlass.ThreadData
-        New writable payload with the input dtype, extent, and requested
-        alignment in the output layout. All inputs, ranks, and flags remain
-        unchanged. A scatter destination with no valid input is undefined;
-        initialize it before reading it.
+        A new payload with the item count, element type and alignment of
+        ``value``. ``value``, ``ranks`` and ``valid_flags`` keep their
+        values. A layout mode defines every item. After a scatter, a result
+        item is undefined when no item was sent to its tile position.
+        Assign it before reading it.
 
     Notes
     -----
-    The operation does not check rank uniqueness or bounds. Guarded scatter
-    skips only negative ranks, and flagged scatter skips only items with a
-    zero flag. Duplicate ranks on written items give undefined results. An
-    out-of-range rank on a written item can write past the exchange scratch.
-
-    Scratch allocation and trailing synchronization are automatic. See
-    :ref:`coop-temp-storage` for storage reuse and :ref:`coop-thread-groups`
-    for participation requirements.
+    Every mode uses scratch, and ``exchange`` takes no ``temp_storage``. The
+    compiler provides the scratch and a barrier after the call. On a block,
+    that is a block barrier. On a warp or a group of lanes, each group has
+    scratch of its own and the barrier is a warp barrier for the lanes of
+    that group.
 
     See Also
     --------
     :cpp:struct:`cub::BlockExchange`, :cpp:struct:`cub::WarpExchange`
-        C++ exchange primitives.
+        The CUB classes behind the call.
 
     Examples
     --------
-    Reverse a 128-item block tile by assigning each input its destination
-    rank. Each of the 64 threads holds two items.
+    Turn a blocked payload into a striped one. The kernel then shifts the
+    result with :func:`~cuda.coop.cutlass.shuffle`. ``_BLOCK`` is
+    ``(8, 4, 2)``, a block of 64 threads, and ``_THREADS`` is 64. With
+    three items per thread and a ``source`` that counts from 0 to 191,
+    thread 0 holds 0, 1, 2 in ``payload`` and 0, 64, 128 in ``striped``.
+
+    `Full example on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/exchange_shuffle.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/examples/exchange_shuffle.py
+        :language: python
+        :start-after: docs: start cutlass-exchange-shuffle
+        :end-before: docs: end cutlass-exchange-shuffle
+        :dedent: 4
+
+    Reverse a block's tile with ``"scatter_to_blocked"``. The block has 64
+    threads, so the tile has ``64 * items_per_thread`` positions. Each
+    item's rank is ``64 * items_per_thread - 1`` minus its own position,
+    ``thread * items_per_thread + item``. ``ranks`` is made without a
+    ``dtype`` and takes ``Int32`` from its items.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py

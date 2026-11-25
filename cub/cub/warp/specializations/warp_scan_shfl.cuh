@@ -27,13 +27,14 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__bit/bit_msb.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -587,8 +588,10 @@ struct WarpScanShfl
     // Mask away all lanes greater than ours and use logical lane IDs, as expected by InclusiveScanStep.
     ballot = (ballot & ::cuda::ptx::get_sreg_lanemask_le()) >> _CUB::detail::logical_warp_base_id<LogicalWarpThreads>();
 
-    // Find index of first set bit
-    const int segment_first_lane = static_cast<int>(::cuda::std::__bit_log2(ballot));
+    // The highest set bit is the first lane of our segment. No bit is set for the first segment, which begins at
+    // lane 0, so clamp to 0 (bit_msb(0) == -1). `ballot == 0 ? 0 : static_cast<int>(::cuda::std::__bit_log2(ballot))`
+    // is equivalent, but ptxas generates two more instructions for it on sm_100 and later.
+    const int segment_first_lane = (::cuda::std::max) (0, ::cuda::bit_msb(ballot));
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()

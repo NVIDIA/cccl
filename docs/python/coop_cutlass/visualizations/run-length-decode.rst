@@ -6,109 +6,87 @@
 Run Length Decode
 =================
 
-Run Length Decode expands each run value by its length. Values ``[7, 9]``
-with lengths ``[3, 2]`` describe the stream ``[7, 7, 7, 9, 9]``.
-:func:`cuda.coop.cutlass.run_length_decode` returns one window of that stream as a
-fresh per-thread payload. :func:`cuda.coop.cutlass.run_length_decode_into` writes
-the whole stream to an array and returns its total size to every thread.
-Both preserve the run inputs.
+Run-length decoding repeats each run's value as many times as its length.
+Values ``[7, 9]`` with lengths ``[3, 2]`` decode to the stream
+``7, 7, 7, 9, 9``.
 
-The explorer uses a complete block of four teaching threads. Choose the
-input lengths and the number of decoded items per thread, then compare a
-single window with the bulk loop. Input runs and decoded outputs have
-independent per-thread extents. The example below uses a complete physical block.
+The explorer follows :func:`~cuda.coop.cutlass.run_length_decode` and
+:func:`~cuda.coop.cutlass.run_length_decode_into` on one block of four
+teaching threads. Choose the run lengths, the number of runs per thread and
+the number of decoded items per thread, then compare one window with the
+whole stream.
 
 .. coop-visualization:: run-length-decode
 
    .. only:: html
 
       .. figure:: run-length-decode.svg
-         :alt: Run values 7 and 9 with lengths 3 and 2 have exclusive starts 0
-            and 3 and total size 5. A four-item window at offset 2 returns 7,
-            9, 9, 0. The final slot is
-            outside the stream and zero-filled.
+         :alt: Run values 7 and 9 with lengths 3 and 2 start at positions 0
+               and 3 of a stream of five items. A window of four items at
+               offset 2 holds 7, 9, 9 and 0. Its last position is past the
+               end of the stream and holds zero.
          :width: 100%
 
-         One decoded item per teaching thread, window offset 2.
+         One run and one decoded item per thread, window offset 2.
 
-   An exclusive scan of the run lengths gives the run starts. A decoded
-   index belongs to the last positive-length run whose start is no greater
-   than that index.
+   A run starts at the sum of the lengths of the runs before it, which the
+   picture calls its exclusive start. The window starts at position 2, the
+   last 7. Positions 3 and 4 hold 9. Position 5 is past the end of the
+   stream, so thread 3 receives zero.
 
    .. code-block:: text
 
       Run values          7    9    2    5
-      Run lengths         3    2    0    0     (trailing padding)
+      Run lengths         3    2    0    0     (padding at the end)
       Exclusive starts    0    3    5    5     total = 5
       Full stream         7    7    7    9    9
-      Window indices      2    3    4    5     window offset = 2
-      Window values       7    9    9    0     last slot zero-filled
+      Window positions    2    3    4    5     window offset = 2
+      Window values       7    9    9    0     last position holds zero
 
-Run inputs and window ownership
--------------------------------
+Reading the stages
+------------------
 
-Each block owns a fixed tile of runs in :term:`blocked` order. Thread
-``t`` holds run ``t * runs_per_thread + i`` in its local slot ``i``. All
-positive run lengths must precede any zero padding. Zeros let a fixed run
-tile represent fewer runs; an all-zero tile represents an empty stream.
-An interior zero followed by a positive length is invalid.
+The explorer follows one call. The first stage shows the runs of the
+block, thread by thread: with two runs per thread, thread ``t`` holds runs
+``2t`` and ``2t + 1``. The second stage checks the lengths and adds them
+up, which gives the start of each run and the length of the stream.
 
-``decoded_items_per_thread`` sets the returned payload's extent. If it is
-``D``, a block of ``B`` threads returns a window of ``B * D`` positions.
-Thread ``t`` receives decoded indices beginning at
-``decoded_window_offset + t * D``. The window offset counts decoded items,
-so it can begin inside a run. It must have the same value in every thread.
+The next stage puts the value and the start of each run into a table in
+scratch, drawn as ``value@start``. :cpp:class:`cub::BlockRunLengthDecode`
+holds that table and finds each window in it from the window's offset. A
+position of the stream belongs to the last run with a positive length that
+starts at or before it. The explorer skips the table when there is nothing
+to decode: the stream is empty, or the window's offset is the length of the
+stream or larger.
 
-For the example above, offset 2 starts at the last ``7``. The next two
-items are ``9``. A four-item window also includes decoded index 5, which
-is beyond the total of 5. The wrapper fills that value slot with zero.
-These tail values are defined;
-an empty stream or a window starting at or beyond the total produces the
-same fill values in every slot.
+With "Decode full stream", the explorer checks the room in the destination
+before it makes the table, and then writes one window after another from
+that one table. Choose "One slot too small" as the destination capacity to
+see the call stop before it writes anything. A cell that the call does not
+write keeps its ``-1``.
 
-Preparing and reusing the table
--------------------------------
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference has
+the rules for the lengths, the offsets and the destination.
 
-The provider checks the lengths and computes exclusive run starts, then
-passes the values and starts to :cpp:class:`cub::BlockRunLengthDecode`.
-CUB holds the prepared run table in shared storage. Its decode method
-looks up each requested window in that table; it does not advance a
-hidden cursor. The explorer shows these dependencies and storage lifetime,
-not a sequence of compiled CUB instructions.
+Using Run Length Decode in a kernel
+-----------------------------------
 
-Each :func:`~cuda.coop.cutlass.run_length_decode` call prepares its own table.
-The bulk :func:`~cuda.coop.cutlass.run_length_decode_into` call prepares the table
-once and keeps it alive across an internal loop. Each iteration decodes
-``block_threads * decoded_items_per_thread`` positions and stores only the
-valid part of its window. The final iteration can be partial. No public
-parent object or prepared-state token is needed for either operation.
+This tested kernel writes the same stream twice on a block of 32 threads:
+with a loop of ``run_length_decode`` calls, then with one
+``run_length_decode_into`` call. With one run per thread the stream has 94
+items, and the windows of 32 items start at 0, 32 and 64. The last window
+has 30 items. Both write the stream from element 5 on, and the test
+compares both outputs with ``numpy.repeat``.
 
-In bulk mode, ``destination_offset`` is the index where the full stream
-is written. It does not skip decoded input. The destination must have
-room for that offset plus the entire decoded total. Select "One slot too
-small" to see the guard stop before any output write. An empty stream
-leaves the destination unchanged, provided its offset is within capacity.
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`__
 
-Only complete one-dimensional blocks are supported. All members take
-part, including threads holding only zero-length padding. The API checks
-negative lengths, padding order, total overflow, and runtime offset ranges.
-The caller supplies uniform controls and nonoverlapping output arrays.
-See the :doc:`../api` reference for dtype and size limits.
-
-Window and bulk decoding
-------------------------
-
-This example decodes a fixed window, then reuses scratch to write the complete
-stream at a nonzero destination offset. Window and run extents are independent.
-
-.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_examples.py
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
    :language: python
-   :start-after: example-begin
-   :end-before: example-end
+   :start-after: # cutlass-run-length-example-begin
+   :end-before: # cutlass-run-length-example-end
    :dedent: 4
 
-Scratch remains occupied throughout the bulk call's internal loop. Explicit
-descriptors default to ``auto_sync=False``: synchronize before the next use
-or request ``auto_sync=True``. Totals use ``Uint32``; negative lengths,
-misplaced padding, and overflow trap before decoding. See
-:ref:`coop-faq-temp-storage` for reuse requirements.
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference sets
+the two functions side by side and covers padding, windows past the end of
+the stream and scratch.

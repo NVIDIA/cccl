@@ -30,14 +30,14 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
   static_assert(cudax::coop::group<Group>);
-  using Bound = typename Group::bound_level;
+  using Bound = typename Group::boundary_level;
   static_assert(Group::static_rank(Bound{}) == 0);
   static_assert(
     Group::static_rank(cuda::grid) == (Group::static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_level>);
-  static_assert(cuda::std::is_same_v<Level, typename Group::bound_level>);
+  static_assert(cuda::std::is_same_v<Level, typename Group::boundary_level>);
 
   // Test Group::arrival_token.
   using ArrivalToken = typename Group::arrival_token;

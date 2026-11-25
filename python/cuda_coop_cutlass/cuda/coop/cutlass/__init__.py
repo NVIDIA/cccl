@@ -2,7 +2,66 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cooperative CUDA primitives for the CUTLASS CuTe DSL."""
+"""CUB's block and warp primitives for kernels written in the CuTe DSL.
+
+Import the package and call its functions inside a kernel:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as coop
+
+`Full example on GitHub
+<https://github.com/NVIDIA/cccl/blob/7bbb712bdd0b049ad027e9e30143d822cdcf9c11/python/cuda_coop_cutlass/examples/prefix_sum.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
+    :language: python
+    :start-after: docs: start cutlass-prefix-sum
+    :end-before: docs: end cutlass-prefix-sum
+
+Every primitive is called the same way:
+
+* The first argument is a :ref:`thread group <coop-thread-groups>`, the
+  threads that make the call together.
+* The operands follow by position: the memory to read or write, and each
+  thread's items as a :ref:`ThreadData <coop-thread-data>`.
+* Controls follow by keyword.
+
+Each call is single-phase: there is nothing to construct first. The block
+size comes from the launch, the element type from the memory or the items,
+and the number of items from ``items_per_thread`` or the ``ThreadData``.
+Scratch
+space in shared memory comes from the compiler, or from a
+:ref:`TempStorage <coop-temp-storage>` that the kernel passes.
+:ref:`Single-phase calls <coop-concepts-single-phase>` shows the same kernel
+written with CUB's C++ classes.
+
+Arguments that select code are Python values, fixed when the kernel is
+compiled: the group, ``items_per_thread``, ``algorithm``, operators and the
+options of a ``TempStorage``. A kernel receives such a value as an argument
+declared ``cutlass.Constexpr``, as ``items_per_thread`` is above.
+Controls that describe data can also be CuTe values, read while the kernel
+runs: ``valid_items``, ``offset``, ``oob_default`` and a scan's
+``initial_value`` are examples. Each entry says what its controls accept.
+
+A ``for`` loop over ``range(...)`` is a runtime loop, even when its bounds
+are Python integers. A runtime loop can repeat one call. A
+``cutlass.range_constexpr`` loop is unrolled, so each trip can make a
+different call.
+
+Primitives work in a kernel and in any ``@cute.jit`` function that the
+kernel calls. When CuTe finishes tracing, the package compiles the CUB code
+for every call it traced in one NVRTC compilation, and CuTe links the
+result into the kernel, where it can be inlined. The compiled code is kept
+in a cache on disk, described in :doc:`configuration`. To launch a kernel
+more than once, pass the ``@cute.jit`` function that launches it, followed
+by that function's arguments, to ``cute.compile`` and keep the callable it
+returns.
+:ref:`Checking and tuning a kernel <coop-cutlass-checking>` says how to
+call it.
+
+The package includes ``.pyi`` stubs for type checkers.
+"""
 
 from ._compiler._runtime import validate_cutlass_runtime
 from ._device_operator import DeviceOperator, compile_operator

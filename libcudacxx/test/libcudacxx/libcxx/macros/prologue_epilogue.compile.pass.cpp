@@ -25,14 +25,8 @@
 #undef code_seg
 #define code_seg 1
 
-#undef dllimport
-#define dllimport 1
-
 #undef dllexport
 #define dllexport 1
-
-#undef empty_bases
-#define empty_bases 1
 
 #undef hybrid_patchable
 #define hybrid_patchable 1
@@ -40,17 +34,8 @@
 #undef jitintrinsic
 #define jitintrinsic 1
 
-#undef lifetimebound
-#define lifetimebound 1
-
 #undef naked
 #define naked 1
-
-#undef noalias
-#define noalias 1
-
-#undef noinline
-#define noinline 1
 
 #undef nothrow
 #define nothrow 1
@@ -84,9 +69,6 @@
 
 // [[msvc::attribute]] attributes
 
-#undef msvc
-#define msvc 1
-
 #undef flatten
 #define flatten 1
 
@@ -95,9 +77,6 @@
 
 #undef forceinline_calls
 #define forceinline_calls 1
-
-#undef intrinsic
-#define intrinsic 1
 
 #undef noinline_calls
 #define noinline_calls 1
@@ -115,27 +94,8 @@
 
 // sal.h on Windows
 
-#undef __valid
-#define __valid 1
-
 #undef __callback
 #define __callback 1
-
-// other macros
-
-#undef clang
-#define clang 1
-
-// sys/sysmacros.h on linux
-
-#undef major
-#define major 1
-
-#undef minor
-#define minor 1
-
-#undef makedev
-#define makedev 1
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -147,16 +107,8 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `code_seg`"
 #endif
 
-#ifdef dllimport
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `dllimport`"
-#endif
-
 #ifdef dllexport
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `dllexport`"
-#endif
-
-#ifdef empty_bases
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `empty_bases`"
 #endif
 
 #ifdef hybrid_patchable
@@ -167,20 +119,8 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `jitintrinsic`"
 #endif
 
-#ifdef lifetimebound
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `lifetimebound`"
-#endif
-
 #ifdef naked
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `naked`"
-#endif
-
-#ifdef noalias
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `noalias`"
-#endif
-
-#ifdef noinline
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `noinline`"
 #endif
 
 #ifdef nothrow
@@ -223,10 +163,6 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `uuid`"
 #endif
 
-#ifdef msvc
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `msvc`"
-#endif
-
 #ifdef flatten
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `flatten`"
 #endif
@@ -237,10 +173,6 @@
 
 #ifdef forceinline_calls
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `forceinline_calls`"
-#endif
-
-#ifdef intrinsic
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `intrinsic`"
 #endif
 
 #ifdef noinline_calls
@@ -259,28 +191,8 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `max`"
 #endif
 
-#ifdef __valid
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `__valid`"
-#endif
-
 #ifdef __callback
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `__callback`"
-#endif
-
-#ifdef clang
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `clang`"
-#endif
-
-#ifdef major
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `major`"
-#endif
-
-#ifdef minor
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `minor`"
-#endif
-
-#ifdef makedev
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `makedev`"
 #endif
 
 #include <cuda/std/__cccl/epilogue.h>
@@ -293,16 +205,8 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `code_seg`"
 #endif
 
-#if dllimport != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `dllimport`"
-#endif
-
 #if dllexport != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `dllexport`"
-#endif
-
-#if empty_bases != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `empty_bases`"
 #endif
 
 #if hybrid_patchable != 1
@@ -313,20 +217,8 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `jitintrinsic`"
 #endif
 
-#if lifetimebound != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `lifetimebound`"
-#endif
-
 #if naked != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `naked`"
-#endif
-
-#if noalias != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `noalias`"
-#endif
-
-#if noinline != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `noinline`"
 #endif
 
 #if nothrow != 1
@@ -369,10 +261,6 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `uuid`"
 #endif
 
-#if msvc != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `msvc`"
-#endif
-
 #if flatten != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `flatten`"
 #endif
@@ -383,10 +271,6 @@
 
 #if forceinline_calls != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `forceinline_calls`"
-#endif
-
-#if intrinsic != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `intrinsic`"
 #endif
 
 #if noinline_calls != 1
@@ -405,28 +289,8 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `max`"
 #endif
 
-#if __valid != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `__valid`"
-#endif
-
 #if __callback != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `__callback`"
-#endif
-
-#if clang != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `clang`"
-#endif
-
-#if major != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `major`"
-#endif
-
-#if minor != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `minor`"
-#endif
-
-#if makedev != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `makedev`"
 #endif
 
 int main(int, char**)

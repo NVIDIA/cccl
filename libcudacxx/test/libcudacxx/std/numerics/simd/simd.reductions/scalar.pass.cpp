@@ -13,13 +13,13 @@
 
 // [simd.reductions], scalar reduce, reduce_min, and reduce_max
 
-#include <cuda/simd>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/concepts>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

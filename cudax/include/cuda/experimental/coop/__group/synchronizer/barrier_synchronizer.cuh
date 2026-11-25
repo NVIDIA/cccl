@@ -173,7 +173,7 @@ class barrier_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance<_Barrier, _Unit> __make_instance(
     _Range& __barriers, const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
   {
-    using _Bound = typename _ParentGroup::bound_level;
+    using _Bound = typename _ParentGroup::boundary_level;
 
     constexpr auto __static_group_count   = _MappingResult::static_group_count();
     constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_Range>;

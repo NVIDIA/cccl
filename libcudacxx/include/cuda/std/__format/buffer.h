@@ -44,6 +44,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE_DEVICE.
+#ifdef noinline
+#  pragma push_macro("noinline")
+#  undef noinline
+#  define _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(noinline)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // A helper to limit the total size of code units written.
@@ -568,7 +575,186 @@ using __fmt_buffer_select_t _CCCL_NODEBUG =
                               __fmt_direct_iterator_buffer<_OutIt, _CharT>,
                               __fmt_iterator_buffer<_OutIt, _CharT>>>;
 
+// NVHPC warns about using __attribute__((noinline)) on an inline function.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(inline_gnu_noinline_conflict)
+
+// A dynamically growing buffer intended to be used for retargeting a context.
+//
+// P2286 Formatting ranges adds range formatting support. It allows the user to
+// specify the minimum width for the entire formatted range.  The width of the
+// range is not known until the range is formatted. Formatting is done to an
+// output_iterator so there's no guarantee it would be possible to add the fill
+// to the front of the output. Instead the range is formatted to a temporary
+// buffer and that buffer is formatted as a string.
+//
+// There is an issue with that approach, the format context used in
+// std::formatter<T>::format contains the output iterator used as part of its
+// type. So using this output iterator means there needs to be a new format
+// context and the format arguments need to be retargeted to the new context.
+// This retargeting is done by a basic_format_context specialized for the
+// __iterator of this container.
+//
+// This class uses its own buffer management, since using vector
+// would lead to a circular include with formatter for vector<bool>.
+///
+/// Make the __grow_buffer, __copy, __transform and __fill operations noinline
+/// on device to avoid optimizing a copy for each formatter.
+template <class _CharT>
+class __fmt_retarget_buffer
+{
+  using _Alloc _CCCL_NODEBUG = allocator<_CharT>;
+
+  _CharT* __ptr_;
+  size_t __capacity_;
+  size_t __size_{0};
+
+  _CCCL_HOST_DEVICE_API void __grow_buffer()
+  {
+    __grow_buffer(static_cast<size_t>(__capacity_ * 1.6));
+  }
+
+  _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE void __grow_buffer(size_t __capacity)
+  {
+    _CCCL_ASSERT(__capacity > __capacity_, "the buffer must grow");
+    _Alloc __alloc;
+    auto __result = ::cuda::std::allocate_at_least(__alloc, __capacity);
+    ::cuda::std::copy_n(__ptr_, __size_, __result.ptr);
+    __alloc.deallocate(__ptr_, __capacity_);
+
+    __ptr_      = __result.ptr;
+    __capacity_ = __result.count;
+  }
+
+public:
+  using value_type _CCCL_NODEBUG = _CharT;
+
+  struct __iterator
+  {
+    using difference_type _CCCL_NODEBUG = ptrdiff_t;
+    using value_type _CCCL_NODEBUG      = _CharT;
+
+    __fmt_retarget_buffer* __buffer_;
+
+    _CCCL_HOST_DEVICE_API constexpr explicit __iterator(__fmt_retarget_buffer& __buffer) noexcept
+        : __buffer_{&__buffer}
+    {}
+
+    _CCCL_HOST_DEVICE_API constexpr __iterator& operator=(_CharT __c)
+    {
+      __buffer_->push_back(__c);
+      return *this;
+    }
+
+    _CCCL_HOST_DEVICE_API constexpr __iterator& operator*() noexcept
+    {
+      return *this;
+    }
+    _CCCL_HOST_DEVICE_API constexpr __iterator& operator++() noexcept
+    {
+      return *this;
+    }
+    _CCCL_HOST_DEVICE_API constexpr __iterator operator++(int) noexcept
+    {
+      return *this;
+    }
+  };
+
+  _CCCL_HOST_DEVICE_API explicit __fmt_retarget_buffer(size_t __size_hint)
+  {
+    // When the initial size is very small a lot of resizes happen
+    // when elements are added. So use a hard-coded minimum size.
+    //
+    // Note a size < 2 will not work
+    // - 0 there is no buffer, while push_back requires 1 empty element.
+    // - 1 multiplied by the grow factor is 1 and thus the buffer never
+    //   grows.
+    _Alloc __alloc;
+    auto __result = ::cuda::std::allocate_at_least(__alloc, ::cuda::std::max(__size_hint, 256 / sizeof(_CharT)));
+    __ptr_        = __result.ptr;
+    __capacity_   = __result.count;
+  }
+
+  __fmt_retarget_buffer(const __fmt_retarget_buffer&)            = delete;
+  __fmt_retarget_buffer& operator=(const __fmt_retarget_buffer&) = delete;
+
+  _CCCL_HOST_DEVICE_API ~__fmt_retarget_buffer()
+  {
+    _Alloc{}.deallocate(__ptr_, __capacity_);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __iterator __make_output_iterator() noexcept
+  {
+    return __iterator{*this};
+  }
+
+  _CCCL_HOST_DEVICE_API void push_back(_CharT __c)
+  {
+    __ptr_[__size_++] = __c;
+    if (__size_ == __capacity_)
+    {
+      __grow_buffer();
+    }
+  }
+
+  template <class _InCharT>
+  _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE void __copy(basic_string_view<_InCharT> __str)
+  {
+    size_t __n = __str.size();
+    if (__size_ + __n >= __capacity_)
+    {
+      // Push_back requires the buffer to have room for at least one character.
+      __grow_buffer(__size_ + __n + 1);
+    }
+
+    ::cuda::std::copy_n(__str.begin(), __n, __ptr_ + __size_);
+    __size_ += __n;
+  }
+
+  template <class _Iterator, class _UnaryOperation>
+  _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE void
+  __transform(_Iterator __first, _Iterator __last, _UnaryOperation __operation)
+  {
+    static_assert(contiguous_iterator<_Iterator>);
+    _CCCL_ASSERT(__first <= __last, "not a valid range");
+
+    size_t __n = static_cast<size_t>(__last - __first);
+    if (__size_ + __n >= __capacity_)
+    {
+      // Push_back requires the buffer to have room for at least one character.
+      __grow_buffer(__size_ + __n + 1);
+    }
+
+    ::cuda::std::transform(__first, __last, __ptr_ + __size_, ::cuda::std::move(__operation));
+    __size_ += __n;
+  }
+
+  _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE void __fill(size_t __n, _CharT __value)
+  {
+    if (__size_ + __n >= __capacity_)
+    {
+      // Push_back requires the buffer to have room for at least one character.
+      __grow_buffer(__size_ + __n + 1);
+    }
+
+    ::cuda::std::fill_n(__ptr_ + __size_, __n, __value);
+    __size_ += __n;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_string_view<_CharT> __view() noexcept
+  {
+    return {__ptr_, __size_};
+  }
+};
+
+_CCCL_DIAG_POP
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noinline
+#  pragma pop_macro("noinline")
+#  undef _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -43,7 +43,6 @@
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/uninitialized_algorithms.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__optional/optional_ref.h>
 #include <cuda/std/__ranges/access.h>

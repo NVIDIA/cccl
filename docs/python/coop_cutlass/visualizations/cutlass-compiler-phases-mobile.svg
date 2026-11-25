@@ -3,7 +3,7 @@
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-overview-title cutlass-phases-overview-desc" viewBox="0 0 270 1726">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-overview-title cutlass-phases-overview-desc" viewBox="0 0 270 1749">
   <title id="cutlass-phases-overview-title">Compiler phases: overview</title>
   <desc id="cutlass-phases-overview-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop.cutlass finalizes the provider bundle inside the CuTe hook. CuTe then compiles and links the kernel.</desc>
   <defs>
@@ -11,7 +11,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
       <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
     </marker>
   </defs>
-  <rect width="270" height="1726" fill="#ffffff"/>
+  <rect width="270" height="1749" fill="#ffffff"/>
   <text x="8" y="22" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">1. Trace the kernel</text>
   <g data-node="Python with symbolic values → typed IR" role="group" aria-label="CuTe compiler. Python with symbolic values → typed IR. CuTe traces the kernel and its control flow.. Cooperative calls emit IR during tracing.">
     <rect x="8" y="36.400000000000006" width="254" height="156.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
@@ -62,37 +62,38 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </g>
   <path d="M135 995.4V1020.4" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <text x="8" y="1048.4" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">5. Resolve deferred scratch</text>
-  <g data-node="Resolve scratch; attach the provider link input" role="group" aria-label="cuda.coop.cutlass. Resolve scratch; attach the provider link input. For deferred uses, apply the C++ sizes and alignments.. Allocate at kernel entry. Bind each call to its slice.. Attach the LTO-IR path to gpu.module link-libraries.">
-    <rect x="8" y="1062.8000000000002" width="254" height="201.20000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+  <g data-node="Resolve scratch; attach the provider link input" role="group" aria-label="cuda.coop.cutlass. Resolve scratch; attach the provider link input. For deferred uses, apply the C++ sizes and alignments.. Allocate at kernel entry. Bind each call to its slice.. Mark provider calls convergent.. Attach the LTO-IR path to gpu.module link-libraries.">
+    <rect x="8" y="1062.8000000000002" width="254" height="223.6" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="1093.2000000000003" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Resolve scratch; attach the provider</text>
     <text x="20" y="1115.6000000000004" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">link input</text>
     <text x="20" y="1138.0000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">For deferred uses, apply the C++</text>
     <text x="20" y="1160.4000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">sizes and alignments.</text>
     <text x="20" y="1182.8000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Allocate at kernel entry. Bind each</text>
     <text x="20" y="1205.2000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">call to its slice.</text>
-    <text x="20" y="1227.6000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Attach the LTO-IR path to</text>
-    <text x="20" y="1250.000000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">gpu.module link-libraries.</text>
+    <text x="20" y="1227.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Mark provider calls convergent.</text>
+    <text x="20" y="1250" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Attach the LTO-IR path to</text>
+    <text x="20" y="1272.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">gpu.module link-libraries.</text>
   </g>
-  <path d="M135 1267.0000000000002V1292.0000000000002" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1320.0000000000002" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Compile and link the kernel</text>
+  <path d="M135 1289.4V1314.4" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="1342.4" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Compile and link the kernel</text>
   <g data-node="Completed kernel IR + provider LTO-IR → cubin" role="group" aria-label="CuTe compiler. Completed kernel IR + provider LTO-IR → cubin. Hash and build the module after the finalization hook.. Merge gpu.module link-libraries into LinkLibraries; compile.. nvJitLink resolves provider symbols. LTO can inline them.">
-    <rect x="8" y="1334.4000000000003" width="254" height="201.20000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1364.8000000000004" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Completed kernel IR + provider</text>
-    <text x="20" y="1387.2000000000005" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">LTO-IR → cubin</text>
-    <text x="20" y="1409.6000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Hash and build the module after the</text>
-    <text x="20" y="1432.0000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">finalization hook.</text>
-    <text x="20" y="1454.4000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Merge gpu.module link-libraries into</text>
-    <text x="20" y="1476.8000000000009" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">LinkLibraries; compile.</text>
-    <text x="20" y="1499.200000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">nvJitLink resolves provider symbols.</text>
-    <text x="20" y="1521.600000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">LTO can inline them.</text>
+    <rect x="8" y="1356.8" width="254" height="201.20000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="1387.2" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Completed kernel IR + provider</text>
+    <text x="20" y="1409.6" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">LTO-IR → cubin</text>
+    <text x="20" y="1432" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Hash and build the module after the</text>
+    <text x="20" y="1454.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">finalization hook.</text>
+    <text x="20" y="1476.8" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Merge gpu.module link-libraries into</text>
+    <text x="20" y="1499.2" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">LinkLibraries; compile.</text>
+    <text x="20" y="1521.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">nvJitLink resolves provider symbols.</text>
+    <text x="20" y="1544" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">LTO can inline them.</text>
   </g>
-  <path d="M135 1538.6000000000004V1563.6000000000004" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1591.6000000000004" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Load and launch</text>
+  <path d="M135 1561V1586" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="1614" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Load and launch</text>
   <g data-node="Load the device binary; obtain the kernel entry" role="group" aria-label="CuTe compiler. Load the device binary; obtain the kernel entry. Launch the compiled kernel.. Reuse it on later calls.">
-    <rect x="8" y="1606.0000000000005" width="254" height="111.60000000000001" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1636.4000000000005" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Load the device binary; obtain the</text>
-    <text x="20" y="1658.8000000000006" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">kernel entry</text>
-    <text x="20" y="1681.2000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Launch the compiled kernel.</text>
-    <text x="20" y="1703.6000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Reuse it on later calls.</text>
+    <rect x="8" y="1628.4" width="254" height="111.60000000000001" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="1658.8" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Load the device binary; obtain the</text>
+    <text x="20" y="1681.2" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">kernel entry</text>
+    <text x="20" y="1703.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Launch the compiled kernel.</text>
+    <text x="20" y="1726" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Reuse it on later calls.</text>
   </g>
 </svg>
