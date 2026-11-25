@@ -6,7 +6,10 @@
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
+#include <iterator>
 
 // this example illustrates how to tile a range multiple times
 // examples:

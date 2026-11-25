@@ -6,7 +6,10 @@
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
+#include <iterator>
 
 // this example illustrates how to make repeated access to a range of values
 // examples:

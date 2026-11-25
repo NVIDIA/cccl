@@ -4,6 +4,8 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/functional>
+
 #include <iostream>
 
 // This example demonstrates how to build a minimal custom

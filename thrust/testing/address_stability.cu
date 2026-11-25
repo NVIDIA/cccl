@@ -1,4 +1,5 @@
-#include <cuda/__functional/address_stability.h>
+#include <cuda/functional>
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

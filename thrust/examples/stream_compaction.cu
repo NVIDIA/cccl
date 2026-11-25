@@ -6,7 +6,9 @@
 
 #include <cuda/std/iterator>
 
+#include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 // this functor returns true if the argument is odd, and false otherwise

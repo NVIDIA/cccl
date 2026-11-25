@@ -4,6 +4,7 @@
 
 #include <cuda/iterator>
 
+#include <cstddef>
 #include <iostream>
 #include <iterator>
 

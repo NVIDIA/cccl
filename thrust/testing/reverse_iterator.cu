@@ -1,9 +1,16 @@
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

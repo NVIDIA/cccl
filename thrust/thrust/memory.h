@@ -17,7 +17,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/pointer.h>
+#include <thrust/detail/malloc_and_free.h> // IWYU pragma: export
+#include <thrust/detail/pointer.h> // IWYU pragma: export
 #include <thrust/detail/raw_pointer_cast.h> // IWYU pragma: export
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference.h> // IWYU pragma: export

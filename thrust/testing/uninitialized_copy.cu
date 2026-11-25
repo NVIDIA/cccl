@@ -1,7 +1,13 @@
+#include <thrust/detail/config.h>
+
 #include <thrust/count.h>
 #include <thrust/device_malloc_allocator.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_copy.h>
+
+#include <cstddef>
 
 #include "copy_construct_test.h"
 #include <unittest/unittest.h>

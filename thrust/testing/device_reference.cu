@@ -1,5 +1,15 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/memory.h>
+
+#include <cuda/std/__type_traits/is_comparable.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 

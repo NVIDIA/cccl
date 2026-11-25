@@ -4,6 +4,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include <cstddef>
 #include <iostream>
 
 int main()
