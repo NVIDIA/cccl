@@ -191,18 +191,13 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
   CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>());
 
   // Generate input data
-  const auto item_count = static_cast<std::size_t>(num_items);
-
-  auto input_buffers   = c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
-  const auto& in_items = input_buffers.d_items;
-  const auto& h_input  = input_buffers.h_items;
-
-  const auto* h_input_ptr = h_input.data();
+  const auto item_count           = static_cast<std::size_t>(num_items);
+  const auto& [in_items, h_input] = c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
+  const auto* h_input_ptr         = h_input.data();
 
   auto out_items = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
-
-  auto h_output = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
-  auto h_ref    = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
+  auto h_output  = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
+  auto h_ref     = c2h::make_host_buffer<output_t>(stream, item_count, cuda::no_init);
 
   const auto* h_output_ptr = h_output.data();
   auto* h_ref_ptr          = h_ref.data();
@@ -320,7 +315,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
   SECTION("inclusive segmented scan with init")
   {
     using op_t              = cuda::std::plus<>;
-    using unwrapped_input_t = typename cuda::std::iterator_traits<decltype(unwrap_it(in_items.data()))>::value_type;
+    using unwrapped_input_t = unwrap_value_t<input_t>;
     using accum_t           = cuda::std::__accumulator_t<op_t, unwrapped_input_t, unwrapped_input_t>;
     using h_accum_t         = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
