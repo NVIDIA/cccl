@@ -7,7 +7,6 @@
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/array>
 #include <cuda/std/functional>
 #include <cuda/std/limits>

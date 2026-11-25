@@ -9,7 +9,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
 
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>

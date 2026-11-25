@@ -11,7 +11,6 @@
 #include <thrust/sequence.h>
 
 #include <cuda/functional>
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 
