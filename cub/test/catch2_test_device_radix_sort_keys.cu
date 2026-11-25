@@ -93,7 +93,9 @@ CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   const std::size_t num_items =
     GENERATE_COPY(std::size_t{0}, std::size_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(3), num_items);
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(3), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  const auto& h_keys = key_buffers.h_items;
 
   const bool is_descending = GENERATE(false, true);
 
@@ -131,7 +133,9 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
     return;
   }
 
-  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  const auto& h_keys = key_buffers.h_items;
 
   const bool is_descending = GENERATE(false, true);
 
@@ -356,7 +360,9 @@ CUB_TEST(
   const num_items_t num_items =
     GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  const auto& h_keys = key_buffers.h_items;
 
   const bool is_descending = GENERATE(false, true);
 
@@ -383,7 +389,10 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  auto [in_keys, h_keys]              = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  const auto& h_keys = key_buffers.h_items;
 
   const bool is_descending = GENERATE(false, true);
 

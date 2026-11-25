@@ -327,7 +327,10 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]", CUB_S
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto [keys_in_out, keys_expected] = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
+
+  auto key_buffers    = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
+  auto& keys_in_out   = key_buffers.d_items;
+  auto& keys_expected = key_buffers.h_items;
   std::stable_sort(keys_expected.data(), keys_expected.data() + keys_expected.size(), custom_less_op_t{});
 
   stable_sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
@@ -427,8 +430,13 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works and performs a stable sort",
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto [keys_in_out, keys_expected]     = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
-  auto [values_in_out, values_expected] = c2h::gen_buffers<data_t>(stream, C2H_SEED(1), num_items);
+
+  auto key_buffers      = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
+  auto value_buffers    = c2h::gen_buffers<data_t>(stream, C2H_SEED(1), num_items);
+  auto& keys_in_out     = key_buffers.d_items;
+  auto& keys_expected   = key_buffers.h_items;
+  auto& values_in_out   = value_buffers.d_items;
+  auto& values_expected = value_buffers.h_items;
 
   // Use thrust::make_zip_iterator instead of cuda::make_zip_iterator as a work-around
   // See https://github.com/NVIDIA/cccl/issues/6400

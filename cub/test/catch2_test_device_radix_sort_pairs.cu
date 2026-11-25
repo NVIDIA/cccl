@@ -50,13 +50,15 @@ CUB_TEST(
   const num_items_t num_items =
     GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(5, random(min_num_items, max_num_items)));
 
-  auto [in_keys, h_keys]     = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
-  auto [in_values, h_values] = c2h::gen_buffers<value_t>(stream, C2H_SEED(1), num_items);
-  auto out_keys              = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
-  auto out_values            = c2h::make_device_buffer<value_t>(stream, num_items, cuda::no_init);
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto value_buffers = c2h::gen_buffers<value_t>(stream, C2H_SEED(1), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  auto& in_values    = value_buffers.d_items;
+  auto out_keys      = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+  auto out_values    = c2h::make_device_buffer<value_t>(stream, num_items, cuda::no_init);
 
-  const bool is_descending          = GENERATE(false, true);
-  const auto [ref_keys, ref_values] = radix_sort_reference(stream, h_keys, h_values, is_descending);
+  const bool is_descending = GENERATE(false, true);
+  const auto reference     = radix_sort_reference(stream, key_buffers.h_items, value_buffers.h_items, is_descending);
 
   if (is_descending)
   {
@@ -83,8 +85,8 @@ CUB_TEST(
       stream);
   }
 
-  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
-  REQUIRE_THAT_QUIET(out_values, c2h::Equals(stream, ref_values));
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, reference.first));
+  REQUIRE_THAT_QUIET(out_values, c2h::Equals(stream, reference.second));
 }
 
 CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", CUB_SMALL, value_types)
@@ -97,13 +99,15 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
-  auto [in_keys, h_keys]     = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
-  auto [in_values, h_values] = c2h::gen_buffers<value_t>(stream, C2H_SEED(1), num_items);
-  auto out_keys              = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
-  auto out_values            = c2h::make_device_buffer<value_t>(stream, num_items, cuda::no_init);
+  auto key_buffers   = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
+  auto value_buffers = c2h::gen_buffers<value_t>(stream, C2H_SEED(1), num_items);
+  auto& in_keys      = key_buffers.d_items;
+  auto& in_values    = value_buffers.d_items;
+  auto out_keys      = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+  auto out_values    = c2h::make_device_buffer<value_t>(stream, num_items, cuda::no_init);
 
-  const bool is_descending          = GENERATE(false, true);
-  const auto [ref_keys, ref_values] = radix_sort_reference(stream, h_keys, h_values, is_descending);
+  const bool is_descending = GENERATE(false, true);
+  const auto reference     = radix_sort_reference(stream, key_buffers.h_items, value_buffers.h_items, is_descending);
 
   cub::DoubleBuffer<key_t> key_buffer(in_keys.data(), out_keys.data());
   cub::DoubleBuffer<value_t> value_buffer(in_values.data(), out_values.data());
@@ -119,8 +123,8 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   auto& keys   = key_buffer.selector == 0 ? in_keys : out_keys;
   auto& values = value_buffer.selector == 0 ? in_values : out_values;
 
-  REQUIRE_THAT_QUIET(keys, c2h::Equals(stream, ref_keys));
-  REQUIRE_THAT_QUIET(values, c2h::Equals(stream, ref_values));
+  REQUIRE_THAT_QUIET(keys, c2h::Equals(stream, reference.first));
+  REQUIRE_THAT_QUIET(values, c2h::Equals(stream, reference.second));
 }
 
 template <typename KeyT, typename ValueT, typename NumItemsT>
