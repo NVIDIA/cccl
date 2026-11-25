@@ -25,9 +25,9 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
