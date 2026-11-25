@@ -16,16 +16,24 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/buffer>
 #include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
+#include <cuda/std/utility>
+#include <cuda/stream>
 #include <cuda/type_traits>
 
+#include <algorithm>
 #include <array>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
+#include <numeric>
+#include <utility>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/checked_memory_resource.cuh>
 #include <c2h/generators.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
@@ -171,12 +179,10 @@ constexpr int end_bit()
   return static_cast<int>(sizeof(T) * CHAR_BIT);
 }
 
-template <class KeyT>
-c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, int begin_bit, int end_bit)
+template <class Keys, class StripedKeys>
+void stripe_radix_keys(const Keys& h_keys, StripedKeys& h_striped_keys, int begin_bit, int end_bit)
 {
-  c2h::host_vector<KeyT> h_striped_keys(h_keys);
-  KeyT* h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
-
+  using KeyT          = typename Keys::value_type;
   using traits_t      = cub::Traits<KeyT>;
   using bit_ordered_t = typename traits_t::UnsignedBits;
 
@@ -198,7 +204,11 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
 
     key = traits_t::TwiddleIn(key);
 
-    if ((begin_bit > 0) || (end_bit < static_cast<int>(sizeof(KeyT) * 8)))
+    if (num_bits == 0)
+    {
+      key = 0;
+    }
+    else if (begin_bit > 0 || end_bit < static_cast<int>(sizeof(KeyT) * CHAR_BIT))
     {
       key &= ((bit_ordered_t{1} << num_bits) - 1) << begin_bit;
     }
@@ -207,10 +217,8 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
     // so we do not twiddle-out the key here:
     // key = traits_t::TwiddleOut(key);
 
-    memcpy(h_striped_keys_data + i, &key, sizeof(KeyT));
+    h_striped_keys[i] = key;
   }
-
-  return h_striped_keys;
 }
 
 template <class T>
@@ -235,6 +243,32 @@ struct indirect_binary_comparator_t
   }
 };
 
+template <class StripedKeys, class Permutation, class SegBeginIterT, class SegEndIterT>
+void sort_radix_permutation(
+  const StripedKeys& h_striped_keys,
+  Permutation& h_permutation,
+  bool is_descending,
+  std::size_t num_segments,
+  SegBeginIterT h_seg_begin_it,
+  SegEndIterT h_seg_end_it)
+{
+  if (h_permutation.empty())
+  {
+    return;
+  }
+
+  auto* permutation = thrust::raw_pointer_cast(h_permutation.data());
+  std::iota(permutation, permutation + h_permutation.size(), std::size_t{0});
+
+  using bits_t = typename StripedKeys::value_type;
+  const indirect_binary_comparator_t<bits_t> comp{thrust::raw_pointer_cast(h_striped_keys.data()), is_descending};
+
+  for (std::size_t segment = 0; segment < num_segments; ++segment)
+  {
+    std::stable_sort(permutation + h_seg_begin_it[segment], permutation + h_seg_end_it[segment], comp);
+  }
+}
+
 template <class KeyT, class SegBeginIterT, class SegEndIterT>
 c2h::host_vector<std::size_t> get_permutation(
   const c2h::host_vector<KeyT>& h_keys,
@@ -245,26 +279,60 @@ c2h::host_vector<std::size_t> get_permutation(
   int begin_bit,
   int end_bit)
 {
-  c2h::host_vector<KeyT> h_striped_keys = get_striped_keys(h_keys, begin_bit, end_bit);
-
+  using bits_t = typename cub::Traits<KeyT>::UnsignedBits;
+  c2h::host_vector<bits_t> h_striped_keys(h_keys.size());
   c2h::host_vector<std::size_t> h_permutation(h_keys.size());
-  thrust::sequence(h_permutation.begin(), h_permutation.end());
-
-  using traits_t      = cub::Traits<KeyT>;
-  using bit_ordered_t = typename traits_t::UnsignedBits;
-
-  auto bit_ordered_striped_keys =
-    reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(h_striped_keys.data()));
-
-  const indirect_binary_comparator_t<bit_ordered_t> comp{bit_ordered_striped_keys, is_descending};
-
-  for (std::size_t segment = 0; segment < num_segments; ++segment)
-  {
-    std::stable_sort(
-      h_permutation.begin() + h_seg_begin_it[segment], h_permutation.begin() + h_seg_end_it[segment], comp);
-  }
-
+  stripe_radix_keys(h_keys, h_striped_keys, begin_bit, end_bit);
+  sort_radix_permutation(h_striped_keys, h_permutation, is_descending, num_segments, h_seg_begin_it, h_seg_end_it);
   return h_permutation;
+}
+
+template <class KeyT>
+cuda::host_buffer<std::size_t> get_permutation(
+  cuda::stream_ref stream, const cuda::host_buffer<KeyT>& h_keys, bool is_descending, int begin_bit, int end_bit)
+{
+  using bits_t = typename cub::Traits<KeyT>::UnsignedBits;
+  const std::array<std::size_t, 2> segments{0, h_keys.size()};
+  auto h_striped_keys = c2h::make_host_buffer<bits_t>(stream, h_keys.size(), cuda::no_init);
+  auto h_permutation  = c2h::make_host_buffer<std::size_t>(stream, h_keys.size(), cuda::no_init);
+  stripe_radix_keys(h_keys, h_striped_keys, begin_bit, end_bit);
+  sort_radix_permutation(h_striped_keys, h_permutation, is_descending, 1, segments.data(), segments.data() + 1);
+  return h_permutation;
+}
+
+template <class KeyT>
+cuda::host_buffer<KeyT> radix_sort_reference(
+  cuda::stream_ref stream,
+  const cuda::host_buffer<KeyT>& h_keys,
+  bool is_descending,
+  int begin_bit = 0,
+  int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
+{
+  const auto permutation = get_permutation(stream, h_keys, is_descending, begin_bit, end_bit);
+  auto result            = c2h::make_host_buffer<KeyT>(stream, h_keys.size(), cuda::no_init);
+  for (std::size_t i = 0; i < h_keys.size(); ++i)
+  {
+    result[i] = h_keys[permutation[i]];
+  }
+  return result;
+}
+
+template <class KeyT, class ValueT>
+std::pair<cuda::host_buffer<KeyT>, cuda::host_buffer<ValueT>> radix_sort_reference(
+  cuda::stream_ref stream,
+  const cuda::host_buffer<KeyT>& h_keys,
+  const cuda::host_buffer<ValueT>& h_values,
+  bool is_descending)
+{
+  const auto permutation = get_permutation(stream, h_keys, is_descending, begin_bit<KeyT>(), end_bit<KeyT>());
+  auto keys              = c2h::make_host_buffer<KeyT>(stream, h_keys.size(), cuda::no_init);
+  auto values            = c2h::make_host_buffer<ValueT>(stream, h_values.size(), cuda::no_init);
+  for (std::size_t i = 0; i < h_keys.size(); ++i)
+  {
+    keys[i]   = h_keys[permutation[i]];
+    values[i] = h_values[permutation[i]];
+  }
+  return {cuda::std::move(keys), cuda::std::move(values)};
 }
 
 template <class KeyT>

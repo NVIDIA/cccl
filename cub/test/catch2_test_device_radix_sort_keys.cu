@@ -6,24 +6,33 @@
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/functional.h>
-#include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/buffer>
 #include <cuda/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/bit>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 
-#include <algorithm>
+#include <climits>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/cpu_timer.h>
+#include <c2h/device_and_stream.h>
+#include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -75,6 +84,8 @@ using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>
 
 CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", CUB_SMALL, key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t = c2h::get<0, TestType>;
 
   constexpr std::size_t min_num_items = 1 << 5;
@@ -82,39 +93,29 @@ CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   const std::size_t num_items =
     GENERATE_COPY(std::size_t{0}, std::size_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-
-  const int num_key_seeds = 3;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(3), num_items);
 
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
-  REQUIRE(ref_keys == out_keys);
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
 }
 
 CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]", CUB_SMALL, bit_window_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t = c2h::get<0, TestType>;
 
   constexpr std::size_t max_num_items = 1 << 18;
@@ -130,41 +131,31 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
     return;
   }
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
 
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending, begin_bit, end_bit);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending, begin_bit, end_bit);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit,
-      end_bit);
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit, end_bit, stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit,
-              end_bit);
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit, end_bit, stream);
   }
 
-  REQUIRE(ref_keys == out_keys);
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
 }
 
 #ifndef NO_FP_KEY_TYPES
 
 CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", CUB_SMALL, fp_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t  = c2h::get<0, TestType>;
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
 
@@ -174,69 +165,62 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto in_keys                        = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::gen(C2H_SEED(1), in_keys);
 
   // Sprinkle some positive and negative zeros randomly throughout the keys:
   {
     const size_t num_indices = num_items / 128;
-    c2h::device_vector<std::size_t> indices(num_indices);
+    auto indices             = c2h::make_device_buffer<std::size_t>(stream, num_indices, cuda::no_init);
     for (int i = 0; i < 2; ++i)
     {
-      c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
+      c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_items - 1);
       auto begin = cuda::constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
-      thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
+      thrust::scatter(c2h::device_policy.on(stream.get()), begin, end, indices.data(), in_keys.data());
     }
   }
 
+  auto h_keys = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, in_keys, h_keys);
+
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
   // Perform a bitwise comparison to ensure that 0 != -0:
-  REQUIRE_BITWISE_EQ(ref_keys, out_keys);
+  auto actual = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, out_keys, actual);
+  REQUIRE_THAT_QUIET(actual, detail::BitwiseEqualsRange(ref_keys));
 }
 
 CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]", CUB_SMALL, fp_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = c2h::get<0, TestType>;
   using limits_t = cuda::std::numeric_limits<key_t>;
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto in_keys                        = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::gen(C2H_SEED(1), in_keys);
 
   // Sprinkle some NaNs randomly throughout the keys:
   {
     const size_t num_indices = num_items / 128;
-    c2h::device_vector<std::size_t> indices(num_indices);
-    bool has_nans = false;
+    auto indices             = c2h::make_device_buffer<std::size_t>(stream, num_indices, cuda::no_init);
+    bool has_nans            = false;
     for (int i = 0; i < 2; ++i)
     {
       const bool supported = i == 0 ? limits_t::has_signaling_NaN : limits_t::has_quiet_NaN;
@@ -245,10 +229,10 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
       if (supported)
       {
         has_nans = true;
-        c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
+        c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_items - 1);
         auto begin = cuda::constant_iterator(nan_val);
         auto end   = begin + num_indices;
-        thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
+        thrust::scatter(c2h::device_policy.on(stream.get()), begin, end, indices.data(), in_keys.data());
       }
     }
     if (!has_nans)
@@ -258,125 +242,112 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
     }
   }
 
+  auto h_keys = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, in_keys, h_keys);
+
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
-  REQUIRE_EQ_WITH_NAN_MATCHING(ref_keys, out_keys);
+  auto actual = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, out_keys, actual);
+  REQUIRE_THAT_QUIET(actual, detail::NaNEqualsRange(ref_keys));
 }
 
 #endif // !NO_FP_KEY_TYPES
 
 CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", CUB_SMALL, single_key_type)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t = c2h::get<0, TestType>;
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  c2h::device_vector<key_t> in_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto in_keys                        = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::gen(C2H_SEED(1), in_keys);
 
   // Repeatedly bitwise-and random keys together. This increases the likelihood
   // of duplicate keys.
   const int entropy_reduction = GENERATE(1, 3, 9, 15);
   {
-    c2h::device_vector<key_t> tmp(num_items);
+    auto tmp = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
     for (int i = 0; i < entropy_reduction; ++i)
     {
       c2h::gen(C2H_SEED(1), tmp);
       thrust::transform(
-        c2h::device_policy,
-        in_keys.cbegin(),
-        in_keys.cend(),
-        tmp.cbegin(),
-        in_keys.begin(),
+        c2h::device_policy.on(stream.get()),
+        in_keys.data(),
+        in_keys.data() + in_keys.size(),
+        tmp.data(),
+        in_keys.data(),
         cuda::std::bit_and<key_t>{});
     }
   }
 
+  auto h_keys = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, in_keys, h_keys);
+
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
-  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
-  REQUIRE(ref_keys == out_keys);
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
 }
 
 CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", CUB_SMALL, key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t = c2h::get<0, TestType>;
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  c2h::device_vector<key_t> in_keys(num_items, key_t(4));
+  const auto h_keys                   = c2h::make_host_buffer<key_t>(stream, num_items, key_t(4));
+  const auto in_keys                  = c2h::make_device_buffer<key_t>(stream, h_keys);
 
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
-  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
-  REQUIRE(ref_keys == out_keys);
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
 }
 
 CUB_TEST(
   "DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", CUB_SMALL, single_key_type, num_items_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
 
@@ -385,66 +356,52 @@ CUB_TEST(
   const num_items_t num_items =
     GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  c2h::device_vector<key_t> in_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto [in_keys, h_keys] = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
 
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
-  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
-    sort_keys_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      num_items,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
+    sort_keys_descending(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
   else
   {
-    sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-              thrust::raw_pointer_cast(out_keys.data()),
-              num_items,
-              begin_bit<key_t>(),
-              end_bit<key_t>());
+    sort_keys(in_keys.data(), out_keys.data(), num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
   }
 
-  REQUIRE(ref_keys == out_keys);
+  REQUIRE_THAT_QUIET(out_keys, c2h::Equals(stream, ref_keys));
 }
 
 CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][device]", CUB_SMALL, single_key_type)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t = c2h::get<0, TestType>;
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  c2h::device_vector<key_t> in_keys(num_items);
-
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto [in_keys, h_keys]              = c2h::gen_buffers<key_t>(stream, C2H_SEED(1), num_items);
 
   const bool is_descending = GENERATE(false, true);
 
-  auto ref_keys = radix_sort_reference(in_keys, is_descending);
+  auto ref_keys = radix_sort_reference(stream, h_keys, is_descending);
+  auto out_keys = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
 
-  c2h::device_vector<key_t> out_keys(num_items);
-  cub::DoubleBuffer<key_t> key_buffer(
-    thrust::raw_pointer_cast(in_keys.data()), thrust::raw_pointer_cast(out_keys.data()));
+  cub::DoubleBuffer<key_t> key_buffer(in_keys.data(), out_keys.data());
 
   double_buffer_sort_t action(is_descending);
   action.initialize();
-  launch(action, key_buffer, num_items, begin_bit<key_t>(), end_bit<key_t>());
+  launch(action, key_buffer, num_items, begin_bit<key_t>(), end_bit<key_t>(), stream);
 
   key_buffer.selector = action.selector();
   action.finalize();
 
   auto& keys = key_buffer.selector == 0 ? in_keys : out_keys;
 
-  REQUIRE(ref_keys == keys);
+  REQUIRE_THAT_QUIET(keys, c2h::Equals(stream, ref_keys));
 }
 
 template <typename KeyT, typename NumItemsT>
@@ -460,7 +417,8 @@ void do_large_offset_test(std::size_t num_items)
 
   try
   {
-    large_array_sort_helper<KeyT> arrays;
+    const auto stream = c2h::make_current_device_stream();
+    large_array_sort_helper<KeyT> arrays(stream);
     arrays.initialize_for_unstable_key_sort(C2H_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
@@ -468,7 +426,7 @@ void do_large_offset_test(std::size_t num_items)
     double_buffer_sort_t action(is_descending);
     action.initialize();
     const NumItemsT typed_num_items = static_cast<NumItemsT>(num_items);
-    launch(action, arrays.keys_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>());
+    launch(action, arrays.keys_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>(), stream);
 
     arrays.keys_buffer.selector = action.selector();
     action.finalize();
