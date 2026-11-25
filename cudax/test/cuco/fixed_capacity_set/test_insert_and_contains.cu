@@ -144,11 +144,11 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
     cuda::counting_iterator<int>{num_queries},
     matches_even_membership{found.data(), num_keys}));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
-  auto retrieved = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, cuda::no_init);
-  // Stored keys are distinct, so `num_keys` keys below `num_keys` are exactly the inserted keys.
+  auto retrieved           = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, cuda::no_init);
   const auto retrieved_end = set.retrieve_all(context.stream, retrieved.data());
   REQUIRE(retrieved_end - retrieved.data() == num_keys);
-  REQUIRE(cuda::std::all_of(context.policy(), retrieved.data(), retrieved_end, is_below<key_type>{num_keys}));
+  cuda::std::sort(context.policy(), retrieved.data(), retrieved_end);
+  REQUIRE(cuda::std::equal(context.policy(), retrieved.data(), retrieved_end, first));
 
   // Each present key is visited exactly once; absent keys and empty ranges invoke no callback.
   auto visits = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 0);
@@ -210,7 +210,8 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   REQUIRE(full.insert(context.stream, first + capacity, first + capacity + 1) == 0);
   const auto full_end = full.retrieve_all(context.stream, retrieved.data());
   REQUIRE(full_end - retrieved.data() == capacity);
-  REQUIRE(cuda::std::all_of(context.policy(), retrieved.data(), full_end, is_below<key_type>{capacity}));
+  cuda::std::sort(context.policy(), retrieved.data(), full_end);
+  REQUIRE(cuda::std::equal(context.policy(), retrieved.data(), full_end, first));
   full.insert_async(context.stream, first + capacity, first + capacity + 1);
   full.contains(context.stream, first, first + capacity + 1, found.begin());
   REQUIRE(context.matches(found.data(), capacity + 1, capacity));
