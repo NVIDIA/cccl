@@ -37,6 +37,9 @@
 #  define _CCCL_PTX_ARCH() __CUDA_ARCH__
 #endif
 
+// nvvm-latest is currently enabled to SM100 and later
+#define _CCCL_DISPATCH_NVVM_LATEST_TARGET(...) NV_DISPATCH_TARGET(NV_PROVIDES_SM_100, (__VA_ARGS__))
+
 // Dispatch to SM versions with slow FP64 (32:1 or 64:1 FP32/FP64 ratio)
 // This generally matches desktop GPUs. SM_103a is an exception because it represents datacenter GPUs with slow FP64.
 // The listed SM versions are conservative because, for example, sm_80 SASS runs on both sm_80 and sm_86 GPUs, and there
