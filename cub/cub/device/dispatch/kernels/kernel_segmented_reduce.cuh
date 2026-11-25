@@ -22,6 +22,7 @@
 
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
@@ -192,13 +193,12 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_reduce.th
       constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
       const int sid_within_block       = tid / threads_per_warp;
       const int lane_id                = tid % threads_per_warp;
-
-      // The product of the block index and the number of segments per block can exceed the largest 32-bit
-      // integer if the number of segments covered by a thread block does not evenly divide the number of
-      // segments per kernel invocation, which is capped at INT32_MAX. The segment id must therefore be
-      // computed in 64 bits.
-      const ::cuda::std::int64_t global_segment_id =
-        (static_cast<::cuda::std::int64_t>(bid) * segments_per_block) + sid_within_block;
+      // The dispatch limits the number of segments per invocation to a multiple of segments_per_block, so
+      // the global segment id cannot overflow
+      _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_block) + sid_within_block
+                     <= (::cuda::std::numeric_limits<int>::max)(),
+                   "global segment id overflows int");
+      const int global_segment_id = (bid * segments_per_block) + sid_within_block;
 
       if (global_segment_id < num_segments)
       {
@@ -401,12 +401,14 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     const int sid_within_block = tid / small_threads_per_warp;
     const int lane_id          = tid % small_threads_per_warp;
-    // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
-    // the segment id must be computed in 64-bit to avoid overflow
-    const ::cuda::std::int64_t global_segment_id =
-      (static_cast<::cuda::std::int64_t>(bid) * segments_per_small_block) + sid_within_block;
+    // The dispatch limits the number of segments per invocation to a multiple of segments_per_small_block, so
+    // the global segment id cannot overflow
+    _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_small_block) + sid_within_block
+                   <= (::cuda::std::numeric_limits<int>::max)(),
+                 "global segment id overflows int");
+    const int global_segment_id = (bid * segments_per_small_block) + sid_within_block;
 
-    const auto segment_begin = global_segment_id * segment_size;
+    const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
     if (global_segment_id < num_segments)
     {
@@ -435,12 +437,14 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     const int sid_within_block = tid / medium_threads_per_warp;
     const int lane_id          = tid % medium_threads_per_warp;
-    // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
-    // the segment id must be computed in 64-bit to avoid overflow
-    const ::cuda::std::int64_t global_segment_id =
-      (static_cast<::cuda::std::int64_t>(bid) * segments_per_medium_block) + sid_within_block;
+    // The dispatch limits the number of segments per invocation to a multiple of segments_per_medium_block, so
+    // the global segment id cannot overflow
+    _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_medium_block) + sid_within_block
+                   <= (::cuda::std::numeric_limits<int>::max)(),
+                 "global segment id overflows int");
+    const int global_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
-    const auto segment_begin = global_segment_id * segment_size;
+    const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
     if (global_segment_id < num_segments)
     {
