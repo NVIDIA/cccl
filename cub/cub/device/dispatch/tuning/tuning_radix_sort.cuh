@@ -1620,38 +1620,8 @@ struct policy_hub
       SEGMENTED_RADIX_BITS - 1>;
   };
 
-  /// SM75: same as SM70, but always uses onesweep, with fewer privatized rank partitions for small keys
-  struct Policy750 : detail::chained_policy<750, Policy750, Policy700>
-  {
-    static constexpr int PRIMARY_RADIX_BITS     = Policy700::PRIMARY_RADIX_BITS;
-    static constexpr int SINGLE_TILE_RADIX_BITS = Policy700::SINGLE_TILE_RADIX_BITS;
-    static constexpr int SEGMENTED_RADIX_BITS   = Policy700::SEGMENTED_RADIX_BITS;
-    static constexpr bool ONESWEEP              = true;
-    static constexpr int ONESWEEP_RADIX_BITS    = Policy700::ONESWEEP_RADIX_BITS;
-
-    using HistogramPolicy    = typename Policy700::HistogramPolicy;
-    using ExclusiveSumPolicy = typename Policy700::ExclusiveSumPolicy;
-    using OnesweepPolicy     = detail::agent_radix_sort_onesweep_policy<
-      256,
-      sizeof(KeyT) == 4 && sizeof(ValueT) == 4 ? 46 : 23,
-      DominantT,
-      sizeof(KeyT) < 4 ? 2 : 4,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-    using ScanPolicy         = typename Policy700::ScanPolicy;
-    using DownsweepPolicy    = typename Policy700::DownsweepPolicy;
-    using AltDownsweepPolicy = typename Policy700::AltDownsweepPolicy;
-    using UpsweepPolicy      = typename Policy700::UpsweepPolicy;
-    using AltUpsweepPolicy   = typename Policy700::AltUpsweepPolicy;
-    using SingleTilePolicy   = typename Policy700::SingleTilePolicy;
-    using SegmentedPolicy    = typename Policy700::SegmentedPolicy;
-    using AltSegmentedPolicy = typename Policy700::AltSegmentedPolicy;
-  };
-
   /// SM80
-  struct Policy800 : detail::chained_policy<800, Policy800, Policy750>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
