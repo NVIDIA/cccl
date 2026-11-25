@@ -1,5 +1,11 @@
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
+
+#include <cuda/std/tuple>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

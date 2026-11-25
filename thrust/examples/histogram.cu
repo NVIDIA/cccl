@@ -9,10 +9,12 @@
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <string>
 
 // This example illustrates several methods for computing a
 // histogram [1] with Thrust.  We consider standard "dense"

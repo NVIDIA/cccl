@@ -4,6 +4,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/swap.h>
 
+#include <cstddef>
+
 #include <nvbench_helper.cuh>
 
 template <typename T>

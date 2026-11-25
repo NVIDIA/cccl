@@ -5,6 +5,9 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/tuple>
+
+#include <cstddef>
 #include <iostream>
 
 /*

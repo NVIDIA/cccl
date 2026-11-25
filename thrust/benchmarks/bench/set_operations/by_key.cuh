@@ -8,6 +8,9 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
+#include <cstddef>
+#include <cstdint>
+
 #include "nvbench_helper.cuh"
 
 template <class KeyT, class ValueT, class OpT>

@@ -1,7 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
