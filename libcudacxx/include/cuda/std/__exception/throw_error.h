@@ -29,11 +29,13 @@
 // libstdc++ and the MSVC STL throw these exceptions from their runtime library, which saves us from including
 // <stdexcept>, because that includes all of <string>
 #if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOSTED()
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/stdexcept_throw.h>)
-#    include <bits/new_throw.h>
-#    include <bits/stdexcept_throw.h>
-#  elif _CCCL_HOST_STD_LIB(LIBSTDCXX)
-#    include <bits/functexcept.h>
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#    if __has_include(<bits/stdexcept_throw.h>)
+#      include <bits/new_throw.h>
+#      include <bits/stdexcept_throw.h>
+#    else // ^^^ libstdc++ 16 and newer ^^^ / vvv libstdc++ 15 and older vvv
+#      include <bits/functexcept.h>
+#    endif // ^^^ libstdc++ 15 and older ^^^
 #  elif _CCCL_HOST_STD_LIB(STL)
 #    include <xutility>
 #  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
@@ -53,22 +55,31 @@
 #  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
 #    define _CCCL_THROW_HOST_STD_EXCEPTION(_TYPE, ...) throw ::std::_TYPE(__VA_ARGS__)
 #  endif // ^^^ other host standard library ^^^
-#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...) \
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (_CCCL_THROW_HOST_STD_EXCEPTION(_TYPE, __VA_ARGS__);), (::cuda::std::terminate();))
+#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...)                                                                  \
+    do                                                                                                                  \
+    {                                                                                                                   \
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (_CCCL_THROW_HOST_STD_EXCEPTION(_TYPE, __VA_ARGS__);), (::cuda::std::terminate();)) \
+    } while (0)
 #elif _CCCL_HOSTJIT()
-#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...)                            \
-    _CCCL_ASSERT(false, "An instance of class std::" #_TYPE " would be thrown."); \
-    ::cuda::std::terminate()
+#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...)                              \
+    do                                                                              \
+    {                                                                               \
+      _CCCL_ASSERT(false, "An instance of class std::" #_TYPE " would be thrown."); \
+      ::cuda::std::terminate();                                                     \
+    } while (0)
 #else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv no exceptions vvv
-#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...)                                                               \
-    NV_IF_ELSE_TARGET(                                                                                               \
-      NV_IS_HOST,                                                                                                    \
-      ({                                                                                                             \
-        ::fprintf(stderr, "An instance of class std::" #_TYPE " would be thrown.\n  what():  %s\nAborted\n", _WHAT); \
-        ::fflush(stderr);                                                                                            \
-      }),                                                                                                            \
-      ({ _CCCL_ASSERT(false, "An instance of class std::" #_TYPE " would be thrown."); }))                           \
-    ::cuda::std::terminate()
+#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, _WHAT, ...)                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+      NV_IF_ELSE_TARGET(                                                                                               \
+        NV_IS_HOST,                                                                                                    \
+        ({                                                                                                             \
+          ::fprintf(stderr, "An instance of class std::" #_TYPE " would be thrown.\n  what():  %s\nAborted\n", _WHAT); \
+          ::fflush(stderr);                                                                                            \
+        }),                                                                                                            \
+        ({ _CCCL_ASSERT(false, "An instance of class std::" #_TYPE " would be thrown."); }))                           \
+      ::cuda::std::terminate();                                                                                        \
+    } while (0)
 #endif // ^^^ no exceptions ^^^
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
