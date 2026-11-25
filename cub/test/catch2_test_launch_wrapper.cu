@@ -9,8 +9,8 @@ struct stream_registry_factory_t;
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
-#include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/memory_resource>
@@ -18,7 +18,6 @@ struct stream_registry_factory_t;
 #include <cuda/std/execution>
 #include <cuda/std/optional>
 #include <cuda/stream>
-#include <cuda/utility>
 
 #include <nv/target>
 

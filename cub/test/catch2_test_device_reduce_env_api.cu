@@ -8,6 +8,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/devices>
 #include <cuda/execution.determinism.h>
 #include <cuda/execution.require.h>

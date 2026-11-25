@@ -28,6 +28,7 @@ struct stream_registry_factory_t;
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/cmath>
 #include <cuda/devices>
 #include <cuda/execution.tune.h>

@@ -21,9 +21,9 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/devices>
 #include <cuda/execution.tune.h>
-#include <cuda/functional>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
