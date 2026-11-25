@@ -14,6 +14,7 @@
 #include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/initializer_list>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -231,7 +232,7 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
   return result;
 }
 
-// Creates an initialized host buffer backed by the checked C2H memory resource.
+// Fills the checked host buffer on the calling thread so its data is ready for immediate use.
 //
 // Note: This overload supports streams whose device cannot be queried, including the legacy default stream.
 // Requires: device must refer to the current C2H test device.
@@ -244,6 +245,20 @@ make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t n
   ::cuda::std::uninitialized_fill_n(result.begin(), num_items, value);
 
   return result;
+}
+
+// Prefer the synchronous fill over variadic forwarding for count-and-value initialization.
+template <typename T,
+          typename Count,
+          typename Value,
+          ::cuda::std::enable_if_t<::cuda::std::is_integral_v<Count>&& ::cuda::std::is_convertible_v<Value&&, const T&>
+                                     && !::cuda::std::is_same_v<::cuda::std::decay_t<Value>, ::cuda::no_init_t>,
+                                   int> = 0>
+[[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T>
+make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Count num_items, Value&& value)
+{
+  const T& fill_value = ::cuda::std::forward<Value>(value);
+  return ::c2h::make_host_buffer<T>(stream, device, static_cast<std::size_t>(num_items), fill_value);
 }
 
 //! @brief Creates a host buffer backed by the checked C2H memory resource associated with @p stream.
