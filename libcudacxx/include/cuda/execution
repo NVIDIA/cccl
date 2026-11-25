@@ -25,6 +25,7 @@
 #include <cuda/__execution/checked_env.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/guarantee.h>
+#include <cuda/__execution/max_num_items.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/policy.h>
 #include <cuda/__execution/property_query.h>
