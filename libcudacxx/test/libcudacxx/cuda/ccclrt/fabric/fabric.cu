@@ -410,7 +410,10 @@ C2H_TEST("direct fabric transfers dummy test", "[fabric]")
 
 C2H_CCCLRT_TEST("direct fabric unicast transfers and reductions", "[fabric]")
 {
+#  if !TEST_CUDA_COMPILER(NVCC, ==, 13, 5)
+  // This case reuses staging after wait_reads(), whose underlying instruction has no effect in PTX 9.5.
   test_transfer<transfer_kind::put>();
+#  endif
   test_transfer<transfer_kind::counted_put>();
   test_transfer<transfer_kind::masked_put>();
   test_transfer<transfer_kind::get>();
