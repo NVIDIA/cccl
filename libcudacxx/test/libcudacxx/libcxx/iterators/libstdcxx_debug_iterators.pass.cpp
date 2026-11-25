@@ -13,9 +13,6 @@
 
 // ADDITIONAL_COMPILE_DEFINITIONS: _GLIBCXX_DEBUG
 
-// The debug mode std::array of libstdc++ before GCC 11 conflicts with the forward declaration of std::array
-// UNSUPPORTED: gcc-7, gcc-8, gcc-9, gcc-10
-
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/memory>
