@@ -37,8 +37,6 @@
 #    include <bits/stl_iterator_base_types.h>
 #    include <debug/formatter.h> // for ::__gnu_cxx::__normal_iterator and ::__gnu_debug::_Safe_iterator
 #  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9) ^^^ / vvv _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) vvv
-#    include <cuda/std/__cccl/prologue.h>
-
 // <debug/formatter.h> only declares __normal_iterator since libstdc++ 9, and older versions do not change anymore
 namespace __gnu_cxx
 {
@@ -53,12 +51,10 @@ namespace __gnu_debug
 template <typename _Iterator, typename _Sequence>
 class _Safe_iterator;
 } // namespace __gnu_debug
-
-#    include <cuda/std/__cccl/epilogue.h>
 #  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
 #endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
-#include <cuda/std/__cccl/prologue.h> // NOLINT(readability-duplicate-include)
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -239,6 +235,6 @@ _CCCL_CONCEPT __can_to_address =
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h> // NOLINT(readability-duplicate-include)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___MEMORY_POINTER_TRAITS_H
