@@ -1,6 +1,13 @@
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
+
+#include <cstddef>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -257,3 +264,65 @@ struct TestVectorFillInsert
   }
 }; // end TestVectorFillInsert
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorFillInsert, IntegralTypes);
+
+template <class Vector>
+void test_vector_insert_exceeds_max_size()
+{
+  Vector v(3, 1);
+  const cuda::constant_iterator<int> first(7);
+
+  // n exceeds max_size()
+  const std::size_t n = v.max_size() + 1;
+  REQUIRE_THROWS_AS(v.insert(v.begin(), n, 7), std::length_error);
+  REQUIRE_THROWS_AS(v.insert(v.begin(), first, first + static_cast<std::ptrdiff_t>(n)), std::length_error);
+
+  // size() + n wraps around, e.g. for an unsigned n = a - b with a < b
+  REQUIRE_THROWS_AS(v.insert(v.end(), std::numeric_limits<std::size_t>::max() - 1, 7), std::length_error);
+  REQUIRE(v.size() == 3);
+}
+
+TEST_CASE("TestVectorInsertExceedsMaxSize", "[vector_insert]")
+{
+  test_vector_insert_exceeds_max_size<thrust::host_vector<int>>();
+  test_vector_insert_exceeds_max_size<thrust::device_vector<int>>();
+}
+
+template <class T>
+struct small_max_size_allocator : std::allocator<T>
+{
+  std::size_t max_size() const
+  {
+    return 8;
+  }
+};
+
+TEST_CASE("TestVectorInsertExceedsSmallMaxSize", "[vector_insert]")
+{
+  // the new storage would be clamped to max_size() elements, too few for all of them
+  thrust::host_vector<int, small_max_size_allocator<int>> v(3, 1);
+  const cuda::constant_iterator<int> first(7);
+
+  REQUIRE_THROWS_AS(v.insert(v.end(), 6, 7), std::length_error);
+  REQUIRE(v == decltype(v)(3, 1));
+  REQUIRE_THROWS_AS(v.insert(v.end(), first, first + 6), std::length_error);
+  REQUIRE(v == decltype(v)(3, 1));
+}
+
+TEST_CASE("TestVectorInsertUpToSmallMaxSize", "[vector_insert]")
+{
+  // growing to exactly max_size() must work, also when 2 * capacity() exceeds max_size()
+  const cuda::constant_iterator<int> first(7);
+
+  thrust::host_vector<int, small_max_size_allocator<int>> v(5, 1);
+  REQUIRE(v.size() == v.capacity());
+  v.insert(v.end(), 3, 7);
+  REQUIRE(v.size() == 8);
+  REQUIRE(v[4] == 1);
+  REQUIRE(v[7] == 7);
+
+  thrust::host_vector<int, small_max_size_allocator<int>> w(5, 1);
+  REQUIRE(w.size() == w.capacity());
+  w.insert(w.end(), first, first + 3);
+  REQUIRE(w.size() == 8);
+  REQUIRE(w[7] == 7);
+}
