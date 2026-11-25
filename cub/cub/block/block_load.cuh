@@ -1112,8 +1112,8 @@ class BlockLoad
 
   _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
-    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_VECTORIZE
-                  || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
+    if constexpr (ItemsPerThread == 1 || Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED
+                  || Algorithm == BLOCK_LOAD_VECTORIZE || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
       return NullType{};
     }
@@ -1272,6 +1272,13 @@ public:
         }
       }
     }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+                           || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+    }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
       _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
@@ -1344,6 +1351,13 @@ public:
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
       _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+                           || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
@@ -1420,6 +1434,13 @@ public:
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
       _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+                           || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {

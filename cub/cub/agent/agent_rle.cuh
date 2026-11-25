@@ -167,7 +167,8 @@ struct AgentRle
                 "detection requires a blocked arrangement");
 
   /// Whether or not to sync after loading data
-  static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
+  static constexpr bool SYNC_AFTER_LOAD =
+    (AgentRlePolicyT::ITEMS_PER_THREAD > 1) && (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
 
   /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
   /// among block-warps during any store-related data transpositions (versus each warp having

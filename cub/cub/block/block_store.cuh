@@ -716,7 +716,7 @@ class BlockStore
 
   _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
-    if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_STRIPED
+    if constexpr (ItemsPerThread == 1 || Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_STRIPED
                   || Algorithm == BLOCK_STORE_VECTORIZE)
     {
       return NullType{};
@@ -858,6 +858,13 @@ public:
         _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
       }
     }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_STORE_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE
+                           || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
+    }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
       block_exchange(temp_storage).BlockedToStriped(items);
@@ -932,6 +939,14 @@ public:
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
       _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_STORE_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE
+                           || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose
+      // and valid_items broadcast through shared memory.
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
