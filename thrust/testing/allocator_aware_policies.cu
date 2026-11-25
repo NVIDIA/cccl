@@ -6,7 +6,7 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/system/cpp/execution_policy.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
-#include <thrust/system/omp/execution_policy.h>
+#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/cstddef>
