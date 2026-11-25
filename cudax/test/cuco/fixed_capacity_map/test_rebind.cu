@@ -53,9 +53,10 @@ struct original_hash
       : seed{seed}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t operator()(int key) const noexcept
   {
-    return (static_cast<::cuda::std::size_t>(key) * 33) + static_cast<::cuda::std::size_t>(seed);
+    // Index reduction uses the high hash bits, so spread them with a Fibonacci multiplier.
+    return (static_cast<::cuda::std::uint64_t>(key) * 0x9E3779B97F4A7C15ULL) + static_cast<::cuda::std::uint64_t>(seed);
   }
 };
 
@@ -69,7 +70,7 @@ struct offset_hash
       , seed{seed}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t operator()(int key) const noexcept
   {
     return original_hash{seed}(key - offset);
   }
