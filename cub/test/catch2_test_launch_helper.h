@@ -5,18 +5,18 @@
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 
-#include <cuda/__functional/call_or.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/launch> // IWYU pragma: keep
+#include <cuda/memory_resource>
 #include <cuda/std/execution>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <cstddef>
 #include <cstdint>

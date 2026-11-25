@@ -9,8 +9,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/std/__algorithm/find.h>
+#include <cuda/devices>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/optional>
 #include <cuda/std/span>
