@@ -18,6 +18,7 @@
 #include <thrust/merge.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__utility/pair.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)

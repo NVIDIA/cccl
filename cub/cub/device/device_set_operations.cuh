@@ -26,6 +26,7 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
