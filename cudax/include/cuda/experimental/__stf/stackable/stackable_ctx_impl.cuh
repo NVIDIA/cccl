@@ -33,6 +33,7 @@
 #include <cuda/std/__host_stdlib/exception>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__host_stdlib/mutex>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
@@ -90,7 +91,7 @@ class launchable_graph_handle;
 class stackable_logical_data_impl_state_base
 {
 public:
-  virtual ~stackable_logical_data_impl_state_base()                                      = default;
+  _CCCL_HIDE_FROM_ABI virtual ~stackable_logical_data_impl_state_base()                  = default;
   virtual void pop_before_finalize(int ctx_offset)                                       = 0;
   virtual void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) = 0;
 };
@@ -98,7 +99,8 @@ public:
 // Combine access mode for a logical data id into a small vector.
 // Used to merge duplicate data accesses within a single task's deps
 // (e.g. read + write on the same data becomes rw).
-inline void combine_access_mode(::std::vector<::std::pair<int, access_mode>>& combined, int id, access_mode m)
+_CCCL_HOST_API inline void
+combine_access_mode(::std::vector<::std::pair<int, access_mode>>& combined, int id, access_mode m)
 {
   auto it = ::std::find_if(combined.begin(), combined.end(), [id](const ::std::pair<int, access_mode>& entry) {
     return entry.first == id;
@@ -113,7 +115,8 @@ inline void combine_access_mode(::std::vector<::std::pair<int, access_mode>>& co
   }
 }
 
-inline access_mode lookup_combined_mode(const ::std::vector<::std::pair<int, access_mode>>& combined, int id)
+_CCCL_HOST_API inline access_mode
+lookup_combined_mode(const ::std::vector<::std::pair<int, access_mode>>& combined, int id)
 {
   auto it = ::std::find_if(combined.begin(), combined.end(), [id](const ::std::pair<int, access_mode>& entry) {
     return entry.first == id;
@@ -163,8 +166,8 @@ public:
     // Type-erased metadata for additional dependencies added via add_deps()
     struct additional_dep_info
     {
-      int logical_data_id;
-      access_mode mode;
+      int logical_data_id = -1;
+      access_mode mode    = access_mode::none;
       ::std::function<void(stackable_ctx&, int, access_mode)> validate_access_op;
       ::std::function<task_dep_untyped(int, access_mode)> resolve_op;
     };
@@ -177,7 +180,7 @@ public:
     ::cuda::std::optional<::std::string> symbol_;
 
     template <typename ExecPlace>
-    deferred_task_builder(stackable_ctx& sctx, int offset, ExecPlace&& exec_place, Deps&&... deps)
+    _CCCL_HOST_API deferred_task_builder(stackable_ctx& sctx, int offset, ExecPlace&& exec_place, Deps&&... deps)
         : sctx_(sctx)
         , offset_(offset)
         , exec_place_(::cuda::std::move(exec_place))
@@ -189,7 +192,7 @@ public:
 
     // Add more dependencies via add_deps
     template <typename... MoreDeps>
-    auto& add_deps(MoreDeps&&... deps)
+    _CCCL_HOST_API auto& add_deps(MoreDeps&&... deps)
     {
       auto store_dep = [this](const auto& dep) {
         static_assert(reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(dep)>>,
@@ -199,14 +202,13 @@ public:
         info.logical_data_id = dep.get_d().get_unique_id();
         info.mode            = dep.get_access_mode();
 
-        auto logical_data = dep.get_d();
-        auto dep_dplace   = dep.get_dplace();
         info.validate_access_op =
-          [logical_data, dep_dplace](stackable_ctx& sctx, int offset, access_mode mode) mutable {
+          [logical_data = dep.get_d(),
+           dep_dplace   = dep.get_dplace()](stackable_ctx& sctx, int offset, access_mode mode) mutable {
             logical_data.validate_access(offset, sctx, mode, dep_dplace);
           };
 
-        info.resolve_op = [logical_data](int offset, access_mode mode) mutable -> task_dep_untyped {
+        info.resolve_op = [logical_data = dep.get_d()](int offset, access_mode mode) -> task_dep_untyped {
           auto ld = logical_data.get_ld(offset);
           return task_dep_untyped(ld, mode);
         };
@@ -220,7 +222,7 @@ public:
   private:
     // Concretize the deferred task: combine access modes, validate/push, resolve deps, create the task.
     template <typename TaskAction>
-    auto concretize_deferred_task(TaskAction&& action)
+    _CCCL_HOST_API auto concretize_deferred_task(TaskAction&& action)
     {
       return ::std::apply(
         [this, &action](auto&&... initial_args) {
@@ -305,7 +307,7 @@ public:
   public:
     // Execute with lambda - concretize the deferred task and execute
     template <typename F>
-    auto operator->*(F&& f)
+    _CCCL_HOST_API auto operator->*(F&& f)
     {
       return concretize_deferred_task([&f](auto& task) {
         return task->*::cuda::std::forward<F>(f);
@@ -313,7 +315,7 @@ public:
     }
 
     // Start the task - concretize the deferred task and start
-    auto& start()
+    _CCCL_HOST_API auto& start()
     {
       concretize_deferred_task([](auto& task) {
         task.start();
@@ -323,13 +325,13 @@ public:
     }
 
     // Set symbol for the task - store for later application when concretized
-    auto& set_symbol(::std::string s) &
+    _CCCL_HOST_API auto& set_symbol(::std::string s) &
     {
       symbol_ = ::cuda::std::move(s);
       return *this;
     }
 
-    auto&& set_symbol(::std::string s) &&
+    _CCCL_HOST_API auto&& set_symbol(::std::string s) &&
     {
       symbol_ = ::cuda::std::move(s);
       return ::cuda::std::move(*this);
@@ -337,14 +339,14 @@ public:
 
     // Set exec_place for the task
     template <typename ExecPlace>
-    auto& set_exec_place(ExecPlace&& ep) &
+    _CCCL_HOST_API auto& set_exec_place(ExecPlace&& ep) &
     {
       exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
       return *this;
     }
 
     template <typename ExecPlace>
-    auto&& set_exec_place(ExecPlace&& ep) &&
+    _CCCL_HOST_API auto&& set_exec_place(ExecPlace&& ep) &&
     {
       exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
       return ::cuda::std::move(*this);
@@ -352,7 +354,7 @@ public:
 
     // Add get method for compatibility with test code
     template <typename T>
-    auto get(size_t index) const
+    _CCCL_HOST_API auto get(size_t index) const
     {
       _CCCL_ASSERT(concrete_task_.has_value(), "get() called before task was concretized via ->* or start()");
       return concrete_task_->template get<T>(index);
@@ -363,30 +365,30 @@ public:
   {
     friend class stackable_ctx;
 
-  private:
     /*
      * Base class for all nested context types
      */
     class ctx_node_base
     {
     public:
+      _CCCL_HOST_API
       ctx_node_base(cudaStream_t support_stream = nullptr, ::std::shared_ptr<stream_adapter> alloc_adapters = nullptr)
           : support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
       {}
 
-      virtual ~ctx_node_base() = default;
+      _CCCL_HIDE_FROM_ABI virtual ~ctx_node_base() = default;
 
       // Virtual methods for context-specific behavior
       virtual event_list finalize() = 0;
 
-      virtual cudaGraph_t get_graph() const
+      _CCCL_HOST_API virtual cudaGraph_t get_graph() const
       {
         return nullptr;
       }
 
-      ctx_node_base(ctx_node_base&&) noexcept            = default;
-      ctx_node_base& operator=(ctx_node_base&&) noexcept = default;
+      _CCCL_HIDE_FROM_ABI ctx_node_base(ctx_node_base&&) noexcept            = default;
+      _CCCL_HIDE_FROM_ABI ctx_node_base& operator=(ctx_node_base&&) noexcept = default;
 
       // To avoid prematurely destroying data created in a nested context, we
       // need to hold a reference to them. Since we do not store types the
@@ -403,14 +405,14 @@ public:
       //    ... use a ...
       // }
       // ctx.pop()
-      void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+      _CCCL_HOST_API void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
       {
         // This keeps a reference to the shared_ptr until retained_data is destroyed
         retained_data.push_back(mv(data_impl));
       }
 
       // Ensure we know this data has been imported in the local context
-      void track_pushed_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+      _CCCL_HOST_API void track_pushed_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
       {
         _CCCL_ASSERT(data_impl, "invalid value");
         pushed_data.push_back(mv(data_impl));
@@ -435,11 +437,9 @@ public:
       // operations to get data imported into the context)
       event_list ctx_prereqs;
 
-    protected:
       // If we want to keep the state of some logical data implementations until this node is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
 
-    public:
       // Nested contexts do not clear their allocator because the memory they
       // use needs to be valid until we have launched the graph.
       ::std::vector<::std::shared_ptr<stream_adapter>> retained_adapters;
@@ -455,12 +455,12 @@ public:
     {
     public:
       // Default constructor that creates a stream context
-      stream_ctx_node()
+      _CCCL_HOST_API stream_ctx_node()
       {
         ctx = stream_ctx();
       }
 
-      event_list finalize() override
+      _CCCL_HOST_API event_list finalize() override
       {
         // This is blocking so there is no dependency in event_list
         ctx.finalize();
@@ -475,10 +475,11 @@ public:
     {
     public:
       // Constructor for graph contexts with optional conditional support via config
-      graph_ctx_node(ctx_node_base* parent_node,
-                     async_resources_handle handle,
-                     const ::cuda::std::source_location& loc,
-                     [[maybe_unused]] const push_while_config& config = push_while_config{})
+      _CCCL_HOST_API graph_ctx_node(
+        ctx_node_base* parent_node,
+        async_resources_handle handle,
+        const ::cuda::std::source_location& loc,
+        [[maybe_unused]] const push_while_config& config = push_while_config{})
       {
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
@@ -606,9 +607,9 @@ public:
           kconfig.gridDim        = 1;
           kconfig.blockDim       = 1;
           kconfig.extra          = nullptr;
-          kconfig.func           = (void*) reserved::condition_reset<true>;
-          void* kconfig_args[1]  = {const_cast<void*>(static_cast<const void*>(config.conditional_handle))};
-          kconfig.kernelParams   = kconfig_args;
+          kconfig.func           = reinterpret_cast<void*>(reserved::condition_reset<true>);
+          void* reset_arg        = config.conditional_handle;
+          kconfig.kernelParams   = &reset_arg;
           kconfig.sharedMemBytes = 0;
 
           const cudaGraphNode_t reset_node = cuda_try<cudaGraphAddKernelNode>(graph, &conditionalNode, 1, &kconfig);
@@ -654,7 +655,7 @@ public:
         async_handle    = mv(handle);
       }
 
-      event_list finalize() override
+      _CCCL_HOST_API event_list finalize() override
       {
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
@@ -683,7 +684,8 @@ public:
       // consumed either for child-graph embedding (via handle::graph()) or
       // for instantiation into an exec graph (via ensure_instantiated()).
       // Cheap: no cudaGraphInstantiate is performed here.
-      void prepare_graph()
+      // This and finalize_nested() keep default visibility to share their DOT file counters across shared libraries.
+      _CCCL_PUBLIC_HOST_API void prepare_graph()
       {
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
         _CCCL_ASSERT(!nested_graph, "prepare_graph requires a top-level graph context");
@@ -701,7 +703,7 @@ public:
         if (dump_graphs)
         {
           static ::std::atomic<int> debug_graph_cnt{0};
-          ::std::string filename = "instantiated_graph" + ::std::to_string(debug_graph_cnt++) + ".dot";
+          const ::std::string filename = "instantiated_graph" + ::std::to_string(debug_graph_cnt++) + ".dot";
           cuda_try(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << '\n';
         }
@@ -714,7 +716,7 @@ public:
       // Only triggered by callers that actually need an exec graph
       // (handle::launch() or handle::exec()). Callers that only consume
       // graph() (e.g. embedding as a child-graph node) never pay this cost.
-      void ensure_instantiated()
+      _CCCL_HOST_API void ensure_instantiated()
       {
         _CCCL_ASSERT(graph_prepared_, "ensure_instantiated called before prepare_graph");
 
@@ -759,7 +761,7 @@ public:
       // Note: only `support_stream` is ever synced here. If a user wants to
       // drive the exec graph on a *different* stream, they must order that
       // stream themselves (the public API does not expose the prereq events).
-      void ensure_prereqs_synced()
+      _CCCL_HOST_API void ensure_prereqs_synced()
       {
         _CCCL_ASSERT(graph_prepared_, "ensure_prereqs_synced called before prepare_graph");
         if (!synced_)
@@ -772,7 +774,7 @@ public:
       // Launch the executable graph on `stream`. On the first call we
       // sync `ctx_prereqs` into the target stream so the launch waits for
       // the freeze/get operations in the parent context (dep A).
-      void launch_once(cudaStream_t stream)
+      _CCCL_HOST_API void launch_once(cudaStream_t stream)
       {
         _CCCL_ASSERT(exec_graph_, "launch_once called before ensure_instantiated");
         _CCCL_ASSERT(stream == support_stream, "launch_once only supports the node's support stream");
@@ -782,7 +784,7 @@ public:
 
       // Release resources and build the finalize_prereqs event list that the
       // parent context uses to unfreeze data in pop_after_finalize.
-      event_list finalize_after_launch()
+      _CCCL_HOST_API event_list finalize_after_launch()
       {
         _CCCL_ASSERT(!nested_graph, "finalize_after_launch requires a top-level graph context");
         _CCCL_ASSERT(graph_prepared_, "finalize_after_launch called before prepare_graph");
@@ -806,17 +808,17 @@ public:
         return parent_ctx.stream_to_event_list(support_stream, "finalized");
       }
 
-      bool is_nested() const
+      _CCCL_HOST_API bool is_nested() const
       {
         return nested_graph;
       }
 
-      const ::std::shared_ptr<cudaGraphExec_t>& exec_graph_shared() const
+      _CCCL_HOST_API const ::std::shared_ptr<cudaGraphExec_t>& exec_graph_shared() const
       {
         return exec_graph_;
       }
 
-      cudaGraph_t get_graph() const override
+      _CCCL_HOST_API cudaGraph_t get_graph() const override
       {
         return graph;
       }
@@ -824,7 +826,7 @@ public:
       // The parent's dependency on this nested node, built from host objects only. When
       // finalize_nested() fails part-way the child node is already in the parent graph, so the
       // parent can still be ordered behind it, whatever else went wrong.
-      event_list nested_output_event() const
+      _CCCL_HOST_API event_list nested_output_event() const
       {
         _CCCL_ASSERT(nested_graph, "nested_output_event is for nested graph nodes");
         auto& parent_ctx = parent_ctx_node->ctx;
@@ -834,7 +836,7 @@ public:
     private:
       // Nested graph finalization path - kept separate from the split
       // prologue/launch/epilogue helpers to keep the non-nested path clean.
-      event_list finalize_nested()
+      _CCCL_PUBLIC_HOST_API event_list finalize_nested()
       {
         ctx.to_graph_ctx().finalize_as_graph();
 
@@ -860,12 +862,12 @@ public:
         if (dump_nested)
         {
           static ::std::atomic<int> nested_cnt{0};
-          ::std::string filename = "nested_graph" + ::std::to_string(nested_cnt++) + ".dot";
+          const ::std::string filename = "nested_graph" + ::std::to_string(nested_cnt++) + ".dot";
           cuda_try(cudaGraphDebugDotPrint(body, filename.c_str(), cudaGraphDebugDotFlags(0)));
         }
 
         cudaGraph_t support_graph = parent_ctx.graph();
-        size_t graph_stage        = parent_ctx.stage();
+        const size_t graph_stage  = parent_ctx.stage();
 
         // Transfer resources from nested context to parent context
         // This works because the completion of the parent context depends on the completion of the nested context
@@ -917,31 +919,31 @@ public:
     };
 
     // Grow the sparse context node vector to accommodate at least target_size entries.
-    void grow_context_nodes(int target_size)
+    _CCCL_HOST_API void grow_context_nodes(int target_size)
     {
       if (target_size < int(nodes.size()))
       {
         return;
       }
 
-      size_t new_size = ::cuda::std::max(
+      const size_t new_size = ::cuda::std::max(
         static_cast<size_t>(target_size),
         nodes.size() * node_hierarchy::default_growth_numerator / node_hierarchy::default_growth_denominator);
       nodes.resize(new_size);
     }
 
   public:
-    impl()
+    _CCCL_HOST_API impl()
     {
       // Stats are disabled by default, unless a non null value is passed to this env variable
-      const char* display_graph_stats_str = getenv("CUDASTF_DISPLAY_GRAPH_STATS");
-      display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
+      const char* display_graph_stats_str = ::std::getenv("CUDASTF_DISPLAY_GRAPH_STATS");
+      display_graph_stats = (display_graph_stats_str && ::std::strtol(display_graph_stats_str, nullptr, 10) != 0);
 
       // Create the root node
       push(::cuda::std::source_location::current(), true /* is_root */);
     }
 
-    ~impl()
+    _CCCL_HOST_API ~impl()
     {
       print_cache_stats_summary();
     }
@@ -958,19 +960,17 @@ public:
      * @brief Helper to get async handle from pool or create new one
      */
     template <typename ContextType>
-    async_resources_handle get_async_handle(const ContextType& parent_ctx)
+    _CCCL_HOST_API async_resources_handle get_async_handle(const ContextType& parent_ctx)
     {
       auto& handle_stack = async_handles[parent_ctx.default_exec_place()];
       if (handle_stack.empty())
       {
         return async_resources_handle{}; // Create new one when pool is empty
       }
-      else
-      {
-        auto handle = mv(handle_stack.top());
-        handle_stack.pop();
-        return handle;
-      }
+
+      auto handle = mv(handle_stack.top());
+      handle_stack.pop();
+      return handle;
     }
 
     /**
@@ -978,9 +978,9 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const ::cuda::std::source_location& loc,
-              bool is_root                                     = false,
-              [[maybe_unused]] const push_while_config& config = push_while_config{})
+    _CCCL_HOST_API void push(const ::cuda::std::source_location& loc,
+                             bool is_root                                     = false,
+                             [[maybe_unused]] const push_while_config& config = push_while_config{})
     {
       auto lock = acquire_exclusive_lock();
 
@@ -993,10 +993,10 @@ public:
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
-      int head_offset = is_root ? -1 : get_head_offset();
+      const int head_offset = is_root ? -1 : get_head_offset();
 
       // Select the offset of the new node
-      int node_offset = node_tree.get_avail_entry();
+      const int node_offset = node_tree.get_avail_entry();
 
       // Grow nodes if needed
       if (int(nodes.size()) <= node_offset)
@@ -1049,25 +1049,26 @@ public:
     }
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-    void push_while(cudaGraphConditionalHandle* phandle_out,
-                    unsigned int default_launch_value      = 0,
-                    unsigned int flags                     = cudaGraphCondAssignDefault,
-                    const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+    _CCCL_HOST_API void push_while(
+      cudaGraphConditionalHandle* phandle_out,
+      unsigned int default_launch_value      = 0,
+      unsigned int flags                     = cudaGraphCondAssignDefault,
+      const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
     {
       _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
 
       // Create config object and call push.
-      push_while_config config(phandle_out, cudaGraphCondTypeWhile, default_launch_value, flags);
+      const push_while_config config(phandle_out, cudaGraphCondTypeWhile, default_launch_value, flags);
       push(loc, false, config);
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
     // This method assumes that the mutex is already acquired in exclusive mode
-    void _pop_prologue()
+    _CCCL_HOST_API void _pop_prologue()
     {
-      int head_offset = get_head_offset();
+      const int head_offset = get_head_offset();
 
-      _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
+      _CCCL_ASSERT(!nodes.empty(), "Calling pop while no context was pushed");
       _CCCL_ASSERT(nodes[head_offset], "invalid state");
 
       auto& current_node = nodes[head_offset];
@@ -1092,9 +1093,9 @@ public:
     // parent context is left consistent (data unfrozen, node gone, head moved); a failure along the
     // way lands in `err` for the caller to act on. See the error-handling contract on
     // stackable_ctx::pop().
-    void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& err)
+    _CCCL_HOST_API void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& err)
     {
-      int head_offset = get_head_offset();
+      const int head_offset = get_head_offset();
 
       auto& current_node = nodes[head_offset];
       auto& current_ctx  = current_node->ctx;
@@ -1108,14 +1109,14 @@ public:
         // When a graph context is finalized, a CUDA graph is created, we here
         // retrieve some information about it, and relate it to the location in
         // sources of the context push() call.
-        executable_graph_cache_stat* stat = current_ctx.graph_get_cache_stat();
+        const executable_graph_cache_stat* stat = current_ctx.graph_get_cache_stat();
         _CCCL_ASSERT(stat, "");
 
         const auto& loc = current_node->callsite;
         stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
       }
 
-      int parent_offset = node_tree.get_parent(head_offset);
+      const int parent_offset = node_tree.get_parent(head_offset);
       _CCCL_ASSERT(parent_offset != -1, "internal error: no parent ctx");
 
       auto& parent_node = nodes[parent_offset];
@@ -1214,7 +1215,7 @@ public:
      * @brief Terminate the current nested level and get back to the previous one
      */
     template <typename Policy>
-    void pop(Policy policy)
+    _CCCL_HOST_API void pop(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1224,8 +1225,8 @@ public:
 
       _pop_prologue();
 
-      int head_offset    = get_head_offset();
-      auto& current_node = *nodes[head_offset];
+      const int head_offset = get_head_offset();
+      auto& current_node    = *nodes[head_offset];
 
       // The node's finalize() is where asynchronous errors from the nested work surface (at its
       // synchronize). The pop completes regardless, and the policy decides at the end, so the
@@ -1287,14 +1288,14 @@ public:
      * Only legal on a non-nested graph_ctx_node (top-level graph whose
      * parent is the stream_ctx root).
      */
-    pop_prologue_result pop_prologue_impl()
+    _CCCL_HOST_API pop_prologue_result pop_prologue_impl()
     {
       auto lock = acquire_exclusive_lock();
 
       _CCCL_VERIFY(!pending_epilogue_token_,
                    "pop_prologue() called while a previous pop_prologue() is still pending pop_epilogue()");
 
-      int head_offset         = get_head_offset();
+      const int head_offset   = get_head_offset();
       auto& current_node_base = *nodes[head_offset];
       auto* gnode             = dynamic_cast<graph_ctx_node*>(&current_node_base);
       _CCCL_VERIFY(gnode != nullptr, "pop_prologue() requires a graph context (not the stream_ctx root)");
@@ -1321,12 +1322,12 @@ public:
      * pop_prologue().
      */
     template <typename Policy>
-    void pop_epilogue_impl(Policy policy)
+    _CCCL_HOST_API void pop_epilogue_impl(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
-      int node_offset       = pending_epilogue_node_offset_;
-      graph_ctx_node* gnode = pending_graph_node_();
+      [[maybe_unused]] const int node_offset = pending_epilogue_node_offset_;
+      graph_ctx_node* gnode                  = pending_graph_node_();
 
       // finalize_after_launch() synchronizes the support stream, releases the nested resources and
       // records the completion event. It is where asynchronous errors from the launched graph
@@ -1374,7 +1375,7 @@ public:
      * afterwards). The prereq sync into `stream` is performed by
      * `launch_once` on its first invocation.
      */
-    void launch_prepared_graph(int node_offset, cudaStream_t stream)
+    _CCCL_HOST_API void launch_prepared_graph(int node_offset, cudaStream_t stream)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1396,7 +1397,7 @@ public:
      * Idempotent: subsequent calls skip both steps. The returned shared_ptr
      * stays valid until `pop_epilogue()`.
      */
-    ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset)
+    _CCCL_HOST_API ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1419,7 +1420,7 @@ public:
      *
      * Idempotent. Does NOT trigger `cudaGraphInstantiate`.
      */
-    void prepare_handle_for_graph(int node_offset)
+    _CCCL_HOST_API void prepare_handle_for_graph(int node_offset)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1432,26 +1433,26 @@ public:
     }
 
     // Offset of the root context
-    int get_root_offset() const
+    _CCCL_HOST_API int get_root_offset() const
     {
       return root_offset;
     }
 
-    context& get_root_ctx()
+    _CCCL_HOST_API context& get_root_ctx()
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset], "invalid state");
       return nodes[root_offset]->ctx;
     }
 
-    const context& get_root_ctx() const
+    _CCCL_HOST_API const context& get_root_ctx() const
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset], "invalid state");
       return nodes[root_offset]->ctx;
     }
 
-    ::std::unique_ptr<ctx_node_base>& get_node(int offset)
+    _CCCL_HOST_API ::std::unique_ptr<ctx_node_base>& get_node(int offset)
     {
       _CCCL_ASSERT(offset != -1, "invalid value");
       _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
@@ -1459,7 +1460,7 @@ public:
       return nodes[offset];
     }
 
-    const ::std::unique_ptr<ctx_node_base>& get_node(int offset) const
+    _CCCL_HOST_API const ::std::unique_ptr<ctx_node_base>& get_node(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "invalid value");
       _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
@@ -1467,18 +1468,18 @@ public:
       return nodes[offset];
     }
 
-    context& get_ctx(int offset)
+    _CCCL_HOST_API context& get_ctx(int offset)
     {
       return get_node(offset)->ctx;
     }
 
-    const context& get_ctx(int offset) const
+    _CCCL_HOST_API const context& get_ctx(int offset) const
     {
       return get_node(offset)->ctx;
     }
 
     /* Get the offset of the top context for the current thread */
-    int get_head_offset() const
+    _CCCL_HOST_API int get_head_offset() const
     {
       auto it = head_map.find(::std::this_thread::get_id());
       if (it == head_map.end())
@@ -1489,31 +1490,31 @@ public:
     }
 
     /** True if the current thread has a head offset set (has entered the context). */
-    bool has_head_set() const
+    _CCCL_HOST_API bool has_head_set() const
     {
       return head_map.find(::std::this_thread::get_id()) != head_map.end();
     }
 
     // Record the offset of the current context in the calling thread
-    void set_head_offset(int offset)
+    _CCCL_HOST_API void set_head_offset(int offset)
     {
       head_map[::std::this_thread::get_id()] = offset;
     }
 
-    int get_parent_offset(int offset) const
+    _CCCL_HOST_API int get_parent_offset(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "invalid node offset for parent lookup");
       return node_tree.get_parent(offset);
     }
 
-    const auto& get_children_offsets(int parent) const
+    _CCCL_HOST_API const auto& get_children_offsets(int parent) const
     {
       _CCCL_ASSERT(parent != -1, "invalid parent offset for children lookup");
       return node_tree.get_children(parent);
     }
 
   private:
-    graph_ctx_node* pending_graph_node_()
+    _CCCL_HOST_API graph_ctx_node* pending_graph_node_()
     {
       _CCCL_VERIFY(pending_epilogue_token_, "pop_epilogue() called without a matching pop_prologue()");
       _CCCL_VERIFY(pending_epilogue_node_offset_ >= 0, "internal error: pending epilogue but no node offset");
@@ -1523,7 +1524,7 @@ public:
       return gnode;
     }
 
-    graph_ctx_node*
+    _CCCL_HOST_API graph_ctx_node*
     verified_prepared_graph_node_(int node_offset, const char* after_epilogue_msg, const char* stale_handle_msg)
     {
       _CCCL_VERIFY(pending_epilogue_token_, after_epilogue_msg);
@@ -1535,9 +1536,9 @@ public:
       return gnode;
     }
 
-    void print_cache_stats_summary() const
+    _CCCL_HOST_API void print_cache_stats_summary() const
     {
-      if (!display_graph_stats || stats_map.size() == 0)
+      if (!display_graph_stats || stats_map.empty())
       {
         return;
       }
@@ -1615,12 +1616,12 @@ public:
 
   public:
     /* RAII wrappers to get the lock either in read-only or write mode */
-    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
+    _CCCL_HOST_API ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
     {
       return ::std::shared_lock<::std::shared_mutex>(mutex);
     }
 
-    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
+    _CCCL_HOST_API ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
     {
       return ::std::unique_lock<::std::shared_mutex>(mutex);
     }
@@ -1629,79 +1630,81 @@ public:
     mutable ::std::shared_mutex mutex;
   };
 
-  stackable_ctx()
+  _CCCL_HOST_API stackable_ctx()
       : pimpl(::std::make_shared<impl>())
   {}
 
-  auto& get_node(size_t offset)
+  _CCCL_HOST_API auto& get_node(size_t offset)
   {
-    return pimpl->get_node(offset);
+    _CCCL_ASSERT(::cuda::std::in_range<int>(offset), "node offset is not representable");
+    return pimpl->get_node(static_cast<int>(offset));
   }
 
-  int get_parent_offset(int offset) const
+  _CCCL_HOST_API int get_parent_offset(int offset) const
   {
     return pimpl->get_parent_offset(offset);
   }
 
-  const auto& get_children_offsets(int parent) const
+  _CCCL_HOST_API const auto& get_children_offsets(int parent) const
   {
     return pimpl->get_children_offsets(parent);
   }
 
-  context& get_root_ctx()
+  _CCCL_HOST_API context& get_root_ctx()
   {
     return pimpl->get_root_ctx();
   }
 
-  const context& get_root_ctx() const
+  _CCCL_HOST_API const context& get_root_ctx() const
   {
     return pimpl->get_root_ctx();
   }
 
-  int get_root_offset() const
+  _CCCL_HOST_API int get_root_offset() const
   {
     return pimpl->get_root_offset();
   }
 
-  context& get_ctx(int offset)
+  _CCCL_HOST_API context& get_ctx(int offset)
   {
     return pimpl->get_ctx(offset);
   }
 
-  const context& get_ctx(int offset) const
+  _CCCL_HOST_API const context& get_ctx(int offset) const
   {
     return pimpl->get_ctx(offset);
   }
 
-  int get_head_offset() const
+  _CCCL_HOST_API int get_head_offset() const
   {
     auto lock = pimpl->acquire_shared_lock();
     return pimpl->get_head_offset();
   }
 
   /** True if the current thread has a head offset set (has entered the context). */
-  bool has_head_set() const
+  _CCCL_HOST_API bool has_head_set() const
   {
     auto lock = pimpl->acquire_shared_lock();
     return pimpl->has_head_set();
   }
 
-  void set_head_offset(int offset)
+  _CCCL_HOST_API void set_head_offset(int offset)
   {
     auto lock = pimpl->acquire_exclusive_lock();
     pimpl->set_head_offset(offset);
   }
 
-  void push(const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  _CCCL_HOST_API void push(const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
   {
     pimpl->push(loc);
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-  void push_while(cudaGraphConditionalHandle* phandle_out,
-                  unsigned int default_launch_value      = 0,
-                  unsigned int flags                     = cudaGraphCondAssignDefault,
-                  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  _CCCL_HOST_API void push_while(
+    cudaGraphConditionalHandle* phandle_out,
+    unsigned int default_launch_value      = 0,
+    unsigned int flags                     = cudaGraphCondAssignDefault,
+    const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
   {
     pimpl->push_while(phandle_out, default_launch_value, flags, loc);
   }
@@ -1722,7 +1725,7 @@ public:
   //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
   //! lets the program continue. See exception_policy.cuh for the full set.
   template <typename Policy = sump::fwd_t>
-  void pop(Policy policy = {})
+  _CCCL_HOST_API void pop(Policy policy = {})
   {
     pimpl->pop(policy);
   }
@@ -1752,7 +1755,7 @@ public:
   //! that was produced by the matching pop_prologue(). Completes even if a step
   //! fails, then hands the first failure to `policy`; see the contract on pop().
   template <typename Policy = sump::fwd_t>
-  void pop_epilogue(Policy policy = {})
+  _CCCL_HOST_API void pop_epilogue(Policy policy = {})
   {
     pimpl->pop_epilogue_impl(policy);
   }
@@ -1764,17 +1767,17 @@ private:
   // place. The handle is befriended so it can call them.
   friend class launchable_graph_handle;
 
-  void launch_prepared_graph(int node_offset, cudaStream_t stream) const
+  _CCCL_HOST_API void launch_prepared_graph(int node_offset, cudaStream_t stream) const
   {
     pimpl->launch_prepared_graph(node_offset, stream);
   }
 
-  ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset) const
+  _CCCL_HOST_API ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset) const
   {
     return pimpl->prepare_handle_for_exec(node_offset);
   }
 
-  void prepare_handle_for_graph(int node_offset) const
+  _CCCL_HOST_API void prepare_handle_for_graph(int node_offset) const
   {
     pimpl->prepare_handle_for_graph(node_offset);
   }
@@ -1820,39 +1823,39 @@ public:
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename T>
-  auto logical_data(shape_of<T> s)
+  _CCCL_HOST_API auto logical_data(shape_of<T> s)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int head = pimpl->get_head_offset();
+    const int head = pimpl->get_head_offset();
     return stackable_logical_data(*this, head, true, get_root_ctx().logical_data(mv(s)), true);
   }
 
   template <typename T, typename... Sizes>
-  auto logical_data(size_t elements, Sizes... more_sizes)
+  _CCCL_HOST_API auto logical_data(size_t elements, Sizes... more_sizes)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int head = pimpl->get_head_offset();
+    const int head = pimpl->get_head_offset();
     return stackable_logical_data(
       *this, head, true, get_root_ctx().template logical_data<T>(elements, more_sizes...), true);
   }
 
   template <typename T>
-  auto logical_data_no_export(shape_of<T> s)
+  _CCCL_HOST_API auto logical_data_no_export(shape_of<T> s)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int head = pimpl->get_head_offset();
+    const int head = pimpl->get_head_offset();
     return stackable_logical_data(*this, head, true, get_ctx(head).logical_data(mv(s)), false);
   }
 
   template <typename T, typename... Sizes>
-  auto logical_data_no_export(size_t elements, Sizes... more_sizes)
+  _CCCL_HOST_API auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int head = pimpl->get_head_offset();
+    const int head = pimpl->get_head_offset();
     return stackable_logical_data(
       *this, head, true, get_ctx(head).template logical_data<T>(elements, more_sizes...), false);
   }
@@ -1860,11 +1863,11 @@ public:
   stackable_logical_data<void_interface> token();
 
   template <typename... Pack>
-  auto logical_data(Pack&&... pack)
+  _CCCL_HOST_API auto logical_data(Pack&&... pack)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int head           = pimpl->get_head_offset();
+    const int head     = pimpl->get_head_offset();
     auto underlying_ld = get_ctx(head).logical_data(::cuda::std::forward<Pack>(pack)...);
     using T            = typename decltype(underlying_ld)::element_type;
     return stackable_logical_data<T>(*this, head, false, mv(underlying_ld), true);
@@ -1875,7 +1878,7 @@ public:
   // modes are combined before pushing so that the data is imported with the
   // correct mode (e.g. read + write => rw).
   template <typename... Pack>
-  void validate_and_push([[maybe_unused]] int offset, const Pack&... pack) const
+  _CCCL_HOST_API void validate_and_push([[maybe_unused]] int offset, const Pack&... pack) const
   {
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
 
@@ -1898,79 +1901,78 @@ public:
     (validate(pack), ...);
   }
 
-public:
   template <typename ExecPlace,
             typename... Deps,
             ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, ::cuda::std::decay_t<ExecPlace>>, int> = 0>
-  auto task(ExecPlace&& e_place, Deps&&... deps)
+  _CCCL_HOST_API auto task(ExecPlace&& e_place, Deps&&... deps)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
   // Note we here duplicate the code above to avoid locking issues (and not create a 3 line common impl)
   template <typename... Deps>
-  auto task(Deps&&... deps)
+  _CCCL_HOST_API auto task(Deps&&... deps)
   {
-    auto lock    = pimpl->acquire_shared_lock();
-    int offset   = get_head_offset();
-    auto e_place = get_ctx(offset).default_exec_place();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
+    auto e_place     = get_ctx(offset).default_exec_place();
     return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   template <typename... Pack>
-  auto parallel_for(Pack&&... pack)
+  _CCCL_HOST_API auto parallel_for(Pack&&... pack)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     return get_ctx(offset).parallel_for(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
-  auto launch(Pack&&... pack)
+  _CCCL_HOST_API auto launch(Pack&&... pack)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     return get_ctx(offset).launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
-  auto cuda_kernel(Pack&&... pack)
+  _CCCL_HOST_API auto cuda_kernel(Pack&&... pack)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     return get_ctx(offset).cuda_kernel(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
-  auto cuda_kernel_chain(Pack&&... pack)
+  _CCCL_HOST_API auto cuda_kernel_chain(Pack&&... pack)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     return get_ctx(offset).cuda_kernel_chain(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 #endif
 
   template <typename... Pack>
-  auto host_launch(Pack&&... pack)
+  _CCCL_HOST_API auto host_launch(Pack&&... pack)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     return get_ctx(offset).host_launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
-  auto fence()
+  _CCCL_HOST_API auto fence()
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     if (offset != get_root_offset())
     {
       _CCCL_THROW(::std::logic_error, "fence() is not supported in nested contexts");
@@ -1980,11 +1982,11 @@ public:
   }
 
   template <typename T>
-  auto wait(::cuda::experimental::stf::stackable_logical_data<T>& ldata)
+  _CCCL_HOST_API auto wait(::cuda::experimental::stf::stackable_logical_data<T>& ldata)
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     if (offset != get_root_offset())
     {
       _CCCL_THROW(::std::logic_error, "wait() is not supported in nested contexts");
@@ -1997,72 +1999,72 @@ public:
     return get_ctx(offset).wait(ld);
   }
 
-  auto get_dot()
+  _CCCL_HOST_API auto get_dot()
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).get_dot();
   }
 
   template <typename... Pack>
-  void push_affinity(Pack&&... pack) const
+  _CCCL_HOST_API void push_affinity(Pack&&... pack) const
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock        = pimpl->acquire_shared_lock();
+    const int offset = get_head_offset();
     validate_and_push(offset, pack...);
     get_ctx(offset).push_affinity(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
-  void pop_affinity() const
+  _CCCL_HOST_API void pop_affinity() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     get_ctx(offset).pop_affinity();
   }
 
-  auto& current_affinity() const
+  _CCCL_HOST_API auto& current_affinity() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).current_affinity();
   }
 
-  const exec_place& current_exec_place() const
+  _CCCL_HOST_API const exec_place& current_exec_place() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).current_exec_place();
   }
 
-  auto& async_resources() const
+  _CCCL_HOST_API auto& async_resources() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).async_resources();
   }
 
-  auto dot_section(::std::string symbol) const
+  _CCCL_HOST_API auto dot_section(::std::string symbol) const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).dot_section(mv(symbol));
   }
 
-  size_t task_count() const
+  _CCCL_HOST_API size_t task_count() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int offset = get_head_offset();
+    const int offset = get_head_offset();
     return get_ctx(offset).task_count();
   }
 
-  void finalize()
+  _CCCL_HOST_API void finalize()
   {
     auto lock = pimpl->acquire_shared_lock();
 
@@ -2072,17 +2074,16 @@ public:
     get_root_ctx().finalize();
   }
 
-  ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
+  _CCCL_HOST_API ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
   {
     return pimpl->acquire_shared_lock();
   }
 
-  ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
+  _CCCL_HOST_API ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
   {
     return pimpl->acquire_exclusive_lock();
   }
 
-public:
   ::std::shared_ptr<impl> pimpl;
 };
-} // end namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

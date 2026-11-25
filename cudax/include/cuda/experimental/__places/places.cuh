@@ -101,8 +101,8 @@ class exec_place;
 class data_place_composite;
 
 // Forward declarations of composite allocator functions — defined in localized_array.cuh
-void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize);
-void deallocate_composite_data_place(void* ptr);
+_CCCL_HOST_API void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize);
+_CCCL_HOST_API void deallocate_composite_data_place(void* ptr);
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
@@ -147,10 +147,14 @@ public:
       : pimpl_(make_static_instance<data_place_invalid>())
   {}
 
-  _CCCL_HIDE_FROM_ABI data_place(const data_place&)            = default;
-  _CCCL_HIDE_FROM_ABI data_place(data_place&&)                 = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI data_place(const data_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI data_place(data_place&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI data_place& operator=(const data_place&) = default;
-  _CCCL_HIDE_FROM_ABI data_place& operator=(data_place&&)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI data_place& operator=(data_place&&) = default;
 
   /**
    * @brief Represents an invalid `data_place` object.
@@ -273,8 +277,8 @@ public:
    * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
    * the place gracefully degrades to plain device memory.
    */
-  static data_place locality_domain(const locality_domain_view& view);
-  static data_place locality_domain(int dev_id, int domain_id);
+  _CCCL_HOST_API static data_place locality_domain(const locality_domain_view& view);
+  _CCCL_HOST_API static data_place locality_domain(int dev_id, int domain_id);
 
   _CCCL_HOST_API bool operator==(const data_place& rhs) const
   {
@@ -702,6 +706,16 @@ public:
 
   _CCCL_HIDE_FROM_ABI exec_place() = default;
 
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI exec_place(const exec_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI exec_place(exec_place&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI exec_place& operator=(const exec_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI exec_place& operator=(exec_place&&) = default;
+
   _CCCL_HOST_API bool operator==(const exec_place& rhs) const
   {
     if (pimpl.get() == rhs.pimpl.get())
@@ -957,13 +971,13 @@ public:
    *        see `locality_domain_sm_split`. Ignored by backends without
    *        native locality-domain support.
    */
-  static exec_place locality_domain(const locality_domain_view& view,
-                                    locality_domain_sm_split split = locality_domain_sm_split::backfill);
-  static exec_place
+  _CCCL_HOST_API static exec_place locality_domain(const locality_domain_view& view,
+                                                   locality_domain_sm_split split = locality_domain_sm_split::backfill);
+  _CCCL_HOST_API static exec_place
   locality_domain(int dev_id, int domain_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
-  static exec_place cuda_stream(cudaStream_t stream);
-  static exec_place cuda_stream(const augmented_stream& dstream);
+  _CCCL_HOST_API static exec_place cuda_stream(cudaStream_t stream);
+  _CCCL_HOST_API static exec_place cuda_stream(const augmented_stream& dstream);
 
   /**
    * @brief Create an execution place from an externally-owned CUDA driver context
@@ -1004,7 +1018,8 @@ public:
    *        `locality_domain_sm_split`
    * @return exec_place grid with one place per locality domain
    */
-  static exec_place locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
+  _CCCL_HOST_API static exec_place
+  locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
   //! @brief Returns a grid of execution places over every locality domain of every visible device
   //!
@@ -1017,7 +1032,8 @@ public:
   //! @param[in] split SM split method applied to every place of the grid; see
   //!        @c locality_domain_sm_split
   //! @return exec_place grid with one place per locality domain per device
-  static exec_place all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
+  _CCCL_HOST_API static exec_place
+  all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
   _CCCL_HOST_API static exec_place n_devices(size_t n, dim4 dims);
 
@@ -1027,7 +1043,7 @@ public:
   _CCCL_HOST_API static exec_place repeat(const exec_place& e, size_t cnt);
 
   template <typename... Args>
-  auto partition_by_scope(Args&&... args);
+  _CCCL_HOST_API auto partition_by_scope(Args&&... args);
 
   /**
    * @brief Execute lambda on this place.
@@ -1315,7 +1331,7 @@ public:
   {}
 
   // Grid interface - host is a 1-element grid
-  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place([[maybe_unused]] size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     // This singleton is owned by the permanent shared_ptr created once in
@@ -1327,13 +1343,13 @@ public:
   }
 
   // Activation - no-op for host
-  _CCCL_HOST_API exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate([[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     return exec_place();
   }
 
-  _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate([[maybe_unused]] const exec_place& prev, [[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
@@ -1392,7 +1408,7 @@ public:
     return true;
   }
 
-  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place([[maybe_unused]] size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
     // This singleton is owned by the permanent shared_ptr created once in
@@ -1447,7 +1463,7 @@ public:
     // Grid interface - device is a 1-element grid
     _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
 
-    _CCCL_HOST_API exec_place activate(size_t idx) const override
+    _CCCL_HOST_API exec_place activate([[maybe_unused]] size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto old_dev_id = cuda_try<cudaGetDevice>();
@@ -1458,7 +1474,7 @@ public:
       return exec_place::device(old_dev_id);
     }
 
-    _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
+    _CCCL_HOST_API void deactivate(const exec_place& prev, [[maybe_unused]] size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto current_dev_id  = cuda_try<cudaGetDevice>();
@@ -1824,13 +1840,13 @@ _CCCL_HOST_API inline exec_place data_place::affine_exec_place() const
 
 // === Deferred implementations for get_place() ===
 
-_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t idx)
+_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place([[maybe_unused]] size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for scalar exec_place");
   return shared_from_this();
 }
 
-_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
+_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place([[maybe_unused]] size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
   // These device impls are always owned by the per-device ``shared_ptr``

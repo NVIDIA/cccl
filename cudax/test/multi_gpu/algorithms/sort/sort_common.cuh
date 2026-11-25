@@ -16,6 +16,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
 #include <cuda/std/random>
@@ -31,6 +32,10 @@
 
 namespace sort_test_util
 {
+// Orders like the default comparator while exercising a distinct instantiation.
+struct custom_less : cuda::std::less<>
+{};
+
 // `sort` permutes elements across ranks, so a type only needs to be orderable both ways plus
 // equality-comparable for the final `Equals` check against the host reference.
 using custom_key_t =

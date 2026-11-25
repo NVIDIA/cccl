@@ -194,6 +194,16 @@ public:
 
   _CCCL_HOST_API explicit async_resources_handle(::std::nullptr_t) {}
 
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI async_resources_handle(const async_resources_handle&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI async_resources_handle(async_resources_handle&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI async_resources_handle& operator=(const async_resources_handle&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI async_resources_handle& operator=(async_resources_handle&&) = default;
+
   _CCCL_HOST_API explicit operator bool() const
   {
     return pimpl != nullptr;

@@ -58,9 +58,9 @@ namespace cuda::experimental::places
 /**
  * @brief Check if localized allocation statistics should be printed
  */
-inline bool localized_alloc_stats_enabled()
+_CCCL_PUBLIC_HOST_API inline bool localized_alloc_stats_enabled()
 {
-  static bool enabled = [] {
+  static const bool enabled = [] {
     const char* env = ::std::getenv("CUDASTF_LOCALIZED_ALLOC_STATS");
     return env != nullptr && ::std::string(env) != "0";
   }();
@@ -106,7 +106,7 @@ struct localized_stats
  * customary 2 MiB VMM granularity for GPU-free (offline) evaluation. The
  * granularity query is the only driver interaction.
  */
-inline size_t default_placement_block_size()
+_CCCL_HOST_API inline size_t default_placement_block_size()
 {
   int ndevs = 0;
   if (cudaGetDeviceCount(&ndevs) == cudaSuccess && ndevs > 0)
@@ -117,7 +117,7 @@ inline size_t default_placement_block_size()
     prop.location.id         = 0;
     return cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
   }
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
   return 2 * 1024 * 1024;
 }
 
@@ -141,7 +141,7 @@ inline size_t default_placement_block_size()
  * @param stats Receives the sampled accuracy (fraction of probes agreeing with the chosen owner)
  */
 template <typename OwnerFn>
-::std::vector<pos4> compute_block_owners(
+_CCCL_HOST_API ::std::vector<pos4> compute_block_owners(
   OwnerFn&& owner_of,
   size_t nblocks,
   size_t block_size_bytes,
@@ -230,7 +230,7 @@ struct block_run
  * consecutive blocks with the same owner.
  */
 template <typename F>
-void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
+_CCCL_HOST_API void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
 {
   for (size_t i = 0; i < owners.size();)
   {
@@ -254,7 +254,7 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
 //! user-provided mappers (possibly through a foreign ABI), so they are
 //! validated here — the one place every accounting path funnels through — and
 //! rejected with a defined error instead.
-inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
+_CCCL_HOST_API inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
 {
   const bool in_range =
     p.get(0) >= 0 && static_cast<size_t>(p.get(0)) < static_cast<size_t>(grid_dims.x) && p.get(1) >= 0
@@ -269,7 +269,7 @@ inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
 }
 
 //! Merge a one-owner-per-block vector into maximal block runs.
-inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
+_CCCL_HOST_API inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
 {
   ::std::vector<block_run> runs;
   for_each_owner_run(owners, [&](pos4 o, size_t first, size_t count) {
@@ -289,14 +289,13 @@ class localized_array
 {
   struct metadata
   {
-    metadata(data_place place_, size_t size_, size_t offset_)
-        : alloc_handle{}
-        , place(mv(place_))
+    _CCCL_HOST_API metadata(data_place place_, size_t size_, size_t offset_)
+        : place(mv(place_))
         , size(size_)
         , offset(offset_)
     {}
 
-    CUmemGenericAllocationHandle alloc_handle;
+    CUmemGenericAllocationHandle alloc_handle{};
     const data_place place;
     size_t size;
     size_t offset;
@@ -304,7 +303,7 @@ class localized_array
 
 public:
   template <typename F>
-  localized_array(
+  _CCCL_HOST_API localized_array(
     exec_place grid,
     partition_mapper mapper,
     F&& delinearize,
@@ -336,12 +335,13 @@ public:
    * function maps a linear element index to the grid position owning it and
    * is only used during construction.
    */
-  localized_array(exec_place grid,
-                  const ::std::function<pos4(size_t)>& owner_of,
-                  size_t total_size,
-                  size_t elemsize,
-                  dim4 data_dims,
-                  size_t probes = localized_placement_default_probes)
+  _CCCL_HOST_API localized_array(
+    exec_place grid,
+    const ::std::function<pos4(size_t)>& owner_of,
+    size_t total_size,
+    size_t elemsize,
+    dim4 data_dims,
+    size_t probes = localized_placement_default_probes)
       : grid(mv(grid))
       , total_size_bytes(total_size * elemsize)
       , data_dims(data_dims)
@@ -366,7 +366,7 @@ public:
     typename PlacementProvider,
     typename = ::cuda::std::enable_if_t<
       ::cuda::std::is_invocable_r_v<::std::vector<block_run>, PlacementProvider, size_t, size_t, localized_stats&>>>
-  localized_array(
+  _CCCL_HOST_API localized_array(
     exec_place grid, PlacementProvider&& placement_provider, size_t total_size, size_t elemsize, dim4 data_dims)
       : grid(mv(grid))
       , total_size_bytes(total_size * elemsize)
@@ -382,12 +382,12 @@ public:
   localized_array& operator=(const localized_array&) = delete;
   localized_array& operator=(localized_array&&)      = delete;
 
-  ~localized_array()
+  _CCCL_HOST_API ~localized_array()
   {
     for (auto& item : meta)
     {
-      size_t offset = item.offset;
-      size_t sz     = item.size;
+      const size_t offset = item.offset;
+      const size_t sz     = item.size;
       cuda_safe_call(cuMemUnmap(base_ptr + offset, sz));
       cuda_safe_call(cuMemRelease(item.alloc_handle));
     }
@@ -395,15 +395,16 @@ public:
     cuda_safe_call(cuMemAddressFree(base_ptr, vm_total_size_bytes));
   }
 
-  void* get_base_ptr() const
+  _CCCL_HOST_API void* get_base_ptr() const
   {
-    return reinterpret_cast<void*>(base_ptr);
+    return reinterpret_cast<void*>(base_ptr); // NOLINT(performance-no-int-to-ptr) -- the driver returns a device
+                                              // address
   }
 
   /**
    * @brief Placement statistics of this allocation (see localized_stats)
    */
-  const localized_stats& get_stats() const
+  _CCCL_HOST_API const localized_stats& get_stats() const
   {
     return stats;
   }
@@ -412,7 +413,7 @@ public:
    * This equality operator is used to find entries in an allocation cache which match a specific request
    */
   template <typename... P>
-  bool operator==(::cuda::std::tuple<P&...> t) const
+  _CCCL_HOST_API bool operator==(::cuda::std::tuple<P&...> t) const
   {
     // tuple arguments :
     // 0 : grid, 1 : mapper, 2 : delinearize function, 3 : total size, 4 elem_size, 5 : data_dims
@@ -428,7 +429,7 @@ public:
   }
 
 private:
-  void init(const ::std::function<pos4(size_t)>& owner_of, size_t total_size, size_t probes)
+  _CCCL_HOST_API void init(const ::std::function<pos4(size_t)>& owner_of, size_t total_size, size_t probes)
   {
     init(
       [&](size_t block_size_bytes_, size_t nblocks_, localized_stats& stats_) {
@@ -441,7 +442,7 @@ private:
   //! Shared allocation body: `placement_provider(block_size_bytes, nblocks,
   //! stats)` returns the allocation's maximal same-owner block runs.
   template <typename PlacementProvider>
-  void init(PlacementProvider&& placement_provider, [[maybe_unused]] size_t total_size)
+  _CCCL_HOST_API void init(PlacementProvider&& placement_provider, [[maybe_unused]] size_t total_size)
   {
     if (elemsize == 0)
     {
@@ -450,10 +451,11 @@ private:
 
     cuda_try(cudaFree(nullptr));
 
-    const int ndevs = cuda_try<cudaGetDeviceCount>();
-    CUdevice dev    = cuda_try<cuCtxGetDevice>();
+    const int ndevs    = cuda_try<cudaGetDeviceCount>();
+    const CUdevice dev = cuda_try<cuCtxGetDevice>();
 
-    int supportsVMM = cuda_try<cuDeviceGetAttribute>(CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev);
+    const int supportsVMM =
+      cuda_try<cuDeviceGetAttribute>(CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev);
     EXPECT(supportsVMM == 1, "Cannot create a localized_array object on this machine because it does not support VMM.");
 
     CUmemAllocationProp prop = {};
@@ -461,14 +463,15 @@ private:
     prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
     prop.location.id         = dev;
 
-    size_t alloc_granularity_bytes = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
+    const size_t alloc_granularity_bytes =
+      cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
 
     block_size_bytes = alloc_granularity_bytes;
 
     vm_total_size_bytes =
       ((total_size_bytes + alloc_granularity_bytes - 1) / alloc_granularity_bytes) * alloc_granularity_bytes;
 
-    size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
+    const size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
 
     ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
     for (int d = 0; d < ndevs; d++)
@@ -512,7 +515,7 @@ private:
     {
       const size_t grid_index = checked_grid_index(this->grid.get_dims(), r.owner);
       data_place place        = grid_pos_to_place(r.owner);
-      size_t alloc_size       = r.num_blocks * block_size_bytes;
+      const size_t alloc_size = r.num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
       stats.bytes_per_grid_index[grid_index] += alloc_size;
       meta.emplace_back(mv(place), alloc_size, r.first_block * block_size_bytes);
@@ -534,7 +537,7 @@ private:
     {
       for (auto& item : meta)
       {
-        int item_dev = device_ordinal(item.place);
+        const int item_dev = device_ordinal(item.place);
 
         cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
 
@@ -564,39 +567,47 @@ private:
     }
     catch (...)
     {
+      // Best-effort cleanup preserves the original allocation or mapping error.
       for (size_t i = 0; i < mapped; i++)
       {
-        cuMemUnmap(base_ptr + meta[i].offset, meta[i].size);
-        cuMemRelease(meta[i].alloc_handle);
+        static_cast<void>(cuMemUnmap(base_ptr + meta[i].offset, meta[i].size));
+        static_cast<void>(cuMemRelease(meta[i].alloc_handle));
       }
       // a created-but-unmapped handle on the failing item
       if (mapped < meta.size() && meta[mapped].alloc_handle != CUmemGenericAllocationHandle{})
       {
-        cuMemRelease(meta[mapped].alloc_handle);
+        static_cast<void>(cuMemRelease(meta[mapped].alloc_handle));
       }
-      cuMemAddressFree(base_ptr, vm_total_size_bytes);
+      static_cast<void>(cuMemAddressFree(base_ptr, vm_total_size_bytes));
       _CCCL_RETHROW;
     }
   }
 
-  void print_stats(const ::std::vector<block_run>& runs)
+  _CCCL_HOST_API void print_stats(const ::std::vector<block_run>& runs)
   {
     fprintf(stderr, "\n=== Localized Array Allocation Statistics ===\n");
-    fprintf(stderr, "Total size: %zu bytes (%.2f MB)\n", stats.total_bytes, stats.total_bytes / (1024.0 * 1024.0));
-    fprintf(stderr, "VM reservation: %zu bytes (%.2f MB)\n", stats.vm_bytes, stats.vm_bytes / (1024.0 * 1024.0));
-    fprintf(stderr, "Block size: %zu bytes (%.2f KB)\n", stats.block_size, stats.block_size / 1024.0);
+    fprintf(stderr,
+            "Total size: %zu bytes (%.2f MB)\n",
+            stats.total_bytes,
+            static_cast<double>(stats.total_bytes) / (1024.0 * 1024.0));
+    fprintf(stderr,
+            "VM reservation: %zu bytes (%.2f MB)\n",
+            stats.vm_bytes,
+            static_cast<double>(stats.vm_bytes) / (1024.0 * 1024.0));
+    fprintf(
+      stderr, "Block size: %zu bytes (%.2f KB)\n", stats.block_size, static_cast<double>(stats.block_size) / 1024.0);
     fprintf(stderr, "Number of blocks: %zu (merged into %zu allocations)\n", stats.nblocks, stats.nallocs);
     fprintf(stderr, "Number of places: %zu\n", stats.bytes_per_place.size());
 
     fprintf(stderr, "\nAllocation distribution by place:\n");
     for (const auto& entry : stats.bytes_per_place)
     {
-      double pct = 100.0 * entry.second / stats.vm_bytes;
+      const double pct = 100.0 * static_cast<double>(entry.second) / static_cast<double>(stats.vm_bytes);
       fprintf(stderr,
               "  %s: %zu bytes (%.2f MB, %.1f%%)\n",
               entry.first.c_str(),
               entry.second,
-              entry.second / (1024.0 * 1024.0),
+              static_cast<double>(entry.second) / (1024.0 * 1024.0),
               pct);
     }
 
@@ -607,10 +618,8 @@ private:
     fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "-----", "------", "----", "------", "-----");
     for (size_t idx = 0; idx < meta.size(); idx++)
     {
-      const auto& item   = meta[idx];
-      size_t num_blocks  = item.size / stats.block_size;
-      size_t start_block = item.offset / stats.block_size;
-      (void) start_block;
+      const auto& item        = meta[idx];
+      const size_t num_blocks = item.size / stats.block_size;
       fprintf(stderr,
               "  %-6zu  %-12zu  %-12zu  %-10zu  %s\n",
               idx,
@@ -626,7 +635,7 @@ private:
     size_t i       = 0;
     for (const auto& r : runs)
     {
-      ::std::string place_str = grid_pos_to_place(r.owner).to_string();
+      const ::std::string place_str = grid_pos_to_place(r.owner).to_string();
       if (place_to_char.find(place_str) == place_to_char.end())
       {
         place_to_char[place_str] = next_char;
@@ -659,7 +668,7 @@ private:
     fprintf(stderr, "==============================================\n\n");
   }
 
-  data_place grid_pos_to_place(pos4 grid_pos)
+  _CCCL_HOST_API data_place grid_pos_to_place(pos4 grid_pos)
   {
     return grid.get_place(grid_pos).affine_data_place();
   }
@@ -707,7 +716,7 @@ private:
  *        otherwise (this granularity query is the only driver interaction)
  */
 template <typename OwnerFn, typename = ::cuda::std::enable_if_t<::cuda::std::is_invocable_r_v<pos4, OwnerFn, size_t>>>
-[[nodiscard]] localized_stats evaluate_localized_placement(
+[[nodiscard]] _CCCL_HOST_API localized_stats evaluate_localized_placement(
   const exec_place& grid,
   OwnerFn&& owner_of,
   dim4 data_dims,
@@ -761,7 +770,7 @@ template <typename OwnerFn, typename = ::cuda::std::enable_if_t<::cuda::std::is_
  *        allocation granularity when a device is present, or a 2 MiB default
  *        otherwise (this granularity query is the only driver interaction)
  */
-[[nodiscard]] inline localized_stats evaluate_localized_placement(
+[[nodiscard]] _CCCL_HOST_API inline localized_stats evaluate_localized_placement(
   const exec_place& grid,
   partition_fn_t mapper,
   dim4 data_dims,
@@ -783,13 +792,14 @@ template <typename OwnerFn, typename = ::cuda::std::enable_if_t<::cuda::std::is_
     block_size);
 }
 
-inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
+_CCCL_PUBLIC_HOST_API inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>&
+get_composite_alloc_registry()
 {
   static ::std::unordered_map<void*, ::std::unique_ptr<localized_array>> reg;
   return reg;
 }
 
-inline void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize)
+_CCCL_HOST_API inline void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize)
 {
   const exec_place& grid         = p.get_grid();
   const partition_mapper& mapper = p.get_partitioner();
@@ -805,7 +815,7 @@ inline void* allocate_composite_data_place(const data_place_composite& p, dim4 d
   return ptr;
 }
 
-inline void deallocate_composite_data_place(void* ptr)
+_CCCL_HOST_API inline void deallocate_composite_data_place(void* ptr)
 {
   get_composite_alloc_registry().erase(ptr);
 }

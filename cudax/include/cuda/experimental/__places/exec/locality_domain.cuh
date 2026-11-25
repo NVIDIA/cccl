@@ -141,7 +141,7 @@ namespace cuda::experimental::places
  * this header can select the whole-device degrade; the public
  * `locality_domain_count()` never exposes it.
  */
-inline int locality_domain_native_raw_count(int dev_id)
+_CCCL_PUBLIC_HOST_API inline int locality_domain_native_raw_count(int dev_id)
 {
   // The answer is a static device property, so query it once per device on first use and serve
   // it from a table afterwards. This sits on the allocation path -- allocate() consults it
@@ -185,7 +185,7 @@ inline int locality_domain_native_raw_count(int dev_id)
  * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first and only then falls back to
  * this hardware path.
  */
-inline unsigned int locality_domain_backend_count(int dev_id)
+_CCCL_HOST_API inline unsigned int locality_domain_backend_count(int dev_id)
 {
   const int native = locality_domain_native_raw_count(dev_id);
   return native > 0 ? static_cast<unsigned int>(native) : 1u;
@@ -199,7 +199,7 @@ inline unsigned int locality_domain_backend_count(int dev_id)
  * domain-localized memory. This is an A/B knob to benchmark localized
  * execution with and without localized memory placement.
  */
-inline bool locality_domain_memory_disabled()
+_CCCL_PUBLIC_HOST_API inline bool locality_domain_memory_disabled()
 {
   static const bool disabled = [] {
     const bool d = (::std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr);
@@ -247,15 +247,15 @@ public:
     stream_pool pool;
   };
 
-  static locality_domain_ctx_cache& instance()
+  _CCCL_PUBLIC_HOST_API static locality_domain_ctx_cache& instance()
   {
     static locality_domain_ctx_cache inst;
     return inst;
   }
 
-  const domain_entry& get(int dev_id, int domain_id, locality_domain_sm_split split)
+  _CCCL_HOST_API const domain_entry& get(int dev_id, int domain_id, locality_domain_sm_split split)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx_);
+    const ::std::scoped_lock<::std::mutex> lock(mtx_);
     // Whole-device degrade ignores the split method (documented contract).
     // Canonicalize the cache key so every method resolves to the SAME green
     // context, stream pool, and execution-place identity instead of one
@@ -283,9 +283,9 @@ public:
   }
 
 private:
-  void init_device(int dev_id, locality_domain_sm_split split)
+  _CCCL_HOST_API void init_device(int dev_id, locality_domain_sm_split split)
   {
-    CUdevice device = cuda_try<cuDeviceGet>(dev_id);
+    const CUdevice device = cuda_try<cuDeviceGet>(dev_id);
 
     // The public count never reports 0: when the driver cannot answer the
     // locality-domain query, the device degrades to a single whole-device
@@ -396,7 +396,7 @@ private:
  * `locality_domain_count()`, which also consults the
  * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first.
  */
-inline unsigned int locality_domain_backend_count(int)
+_CCCL_HOST_API inline unsigned int locality_domain_backend_count(int)
 {
   return 1u;
 }
@@ -414,10 +414,10 @@ inline unsigned int locality_domain_backend_count(int)
  * @brief Number of fake domains requested via CUDASTF_FAKE_LOCALITY_DOMAINS
  * (0 = override off).
  *
- * Parsed once. An unset, non-numeric, or non-positive value disables the
- * override (the compile-time backend is used instead).
+ * Parsed once. An unset value or one that does not yield a positive
+ * representable int disables the override.
  */
-inline int locality_domain_fake_count()
+_CCCL_PUBLIC_HOST_API inline int locality_domain_fake_count()
 {
   static const int n = [] {
     const char* s = ::std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS");
@@ -425,12 +425,14 @@ inline int locality_domain_fake_count()
     {
       return 0;
     }
-    const int v = ::std::atoi(s);
-    if (v > 0)
+    const long long count = ::std::strtoll(s, nullptr, 10);
+    if (count <= 0 || count > ::cuda::std::numeric_limits<int>::max())
     {
-      fprintf(stderr, "places: FAKE locality-domain topology (%d green-context domains per device)\n", v);
+      return 0;
     }
-    return v > 0 ? v : 0;
+    const int domains = static_cast<int>(count);
+    fprintf(stderr, "places: FAKE locality-domain topology (%d green-context domains per device)\n", domains);
+    return domains;
   }();
   return n;
 }
@@ -450,15 +452,15 @@ inline int locality_domain_fake_count()
 class locality_domain_fake_green_cache
 {
 public:
-  static locality_domain_fake_green_cache& instance()
+  _CCCL_PUBLIC_HOST_API static locality_domain_fake_green_cache& instance()
   {
     static locality_domain_fake_green_cache inst;
     return inst;
   }
 
-  green_context_helper& get(int dev_id)
+  _CCCL_HOST_API green_context_helper& get(int dev_id)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx_);
+    const ::std::scoped_lock<::std::mutex> lock(mtx_);
     auto it = helpers_.find(dev_id);
     if (it == helpers_.end())
     {
@@ -501,10 +503,11 @@ public:
     return *it->second;
   }
 
-private:
-  locality_domain_fake_green_cache()                                                   = default;
   locality_domain_fake_green_cache(const locality_domain_fake_green_cache&)            = delete;
   locality_domain_fake_green_cache& operator=(const locality_domain_fake_green_cache&) = delete;
+
+private:
+  _CCCL_HIDE_FROM_ABI locality_domain_fake_green_cache() = default;
 
   ::std::map<int, ::std::shared_ptr<green_context_helper>> helpers_;
   ::std::mutex mtx_;
@@ -519,7 +522,7 @@ private:
  * explicitly requested topology. An even split can emit extra groups (e.g. a
  * remainder); callers still see exactly N.
  */
-inline unsigned int locality_domain_fake_get_count(int dev_id)
+_CCCL_HOST_API inline unsigned int locality_domain_fake_get_count(int dev_id)
 {
   const unsigned int n = static_cast<unsigned int>(locality_domain_fake_count());
   const size_t made    = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
@@ -545,7 +548,7 @@ inline unsigned int locality_domain_fake_get_count(int dev_id)
  * zero-count special case. Invalid device ordinals are rejected with an
  * exception, like `data_place::device`.
  */
-inline unsigned int locality_domain_count(int dev_id)
+_CCCL_PUBLIC_HOST_API inline unsigned int locality_domain_count(int dev_id)
 {
   static int const ndevs = cuda_try<cudaGetDeviceCount>();
   EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
@@ -573,43 +576,44 @@ inline unsigned int locality_domain_count(int dev_id)
 class locality_domain_data_place_impl : public data_place_interface
 {
 public:
-  explicit locality_domain_data_place_impl(locality_domain_view view)
+  _CCCL_HOST_API explicit locality_domain_data_place_impl(locality_domain_view view)
       : view_(mv(view))
   {}
 
-  bool is_resolved() const override
+  _CCCL_HOST_API bool is_resolved() const override
   {
     return true;
   }
 
-  ::std::shared_ptr<void> get_affine_exec_impl() const override;
+  _CCCL_HOST_API ::std::shared_ptr<void> get_affine_exec_impl() const override;
 
-  int get_device_ordinal() const override
+  _CCCL_HOST_API int get_device_ordinal() const override
   {
     return view_.devid;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "locality_domain(dev=" + ::std::to_string(view_.devid) + ",id=" + ::std::to_string(view_.domain_id) + ")";
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     return hash_all(view_.devid, view_.domain_id);
   }
 
-  int cmp(const data_place_interface& other) const override
+  _CCCL_HOST_API int cmp(const data_place_interface& other) const override
   {
     if (typeid(*this) != typeid(other))
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const locality_domain_data_place_impl&>(other);
     return (o.view_ < view_) - (view_ < o.view_);
   }
 
-  const locality_domain_view& get_view() const
+  _CCCL_HOST_API const locality_domain_view& get_view() const
   {
     return view_;
   }
@@ -668,7 +672,7 @@ public:
    * placed in the requested domain. When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is
    * set, falls back to plain device memory.
    */
-  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  _CCCL_HOST_API CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
   {
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -685,7 +689,7 @@ public:
   /**
    * @brief Stream-ordered localized allocation from a per-domain memory pool.
    */
-  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
     // The driver keeps one default pool per (location, allocation type), so
     // there is nothing to create, own or cache here: the same handle comes
@@ -713,36 +717,36 @@ public:
 
     CUdeviceptr ptr = 0;
     cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
-    return reinterpret_cast<void*>(ptr);
+    return reinterpret_cast<void*>(ptr); // NOLINT(performance-no-int-to-ptr) -- the driver encodes pointers as integers
   }
 
-  void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
+  _CCCL_HOST_API void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
   {
     cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
   }
 
-  bool allocation_is_stream_ordered() const override
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const override
   {
     return true;
   }
 #else // ^^^ _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE ^^^ / vvv whole-device fallback vvv
   // Plain device memory: the locality-domain VMM/pool APIs are unavailable.
-  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  _CCCL_HOST_API CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
   {
     return data_place::device(view_.devid).mem_create(handle, size);
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
     return data_place::device(view_.devid).allocate(size, stream);
   }
 
-  void deallocate(void* ptr, size_t size, cudaStream_t stream) const override
+  _CCCL_HOST_API void deallocate(void* ptr, size_t size, cudaStream_t stream) const override
   {
     data_place::device(view_.devid).deallocate(ptr, size, stream);
   }
 
-  bool allocation_is_stream_ordered() const override
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const override
   {
     return data_place::device(view_.devid).allocation_is_stream_ordered();
   }
@@ -767,17 +771,17 @@ private:
 class exec_place_locality_domain_impl : public exec_place::impl
 {
 public:
-  exec_place_locality_domain_impl(locality_domain_view view)
+  _CCCL_HOST_API exec_place_locality_domain_impl(locality_domain_view view)
       : view_(mv(view))
   {}
 
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place([[maybe_unused]] size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
     return shared_from_this();
   }
 
-  exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate([[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
 
@@ -790,7 +794,7 @@ public:
     return exec_place::device(old_dev_id);
   }
 
-  void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate(const exec_place& prev, [[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
 
@@ -806,27 +810,28 @@ public:
   // the native backend's exec_place_cuda_ctx_impl which reports true. Callers
   // branching on is_device() (e.g. the parallel_for reduction path) must see
   // the same answer from both backends.
-  bool is_device() const override
+  _CCCL_HOST_API bool is_device() const override
   {
     return true;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "locality_domain(dev=" + ::std::to_string(view_.devid) + ",id=" + ::std::to_string(view_.domain_id) + ")";
   }
 
-  int cmp(const exec_place::impl& rhs) const override
+  _CCCL_HOST_API int cmp(const exec_place::impl& rhs) const override
   {
     if (typeid(*this) != typeid(rhs))
     {
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_locality_domain_impl&>(rhs);
     return (other.view_ < view_) - (view_ < other.view_);
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     return hash_all(view_.devid, view_.domain_id);
   }
@@ -835,14 +840,15 @@ public:
    * @brief One cached impl per (device, domain) so the registry-backed stream
    * pools are shared across repeated factory calls.
    */
-  static ::std::shared_ptr<exec_place_locality_domain_impl> get_cached(const locality_domain_view& view)
+  _CCCL_PUBLIC_HOST_API static ::std::shared_ptr<exec_place_locality_domain_impl>
+  get_cached(const locality_domain_view& view)
   {
     static ::std::mutex mtx;
     static ::std::map<::std::pair<int, int>, ::std::shared_ptr<exec_place_locality_domain_impl>> cache;
 
-    ::std::lock_guard<::std::mutex> lock(mtx);
-    auto key = ::std::make_pair(view.devid, view.domain_id);
-    auto it  = cache.find(key);
+    const ::std::scoped_lock<::std::mutex> lock(mtx);
+    const auto key = ::std::make_pair(view.devid, view.domain_id);
+    auto it        = cache.find(key);
     if (it == cache.end())
     {
       auto p = ::std::make_shared<exec_place_locality_domain_impl>(view);
@@ -864,7 +870,7 @@ private:
  * See the addressing-model note at the top of this file: the view is an
  * identity token validated lazily, when memory is actually allocated.
  */
-inline data_place data_place::locality_domain(const locality_domain_view& view)
+_CCCL_HOST_API inline data_place data_place::locality_domain(const locality_domain_view& view)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)
   if (locality_domain_fake_count() > 0)
@@ -885,7 +891,7 @@ inline data_place data_place::locality_domain(const locality_domain_view& view)
   return data_place(::std::make_shared<locality_domain_data_place_impl>(view));
 }
 
-inline data_place data_place::locality_domain(int dev_id, int domain_id)
+_CCCL_HOST_API inline data_place data_place::locality_domain(int dev_id, int domain_id)
 {
   return locality_domain(locality_domain_view(dev_id, domain_id));
 }
@@ -913,7 +919,8 @@ inline data_place data_place::locality_domain(int dev_id, int domain_id)
  * place. Single-domain devices, the fallback backend and the fake-topology
  * override accept and ignore the method.
  */
-inline exec_place exec_place::locality_domain(const locality_domain_view& view, locality_domain_sm_split split)
+_CCCL_HOST_API inline exec_place
+exec_place::locality_domain(const locality_domain_view& view, locality_domain_sm_split split)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)
   if (locality_domain_fake_count() > 0)
@@ -941,12 +948,12 @@ inline exec_place exec_place::locality_domain(const locality_domain_view& view, 
 #endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
 }
 
-inline exec_place exec_place::locality_domain(int dev_id, int domain_id, locality_domain_sm_split split)
+_CCCL_HOST_API inline exec_place exec_place::locality_domain(int dev_id, int domain_id, locality_domain_sm_split split)
 {
   return locality_domain(locality_domain_view(dev_id, domain_id), split);
 }
 
-inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_impl() const
+_CCCL_HOST_API inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_impl() const
 {
   return exec_place::locality_domain(view_).get_impl();
 }
@@ -968,7 +975,7 @@ inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_
  *        members together cover the whole device.
  * @return exec_place grid with one place per locality domain
  */
-inline exec_place
+_CCCL_HOST_API inline exec_place
 make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill)
 {
   const unsigned int num_domains = locality_domain_count(dev_id);
@@ -984,13 +991,13 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
 }
 
 //! Single-device sugar over make_locality_domain_grid; see all_devices() for the device-level analogue
-inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
+_CCCL_HOST_API inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
 {
   return make_locality_domain_grid(dev_id, split);
 }
 
 //! Machine-wide grid over every domain of every device, like all_devices() one level down
-inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
+_CCCL_HOST_API inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
 
@@ -1018,22 +1025,22 @@ inline exec_place exec_place::all_locality_domains(locality_domain_sm_split spli
 class locality_domain_helper
 {
 public:
-  explicit locality_domain_helper(int devid = cuda_try<cudaGetDevice>())
+  _CCCL_HOST_API explicit locality_domain_helper(int devid = cuda_try<cudaGetDevice>())
       : devid_(devid)
       , count_(locality_domain_count(devid))
   {}
 
-  size_t get_count() const
+  _CCCL_HOST_API size_t get_count() const
   {
     return count_;
   }
 
-  int get_device_id() const
+  _CCCL_HOST_API int get_device_id() const
   {
     return devid_;
   }
 
-  locality_domain_view get_view(size_t id) const
+  _CCCL_HOST_API locality_domain_view get_view(size_t id) const
   {
     EXPECT(id < count_, "Invalid locality domain ordinal ", id, " on device ", devid_);
     return locality_domain_view(devid_, static_cast<int>(id));

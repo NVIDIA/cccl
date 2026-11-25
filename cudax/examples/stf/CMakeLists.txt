@@ -97,7 +97,12 @@ function(cudax_add_stf_example target_name_var source)
 
   set(example_target cudax.example.${example_name})
 
-  cccl_add_executable(${example_target} SOURCES ${source} ADD_CTEST)
+  cccl_add_executable(
+    ${example_target}
+    SOURCES ${source}
+    ADD_CTEST
+    NO_CLANG_TIDY
+  )
   cudax_stf_configure_target(${example_target} ${ARGN})
   target_link_libraries(
     ${example_target}

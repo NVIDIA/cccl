@@ -43,7 +43,7 @@
 
 namespace cuda::experimental::stf
 {
-::std::shared_ptr<void> pack_state(const logical_data_untyped&);
+_CCCL_HOST_API ::std::shared_ptr<void> pack_state(const logical_data_untyped&);
 
 class task;
 
@@ -60,22 +60,31 @@ class task_dep_untyped
 {
 public:
   // Copy constructor
-  task_dep_untyped(const task_dep_untyped&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI task_dep_untyped(const task_dep_untyped&) = default;
 
   // Move constructor
-  task_dep_untyped(task_dep_untyped&&) noexcept = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI task_dep_untyped(task_dep_untyped&&) noexcept = default;
+
+  // Destructor
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~task_dep_untyped() = default;
 
   // Copy assignment operator
-  task_dep_untyped& operator=(const task_dep_untyped& other) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI task_dep_untyped& operator=(const task_dep_untyped& other) = default;
 
   // Move assignment operator
-  task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
 
   // dependency with an explicit data_place
-  task_dep_untyped(const logical_data_untyped& d,
-                   access_mode m,
-                   data_place dplace,
-                   ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
+  _CCCL_HOST_API task_dep_untyped(
+    const logical_data_untyped& d,
+    access_mode m,
+    data_place dplace,
+    ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
       : data(pack_state(d))
       , m(m)
       , dplace(mv(dplace))
@@ -83,12 +92,12 @@ public:
   {}
 
   // dependency without an explicit data_place : using data_place::affine()
-  task_dep_untyped(
+  _CCCL_HOST_API task_dep_untyped(
     const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
       : task_dep_untyped(d, m, data_place::affine(), mv(redux_op))
   {}
 
-  logical_data_untyped get_data() const;
+  _CCCL_HOST_API logical_data_untyped get_data() const;
 
   //! @brief Whether this dependency refers to a logical data at all.
   //!
@@ -96,18 +105,18 @@ public:
   //! get_data() asserts on it.
   //!
   //! @return `true` if a logical data is attached, `false` for an empty state
-  bool has_data() const
+  _CCCL_HOST_API bool has_data() const
   {
     return data != nullptr;
   }
 
-  instance_id_t get_instance_id() const
+  _CCCL_HOST_API instance_id_t get_instance_id() const
   {
     return instance_id;
   }
 
   /* Returns the same untyped task dependency with a read-only access mode */
-  task_dep_untyped as_mode(access_mode another) const
+  _CCCL_HOST_API task_dep_untyped as_mode(access_mode another) const
   {
     auto result = *this;
     result.m    = another;
@@ -117,79 +126,79 @@ public:
   // We should only assign it once
   //! Replace the dependency's data place (used when a deferred replicated
   //! place is materialized against the task's execution place at acquire)
-  void set_dplace(data_place d)
+  _CCCL_HOST_API void set_dplace(data_place d)
   {
     dplace = mv(d);
   }
 
-  void set_instance_id(instance_id_t id)
+  _CCCL_HOST_API void set_instance_id(instance_id_t id)
   {
     EXPECT(instance_id == instance_id_t::invalid);
     instance_id = id;
   }
 
-  access_mode get_access_mode() const
+  _CCCL_HOST_API access_mode get_access_mode() const
   {
     return m;
   }
 
-  const data_place& get_dplace() const
+  _CCCL_HOST_API const data_place& get_dplace() const
   {
     return dplace;
   }
 
-  ::std::shared_ptr<reduction_operator_base> get_redux_op() const
+  _CCCL_HOST_API ::std::shared_ptr<reduction_operator_base> get_redux_op() const
   {
     return redux_op;
   }
 
-  // Index of the dependency within a task (only valid after acquiring !)
-  int dependency_index = -1;
+  // The acquire pass writes this public scheduling metadata and the task reads it after acquisition.
+  int dependency_index = -1; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   // When acquiring multiple pieces of data, it is possible that we have
   // dependencies that can be merged. For example a task with Ar, Br and Aw
   // is equivalent to a task acquiring Arw and Br. In this case we may skip
   // some of the dependencies because they have already been fulfilles
-  bool skipped = false;
+  bool skipped = false; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
-  bool operator<(const task_dep_untyped& rhs) const
+  _CCCL_HOST_API bool operator<(const task_dep_untyped& rhs) const
   {
     assert(data && rhs.data);
     return data < rhs.data;
   }
 
-  bool operator==(const task_dep_untyped& rhs) const
+  _CCCL_HOST_API bool operator==(const task_dep_untyped& rhs) const
   {
     assert(data && rhs.data);
     return data == rhs.data;
   }
 
-  bool operator!=(const task_dep_untyped& rhs) const
+  _CCCL_HOST_API bool operator!=(const task_dep_untyped& rhs) const
   {
     return !(*this == rhs);
   }
 
-  void set_symbol(::std::string s) const
+  _CCCL_HOST_API void set_symbol(::std::string s) const
   {
     symbol = mv(s);
   }
 
-  const ::std::string& get_symbol() const
+  _CCCL_HOST_API const ::std::string& get_symbol() const
   {
     return symbol;
   }
 
-  void set_data_footprint(size_t f) const
+  _CCCL_HOST_API void set_data_footprint(size_t f) const
   {
     data_footprint = f;
   }
 
-  size_t get_data_footprint() const
+  _CCCL_HOST_API size_t get_data_footprint() const
   {
     return data_footprint;
   }
 
-  void reset_logical_data()
+  _CCCL_HOST_API void reset_logical_data()
   {
     data = nullptr;
   }
@@ -230,25 +239,23 @@ public:
   using dep_type    = T;
   using op_and_init = ::std::pair<::cuda::std::monostate, ::std::bool_constant<false>>;
   using op_type     = ::cuda::std::monostate;
-  enum : bool
-  {
-    does_work = false
-  };
+
+  static constexpr bool does_work = false;
 
   // Copy constructor
-  task_dep(const task_dep&) = default;
+  _CCCL_HIDE_FROM_ABI task_dep(const task_dep&) = default;
 
   // Move constructor
-  task_dep(task_dep&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI task_dep(task_dep&&) noexcept = default;
 
   // Copy assignment operator
-  task_dep& operator=(const task_dep& other) = default;
+  _CCCL_HIDE_FROM_ABI task_dep& operator=(const task_dep& other) = default;
 
   // Move assignment operator
-  task_dep& operator=(task_dep&& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI task_dep& operator=(task_dep&& other) noexcept = default;
 
   template <typename... Pack>
-  task_dep(Pack&&... pack)
+  _CCCL_HOST_API task_dep(Pack&&... pack)
       : task_dep_untyped(::cuda::std::forward<Pack>(pack)...)
   {
     static_assert(sizeof(task_dep<T>) == sizeof(task_dep_untyped),
@@ -256,7 +263,7 @@ public:
   }
 
   /* Returns the same task dependency with a read-only access mode */
-  task_dep<T> as_mode(access_mode another) const
+  _CCCL_HOST_API task_dep<T> as_mode(access_mode another) const
   {
     return task_dep<T>(task_dep_untyped::as_mode(another));
   }
@@ -267,7 +274,7 @@ public:
    *
    * @return decltype(auto) `T&` or `T`
    */
-  decltype(auto) instance(task&) const;
+  _CCCL_HOST_API decltype(auto) instance(task&) const;
 };
 
 template <typename T, typename reduce_op, bool initialize>
@@ -282,13 +289,11 @@ public:
   using dep_type    = T;
   using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
   using op_type     = reduce_op;
-  enum : bool
-  {
-    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
-  };
+
+  static constexpr bool does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>;
 
   template <typename... Args>
-  task_dep(Args&&... args)
+  _CCCL_HOST_API task_dep(Args&&... args)
       : base(::cuda::std::forward<Args>(args)...)
   {}
 };
@@ -314,7 +319,7 @@ public:
    * @param d typed task dependency object
    */
   template <typename T>
-  task_dep_vector(task_dep<T> d)
+  _CCCL_HOST_API task_dep_vector(task_dep<T> d)
       : task_dep_vector_untyped(1, mv(d))
   {
     static_assert(sizeof(task_dep_vector) == sizeof(task_dep_vector_untyped));
@@ -327,7 +332,7 @@ public:
    *
    * @param deps typed dependency objects
    */
-  task_dep_vector(task_dep<Data>... deps)
+  _CCCL_HOST_API task_dep_vector(task_dep<Data>... deps)
       : task_dep_vector_untyped{mv(deps)...}
   {}
 
@@ -349,7 +354,7 @@ public:
    * For example, `typename task_dep_vector<int, double>::type_at<1>` is an object type `task_dep<double>`.
    */
   template <size_t i>
-  task_dep<type_at<i>>& at()
+  _CCCL_HOST_API task_dep<type_at<i>>& at()
   {
     return static_cast<task_dep<type_at<i>>&>(task_dep_vector_untyped::at(i));
   }
@@ -361,7 +366,7 @@ public:
    *
    * The physical data extracted is usable only after the dependencies have been satisfied.
    */
-  ::std::tuple<Data...> instance(task& t)
+  _CCCL_HOST_API ::std::tuple<Data...> instance(task& t)
   {
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
       return at<i>().instance(t);
@@ -373,7 +378,7 @@ public:
   /**
    * @brief Get all non void instances
    */
-  non_void_instance_t non_void_instance(task& t)
+  _CCCL_HOST_API non_void_instance_t non_void_instance(task& t)
   {
     // Note that make_tuple_indexwise will remove ::std::ignore entries
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
