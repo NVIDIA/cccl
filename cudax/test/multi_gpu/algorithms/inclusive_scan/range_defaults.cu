@@ -65,11 +65,11 @@ MULTI_GPU_TEST("inclusive_scan, range overloads default values", )
 
     std::iota(reference.begin(), reference.end(), T{1});
 
-    std::vector<T> expected_values(reference.size());
+    std::vector<T> scanned(reference.size());
 
-    std::inclusive_scan(reference.begin(), reference.end(), expected_values.begin(), op, init);
+    std::inclusive_scan(reference.begin(), reference.end(), scanned.begin(), op, init);
 
-    return expected_values;
+    return scanned;
   }();
 
   const auto check_outputs = [&] {

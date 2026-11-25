@@ -57,15 +57,15 @@ namespace nccl_test_util
     INFO("NCCL: " << ncclGetErrorString(result));
     REQUIRE(result == ncclSuccess);
 
-    std::vector<cudax::mgmn::nccl_communicator> comms;
-    comms.reserve(raw_comms.size());
+    std::vector<cudax::mgmn::nccl_communicator> communicators;
+    communicators.reserve(raw_comms.size());
 
     for (const auto comm : raw_comms)
     {
-      comms.emplace_back(cudax::mgmn::nccl_communicator::from_native_handle(comm));
+      communicators.emplace_back(cudax::mgmn::nccl_communicator::from_native_handle(comm));
     }
 
-    return comms;
+    return communicators;
   }();
 
   return comms;
