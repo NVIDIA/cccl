@@ -3,7 +3,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/determinism.h>

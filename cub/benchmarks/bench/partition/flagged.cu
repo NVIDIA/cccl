@@ -5,8 +5,8 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/algorithm>

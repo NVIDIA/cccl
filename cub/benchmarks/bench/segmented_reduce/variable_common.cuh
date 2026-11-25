@@ -6,9 +6,8 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>

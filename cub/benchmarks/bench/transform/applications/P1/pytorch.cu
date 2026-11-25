@@ -33,7 +33,6 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/iterator>

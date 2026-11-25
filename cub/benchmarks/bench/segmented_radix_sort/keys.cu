@@ -5,7 +5,6 @@
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__runtime/api_wrapper.h>

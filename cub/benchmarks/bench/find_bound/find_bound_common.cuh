@@ -9,9 +9,8 @@
 
 #include <cub/config.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cstddef>

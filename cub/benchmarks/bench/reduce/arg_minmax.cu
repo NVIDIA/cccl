@@ -4,8 +4,8 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/cstdint>

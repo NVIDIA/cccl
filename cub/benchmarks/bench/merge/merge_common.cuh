@@ -5,9 +5,9 @@
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>

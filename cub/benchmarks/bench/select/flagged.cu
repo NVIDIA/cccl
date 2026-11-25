@@ -4,9 +4,8 @@
 #include <cub/device/device_select.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__type_traits/integral_constant.h>

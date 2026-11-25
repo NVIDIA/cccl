@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/device/device_segmented_reduce.cuh>
+
 // The including benchmark source must define the TUNE_* parameters via %RANGE% comments.
 
 #if !TUNE_BASE

@@ -5,7 +5,6 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/tabulate.h>
 

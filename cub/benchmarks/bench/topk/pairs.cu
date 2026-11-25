@@ -3,9 +3,8 @@
 
 #include <cub/device/device_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>

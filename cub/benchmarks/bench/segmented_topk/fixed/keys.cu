@@ -15,7 +15,6 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__device/compute_capability.h>

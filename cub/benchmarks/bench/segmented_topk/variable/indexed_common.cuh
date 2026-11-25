@@ -22,9 +22,8 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/reduce.h>
 
 #include <cuda/__device/compute_capability.h>

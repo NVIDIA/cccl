@@ -4,7 +4,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__runtime/api_wrapper.h>

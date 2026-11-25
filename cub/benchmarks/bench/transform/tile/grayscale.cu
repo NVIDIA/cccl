@@ -10,7 +10,6 @@
 
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/std/__tuple_dir/tuple.h>
