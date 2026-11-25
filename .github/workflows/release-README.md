@@ -55,10 +55,12 @@ The release candidate tag to use for the final release.
 
 ### Inputs
 
-None.
+- `skip_rapids`: Skip the required RAPIDS CI check.
 
 ### Actions
 
+- Builds all RAPIDS repositories against the release candidate commit; the release is
+  not tagged if this required check fails.
 - Parses version info from the provided tag.
 - Pushes final release tag
 - Generates source and install packages (zips and tgzs)
