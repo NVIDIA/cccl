@@ -17,7 +17,7 @@ _CCCL_HOST_API void basic(nvbench::state& state, nvbench::type_list<T>, OpT op)
   const auto size_ratio     = static_cast<std::size_t>(state.get_int64("SizeRatio"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  const auto elements_in_A = static_cast<std::size_t>(static_cast<double>(size_ratio * elements) / 100.0f);
+  const auto elements_in_A = static_cast<std::size_t>(static_cast<double>(size_ratio * elements) / 100.0);
 
   thrust::device_vector<T> input = generate(elements, entropy);
   thrust::device_vector<T> output(elements);

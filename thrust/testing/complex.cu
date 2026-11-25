@@ -1,7 +1,7 @@
 // These tests compare and assign across float and double on purpose. nvc++ reports the promotion at the position
 // of the header code it instantiates (e.g. the common_type that thrust::complex's mixed-type operator== uses),
 // so suppress it before any header is included.
-#if defined(__NVCOMPILER)
+#ifdef __NVCOMPILER
 #  pragma diag_suppress arith_float_promotion
 #endif // __NVCOMPILER
 
