@@ -38,6 +38,7 @@
 #include <c2h/vector.h>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_tostring.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
@@ -583,9 +584,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <
   typename T1,
   typename T2,
-  // provide this operator only when the pair's content is also streamable
-  ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream&>()
-                               << ::cuda::std::declval<const T1&>() << ::cuda::std::declval<const T2&>())>* = nullptr>
+  enable_if_t<(::Catch::Detail::IsStreamInsertable_v<const T1&> && ::Catch::Detail::IsStreamInsertable_v<const T2&>),
+              int> = 0>
 ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";
