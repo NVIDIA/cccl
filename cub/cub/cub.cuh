@@ -10,7 +10,7 @@
 #pragma once
 
 // Static configuration
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)

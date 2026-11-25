@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/iosfwd>

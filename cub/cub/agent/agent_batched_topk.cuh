@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -24,6 +24,7 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>

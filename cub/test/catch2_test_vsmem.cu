@@ -1,13 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/config.cuh>
-
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
+
+#include <cuda/__cccl_config>
+#include <cuda/__cmath/ceil_div.h>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"

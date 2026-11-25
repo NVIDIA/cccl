@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -20,6 +20,7 @@
 #include <cub/agent/agent_topk.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/double_buffer.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
@@ -30,6 +31,8 @@
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>

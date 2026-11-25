@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
@@ -27,6 +27,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/future_value.cuh>
@@ -38,6 +39,7 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__argument/argument.h>
 #include <cuda/__execution/determinism.h>

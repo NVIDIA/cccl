@@ -7,7 +7,7 @@
 //! Dispatch for cub::DeviceFind::LowerBoundSortedValues / UpperBoundSortedValues (merge-path partition + per-tile
 //! search).
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -19,16 +19,21 @@
 
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 

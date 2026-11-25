@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -15,12 +15,16 @@
 
 #include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/compute_capability.h>

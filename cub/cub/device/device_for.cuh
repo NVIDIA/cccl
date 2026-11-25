@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/cub_vector.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/policy_selector.cuh>
 #include <cub/detail/type_traits.cuh>

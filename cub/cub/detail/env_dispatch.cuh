@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -12,10 +12,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_runs_on.cuh>
 
 #include <cuda/__device/compute_capability.h>

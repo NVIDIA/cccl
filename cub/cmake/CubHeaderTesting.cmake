@@ -20,6 +20,9 @@ function(cub_add_header_test label definitions)
       DEFINE
       CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
       "cub/cub\\.cuh"
+      DEFINE
+      CCCL_DISABLE_CUB_CONFIG_HEADER_WARNING
+      "cub/config\\.cuh"
   )
   cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
   target_link_libraries(${headertest_target} PUBLIC cub.compiler_interface)

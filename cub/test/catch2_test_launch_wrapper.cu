@@ -5,10 +5,11 @@
 struct stream_registry_factory_t;
 #define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY stream_registry_factory_t
 
-#include <cub/config.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__cccl_config>
 #include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
 #include <cuda/launch>

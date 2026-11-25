@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/config.cuh>
-
 #include <cub/device/device_for.cuh>
 
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 
+#include <cuda/__cccl_config>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>

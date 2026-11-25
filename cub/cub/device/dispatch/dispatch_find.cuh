@@ -7,7 +7,7 @@
 //! cub::DeviceFind provides device-wide, parallel operations for computing search across a sequence of data items
 //! residing within device-accessible memory.
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -20,6 +20,7 @@
 #include <thrust/detail/config.h>
 
 #include <cub/agent/agent_find.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
@@ -29,6 +30,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>

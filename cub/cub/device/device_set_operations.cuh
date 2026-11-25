@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
@@ -21,12 +21,14 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_set_operations.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__nvtx/nvtx.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>

@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -23,6 +23,8 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>

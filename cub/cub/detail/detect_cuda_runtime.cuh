@@ -9,7 +9,6 @@
 
 #pragma once
 
-// We cannot use `cub/config.cuh` here due to circular dependencies
 #include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC

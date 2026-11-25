@@ -4,7 +4,7 @@
 // Allow nested NVTX ranges for this algorithm
 // #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 // MSVC doesn't support __device__ lambdas
 #if !_CCCL_COMPILER(MSVC)

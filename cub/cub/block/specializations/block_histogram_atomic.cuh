@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -24,6 +24,8 @@
 #  include <cuda/__memory/address_space.h>
 #  include <cuda/std/__type_traits/is_floating_point.h>
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
+#include <cub/util_namespace.cuh>
+
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 

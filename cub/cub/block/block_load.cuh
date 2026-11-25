@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
-
-#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -28,7 +26,11 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/unit_word.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>

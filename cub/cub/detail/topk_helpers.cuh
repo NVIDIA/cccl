@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -21,6 +21,7 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/min_max.h>

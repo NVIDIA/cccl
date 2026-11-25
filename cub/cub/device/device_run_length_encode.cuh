@@ -8,9 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
-
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
@@ -28,6 +26,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/non_void_value.cuh>
@@ -36,10 +35,12 @@
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/invoke.h>
 
 CUB_NAMESPACE_BEGIN
 

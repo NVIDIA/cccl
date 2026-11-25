@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -16,6 +16,7 @@
 
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/unit_word.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cstring/memcpy.h> // IWYU pragma: keep

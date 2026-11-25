@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -19,6 +19,7 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/thread/thread_sort.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/ipow.h>
@@ -26,6 +27,7 @@
 #include <cuda/__cmath/round_down.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/integer_sequence.h>
