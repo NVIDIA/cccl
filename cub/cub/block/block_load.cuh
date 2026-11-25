@@ -30,16 +30,26 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__memory/__vectorized_storage.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__type_traits/is_vector_type.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__new/device_new.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/has_unique_object_representation.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+
+#include <nv/target>
 
 #if __cpp_lib_format >= 201907L
 #  include <cuda/std/__concepts/same_as.h>
@@ -202,11 +212,216 @@ inline constexpr bool block_load_can_vectorize_v =
   && ::cuda::std::is_same_v<it_value_t<RandomAccessIterator>, T>
   // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
   && !::cuda::std::is_volatile_v<::cuda::std::remove_reference_t<it_reference_t<RandomAccessIterator>>>;
-} // namespace detail
 
-namespace detail
+//! @brief The width in bytes of the widest vectors with which ``LoadDirectBlockedVectorized`` loads vectors of
+//! ``VecSize`` consecutive items of ``InputT``, wider than 16 bytes only from sm_100
+// A vector holds at most VecSize items, and is only wider than 16 bytes without a cache modifier or with LOAD_LDG, the
+// only cache modifier with which ThreadLoad loads 32 byte words. ThreadLoad copies volatile vectors in 8 byte words,
+// thus wider volatile vectors only add the tests of their alignment
+template <typename InputT, int VecSize, CacheLoadModifier Modifier>
+inline constexpr ::cuda::std::size_t block_load_max_vector_access_v = ::cuda::std::min(
+  ::cuda::std::size_t{1} << ::cuda::std::countr_zero(VecSize * sizeof(InputT)),
+  Modifier == LOAD_DEFAULT || Modifier == LOAD_LDG ? ::cuda::__max_memory_access_width
+  : Modifier == LOAD_VOLATILE
+    ? ::cuda::std::size_t{8}
+    : ::cuda::std::size_t{16});
+
+//! @brief Whether every byte of ``T`` holds its value: arithmetic and extended floating point types, CUDA vector types,
+//! and types with unique object representations
+template <typename T>
+inline constexpr bool block_load_is_padding_free_v =
+  ::cuda::std::__is_extended_arithmetic_v<T> || ::cuda::is_vector_type_v<T>
+  || ::cuda::std::has_unique_object_representations_v<T>;
+
+//! @brief Whether the vectors of ``VecSize`` items of ``InputT`` are copied into the items by every vector width rather
+//! than once all widths join
+// Joined, the words of padded items spanning several words narrow the vector loads to the members of the items
+template <typename InputT, int VecSize>
+inline constexpr bool block_load_copy_per_width_v =
+  !block_load_is_padding_free_v<InputT>
+  && sizeof(::cuda::__vectorized_storage_word_t<InputT, VecSize>) < sizeof(InputT);
+
+//! @brief Copies the items of ``InputT`` in ``vectors`` into ``dst_items``: as words, or one by one if they are
+//! converted to ``T`` or copied by every vector width
+template <typename InputT, typename VectorT, int NumVectors, typename T, int ItemsPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+copy_vector_items(const VectorT (&vectors)[NumVectors], T (&dst_items)[ItemsPerThread])
 {
-//! @brief The vector type with which ``LoadDirectBlockedVectorized`` loads ``VecSize`` consecutive items of ``InputT``
+  constexpr int vec_size = ItemsPerThread / NumVectors;
+  using unit_t _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<T, InputT> && !block_load_copy_per_width_v<InputT, vec_size>,
+                               ::cuda::__vectorized_storage_word_t<InputT, vec_size>,
+                               InputT>;
+  constexpr int units_per_vector = int{sizeof(VectorT) / sizeof(unit_t)};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < NumVectors; i++)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < units_per_vector; j++)
+    {
+      const unit_t unit = vectors[i].template __alias<unit_t>(j);
+      // dst_items may be aligned to less than a word, thus each word is copied with memcpy from a copy of it: a memcpy
+      // straight from the vectors is split into bytes
+      if constexpr (::cuda::std::is_same_v<unit_t, InputT>)
+      {
+        dst_items[(i * units_per_vector) + j] = static_cast<T>(unit);
+      }
+      else
+      {
+        ::cuda::std::memcpy(
+          reinterpret_cast<unsigned char*>(dst_items) + (((i * units_per_vector) + j) * int{sizeof(unit_t)}),
+          &unit,
+          sizeof(unit_t));
+      }
+    }
+  }
+}
+
+//! @brief Loads the ``NumVectors`` vectors of ``VecSize`` items of a thread with accesses of ``Alignment`` bytes, which
+//! ``src_ptr`` must be aligned to, ``VectorStride`` vectors apart from vector ``vector_index`` after ``src_ptr`` on
+template <::cuda::std::size_t Alignment,
+          int VectorStride,
+          int VecSize,
+          CacheLoadModifier Modifier,
+          typename InputT,
+          typename VectorT,
+          int NumVectors>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+load_direct_vectors(const InputT* src_ptr, unsigned int vector_index, VectorT (&vectors)[NumVectors])
+{
+  using aligned_vector_t _CCCL_NODEBUG = ::cuda::__as_vectorized_storage_t<InputT, VecSize, Alignment>;
+  const aligned_vector_t* vec_ptr =
+    reinterpret_cast<const aligned_vector_t*>(::cuda::std::__runtime_assume_aligned(src_ptr, Alignment)) + vector_index;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < NumVectors; i++)
+  {
+    vectors[i] = _CUB::ThreadLoad<Modifier>(vec_ptr + (i * VectorStride));
+  }
+}
+
+//! @brief Loads the vectors of ``VecSize`` items of a thread in the arrangement of ``LoadDirectStripedVectorized`` item
+//! by item, starting with the vector at ``thread_src_it``
+template <int ThreadsPerBlock, int VecSize, typename RandomAccessIterator, typename T, int ItemsPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+load_direct_striped_vectors(RandomAccessIterator thread_src_it, T (&dst_items)[ItemsPerThread])
+{
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < ItemsPerThread / VecSize; i++)
+  {
+    _CUB::LoadDirectBlocked(i * ThreadsPerBlock, thread_src_it, reinterpret_cast<T(&)[VecSize]>(dst_items[i * VecSize]));
+  }
+}
+
+//! @brief Loads the ``ItemsPerThread / VecSize`` vectors of ``VecSize`` items of a thread, ``VectorStride`` vectors
+//! apart from vector ``vector_index`` after ``src_ptr`` on, with the widest accesses that the alignment of ``src_ptr``
+//! allows, or item by item from ``thread_src_ptr``, the first item of the thread
+template <int VectorStride, int VecSize, CacheLoadModifier Modifier, typename InputT, typename T, int ItemsPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void load_direct_vectorized(
+  const InputT* src_ptr, unsigned int vector_index, const InputT* thread_src_ptr, T (&dst_items)[ItemsPerThread])
+{
+  constexpr auto max_vector_access = block_load_max_vector_access_v<InputT, VecSize, Modifier>;
+  if constexpr (block_load_can_vectorize_v<const InputT*, InputT> && 4 <= max_vector_access
+                && alignof(InputT) < max_vector_access)
+  {
+    constexpr int vectors_per_thread = ItemsPerThread / VecSize;
+    using vector_t _CCCL_NODEBUG     = ::cuda::__as_vectorized_storage_t<InputT, VecSize, max_vector_access>;
+
+    // Every width only loads the vectors, and the fallback stores its items into them, so that all of them join before
+    // a single copy into dst_items. Every vector starts a whole number of vectors after src_ptr, thus a single test
+    // selects the accesses of all vectors of the thread. The vectorized loads must be inlined: a call prevents the
+    // compiler from merging them with the fallback. Only sm_100 and newer load vectors wider than 16 bytes with a
+    // single access
+    [[maybe_unused]] vector_t vectors[vectors_per_thread];
+    while (true)
+    {
+      if constexpr (alignof(InputT) < 32 && 32 <= max_vector_access)
+      {
+        NV_IF_TARGET(
+          NV_PROVIDES_SM_100, ({
+            if (::cuda::std::is_sufficiently_aligned<32>(src_ptr))
+            {
+              _CUB::detail::load_direct_vectors<32, VectorStride, VecSize, Modifier>(src_ptr, vector_index, vectors);
+              if constexpr (block_load_copy_per_width_v<InputT, VecSize>)
+              { // Padded items spanning several words are copied by every width instead of after the join
+                _CUB::detail::copy_vector_items<InputT>(vectors, dst_items);
+              }
+              break;
+            }
+          }))
+      }
+      if constexpr (alignof(InputT) < 16 && 16 <= max_vector_access)
+      {
+        if (::cuda::std::is_sufficiently_aligned<16>(src_ptr))
+        {
+          _CUB::detail::load_direct_vectors<16, VectorStride, VecSize, Modifier>(src_ptr, vector_index, vectors);
+          if constexpr (block_load_copy_per_width_v<InputT, VecSize>)
+          { // Padded items spanning several words are copied by every width instead of after the join
+            _CUB::detail::copy_vector_items<InputT>(vectors, dst_items);
+          }
+          break;
+        }
+      }
+      if constexpr (alignof(InputT) < 8 && 8 <= max_vector_access)
+      {
+        if (::cuda::std::is_sufficiently_aligned<8>(src_ptr))
+        {
+          _CUB::detail::load_direct_vectors<8, VectorStride, VecSize, Modifier>(src_ptr, vector_index, vectors);
+          if constexpr (block_load_copy_per_width_v<InputT, VecSize>)
+          { // Padded items spanning several words are copied by every width instead of after the join
+            _CUB::detail::copy_vector_items<InputT>(vectors, dst_items);
+          }
+          break;
+        }
+      }
+      if constexpr (alignof(InputT) < 4 && 4 <= max_vector_access)
+      {
+        if (::cuda::std::is_sufficiently_aligned<4>(src_ptr))
+        {
+          _CUB::detail::load_direct_vectors<4, VectorStride, VecSize, Modifier>(src_ptr, vector_index, vectors);
+          if constexpr (block_load_copy_per_width_v<InputT, VecSize>)
+          { // Padded items spanning several words are copied by every width instead of after the join
+            _CUB::detail::copy_vector_items<InputT>(vectors, dst_items);
+          }
+          break;
+        }
+      }
+      // Items without padding are stored into the vectors to join the widths, padded items go straight into dst_items,
+      // because packing their members into words costs more than the join saves
+      if constexpr (block_load_is_padding_free_v<InputT>)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < vectors_per_thread; i++)
+        {
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int j = 0; j < VecSize; j++)
+          {
+            vectors[i].template __alias<InputT>(j) = thread_src_ptr[(i * VectorStride * VecSize) + j];
+          }
+        }
+        break;
+      }
+      else
+      {
+        _CUB::detail::load_direct_striped_vectors<VectorStride, VecSize>(thread_src_ptr, dst_items);
+        return;
+      }
+    }
+
+    // Padded items spanning several words are copied by every width before the join. Otherwise, their vector
+    // loads narrow to loads of their members
+    if constexpr (!block_load_copy_per_width_v<InputT, VecSize>)
+    {
+      _CUB::detail::copy_vector_items<InputT>(vectors, dst_items);
+    }
+  }
+  else
+  {
+    _CUB::detail::load_direct_striped_vectors<VectorStride, VecSize>(thread_src_ptr, dst_items);
+  }
+}
+
+//! @brief The widest ``CubVector`` of up to four ``UnitWord`` device words that divides ``VecSize`` consecutive items
+//! of ``InputT``, whose items each vector of ``BLOCK_LOAD_STRIPED_VECTORIZED`` holds
 template <typename InputT, int VecSize>
 struct block_load_vector
 {
@@ -232,10 +447,17 @@ using block_load_vector_t = typename block_load_vector<InputT, VecSize>::type;
 //!
 //! @blocked
 //!
-//! The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
+//! Each thread loads its items with the widest vectors that the alignment of ``block_src_ptr`` allows, up to 16 bytes
+//! wide. On sm_100 and newer, loads without a cache modifier or with ``LOAD_LDG`` use vectors up to 32 bytes wide.
 //!
-//! - ``block_src_ptr`` is not aligned to the vector access width
+//! The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT without the
+//! cache modifier:
+//!
+//! - ``block_src_ptr`` or the items of a thread do not allow vectors of at least 4 bytes that are wider than the
+//!   alignment of ``InputT``
 //! - ``InputT`` is volatile or not trivially copyable
+//!
+//! The fallback also drops ``LOAD_VOLATILE``, thus its loads are not volatile.
 //!
 //! @endrst
 //!
@@ -271,42 +493,15 @@ LoadDirectBlockedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   constexpr int vec_size = VecSize == 0 ? ItemsPerThread : VecSize;
   static_assert(ItemsPerThread % vec_size == 0, "VecSize must evenly divide ItemsPerThread");
 
-  if constexpr (detail::block_load_can_vectorize_v<const InputT*, InputT>)
-  {
-    // Find biggest memory access word that InputT is a whole multiple of
-    using device_word_t              = typename UnitWord<InputT>::DeviceWord;
-    constexpr int total_words        = static_cast<int>(vec_size * sizeof(InputT) / sizeof(device_word_t));
-    constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
-    constexpr int vectors_per_thread = ItemsPerThread / vec_size * (total_words / vector_size);
-
-    using vector_t = typename CubVector<device_word_t, vector_size>::Type;
-
-    // Add the alignment check to ensure the vectorized loading can proceed. Keep the vectorized load inline: moving it
-    // into a separate function prevents the compiler from merging both branches when they are identical
-    if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_src_ptr))
-    {
-      // Load into an array of vectors in thread-blocked order. The items are read back as InputT, which can be aligned
-      // more strictly than vector_t
-      alignas(InputT) alignas(vector_t) vector_t vec_items[vectors_per_thread];
-      const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + (linear_tid * vectors_per_thread);
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < vectors_per_thread; i++)
-      {
-        vec_items[i] = _CUB::ThreadLoad<Modifier>(vec_ptr + i);
-      }
-
-      // Copy to destination
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < ItemsPerThread; i++)
-      {
-        dst_items[i] = *(reinterpret_cast<InputT*>(vec_items) + i);
-      }
-      return;
-    }
-  }
-
-  _CUB::LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
+  // The blocked arrangement is the striped arrangement of a block of a single thread, whose vectors are consecutive
+  // from vector linear_tid * (ItemsPerThread / vec_size) on. The offset of the vectors is unsigned, because a signed
+  // one is sign-extended before the tests, while the first item of the thread is offset in signed arithmetic like in
+  // LoadDirectBlocked, because an unsigned offset spills DeviceTopK on sm_90
+  _CUB::detail::load_direct_vectorized<1, vec_size, Modifier>(
+    block_src_ptr,
+    static_cast<unsigned int>(linear_tid) * (ItemsPerThread / vec_size),
+    block_src_ptr + (linear_tid * ItemsPerThread),
+    dst_items);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -843,8 +1038,11 @@ enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //!   - The ``RandomAccessIterator`` is not a contiguous iterator (``cub::CacheModifiedInputIterator`` is an exception
   //!     and is still vectorized)
   //!   - The value type of the ``RandomAccessIterator`` is not ``T``
-  //!   - The block input offset is not aligned to the vector access width
+  //!   - The block input offset is not aligned to more than ``T`` and to at least 4 bytes, otherwise the widest vectors
+  //!     that its alignment allows are used
   //!   - The input is volatile or ``T`` is not trivially copyable
+  //!
+  //! - Inputs that are not vectorized are loaded without the cache modifier of a cub::CacheModifiedInputIterator.
   //!
   //! @endrst
   BLOCK_LOAD_VECTORIZE,
@@ -920,10 +1118,11 @@ enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //!
   //! A :ref:`striped arrangement <flexible-data-arrangement>` of vectors is read from memory using CUDA's built-in
   //! vectorized loads. Each vector holds consecutive items, and thread ``t`` owns the vectors at positions ``t``,
-  //! ``t + ThreadsPerBlock``, and so on. Each vector holds as many items as the vector with which
-  //! cub::BLOCK_LOAD_VECTORIZE loads the items of a thread, and is loaded as a ``CubVector`` of these items. If the
-  //! vector of cub::BLOCK_LOAD_VECTORIZE does not hold a whole number of items, each vector is a single item, which is
-  //! the arrangement of cub::BLOCK_LOAD_STRIPED.
+  //! ``t + ThreadsPerBlock``, and so on. Each vector holds as many items as fit into four words as wide as the
+  //! alignment of ``T``, at most 16 bytes, but at least one, as far as the items of a thread allow, and is loaded as a
+  //! ``CubVector`` of these items. Thus each vector holds four items of an arithmetic type if the items of a thread are
+  //! a multiple of four, and a single item of a type like ``char3`` or ``float3``, which is the arrangement of
+  //! cub::BLOCK_LOAD_STRIPED.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -1241,8 +1440,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
-      // Vectors of the type with which BLOCK_LOAD_VECTORIZE loads the items of a thread, or single items if that does
-      // not hold a whole number of T
+      // Vectors of up to four device words of T, or single items if they do not hold a whole number of T
       using vector_t         = detail::block_load_vector_t<T, ItemsPerThread>;
       constexpr int vec_size = sizeof(vector_t) % sizeof(T) == 0 ? static_cast<int>(sizeof(vector_t) / sizeof(T)) : 1;
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
