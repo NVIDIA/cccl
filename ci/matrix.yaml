@@ -87,6 +87,7 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview23'], cudacxx: ['clang'], ctk: '13.2', sm: '121a' }
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
@@ -244,14 +245,14 @@ workflows:
     # - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100;120'}
     # clang-tidy
     #
-    # The precise value of sm is not important, but it is required for cmake to identify
-    # clang as a CUDA compiler (see
-    # https://discourse.cmake.org/t/cmake-cuda-clang-fails/8657/5).
+    # Use the highest supported SM to analyze architecture-specific code.
+    # Clang 23 supports SM 121a with CTK 12.9 or later:
+    # https://github.com/llvm/llvm-project/blob/release/23.x/clang/lib/Basic/Cuda.cpp
     #
     # Standard being exactly "min" is required. clang-tidy may emit additional diagnostics
     # for later C++ versions (for example, warning that you should use designated
     # initializers in C++20 or higher).
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview23'], cudacxx: ['clang'], ctk: '13.2', sm: '121a' }
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:
@@ -456,7 +457,7 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview23'], cudacxx: ['clang'], ctk: '13.2', sm: '121a' }
     # arch-specific and family-specific arch builds
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
@@ -589,7 +590,7 @@ workflows:
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview23'], cudacxx: ['clang'], ctk: '13.2', sm: '121a' }
     # arch-specific and family-specific arch builds
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
@@ -752,6 +753,7 @@ host_compilers:
     exe: 'clang++'
     versions:
       22: { stds: [17, 20, 23], alias: 'cuda' }
+      23: { stds: [17, 20, 23] }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
