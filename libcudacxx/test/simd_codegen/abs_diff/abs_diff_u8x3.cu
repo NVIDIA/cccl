@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/simd>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 
 using s8x3 = cuda::std::simd::vec<cuda::std::int8_t, 3>;
 

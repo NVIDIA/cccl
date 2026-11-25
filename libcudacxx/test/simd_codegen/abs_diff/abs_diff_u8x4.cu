@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/simd>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 
 namespace simd = cuda::std::simd;
 using s8x4     = simd::vec<cuda::std::int8_t, 4>;
