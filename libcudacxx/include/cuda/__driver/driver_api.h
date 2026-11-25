@@ -396,6 +396,7 @@ _CCCL_HOST_API inline void __memcpyBatchAsync(
     "Failed to perform a memcpy with attributes",
     reinterpret_cast<::CUdeviceptr*>(__dsts),
     reinterpret_cast<::CUdeviceptr*>(__srcs),
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) -- the driver API takes a non-const pointer
     const_cast<::cuda::std::size_t*>(__sizes),
     __count,
     __attributes,
