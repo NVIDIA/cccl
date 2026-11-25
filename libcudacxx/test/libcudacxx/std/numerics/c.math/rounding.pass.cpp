@@ -291,12 +291,15 @@ TEST_FUNC void test_nextafter_edge_cases(T val)
   // val is only known at run time, which keeps the calls from being evaluated by the compiler
   const T one  = val / val;
   const T zero = one - one;
-  const T min  = one * cuda::std::numeric_limits<T>::min();
-  const T max  = one * cuda::std::numeric_limits<T>::max();
-  const T dmin = one * cuda::std::numeric_limits<T>::denorm_min();
-  const T eps  = one * cuda::std::numeric_limits<T>::epsilon();
-  const T inf  = one * cuda::std::numeric_limits<T>::infinity();
-  const T nan  = one * cuda::std::numeric_limits<T>::quiet_NaN();
+  // When the result feeds a branch, ptxas can take the sign of -zero from an integer negation of zero's bits
+  // and lose the sign, so build negative zero with copysign
+  const T neg_zero = cuda::std::copysign(zero, -one);
+  const T min      = one * cuda::std::numeric_limits<T>::min();
+  const T max      = one * cuda::std::numeric_limits<T>::max();
+  const T dmin     = one * cuda::std::numeric_limits<T>::denorm_min();
+  const T eps      = one * cuda::std::numeric_limits<T>::epsilon();
+  const T inf      = one * cuda::std::numeric_limits<T>::infinity();
+  const T nan      = one * cuda::std::numeric_limits<T>::quiet_NaN();
 
   // The spacing below 1 is half the spacing above it.
   assert(eq(cuda::std::nextafter(one, T(2)), one + eps));
@@ -313,7 +316,7 @@ TEST_FUNC void test_nextafter_edge_cases(T val)
     // zero steps to the smallest subnormal with the sign of y, and a subnormal steps back to zero keeping its sign
     assert(eq(cuda::std::nextafter(zero, one), dmin));
     assert(eq(cuda::std::nextafter(zero, -one), -dmin));
-    assert(eq(cuda::std::nextafter(-zero, one), dmin));
+    assert(eq(cuda::std::nextafter(neg_zero, one), dmin));
     assert(eq(cuda::std::nextafter(dmin, zero), zero));
     assert(!cuda::std::signbit(cuda::std::nextafter(dmin, -one)));
     assert(cuda::std::signbit(cuda::std::nextafter(-dmin, zero)));
@@ -336,8 +339,8 @@ TEST_FUNC void test_nextafter_edge_cases(T val)
 
   // equal arguments return y, which gives the sign of zero
   assert(eq(cuda::std::nextafter(one, one), one));
-  assert(cuda::std::signbit(cuda::std::nextafter(zero, -zero)));
-  assert(!cuda::std::signbit(cuda::std::nextafter(-zero, zero)));
+  assert(cuda::std::signbit(cuda::std::nextafter(zero, neg_zero)));
+  assert(!cuda::std::signbit(cuda::std::nextafter(neg_zero, zero)));
 
   // NaN in either argument returns NaN
   assert(cuda::std::isnan(cuda::std::nextafter(nan, one)));
