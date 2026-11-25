@@ -72,16 +72,16 @@ inline constexpr bool is_cufunction_or_cukernel_v =
  */
 struct cuda_kernel_desc
 {
-  cuda_kernel_desc() = default;
+  _CCCL_HIDE_FROM_ABI cuda_kernel_desc() = default;
 
   template <typename Fun, typename... Args>
-  cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
+  _CCCL_HOST_API cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
   {
     configure(mv(func), gridDim_, blockDim_, sharedMem_, mv(args)...);
   }
 
   template <typename Fun, typename... Args>
-  void configure(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
+  _CCCL_HOST_API void configure(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
   {
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
@@ -118,7 +118,8 @@ struct cuda_kernel_desc
   // It is the responsibility of the caller to unsure arguments are valid until
   // the CUDA kernel construct ends
   template <typename Fun>
-  void configure_raw(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, int arg_cnt, const void** args)
+  _CCCL_HOST_API void
+  configure_raw(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, int arg_cnt, const void** args)
   {
     _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
 
@@ -129,8 +130,8 @@ struct cuda_kernel_desc
 
     for (int i = 0; i < arg_cnt; i++)
     {
-      // We can safely forget the const here because CUDA will not modify the
-      // argument
+      // CUDA's launch APIs take void**, but only read the kernel arguments.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
       args_ptr.push_back(const_cast<void*>(args[i]));
     }
 
@@ -139,6 +140,8 @@ struct cuda_kernel_desc
 
   /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
   using func_variant_t = ::cuda::std::variant<CUfunction, CUkernel, const void*>;
+  // The launch parameters are public fields of the descriptor API.
+  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
@@ -147,9 +150,10 @@ struct cuda_kernel_desc
   // Vector of pointers to the arg_tuple which saves arguments in a typed-erased way
   // Mutable so that launch can be const
   mutable ::std::vector<void*> args_ptr;
+  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
   // Helper to launch the kernel using CUDA stream based API
-  void launch(cudaStream_t stream) const
+  _CCCL_HOST_API void launch(cudaStream_t stream) const
   {
     _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
@@ -183,13 +187,15 @@ struct cuda_kernel_desc
     }
   }
 
-  void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
+  _CCCL_HOST_API void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
   {
     _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
     if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       cudaKernelNodeParams params{
+        // The runtime takes void* for the kernel entry point and only reads it.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         .func           = const_cast<void*>(*f),
         .gridDim        = gridDim,
         .blockDim       = blockDim,
@@ -211,7 +217,7 @@ struct cuda_kernel_desc
         .blockDimY      = blockDim.y,
         .blockDimZ      = blockDim.z,
         .sharedMemBytes = static_cast<unsigned>(sharedMem),
-        .kernelParams   = const_cast<void**>(args_ptr.data()),
+        .kernelParams   = args_ptr.data(),
         .extra          = nullptr,
         .kern           = nullptr,
         .ctx            = nullptr};
@@ -231,7 +237,7 @@ struct cuda_kernel_desc
       .blockDimY      = blockDim.y,
       .blockDimZ      = blockDim.z,
       .sharedMemBytes = static_cast<unsigned>(sharedMem),
-      .kernelParams   = const_cast<void**>(args_ptr.data()),
+      .kernelParams   = args_ptr.data(),
       .extra          = nullptr,
       .kern           = *ker_ptr,
       // ctx=nullptr means current context
@@ -240,7 +246,7 @@ struct cuda_kernel_desc
   }
 
   // Utility to query the number of registers used by this kernel
-  int get_num_registers() const
+  _CCCL_HOST_API int get_num_registers() const
   {
     _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
@@ -271,18 +277,18 @@ private:
   // object is destroyed, so that the pointer to these arguments remain valid
   ::std::shared_ptr<void> arg_tuple_type_erased;
 
-  static func_variant_t store_func(CUfunction f)
+  static _CCCL_HOST_API func_variant_t store_func(CUfunction f)
   {
     return f;
   }
 
-  static func_variant_t store_func(CUkernel k)
+  static _CCCL_HOST_API func_variant_t store_func(CUkernel k)
   {
     return k;
   }
 
   template <typename T>
-  static func_variant_t store_func(T* f)
+  static _CCCL_HOST_API func_variant_t store_func(T* f)
   {
     return reinterpret_cast<const void*>(f);
   }
@@ -302,13 +308,13 @@ template <typename Ctx, bool chained, typename... Deps>
 class cuda_kernel_scope
 {
 public:
-  cuda_kernel_scope(Ctx& ctx, task_dep<Deps>... deps)
+  _CCCL_HOST_API cuda_kernel_scope(Ctx& ctx, task_dep<Deps>... deps)
       : ctx(ctx)
       , deps(mv(deps)...)
   {}
 
   // Provide an explicit execution place
-  cuda_kernel_scope(Ctx& ctx, exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API cuda_kernel_scope(Ctx& ctx, exec_place e_place, task_dep<Deps>... deps)
       : ctx(ctx)
       , deps(mv(deps)...)
       , e_place(mv(e_place))
@@ -316,10 +322,12 @@ public:
 
   cuda_kernel_scope(const cuda_kernel_scope&)            = delete;
   cuda_kernel_scope& operator=(const cuda_kernel_scope&) = delete;
-  // move-constructible
-  cuda_kernel_scope(cuda_kernel_scope&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI cuda_kernel_scope(cuda_kernel_scope&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~cuda_kernel_scope() = default;
 
-  auto& set_exec_place(exec_place e_place_)
+  _CCCL_HOST_API auto& set_exec_place(exec_place e_place_)
   {
     e_place = mv(e_place_);
     return *this;
@@ -327,7 +335,7 @@ public:
 
   /// Add a set of dependencies
   template <typename... Pack>
-  void add_deps(task_dep_untyped first, Pack&&... pack)
+  _CCCL_HOST_API void add_deps(task_dep_untyped first, Pack&&... pack)
   {
     dynamic_deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)
@@ -337,7 +345,7 @@ public:
   }
 
   template <typename T>
-  decltype(auto) get(size_t submitted_index) const
+  _CCCL_HOST_API decltype(auto) get(size_t submitted_index) const
   {
     _CCCL_ASSERT(support_task.has_value(), "uninitialized task");
     return support_task->template get<T>(submitted_index);
@@ -352,13 +360,13 @@ public:
    * @param s The string to set as the symbol.
    * @return A reference to the current object.
    */
-  auto& set_symbol(::std::string s)
+  _CCCL_HOST_API auto& set_symbol(::std::string s)
   {
     symbol = mv(s);
     return *this;
   }
 
-  auto& start()
+  _CCCL_HOST_API auto& start()
   {
     // If a place is specified, use it
     support_task = e_place ? ctx.task(e_place.value()) : ctx.task();
@@ -403,7 +411,7 @@ public:
     return *this;
   }
 
-  auto& end()
+  _CCCL_HOST_API auto& end()
   {
     auto& t = *support_task;
 
@@ -453,7 +461,7 @@ public:
    * @param f Lambda function to execute
    */
   template <typename Fun>
-  void operator->*(Fun&& f)
+  _CCCL_HOST_API void operator->*(Fun&& f)
   {
     start();
 
@@ -479,20 +487,19 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.non_void_instance(t));
-      kernel_descs.push_back(res);
+      kernel_descs.push_back(::std::apply(f, deps.non_void_instance(t)));
     }
   }
 
   // Manually add one kernel
-  auto& add_kernel_desc(cuda_kernel_desc d)
+  _CCCL_HOST_API auto& add_kernel_desc(cuda_kernel_desc d)
   {
     kernel_descs.push_back(mv(d));
     return *this;
   }
 
   // Manually add a vector of kernels
-  auto& add_kernel_desc(const ::std::vector<cuda_kernel_desc>& descs)
+  _CCCL_HOST_API auto& add_kernel_desc(const ::std::vector<cuda_kernel_desc>& descs)
   {
     for (const auto& d : descs)
     {
@@ -503,13 +510,13 @@ public:
 
 private:
   // This does submit all kernels and print statistics if needed
-  void launch_kernels()
+  _CCCL_PUBLIC_HOST_API void launch_kernels()
   {
     // If CUDASTF_CUDA_KERNEL_DEBUG is set, we display the number of registers
     // used by the kernel(s)
     static const bool display_register_cnt = [] {
       const char* env = ::std::getenv("CUDASTF_CUDA_KERNEL_DEBUG");
-      return env && (atoi(env) != 0);
+      return env && (::std::strtol(env, nullptr, 10) != 0);
     }();
 
     // Print some statistics if needed
@@ -593,8 +600,8 @@ private:
   ::std::vector<cuda_kernel_desc> kernel_descs;
 
   // Are we making some measurements ?
-  bool record_time;
-  int record_time_device;
+  bool record_time        = false;
+  int record_time_device  = -1;
   cudaEvent_t start_event = nullptr, end_event = nullptr;
 };
 } // end namespace reserved

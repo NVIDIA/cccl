@@ -46,10 +46,10 @@
 
 namespace cuda::experimental::stf
 {
-class stream_and_event;
+class stream_and_event; // NOLINT(cppcoreguidelines-virtual-class-destructor)
 namespace reserved
 {
-inline event join_with_stream(
+_CCCL_HOST_API inline event join_with_stream(
   const backend_ctx_untyped& bctx,
   augmented_stream dstream,
   event_list& prereq_in,
@@ -61,16 +61,23 @@ using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>,
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
  * another stream, possibly on another device. */
-class stream_and_event : public event_impl
+// The handle owns this event. Protect its virtual destructor against deletion through a borrowed pointer.
+class stream_and_event : public event_impl // NOLINT(cppcoreguidelines-virtual-class-destructor)
 {
 protected:
-  stream_and_event()                                   = default;
-  stream_and_event(const stream_and_event&)            = delete;
-  stream_and_event& operator=(const stream_and_event&) = delete;
+  _CCCL_HIDE_FROM_ABI stream_and_event() = default;
 
-  stream_and_event(stream_and_event&&) = delete;
+  _CCCL_HOST_API stream_and_event(const augmented_stream& dstream, bool do_insert_event)
+      : dstream(dstream)
+  {
+    // fprintf(stderr, "stream_and_event %s (ID %d)\n", this->get_symbol().c_str(), int(this->unique_prereq_id));
+    if (do_insert_event)
+    {
+      insert_event();
+    }
+  }
 
-  ~stream_and_event() override
+  _CCCL_HOST_API ~stream_and_event() override
   {
     // fprintf(stderr, "DESTROY EVENT %s (%d) - cudaEvent %p\n", this->get_symbol().c_str(),
     // int(this->unique_prereq_id), cudaEvent);
@@ -84,22 +91,17 @@ protected:
     }
   }
 
-  stream_and_event(const augmented_stream& dstream, bool do_insert_event)
-      : dstream(dstream)
-  {
-    // fprintf(stderr, "stream_and_event %s (ID %d)\n", this->get_symbol().c_str(), int(this->unique_prereq_id));
-    if (do_insert_event)
-    {
-      insert_event();
-    }
-  }
-
 public:
+  stream_and_event(const stream_and_event&)            = delete;
+  stream_and_event& operator=(const stream_and_event&) = delete;
+
+  stream_and_event(stream_and_event&&) = delete;
+
   // @@@@TODO@@@@ remove this function so that we have a mere
   // insert_dep call, and add the initial test to check whether both
   // streams are the same here too.
   // Insert a dependency from stream s1 over s2 (s1 waits for s2)
-  static void insert_dependency(cudaStream_t s1, cudaStream_t s2)
+  _CCCL_HOST_API static void insert_dependency(cudaStream_t s1, cudaStream_t s2)
   {
     // Create a dependency between the last stream and the current stream
 
@@ -157,7 +159,7 @@ public:
   //! The wrap covers the whole body on purpose: get_device_from_stream and the device switch in
   //! exec_place::operator->* throw too (cuda_try, plus bad_alloc from constructing the
   //! exec_place), so converting only the two event calls would leave those uncovered.
-  void insert_event() noexcept
+  _CCCL_HOST_API void insert_event() noexcept
   {
     ON_THROW(abort)
     {
@@ -185,7 +187,7 @@ public:
     };
   }
 
-  void insert_dep(async_resources_handle& async_resources, const stream_and_event& from)
+  _CCCL_HOST_API void insert_dep(async_resources_handle& async_resources, const stream_and_event& from)
   {
     // Otherwise streams will enforce dependencies
     if (dstream.stream != from.dstream.stream
@@ -198,16 +200,12 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(const backend_ctx_untyped&, reserved::event_vector& events) override
+  _CCCL_HOST_API bool factorize(const backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
-    assert([&] {
-      for (const auto& e : events)
-      {
-        assert(dynamic_cast<const stream_and_event*>(e.operator->()));
-      }
-      return true;
-    }());
+    assert(::std::all_of(events.cbegin(), events.cend(), [](const auto& e) {
+      return dynamic_cast<const stream_and_event*>(e.operator->()) != nullptr;
+    }));
 
     static_assert(sizeof(reserved::event_vector) == sizeof(reserved::stream_and_event_vector));
     auto& proxy = reinterpret_cast<reserved::stream_and_event_vector&>(events);
@@ -284,27 +282,28 @@ public:
     // return true;
   }
 
-  void sync_with_stream(const backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
+  _CCCL_HOST_API void
+  sync_with_stream(const backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
   {
     reserved::join_with_stream(bctx, augmented_stream(stream), prereqs, "sync", false);
   }
 
-  cudaStream_t get_stream() const
+  _CCCL_HOST_API cudaStream_t get_stream() const
   {
     return dstream.stream;
   }
 
-  augmented_stream get_augmented_stream() const
+  _CCCL_HOST_API augmented_stream get_augmented_stream() const
   {
     return dstream;
   }
 
-  unsigned long long get_stream_id() const
+  _CCCL_HOST_API unsigned long long get_stream_id() const
   {
     return dstream.id;
   }
 
-  cudaEvent_t get_cuda_event() const
+  _CCCL_HOST_API cudaEvent_t get_cuda_event() const
   {
     return cudaEvent;
   }
@@ -320,18 +319,31 @@ private:
 class stream_async_op
 {
 public:
-  stream_async_op() = default;
+  _CCCL_HIDE_FROM_ABI stream_async_op() = default;
 
-  stream_async_op(backend_ctx_untyped& bctx, augmented_stream dstream, event_list& prereq_in)
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI stream_async_op(const stream_async_op&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI stream_async_op(stream_async_op&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI stream_async_op& operator=(const stream_async_op&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI stream_async_op& operator=(stream_async_op&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~stream_async_op() = default;
+
+  _CCCL_HOST_API stream_async_op(backend_ctx_untyped& bctx, augmented_stream dstream, event_list& prereq_in)
       : dstream(mv(dstream))
   {
     setup(bctx, prereq_in);
   }
 
   // Async operation associated to a data place, we automatically get a stream attached to that place
-  stream_async_op(backend_ctx_untyped& bctx, const data_place& place, cudaStream_t* target_stream, event_list& prereq_in)
+  _CCCL_HOST_API stream_async_op(
+    backend_ctx_untyped& bctx, const data_place& place, cudaStream_t* target_stream, event_list& prereq_in)
   {
-    int stream_dev_id = device_ordinal(place);
+    const int stream_dev_id = device_ordinal(place);
 
     if (stream_dev_id >= 0)
     {
@@ -359,13 +371,13 @@ public:
     setup(bctx, prereq_in);
   }
 
-  void set_symbol(::std::string s)
+  _CCCL_HOST_API void set_symbol(::std::string s)
   {
     symbol = mv(s);
   }
 
   // Make sure all operations are done in the stream, and insert an event. A CUDASTF event is returned
-  event end_as_event(backend_ctx_untyped& bctx)
+  _CCCL_HOST_API event end_as_event(backend_ctx_untyped& bctx)
   {
     /* Create an event that synchronize with all pending work in the CUDA stream */
     event e = event(reserved::handle<stream_and_event>(dstream, true));
@@ -378,7 +390,7 @@ public:
     auto& dot = *bctx.get_dot();
     if (dot.is_tracing_prereqs())
     {
-      for (int id : joined_ids)
+      for (const int id : joined_ids)
       {
         dot.add_edge(id, e->unique_prereq_id, reserved::edge_type::prereqs);
       }
@@ -389,21 +401,21 @@ public:
 
   // Make sure all operations are done in the stream, and insert an event. A
   // list of CUDASTF events (with a single entry) is returned.
-  event_list end(backend_ctx_untyped& bctx)
+  _CCCL_HOST_API event_list end(backend_ctx_untyped& bctx)
   {
     return event_list(end_as_event(bctx));
   }
 
 private:
   // Initialize the async operation so that the stream waits for input events
-  void setup(backend_ctx_untyped& bctx, event_list& prereq_in)
+  _CCCL_HOST_API void setup(backend_ctx_untyped& bctx, event_list& prereq_in)
   {
     // Make sure we reduce the number of resulting stream/event synchronization
     // API calls to a minimum. If the list was already optimized, this will be a no-op
     prereq_in.optimize(bctx);
 
     // Do we have to keep track of dependencies in DOT ?
-    bool tracing = bctx.get_dot()->is_tracing_prereqs();
+    const bool tracing = bctx.get_dot()->is_tracing_prereqs();
 
     // Make sure any operation in the stream depends on prereq_in
     for (const auto& e : prereq_in)
@@ -427,7 +439,9 @@ private:
 
   /* Find is there is already a stream associated to that device in the
    * prereq list */
-  static augmented_stream device_lookup_in_event_list(backend_ctx_untyped& /* bctx */, event_list& prereq_in, int devid)
+  // Keep the cached CUDASTF_NO_LOOKUP setting shared across library boundaries.
+  _CCCL_PUBLIC_HOST_API static augmented_stream
+  device_lookup_in_event_list(backend_ctx_untyped& /* bctx */, event_list& prereq_in, int devid)
   {
     static const bool no_lookup = [] {
       const char* env = ::std::getenv("CUDASTF_NO_LOOKUP");
@@ -481,7 +495,7 @@ private:
 namespace reserved
 {
 /* This creates a synchronization point between all entries of the prereq_in list, and a CUDA stream */
-inline event join_with_stream(
+_CCCL_HOST_API inline event join_with_stream(
   const backend_ctx_untyped& bctx,
   augmented_stream dstream,
   event_list& prereq_in,
@@ -499,13 +513,14 @@ inline event join_with_stream(
 }
 
 /* Create a simple event in a CUDA stream */
-inline event record_event_in_stream(const augmented_stream& dstream)
+_CCCL_HOST_API inline event record_event_in_stream(const augmented_stream& dstream)
 {
   return reserved::handle<stream_and_event>(dstream, true);
 }
 
 /* Overload to provide a symbol */
-inline event record_event_in_stream(const augmented_stream& dstream, reserved::per_ctx_dot& dot, ::std::string symbol)
+_CCCL_HOST_API inline event
+record_event_in_stream(const augmented_stream& dstream, reserved::per_ctx_dot& dot, ::std::string symbol)
 {
   event res = record_event_in_stream(dstream);
   res->set_symbol_with_dot(dot, mv(symbol));

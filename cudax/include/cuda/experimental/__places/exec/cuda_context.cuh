@@ -96,13 +96,13 @@ public:
     _CCCL_ASSERT(devid_ >= 0, "cuda_ctx exec_place requires a valid device ordinal");
   }
 
-  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place([[maybe_unused]] size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
     return shared_from_this();
   }
 
-  _CCCL_HOST_API exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate([[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
@@ -115,7 +115,7 @@ public:
     return result;
   }
 
-  _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate(const exec_place& prev, [[maybe_unused]] size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
