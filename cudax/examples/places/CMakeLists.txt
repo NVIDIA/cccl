@@ -13,7 +13,12 @@ function(cudax_add_places_example target_name_var source)
 
   set(example_target cudax.example.places.${filename})
 
-  cccl_add_executable(${example_target} SOURCES ${source} ADD_CTEST)
+  cccl_add_executable(
+    ${example_target}
+    SOURCES ${source}
+    ADD_CTEST
+    NO_CLANG_TIDY
+  )
   cudax_places_configure_target(${example_target})
   target_link_libraries(
     ${example_target}

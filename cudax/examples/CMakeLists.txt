@@ -7,7 +7,12 @@ function(cudax_add_example target_name_var example_src)
   set(example_target cudax.example.${example_name})
   set(${target_name_var} ${example_target} PARENT_SCOPE)
 
-  cccl_add_executable(${example_target} SOURCES "${example_src}" ADD_CTEST)
+  cccl_add_executable(
+    ${example_target}
+    SOURCES "${example_src}"
+    ADD_CTEST
+    NO_CLANG_TIDY
+  )
   target_link_libraries(
     ${example_target}
     PRIVATE #

@@ -3,7 +3,12 @@ function(cudax_add_coop_group_example target_name_var source)
 
   set(example_target cudax.example.coop.group.${filename})
 
-  cccl_add_executable(${example_target} SOURCES ${source} ADD_CTEST)
+  cccl_add_executable(
+    ${example_target}
+    SOURCES ${source}
+    ADD_CTEST
+    NO_CLANG_TIDY
+  )
   target_link_libraries(${example_target} PRIVATE cudax.compiler_interface)
 
   set(${target_name_var} ${example_target} PARENT_SCOPE)
