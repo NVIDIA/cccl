@@ -11,7 +11,6 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__functional/invoke.h>
 
 #include <cstddef>

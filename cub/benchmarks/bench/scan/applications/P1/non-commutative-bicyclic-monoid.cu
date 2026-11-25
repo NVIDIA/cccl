@@ -9,7 +9,6 @@
 
 #include <cuda/__functional/minimum.h>
 #include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>

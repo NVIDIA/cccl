@@ -5,7 +5,6 @@
 
 #include <cub/block/block_scan.cuh>
 
-#include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__functional/operations.h>
 
 #include <cstdint>

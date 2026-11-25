@@ -24,7 +24,6 @@
 
 #  include <cuda/__device/compute_capability.h>
 #  include <cuda/std/__algorithm/max.h>
-#  include <cuda/std/__cccl/execution_space.h>
 #endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1

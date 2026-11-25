@@ -14,7 +14,6 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 
 #include <new>

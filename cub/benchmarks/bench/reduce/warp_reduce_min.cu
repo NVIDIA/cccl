@@ -4,7 +4,6 @@
 #include <cub/config.cuh>
 
 #include <cuda/__functional/minimum.h>
-#include <cuda/std/__cccl/extended_data_types.h>
 
 #include <cstdint>
 

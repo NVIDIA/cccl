@@ -9,7 +9,6 @@
 #  include <cub/thread/thread_load.cuh>
 
 #  include <cuda/__device/compute_capability.h>
-#  include <cuda/std/__cccl/execution_space.h>
 #endif // !TUNE_BASE
 
 #ifndef USES_LOOKAHEAD

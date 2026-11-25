@@ -21,7 +21,6 @@
 
 #  include <cuda/__device/compute_capability.h>
 #  include <cuda/std/__algorithm/max.h>
-#  include <cuda/std/__cccl/execution_space.h>
 #  include <cuda/std/__type_traits/conditional.h>
 
 #  include <cstddef>

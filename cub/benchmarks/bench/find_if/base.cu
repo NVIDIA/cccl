@@ -17,7 +17,6 @@
 #  include <cub/thread/thread_load.cuh>
 
 #  include <cuda/__device/compute_capability.h>
-#  include <cuda/std/__cccl/execution_space.h>
 #endif // !TUNE_BASE
 
 // %RANGE% TUNE_LOAD ld 0:2:1

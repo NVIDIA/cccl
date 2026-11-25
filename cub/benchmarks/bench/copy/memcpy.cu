@@ -16,7 +16,6 @@
 
 #  include <cuda/__device/compute_capability.h>
 #  include <cuda/__execution/tune.h>
-#  include <cuda/std/__cccl/execution_space.h>
 #endif // !TUNE_BASE
 
 // %RANGE% TUNE_THREADS tpb 128:1024:32

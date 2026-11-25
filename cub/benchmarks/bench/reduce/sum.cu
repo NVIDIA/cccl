@@ -8,7 +8,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__functional/operations.h>
 
 #include <nvbench_helper.cuh>

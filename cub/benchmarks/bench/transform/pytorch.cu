@@ -27,7 +27,6 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cmath/error_functions.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__functional/operations.h>
