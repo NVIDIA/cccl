@@ -7,6 +7,7 @@ CUDA Core Compute Libraries
 
    cccl/index
    python/index
+   rust/index
    contributors/index
    maintainers/index
    infrastructure/index
@@ -17,6 +18,8 @@ make CUDA C++ and Python more delightful.
 - :ref:`cccl-cpp-libraries`
 
 - :doc:`Python Libraries <python/index>`
+
+- :doc:`Rust Development <rust/index>`
 
 - :doc:`Contributor Docs <contributors/index>`
 
