@@ -28,7 +28,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -773,7 +773,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::copy_insert(iterator position, Forwar
 
       if (new_capacity > max_size())
       {
-        throw std::length_error("insert(): insertion exceeds max_size().");
+        ::cuda::std::__throw_length_error("insert(): insertion exceeds max_size().");
       } // end if
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -1103,7 +1103,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::allocate_and_copy(
 
   if (requested_size > allocated_size)
   {
-    throw std::length_error("assignment exceeds max_size().");
+    ::cuda::std::__throw_length_error("assignment exceeds max_size().");
   } // end if
 
   new_storage.allocate(allocated_size);

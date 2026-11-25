@@ -28,8 +28,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -56,7 +55,7 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
   // Check if the mdspan is exhaustive
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
+    ::cuda::std::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
   }
 
   ::cuda::__detail::__fill_bytes_impl(

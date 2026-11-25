@@ -27,8 +27,7 @@
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -73,7 +72,7 @@ public:
   {
     if (__i >= size())
     {
-      _CCCL_THROW(::std::out_of_range, "device index out of range");
+      ::cuda::std::__throw_out_of_range("device index out of range");
     }
     return device_ref{static_cast<int>(__i)};
   }

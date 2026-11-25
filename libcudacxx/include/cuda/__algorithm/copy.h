@@ -28,8 +28,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/mdspan>
 #  include <cuda/std/span>
 
@@ -97,7 +96,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     if (__src.size_bytes() > __dst.size_bytes())
     {
-      _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+      ::cuda::std::__throw_invalid_argument("Copy destination is too small to fit the source data");
     }
   }
 
@@ -148,12 +147,12 @@ _CCCL_HOST_API void __copy_bytes_impl(
   // Check only destination, because the layout of destination is the same as source
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "copy_bytes supports only exhaustive mdspans");
+    ::cuda::std::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination size differs from the source");
+    ::cuda::std::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
   ::cuda::__detail::__copy_bytes_impl(

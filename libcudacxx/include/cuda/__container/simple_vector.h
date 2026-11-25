@@ -21,8 +21,7 @@
 #endif // no system header
 
 #include <cuda/__utility/no_init.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/allocate.h>
@@ -54,7 +53,7 @@ class __simple_vector
     }
     if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
     {
-      _CCCL_THROW(::std::bad_alloc);
+      ::cuda::std::__throw_bad_alloc();
     }
 
     return reinterpret_cast<_Tp*>(::cuda::std::__cccl_allocate(__count * sizeof(_Tp), alignof(_Tp)));

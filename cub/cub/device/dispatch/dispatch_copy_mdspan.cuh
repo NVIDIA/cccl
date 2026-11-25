@@ -27,6 +27,7 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__fwd/mdspan.h>
@@ -122,7 +123,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
 #if _CCCL_HOSTED()
         if (input.extents() != output.extents())
         {
-          _CCCL_THROW(::std::invalid_argument, "mdspan extents must be equal");
+          ::cuda::std::__throw_invalid_argument("mdspan extents must be equal");
         }
         if (input.size() == 0)
         {

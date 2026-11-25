@@ -39,9 +39,8 @@
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__fwd/span.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__memory/assume_aligned.h>
@@ -157,17 +156,17 @@ public:
   {
     if (__storage.size() < __required_words())
     {
-      _CCCL_THROW(::std::invalid_argument, "Bloom filter storage is too small for the requested number of blocks");
+      ::cuda::std::__throw_invalid_argument("Bloom filter storage is too small for the requested number of blocks");
     }
 
     if (!::cuda::is_aligned(__storage.data(), __alignment))
     {
-      _CCCL_THROW(::std::invalid_argument, "Bloom filter storage has insufficient alignment");
+      ::cuda::std::__throw_invalid_argument("Bloom filter storage has insufficient alignment");
     }
 
     if (__block_extent() > __policy_type::max_filter_blocks)
     {
-      _CCCL_THROW(::std::invalid_argument, "Bloom filter block count exceeds the policy's maximum");
+      ::cuda::std::__throw_invalid_argument("Bloom filter block count exceeds the policy's maximum");
     }
   }
 

@@ -28,8 +28,7 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/ensure_current_context.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -63,7 +62,9 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync.");
+      ::cuda::std::__throw_invalid_argument(
+        "Invalid alignment passed to "
+        "legacy_pinned_memory_resource::allocate_sync.");
     }
 
     const ::cuda::__ensure_current_context __guard(__device_);

@@ -29,8 +29,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/span>
@@ -55,7 +54,7 @@ __copy_bytes_graph_impl(path_builder& __pb, ::cuda::std::span<_SrcTy> __src, ::c
 
   if (__src.size_bytes() > __dst.size_bytes())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+    ::cuda::std::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
 
   if (__src.size_bytes() == 0)
@@ -101,12 +100,12 @@ _CCCL_HOST_API graph_node_ref __copy_bytes_graph_impl(
 
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "copy_bytes supports only exhaustive mdspans");
+    ::cuda::std::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination size differs from the source");
+    ::cuda::std::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
   return __copy_bytes_graph_impl(

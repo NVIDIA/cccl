@@ -44,11 +44,10 @@
 #include <cuda/__utility/no_init.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -255,7 +254,7 @@ public:
   {
     if (empty_key_sentinel() == erased_key_sentinel())
     {
-      _CCCL_THROW(::std::invalid_argument, "The empty key sentinel and erased key sentinel cannot be the same value.");
+      ::cuda::std::__throw_invalid_argument("The empty key sentinel and erased key sentinel cannot be the same value.");
     }
     clear_async(__stream);
   }

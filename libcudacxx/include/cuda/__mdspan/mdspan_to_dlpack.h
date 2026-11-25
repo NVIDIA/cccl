@@ -31,9 +31,8 @@
 #    include <cuda/__type_traits/is_vector_type.h>
 #    include <cuda/std/__cstddef/types.h>
 #    include <cuda/std/__exception/cuda_error.h>
-#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__exception/throw_error.h>
 #    include <cuda/std/__fwd/complex.h>
-#    include <cuda/std/__host_stdlib/stdexcept>
 #    include <cuda/std/__limits/numeric_limits.h>
 #    include <cuda/std/__type_traits/always_false.h>
 #    include <cuda/std/__type_traits/is_pointer.h>
@@ -199,11 +198,11 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
     {
       if (::cuda::std::cmp_greater(__mdspan.extent(__i), __max_extent))
       {
-        _CCCL_THROW(::std::invalid_argument, "Extent is too large");
+        ::cuda::std::__throw_invalid_argument("Extent is too large");
       }
       if (::cuda::std::cmp_greater(__mdspan.stride(__i), __max_extent))
       {
-        _CCCL_THROW(::std::invalid_argument, "Stride is too large");
+        ::cuda::std::__throw_invalid_argument("Stride is too large");
       }
       __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
       __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));

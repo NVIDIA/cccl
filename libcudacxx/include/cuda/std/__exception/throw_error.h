@@ -109,6 +109,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   _CCCL_THROW_STD_EXCEPTION(overflow_error, __msg, __msg);
 }
 
+[[noreturn]] _CCCL_API inline void __throw_runtime_error([[maybe_unused]] const char* __msg)
+{
+  _CCCL_THROW_STD_EXCEPTION(runtime_error, __msg, __msg);
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #undef _CCCL_THROW_STD_EXCEPTION

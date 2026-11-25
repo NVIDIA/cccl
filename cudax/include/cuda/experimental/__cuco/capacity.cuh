@@ -26,8 +26,7 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 
@@ -72,7 +71,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
     const auto __prime = ::cuda::experimental::cuco::detail::__next_prime(__cycles, __max_cycles);
     if (__prime == 0 || ::cuda::mul_overflow(__capacity, __prime, __stride))
     {
-      _CCCL_THROW(::std::logic_error, "Invalid input capacity");
+      ::cuda::std::__throw_invalid_argument("Invalid input capacity");
     }
   }
   else
@@ -80,7 +79,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
     const auto __num_buckets = __cycles + static_cast<::cuda::std::uint64_t>(__requested == 0);
     if (::cuda::mul_overflow(__capacity, __num_buckets, __stride))
     {
-      _CCCL_THROW(::std::logic_error, "Invalid input capacity");
+      ::cuda::std::__throw_invalid_argument("Invalid input capacity");
     }
   }
   return __capacity;
@@ -105,7 +104,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 {
   if (__load_factor <= 0. || !::cuda::in_range(__load_factor, 0., 1.))
   {
-    _CCCL_THROW(::std::logic_error, "Desired load factor must be in the range (0, 1]");
+    ::cuda::std::__throw_invalid_argument("Desired load factor must be in the range (0, 1]");
   }
   if (__requested <= _SizeType{0} || __load_factor == 1.)
   {
@@ -120,9 +119,9 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
   constexpr auto __exclusive_bound = static_cast<double>(__half_bound) * 2.;
   if (__scaled >= __exclusive_bound)
   {
-    _CCCL_THROW(::std::logic_error,
-                "Invalid load factor: requested capacity divided by load factor exceeds the maximum representable "
-                "value");
+    ::cuda::std::__throw_invalid_argument(
+      "Invalid load factor: requested capacity divided by load factor exceeds the maximum representable "
+      "value");
   }
   return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(static_cast<_SizeType>(__scaled));
 }

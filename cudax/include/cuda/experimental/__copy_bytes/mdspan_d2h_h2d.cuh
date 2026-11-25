@@ -32,8 +32,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__mdspan/default_accessor.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
@@ -90,16 +89,17 @@ _CCCL_HOST_API void __copy_bytes_impl(
                 "cudax::copy_bytes: AccessorPolicyOut must be convertible to cuda::std::default_accessor");
   if (__stream.get() == nullptr)
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: stream must not be nullptr");
+    ::cuda::std::__throw_invalid_argument("cudax::copy_bytes: stream must not be nullptr");
   }
   if (__src.size() != __dst.size())
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: mdspans must have the same size");
+    ::cuda::std::__throw_invalid_argument("cudax::copy_bytes: mdspans must have the same size");
   }
   if (!::cuda::__same_non_singleton_extents(__src.extents(), __dst.extents()))
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "cudax::copy_bytes: mdspans must have the same extents (after removing singleton dimensions)");
+    ::cuda::std::__throw_invalid_argument(
+      "cudax::copy_bytes: mdspans must have the same extents (after removing "
+      "singleton dimensions)");
   }
 
   const auto __tensor_size = __src.size();
@@ -109,20 +109,21 @@ _CCCL_HOST_API void __copy_bytes_impl(
   }
   if (__src.data_handle() == nullptr || __dst.data_handle() == nullptr)
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: mdspan data handle must not be nullptr");
+    ::cuda::std::__throw_invalid_argument("cudax::copy_bytes: mdspan data handle must not be nullptr");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpIn)>(__src.data_handle()))
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: source mdspan must be sufficiently aligned");
+    ::cuda::std::__throw_invalid_argument("cudax::copy_bytes: source mdspan must be sufficiently aligned");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpOut)>(__dst.data_handle()))
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: destination mdspan must be sufficiently aligned");
+    ::cuda::std::__throw_invalid_argument("cudax::copy_bytes: destination mdspan must be sufficiently aligned");
   }
   if (::cuda::__has_interleaved_stride_order(__dst))
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "cudax::copy_bytes: destination mdspan must not have interleaved stride order");
+    ::cuda::std::__throw_invalid_argument(
+      "cudax::copy_bytes: destination mdspan must not have interleaved stride "
+      "order");
   }
 
   if (__tensor_size == 1) // rank == 0 also falls into this case

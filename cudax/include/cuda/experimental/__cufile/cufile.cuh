@@ -19,8 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/exchange.h>
 
@@ -98,7 +97,7 @@ private:
     if (__fd == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to open file.");
+      ::cuda::std::__throw_runtime_error("Failed to open file.");
     }
 
     return __fd;
@@ -112,7 +111,7 @@ private:
     if (__oflags == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to retrieve open flags.");
+      ::cuda::std::__throw_runtime_error("Failed to retrieve open flags.");
     }
 
     cufile_open_mode __om{};
@@ -146,7 +145,7 @@ private:
     if (!__close_file_no_throw(__native_handle))
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to close file.");
+      ::cuda::std::__throw_runtime_error("Failed to close file.");
     }
   }
 
@@ -257,7 +256,7 @@ public:
   {
     if (is_open())
     {
-      _CCCL_THROW(::std::runtime_error, "File is already opened.");
+      ::cuda::std::__throw_runtime_error("File is already opened.");
     }
 
     __native_handle_ = __open_file(__filename, __make_oflags(__open_mode));
