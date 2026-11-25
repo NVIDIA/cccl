@@ -77,6 +77,24 @@ struct transfer_kernel : fabric_case<cuda::std::uint32_t>
     }
   }
 
+  TEST_DEVICE_FUNC static void submit_requests()
+  {
+    if constexpr (Kind == transfer_kind::get)
+    {
+      cuda::fabric::submit_restrict_fetching();
+    }
+#  if __cccl_ptx_isa >= 950
+    else if constexpr (Kind == transfer_kind::put)
+    {
+      cuda::fabric::submit_commit_group();
+    }
+#  endif // __cccl_ptx_isa >= 950
+    else
+    {
+      cuda::fabric::submit();
+    }
+  }
+
   template <class Config>
   TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
   {
@@ -129,20 +147,7 @@ struct transfer_kernel : fabric_case<cuda::std::uint32_t>
         cuda::fabric::try_reduce_counted_add(endpoint, data_offset, counter_offset, staging, sizeof(staging), bar);
       }
 
-      if constexpr (Kind == transfer_kind::get)
-      {
-        cuda::fabric::submit_restrict_fetching();
-      }
-#  if __cccl_ptx_isa >= 950
-      else if constexpr (Kind == transfer_kind::put)
-      {
-        cuda::fabric::submit_commit_group();
-      }
-#  endif // __cccl_ptx_isa >= 950
-      else
-      {
-        cuda::fabric::submit();
-      }
+      submit_requests();
       if constexpr (Kind == transfer_kind::put)
       {
         // Overwrite staging before remote completion; wait_reads protects its lifetime.
