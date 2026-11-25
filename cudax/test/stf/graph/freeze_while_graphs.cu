@@ -97,7 +97,8 @@ int main()
 
   cudaGraphNode_t conditionalNode;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), nullptr, fX_ready_nodes.size(), &cParams);
+  cuda_safe_call(cudaGraphAddNode(
+    &conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), nullptr, fX_ready_nodes.size(), &cParams));
 #  else
   cuda_safe_call(
     cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), fX_ready_nodes.size(), &cParams));
