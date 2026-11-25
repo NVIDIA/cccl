@@ -82,6 +82,8 @@
 #    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <type_traits> // for ::std::move and ::std::move_if_noexcept
 #  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif // _CCCL_HOSTED()
