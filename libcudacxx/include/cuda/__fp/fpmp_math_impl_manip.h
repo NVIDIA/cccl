@@ -331,8 +331,9 @@ __fpmp2_scalbln(const _FpType __x_hi, const _FpType __x_lo, long int __n, _FpTyp
  * range.  A single double cannot express the situation at all, which is why the
  * placeholder never had to think about it.
  *
- * For 0, infinity and NaN, frexp reports an exponent of 0 and returns hi unchanged,
- * and scaling lo by 2^0 leaves the pair as it was.
+ * For 0, frexp reports an exponent of 0, and scaling lo by 2^0 leaves the pair as it was.
+ * For infinity and NaN, frexp returns hi unchanged and the exponent it reports is
+ * unspecified.  The exponent is clamped before lo is scaled, so a zero lo stays zero.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
@@ -342,14 +343,24 @@ __fpmp2_frexp(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   constexpr int __e_max = __fpmp2_is_fp32_v<_FpType> ? 127 : 1023;
 
   _FpType __m_hi = ::cuda::std::frexp(__x_hi, __nptr);
-  /* lo * 2^-n is exact.  -n lies in [-128, 148] ([-1024, 1073]): one normal power of two,
-   * and a second one where hi is in the top two binades or below 2^-128 (2^-1024). */
-  const int __n1 = (-*__nptr < __e_min) ? __e_min : ((-*__nptr > __e_max) ? __e_max : -*__nptr);
-  _FpType __m_lo = ::cuda::__fpmp_mul_rn(__x_lo, ::cuda::__fpmp_pow2<_FpType>(__n1));
-  if (-*__nptr != __n1)
+  /* lo * 2^k with k = -*nptr, rounded once.  k lies in [-128, 148] ([-1024, 1073]).
+   * One normal power of two, 2^k1, covers k unless hi is in the top two binades or below
+   * 2^-128 (2^-1024).  In those cases an extra factor 2^(k - k1) is applied first.  That
+   * factor is exact: it scales lo up, or down by at most two binades.  A lo that it takes
+   * into the subnormal range ends as zero either way.
+   *
+   * The exponent that the limb format's frexp stores for an infinity or a NaN is unspecified.
+   * Clamping it to twice the normal range keeps both factors finite.  The zero low limb of
+   * an infinity therefore stays zero. */
+  const int __e  = (*__nptr < -2 * __e_max) ? -2 * __e_max : ((*__nptr > -2 * __e_min) ? -2 * __e_min : *__nptr);
+  const int __k  = -__e; // negated after the clamp: -*__nptr overflows for INT_MIN
+  const int __k1 = (__k < __e_min) ? __e_min : ((__k > __e_max) ? __e_max : __k);
+  _FpType __m_lo = __x_lo;
+  if (__k != __k1)
   {
-    __m_lo = ::cuda::__fpmp_mul_rn(__m_lo, ::cuda::__fpmp_pow2<_FpType>(-*__nptr - __n1));
+    __m_lo = ::cuda::__fpmp_mul_rn(__m_lo, ::cuda::__fpmp_pow2<_FpType>(__k - __k1));
   }
+  __m_lo = ::cuda::__fpmp_mul_rn(__m_lo, ::cuda::__fpmp_pow2<_FpType>(__k1));
 
   if (::cuda::__fpmp_internal_fabs(__m_hi) == _FpType(0.5) && __m_lo != _FpType(0)
       && (::cuda::std::signbit(__m_hi) != ::cuda::std::signbit(__m_lo)))

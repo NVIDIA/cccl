@@ -844,7 +844,15 @@ TEST_HOST_DEVICE_FUNC void test_ldexp_frexp()
   m = frexp(MP2(F(0)), &e);
   assert(e == 0 && is_pos_zero(m));
   m = frexp(MP2(nl::infinity()), &e);
-  assert(is_pos_inf(m));
+  assert(is_pos_inf(m) && m.lo() == 0);
+
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal results: flushed to zero on the device
+  // In the top binade the low limb can scale into the subnormal range, where it is rounded
+  // once: 23/16 of the smallest subnormal number goes to 1 of it. Scaling in two steps that
+  // both round gives 6/4 and then 2.
+  m = frexp(MP2(cuda::std::ldexp(F(1), max_exp - 1), cuda::std::ldexp(F(23), max_exp + min_exp - digits - 4)), &e);
+  assert(e == max_exp && m.hi() == F(0.5) && m.lo() == nl::denorm_min());
+#endif // !TEST_HAS_CUDA_FAST_MATH
 }
 
 // ---- fp64mp2 division next to the ends of the exponent range -------------------
