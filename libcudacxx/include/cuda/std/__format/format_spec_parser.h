@@ -44,6 +44,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE_DEVICE.
+#ifdef noinline
+#  pragma push_macro("noinline")
+#  undef noinline
+#  define _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(noinline)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _IdSize, size_t _OptSize>
@@ -1273,6 +1280,11 @@ __fmt_estimate_column_width(basic_string_view<_CharT> __str, size_t __maximum, _
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noinline
+#  pragma pop_macro("noinline")
+#  undef _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 #include <cuda/std/__cccl/epilogue.h>
 
