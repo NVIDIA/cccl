@@ -33,6 +33,7 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>

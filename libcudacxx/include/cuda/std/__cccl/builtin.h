@@ -235,11 +235,11 @@
 #  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_zero_non_value_bits(__VA_ARGS__)
 #endif // ^^^ has _CCCL_BUILTIN_CLEAR_PADDING ^^^
 
-// nvcc doesn't support __builtin_clear_padding builtin in device code and crashes when __builtin_zero_non_value_bits is
-// used with arrays (nvbug 7043357).
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+// nvcc fails to compile simple programs that use __builtin_clear_padding (nvbug 7150163) and crashes when
+// __builtin_zero_non_value_bits is used with arrays (nvbug 7043357).
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
 #  undef _CCCL_BUILTIN_CLEAR_PADDING
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#endif // (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)

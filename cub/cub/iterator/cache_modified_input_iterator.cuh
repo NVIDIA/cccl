@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
 
@@ -224,12 +225,6 @@ public:
 
 namespace detail
 {
-template <typename Iterator>
-inline constexpr bool is_CacheModifiedInputIterator = false;
-
-template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = true;
-
 template <CacheLoadModifier LoadModifier, typename Iterator>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {

@@ -27,6 +27,7 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
