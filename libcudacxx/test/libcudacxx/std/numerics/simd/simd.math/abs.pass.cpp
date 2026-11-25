@@ -79,7 +79,7 @@ inline constexpr bool has_simd_fabs<V, cuda::std::void_t<decltype(cuda::std::sim
   true;
 
 template <typename T, int N>
-TEST_HOST_DEVICE_FUNC void test_signed_integral_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_signed_integral_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(signed_values<T>{});
@@ -93,11 +93,16 @@ TEST_HOST_DEVICE_FUNC void test_signed_integral_type()
   {
     assert(result[i] == (vec[i] < 0 ? -vec[i] : vec[i]));
   }
+  return true;
 }
 
 TEST_HOST_DEVICE_FUNC void test_signed_integral()
 {
+  test_signed_integral_type<int8_t, 1>();
+  test_signed_integral_type<int8_t, 2>();
+  test_signed_integral_type<int8_t, 3>();
   test_signed_integral_type<int8_t, 4>();
+  test_signed_integral_type<int8_t, 5>();
   test_signed_integral_type<int16_t, 4>();
   test_signed_integral_type<int32_t, 4>();
   test_signed_integral_type<int64_t, 4>();
@@ -117,6 +122,7 @@ int main(int, char**)
   test_wrapper<double, 3>();
   assert(test());
   assert(test_runtime());
+  static_assert(test_signed_integral_type<int8_t, 5>());
   test_signed_integral();
   return 0;
 }
