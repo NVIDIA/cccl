@@ -223,7 +223,7 @@ public:
     return result;
   }
 
-  _CCCL_HOST_API derived_type& operator--()
+  _CCCL_HOST_DEVICE_API derived_type& operator--()
   {
     // Sadly, this has to make a copy. The only mechanism we have for
     // modifying the value, which may be in memory inaccessible to this
@@ -234,12 +234,12 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API value_type operator--(int)
+  _CCCL_HOST_DEVICE_API value_type operator--(int)
   {
-    value_type tmp    = *this;
-    value_type result = tmp--;
-    *this             = ::cuda::std::move(tmp);
-    return derived();
+    value_type tmp          = *this;
+    const value_type result = tmp--;
+    *this                   = ::cuda::std::move(tmp);
+    return result;
   }
 
   _CCCL_HOST_DEVICE_API derived_type& operator+=(value_type const& rhs)
@@ -250,7 +250,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator-=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator-=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp -= rhs;
@@ -258,7 +258,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator*=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator*=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp *= rhs;
@@ -266,7 +266,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator/=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator/=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp /= rhs;
@@ -274,7 +274,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator%=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator%=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp %= rhs;
@@ -282,7 +282,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator<<=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator<<=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp <<= rhs;
@@ -290,7 +290,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator>>=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator>>=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp >>= rhs;
@@ -298,7 +298,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator&=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator&=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp &= rhs;
@@ -306,7 +306,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator|=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator|=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp |= rhs;
@@ -314,7 +314,7 @@ public:
     return derived();
   }
 
-  _CCCL_HOST_API derived_type& operator^=(value_type const& rhs)
+  _CCCL_HOST_DEVICE_API derived_type& operator^=(value_type const& rhs)
   {
     value_type tmp = *this;
     tmp ^= rhs;
