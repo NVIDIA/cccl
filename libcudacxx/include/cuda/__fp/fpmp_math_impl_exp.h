@@ -475,9 +475,10 @@ __fpmp2_expm1_table(const int __i) noexcept
 // result gets a zero low limb here, and NaN goes into both limbs.
 _CCCL_FPMP_CORE_API void __internal_fpmp2_canonical_nonfinite(const double* __res_hi, double* __res_lo) noexcept
 {
-  if (!(::cuda::__fpmp_internal_fabs(*__res_hi) < ::cuda::std::__fp_inf<double>()))
+  const uint64_t __abs2 = ::cuda::__internal_fpmp2_abs_bits2(*__res_hi);
+  if (__abs2 >= ::cuda::__fpmp2_inf_bits2)
   {
-    *__res_lo = (*__res_hi != *__res_hi) ? *__res_hi : 0.0;
+    *__res_lo = (__abs2 > ::cuda::__fpmp2_inf_bits2) ? *__res_hi : 0.0;
   }
 }
 
@@ -950,14 +951,14 @@ __internal_fpmp2_high_expm1(const float __x_hi, const float __x_lo, float* __res
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_expm1(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0 && __x_lo == 0.0) // expm1(+-0) = +-0: the conversions do not keep the sign of zero
+  _CCCL_FPMP_CALL_FP64MP2_MATH(expm1, _CCCL_FPMP_EXPM1Q, __x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
+  // expm1(+-0) = +-0: the conversions do not keep the sign of zero
+  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
-    return;
   }
-  _CCCL_FPMP_CALL_FP64MP2_MATH(expm1, _CCCL_FPMP_EXPM1Q, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one expm1 for every level */
@@ -1399,14 +1400,14 @@ __internal_fpmp2_high_log1p(const float __x_hi, const float __x_lo, float* __res
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log1p(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0 && __x_lo == 0.0) // log1p(+-0) = +-0: the conversions do not keep the sign of zero
+  _CCCL_FPMP_CALL_FP64MP2_MATH(log1p, _CCCL_FPMP_LOG1PQ, __x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
+  // log1p(+-0) = +-0: the conversions do not keep the sign of zero
+  if (::cuda::__internal_fpmp2_is_zero(__x_hi, __x_lo))
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
-    return;
   }
-  _CCCL_FPMP_CALL_FP64MP2_MATH(log1p, _CCCL_FPMP_LOG1PQ, __x_hi, __x_lo, __res_hi, __res_lo);
-  ::cuda::__internal_fpmp2_canonical_nonfinite(__res_hi, __res_lo);
 }
 
 /* fp64mp2 has one log1p for every level */
