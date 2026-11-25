@@ -1049,6 +1049,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // reference is effectively fp64-accurate on this target).
 // ----------------------------------------------------------------------
 #    elif _CCCL_DEVICE_COMPILATION()
+#      define _CCCL_FPMP_FP128_MATH_IN_DOUBLE
 #      define _CCCL_FPMP_EXPQ(x)          ((__fpmp_fp128)::exp((double) (x)))
 #      define _CCCL_FPMP_EXP2Q(x)         ((__fpmp_fp128)::exp2((double) (x)))
 #      define _CCCL_FPMP_EXP10Q(x)        ((__fpmp_fp128)::exp10((double) (x)))
@@ -1109,6 +1110,40 @@ _CCCL_BEGIN_NAMESPACE_CUDA
       __fpmp2_from_double(                                                                  \
         ::dfunc(::cuda::__fpmp2_to_double(xhi, xlo), ::cuda::__fpmp2_to_double(yhi, ylo)), reshi, reslo)
 #  endif // _CCCL_FPMP_FP128_MATH_FALLBACK == 1
+
+// 1 where the fp64mp2 bodies do binary128 arithmetic of their own, around the math functions:
+// where those functions compute in binary128. Where they widen through double (branch 4), the
+// bodies take their binary64 form, since binary128 arithmetic is emulated there and costs many
+// times the code of the binary64 form for no added precision.
+#  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1) && !defined(_CCCL_FPMP_FP128_MATH_IN_DOUBLE)
+#    define _CCCL_FPMP_FP128_QUAD_BODIES 1
+#  else
+#    define _CCCL_FPMP_FP128_QUAD_BODIES 0
+#  endif
+
+// The special-value tests of the fp64mp2 wrappers look at the bits: a double comparison is an
+// FP64 instruction, which many GPUs run at a small fraction of their FP32 rate.
+
+// Both limbs are +-0.
+[[nodiscard]] _CCCL_FPMP_CORE_API bool __internal_fpmp2_is_zero(const double __hi, const double __lo) noexcept
+{
+  return ((::cuda::std::bit_cast<uint64_t>(__hi) | ::cuda::std::bit_cast<uint64_t>(__lo)) << 1) == 0;
+}
+
+// The bits of |x| with the sign bit shifted out, which order like |x| and put NaN above infinity.
+[[nodiscard]] _CCCL_FPMP_CORE_API uint64_t __internal_fpmp2_abs_bits2(const double __x) noexcept
+{
+  return ::cuda::std::bit_cast<uint64_t>(__x) << 1;
+}
+
+_CCCL_GLOBAL_CONSTANT uint64_t __fpmp2_inf_bits2  = uint64_t{0x7FF} << 53;
+_CCCL_GLOBAL_CONSTANT uint64_t __fpmp2_half_bits2 = uint64_t{0x3FE} << 53;
+
+// x is a NaN.
+[[nodiscard]] _CCCL_FPMP_CORE_API bool __internal_fpmp2_is_nan(const double __x) noexcept
+{
+  return ::cuda::__internal_fpmp2_abs_bits2(__x) > ::cuda::__fpmp2_inf_bits2;
+}
 
 #endif // _CCCL_FPMP_USE_LIB
 _CCCL_END_NAMESPACE_CUDA
