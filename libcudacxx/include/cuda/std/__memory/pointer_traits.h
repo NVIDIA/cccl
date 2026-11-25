@@ -30,13 +30,29 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
-#  include <iterator> // for ::__gnu_cxx::__normal_iterator
-
-#  include <debug/safe_iterator.h>
-#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
-
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
+// Only declare the debug iterators of libstdc++, like <debug/formatter.h> of libstdc++ does
+namespace __gnu_cxx
+{
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+template <typename _Iterator, typename _Container>
+class __normal_iterator;
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace __gnu_cxx
+
+namespace __gnu_debug
+{
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9)
+template <typename _Iterator, typename _Sequence, typename _Category>
+class _Safe_iterator;
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9) ^^^ / vvv _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) vvv
+template <typename _Iterator, typename _Sequence>
+class _Safe_iterator;
+#  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
+} // namespace __gnu_debug
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -163,11 +179,12 @@ public:
 
 #if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
 // The debug iterators of libstdc++ verify in operator-> that they are dereferenceable, which end iterators are not
-template <class _Tp, class _Container, class _Sequence>
+// The number of template parameters of _Safe_iterator depends on the version of libstdc++
+template <class _Tp, class _Container, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-pointer_traits<::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Sequence>>
+pointer_traits<::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Args...>>
 {
-  using pointer         = ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Sequence>;
+  using pointer         = ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Args...>;
   using element_type    = _Tp;
   using difference_type = ptrdiff_t;
 
