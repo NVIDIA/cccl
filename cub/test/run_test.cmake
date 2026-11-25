@@ -126,6 +126,14 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     )
   endif()
 
+  # The future arch test does not initialize a CUDA context which breaks compute-sanitizer.
+  if ("${TEST}" MATCHES "/cub.*test.future_arch$")
+    message(
+      FATAL_ERROR
+      "CCCL_SKIP_TEST:\n${TEST} intentionally throws CUDA errors. Skipping."
+    )
+  endif()
+
   if (TYPE STREQUAL "Catch2")
     list(APPEND ARGS "--durations" "yes" "~[skip-cs-${tool}]")
   endif()
