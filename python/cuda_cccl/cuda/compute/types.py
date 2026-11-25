@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import get_type_hints
+from typing import Any, TypeVar, get_type_hints
 
 import numpy as np
 
@@ -269,8 +269,13 @@ def _annotation_to_type_descriptor(annotation):
     if _is_struct_type(annotation):
         return annotation._type_descriptor  # type: ignore[union-attr]
 
-    # numpy dtype or type
-    return from_numpy_dtype(np.dtype(annotation))
+    if annotation is Any or isinstance(annotation, type(TypeVar("T"))):
+        return None
+
+    dtype = np.dtype(annotation)
+    if dtype.hasobject:
+        return None
+    return from_numpy_dtype(dtype)
 
 
 def signature_from_annotations(py_func):
@@ -285,8 +290,10 @@ def signature_from_annotations(py_func):
     # Try to get input types from annotations
     for name in arg_names:
         if name in annotations:
-            input_tds.append(_annotation_to_type_descriptor(annotations[name]))
-            break
+            input_td = _annotation_to_type_descriptor(annotations[name])
+            if input_td is not None:
+                input_tds.append(input_td)
+                break
 
     if "return" in annotations:
         output_td = _annotation_to_type_descriptor(annotations["return"])
