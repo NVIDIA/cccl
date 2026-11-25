@@ -272,7 +272,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     auto out_result = c2h::make_device_buffer<output_t>(stream, num_segments, cuda::no_init);
     cuda::fill_bytes(stream, out_result, 0x5a);
     auto d_out_it      = out_result.data();
-    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    using init_value_t = unwrap_value_t<output_t>;
     device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_value_t{}, stream);
 
     // Verify result

@@ -287,7 +287,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
     cuda::fill_bytes(stream, out_result, 0x5a);
     auto d_out_it      = out_result.data();
-    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    using init_value_t = unwrap_value_t<output_t>;
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value_t{}, num_items, stream);
 
     // Verify result
@@ -323,7 +323,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     auto out_result = c2h::make_device_buffer<output_t>(stream, item_count, cuda::no_init);
     cuda::fill_bytes(stream, out_result, 0x5a);
     auto d_out_it      = out_result.data();
-    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    using init_value_t = unwrap_value_t<output_t>;
     auto d_initial_value =
       c2h::make_device_buffer<init_value_t>(stream, {static_cast<init_value_t>(*unwrap_it(&init_value))});
     const auto future_init_value = cub::FutureValue<init_value_t>(d_initial_value.data());
