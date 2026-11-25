@@ -129,11 +129,11 @@ __host__ __device__ void test_seed_sequence()
   second.seed(seq);
   REQUIRE(first == second);
 
-  // test distribution correctness
-  cuda::std::uniform_int_distribution<unsigned> dist{0, 17};
+  // Use the engine to draw values in the closed interval [0, 17].
   for (int i = 0; i < 100; ++i)
   {
-    REQUIRE(dist(first) <= 17);
+    const auto value = cuda::std::uniform_int_distribution<unsigned>{0, 17}(first);
+    REQUIRE(value <= 17);
   }
 }
 

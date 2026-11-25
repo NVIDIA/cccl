@@ -148,16 +148,17 @@ public:
     // 2.
     for (size_t __k = 0; __k < __m; ++__k)
     {
-      result_type __k_mod_n   = __k % __n;
-      result_type __k_p_mod_n = (__k + __p) % __n;
-      result_type __k_q_mod_n = (__k + __q) % __n;
+      const result_type __k_mod_n   = __k % __n;
+      const result_type __k_p_mod_n = (__k + __p) % __n;
+      const result_type __k_q_mod_n = (__k + __q) % __n;
       // 2.1
       const result_type __r1 =
         1664525 * __generate_T(__begin[__k_mod_n] ^ __begin[__k_p_mod_n] ^ __begin[(__k - 1) % __n]);
       // 2.2
-      result_type __r2 = (__k == 0)   ? __r1 + __z
-                       : (__k <= __z) ? __r1 + __k_mod_n + __data_[__k - 1]
-                                      : __r1 + __k_mod_n;
+      const result_type __r2 =
+        (__k == 0)     ? __r1 + __z
+        : (__k <= __z) ? __r1 + __k_mod_n + __data_[__k - 1]
+                       : __r1 + __k_mod_n;
       // 2.3
       __begin[__k_p_mod_n] += __r1;
       __begin[__k_p_mod_n] &= 0xFFFFFFFF;
@@ -169,9 +170,9 @@ public:
     // 3.
     for (size_t __k = __m; __k < __m + __n; ++__k)
     {
-      result_type __k_mod_n   = __k % __n;
-      result_type __k_p_mod_n = (__k + __p) % __n;
-      result_type __k_q_mod_n = (__k + __q) % __n;
+      const result_type __k_mod_n   = __k % __n;
+      const result_type __k_p_mod_n = (__k + __p) % __n;
+      const result_type __k_q_mod_n = (__k + __q) % __n;
       // 3.1
       const result_type __r3 =
         1566083941 * __generate_T(__begin[__k_mod_n] + __begin[__k_p_mod_n] + __begin[(__k - 1) % __n]);
