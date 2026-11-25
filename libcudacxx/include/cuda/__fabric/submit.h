@@ -61,10 +61,11 @@ _CCCL_DEVICE_API inline void submit_commit_group() noexcept
 //!
 //! @tparam _PendingGroups Number of recent fabric submit groups allowed to remain pending; defaults to zero,
 //! which waits for all groups.
-//! @note Before CUDA 13.5, only zero is supported and all submitted requests are waited on
-//! (including those submitted with @c submit() or @c submit_restrict_fetching()).
-//! @note With CUDA 13.5 and later, requests must be submitted using @c submit_commit_group(); plain @c submit()
-//! does not create groups for this wait. Wait for all groups before arriving on the barrier tracking their requests.
+//! @note Before CUDA 13.5, submit groups were unavailable: only zero is supported,
+//! and this waits for local shared-memory reads of requests submitted with @c submit().
+//! @note CUDA 13.5 introduced @c submit_commit_group(). With CUDA 13.5 and later, this waits
+//! only on groups created by that function; requests submitted with @c submit() are not tracked.
+//! Before arriving on a barrier, wait for the submit groups containing the requests tracked by that barrier.
 //! @note Requires SM100 or later. This permits input reuse; it does not establish remote completion or inspect status.
 template <unsigned int _PendingGroups = 0>
 _CCCL_DEVICE_API void wait_reads() noexcept
