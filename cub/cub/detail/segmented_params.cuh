@@ -365,7 +365,8 @@ normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __a
 }
 
 template <class Arg, class Bounds>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto normalize_param(const ::cuda::args::deferred<Arg, Bounds>& __arg) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+normalize_param(const ::cuda::args::deferred<Arg, Bounds>& __arg) noexcept
 {
   if constexpr (::cuda::std::is_same_v<Bounds, ::cuda::args::no_bounds>)
   {
