@@ -809,20 +809,24 @@ private:
     }
   }
 
-  template <typename OutputT>
+  template <bool UseUninitializedCopy = false, typename OutputT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE static void
   CopySingleItem(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     if constexpr (::cuda::std::is_same_v<T, OutputT>)
     {
-      if (input_items != output_items)
+      if (input_items == output_items)
       {
-        _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+        return;
       }
+    }
+    if constexpr (UseUninitializedCopy)
+    {
+      _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
     }
     else
     {
-      _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+      output_items[0] = input_items[0];
     }
   }
 
@@ -1076,7 +1080,7 @@ public:
   {
     if constexpr (ItemsPerThread == 1)
     {
-      CopySingleItem(input_items, output_items);
+      CopySingleItem<!WarpTimeSlicing>(input_items, output_items);
     }
     else
     {

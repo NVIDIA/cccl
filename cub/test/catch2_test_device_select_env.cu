@@ -1044,7 +1044,8 @@ CUB_TEST("DeviceSelect::If in-place works with single-item transpose loads",
   const less_than_t<int> le{d_data[num_items / 2]};
 
   c2h::host_vector<int> reference = d_data;
-  std::stable_partition(reference.begin(), reference.end(), le);
+  const auto reference_boundary   = std::stable_partition(reference.begin(), reference.end(), le);
+  const int expected_num_selected = static_cast<int>(reference_boundary - reference.begin());
 
   c2h::device_vector<int> d_num_selected(1, 0);
   const auto env = cuda::execution::tune(single_item_transpose_select_tuning<load_algo>{});
@@ -1052,8 +1053,9 @@ CUB_TEST("DeviceSelect::If in-place works with single-item transpose loads",
   REQUIRE(cudaSuccess == cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, le, env));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  d_data.resize(d_num_selected[0]);
-  reference.resize(d_num_selected[0]);
+  REQUIRE(d_num_selected[0] == expected_num_selected);
+  d_data.resize(expected_num_selected);
+  reference.resize(expected_num_selected);
   REQUIRE(reference == d_data);
 }
 
