@@ -16,10 +16,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__cmath/abs.h>
-#include <cuda/std/__cmath/logarithms.h>
-#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/cmath>
 #include <cuda/std/numbers>
 #include <cuda/std/random>
 

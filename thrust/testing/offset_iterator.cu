@@ -6,8 +6,8 @@
 #include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/offset_iterator.h>
 
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
 
 #include <cstddef>
 

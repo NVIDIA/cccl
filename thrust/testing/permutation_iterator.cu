@@ -9,9 +9,8 @@
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
 
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

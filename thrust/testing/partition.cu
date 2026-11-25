@@ -8,8 +8,8 @@
 #include <thrust/sort.h>
 
 #include <cuda/functional>
-#include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

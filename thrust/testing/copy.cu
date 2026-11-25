@@ -2,7 +2,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/internal_functional.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_ptr.h>
@@ -18,9 +17,8 @@
 
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <array>

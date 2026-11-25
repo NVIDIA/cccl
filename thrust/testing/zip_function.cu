@@ -11,9 +11,8 @@
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
-#include <cuda/std/__iterator/access.h>
-#include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/iterator>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

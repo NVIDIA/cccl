@@ -3,8 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/mismatch.h>
 
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/functional>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 template <class Vector>

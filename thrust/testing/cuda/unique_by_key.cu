@@ -1,11 +1,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/unique.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 

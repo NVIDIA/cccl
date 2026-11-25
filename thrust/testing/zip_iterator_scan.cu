@@ -3,8 +3,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <cstddef>
 

@@ -7,8 +7,8 @@
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 

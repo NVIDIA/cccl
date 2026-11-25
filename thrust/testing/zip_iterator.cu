@@ -13,11 +13,8 @@
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tie.h>
-#include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/functional>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

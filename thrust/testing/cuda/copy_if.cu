@@ -5,10 +5,10 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

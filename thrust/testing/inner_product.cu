@@ -1,4 +1,3 @@
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_ptr.h>
@@ -10,9 +9,8 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

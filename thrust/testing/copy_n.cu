@@ -8,7 +8,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <iterator>
 #include <list>

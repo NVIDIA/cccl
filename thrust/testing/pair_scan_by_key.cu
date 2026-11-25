@@ -3,7 +3,7 @@
 #include <thrust/scan.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
 #include <cstddef>

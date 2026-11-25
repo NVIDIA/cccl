@@ -6,11 +6,11 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/iterator>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

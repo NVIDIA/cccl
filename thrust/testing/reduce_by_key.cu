@@ -5,9 +5,8 @@
 #include <thrust/reduce.h>
 #include <thrust/unique.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/functional>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

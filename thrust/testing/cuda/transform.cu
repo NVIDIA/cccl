@@ -1,18 +1,15 @@
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/config/namespace.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/not_fn.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__utility/move.h>
+#include <cuda/std/functional>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <cstdint>

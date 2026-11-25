@@ -5,7 +5,7 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/transform_reduce.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

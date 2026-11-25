@@ -8,7 +8,7 @@
 #include <thrust/remove.h>
 
 #include <cuda/functional>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <cstddef>
 #include <stdexcept>

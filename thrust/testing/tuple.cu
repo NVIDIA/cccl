@@ -5,8 +5,6 @@
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-
 #include <unittest/unittest.h>
 
 template <typename T>

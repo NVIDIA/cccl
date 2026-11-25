@@ -1,4 +1,5 @@
-#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/config.h>
+
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
@@ -8,12 +9,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/unique.h>
 
-#include <cuda/std/__cccl/cuda_toolkit.h>
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__cccl/visibility.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/iterator>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <cstdint>

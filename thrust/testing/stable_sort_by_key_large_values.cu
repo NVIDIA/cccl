@@ -3,8 +3,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-
 #include <cstddef>
 
 #include <unittest/unittest.h>

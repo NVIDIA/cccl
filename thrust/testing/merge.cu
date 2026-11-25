@@ -8,7 +8,7 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

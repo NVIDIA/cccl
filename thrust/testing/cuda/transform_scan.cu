@@ -1,11 +1,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/scan.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform_scan.h>
 
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

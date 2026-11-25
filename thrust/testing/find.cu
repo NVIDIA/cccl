@@ -7,10 +7,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

@@ -8,7 +8,7 @@
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

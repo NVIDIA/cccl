@@ -8,9 +8,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 
-#include <cuda/std/__cccl/diagnostic.h>
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/iterator>
 
 #include <algorithm>
 #include <cstddef>

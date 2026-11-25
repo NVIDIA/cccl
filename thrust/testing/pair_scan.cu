@@ -3,7 +3,7 @@
 #include <thrust/scan.h>
 #include <thrust/transform.h>
 
-#include <cuda/__functional/maximum.h>
+#include <cuda/functional>
 #include <cuda/std/utility>
 
 #include <cstddef>

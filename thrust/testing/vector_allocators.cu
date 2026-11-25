@@ -5,8 +5,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/iterator>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

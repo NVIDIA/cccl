@@ -9,10 +9,8 @@
 #include <thrust/tabulate.h>
 #include <thrust/transform_scan.h>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/functional>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <cstddef>

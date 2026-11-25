@@ -1,5 +1,6 @@
+#include <thrust/detail/config.h>
+
 #include <thrust/count.h>
-#include <thrust/detail/config/device_system.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_malloc_allocator.h>

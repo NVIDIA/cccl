@@ -1,6 +1,7 @@
 #pragma once
 
-#include <thrust/detail/config/namespace.h>
+#include <thrust/detail/config.h>
+
 #include <thrust/execution_policy.h>
 
 #include <cuda/std/cstdint>

@@ -6,8 +6,8 @@
 #include <thrust/iterator/retag.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/functional>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

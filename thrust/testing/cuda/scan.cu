@@ -1,14 +1,12 @@
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/seq.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/scan.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstdio>
 

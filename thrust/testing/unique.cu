@@ -5,9 +5,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/unique.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/array>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

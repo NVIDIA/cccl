@@ -5,8 +5,6 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-
 #include <unittest/unittest.h>
 
 template <typename Iterator>

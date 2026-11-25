@@ -2,7 +2,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/inner_product.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cstddef>
 

@@ -1,13 +1,11 @@
 #include <thrust/iterator/detail/any_assign.h>
-#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/zip_iterator.h>
 
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/iterator>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 

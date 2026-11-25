@@ -1,8 +1,9 @@
 // Suppress deprecations for trivial relocation traits
 #define CCCL_IGNORE_DEPRECATED_API
 
+#include <thrust/detail/config.h>
+
 #include <thrust/complex.h>
-#include <thrust/detail/config/device_system.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
@@ -15,12 +16,12 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include <string>

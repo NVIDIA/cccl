@@ -3,8 +3,6 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-
 #include <nv/target>
 
 #include <unittest/unittest.h>

@@ -3,19 +3,17 @@
 
 #pragma once
 
-#include <cuda/__cccl_config>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__hierarchy/level_dimensions.h>
-#include <cuda/__utility/no_init.h>
 #include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <cstdio>
 #include <vector>

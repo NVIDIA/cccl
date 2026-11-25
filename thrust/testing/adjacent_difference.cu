@@ -6,7 +6,7 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

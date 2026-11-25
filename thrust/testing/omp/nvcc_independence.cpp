@@ -5,7 +5,7 @@
 #include <thrust/sort.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

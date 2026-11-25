@@ -4,8 +4,8 @@
 #include <thrust/host_vector.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 
 #include <vector>
 

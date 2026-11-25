@@ -3,7 +3,7 @@
 #include <thrust/find.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cstddef>
 

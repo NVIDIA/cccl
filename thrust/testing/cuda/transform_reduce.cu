@@ -1,9 +1,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform_reduce.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

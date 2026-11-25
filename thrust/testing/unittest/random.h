@@ -1,6 +1,7 @@
 #pragma once
 
-#include <thrust/detail/config/namespace.h>
+#include <thrust/detail/config.h>
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>

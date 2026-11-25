@@ -7,8 +7,9 @@
 #include <thrust/universal_vector.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/functional>
+#include <cuda/std/memory>
 
 #include <cstddef>
 #include <memory>

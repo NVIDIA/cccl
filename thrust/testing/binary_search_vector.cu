@@ -1,6 +1,5 @@
 #include <thrust/binary_search.h>
 #include <thrust/detail/allocator/allocator_system.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>

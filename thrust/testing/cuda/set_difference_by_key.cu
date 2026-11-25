@@ -1,14 +1,14 @@
 #include <thrust/execution_policy.h>
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
-#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <unittest/unittest.h>
 

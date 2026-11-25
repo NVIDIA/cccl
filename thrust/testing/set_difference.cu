@@ -8,8 +8,7 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__cccl/compiler.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

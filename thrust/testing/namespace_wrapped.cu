@@ -5,13 +5,14 @@
 #define CUB_WRAPPED_NAMESPACE    wrap_cub
 #define CCCL_IGNORE_DEPRECATED_API
 
-#include <thrust/detail/config/namespace.h>
+#include <thrust/detail/config.h>
+
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

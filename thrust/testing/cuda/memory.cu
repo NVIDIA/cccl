@@ -1,18 +1,16 @@
-#include <thrust/detail/malloc_and_free.h>
-#include <thrust/detail/pointer.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
-#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/cpp/execution_policy.h>
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/cuda/detail/cross_system.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/system/cuda/memory.h>
 
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

@@ -4,9 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__concepts/semiregular.h>
-#include <cuda/std/__utility/move.h>
+#include <cuda/std/concepts>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <memory>

@@ -1,22 +1,16 @@
 #define CCCL_IGNORE_DEPRECATED_API
 
 #include <thrust/copy.h>
-#include <thrust/detail/use_default.h>
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/detail/any_system_tag.h>
-#include <thrust/iterator/detail/device_system_tag.h>
-#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

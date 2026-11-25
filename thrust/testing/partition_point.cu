@@ -6,7 +6,7 @@
 #include <thrust/partition.h>
 
 #include <cuda/functional>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/iterator>
 
 #include <cstddef>
 

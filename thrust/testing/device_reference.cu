@@ -1,21 +1,17 @@
-#include <thrust/detail/config/device_system.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/reference.h>
+#include <thrust/detail/config.h>
+
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/__type_traits/is_comparable.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
-
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <thrust/iterator/detail/host_system_tag.h>
-#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 TEST_CASE("TestDeviceReferenceConstructorFromDeviceReference", "[device_reference]")
 {

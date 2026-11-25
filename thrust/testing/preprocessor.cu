@@ -1,7 +1,3 @@
-#include <thrust/detail/preprocessor.h>
-
-#include <cuda/std/__cccl/diagnostic.h>
-
 #include <string>
 
 #include <unittest/unittest.h>

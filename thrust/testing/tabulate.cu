@@ -1,12 +1,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/std/__functional/identity.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

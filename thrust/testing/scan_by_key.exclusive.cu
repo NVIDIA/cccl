@@ -7,8 +7,7 @@
 #include <thrust/random.h>
 #include <thrust/scan.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

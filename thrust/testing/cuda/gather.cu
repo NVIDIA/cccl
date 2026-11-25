@@ -2,7 +2,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
 

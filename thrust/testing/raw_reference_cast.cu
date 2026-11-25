@@ -6,7 +6,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/memory.h>
 
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/type_traits>
 
 #include <vector>
 

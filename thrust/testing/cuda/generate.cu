@@ -2,9 +2,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-
-#include <cuda/std/__cccl/execution_space.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cstddef>
 

@@ -3,7 +3,7 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/logical.h>
 
-#include <cuda/std/__functional/identity.h>
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

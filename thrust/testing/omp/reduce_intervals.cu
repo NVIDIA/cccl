@@ -3,10 +3,10 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/internal/decompose.h>
-#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>
+#include <thrust/system/omp/execution_policy.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

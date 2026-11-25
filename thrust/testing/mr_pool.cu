@@ -1,8 +1,7 @@
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/config/memory_resource.h>
-#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>

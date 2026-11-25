@@ -5,8 +5,6 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
 
-#include <cuda/std/__cccl/execution_space.h>
-
 #include <cstddef>
 
 #include <unittest/unittest.h>

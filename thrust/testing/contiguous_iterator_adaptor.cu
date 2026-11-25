@@ -1,20 +1,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <thrust/detail/pointer.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_input_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

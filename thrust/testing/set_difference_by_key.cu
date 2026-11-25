@@ -5,7 +5,7 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/utility>
 
 #include <cstddef>
 
