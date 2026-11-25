@@ -25,8 +25,15 @@
 #if _CCCL_HAS_HOST_STD_LIB()
 _CCCL_BEGIN_NAMESPACE_STD
 
+// MSVC reports the MSVC STL's own explicit specialization std::tuple<> at the first declaration of std::tuple, which
+// is this one unless <utility> was included before
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(5285) // cannot declare a specialization for 'std::tuple'
+
 template <class...>
 class tuple;
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_STD
 #endif // _CCCL_HAS_HOST_STD_LIB()
