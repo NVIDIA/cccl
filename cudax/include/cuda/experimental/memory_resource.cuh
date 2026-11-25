@@ -24,4 +24,6 @@
 #include <cuda/__memory_resource/synchronous_resource_adapter.h>
 // IWYU pragma: end_exports
 
+#include <cuda/experimental/__memory_resource/locality_domain_striped_memory_resource.cuh>
+
 #endif // __CUDAX_MEMORY_RESOURCE___
