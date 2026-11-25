@@ -42,12 +42,10 @@
 #include <cstdio>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/generator_common.h>
-#include <c2h/half.cuh>
 #include <c2h/utility.h>
 #include <c2h/vector_generators.h>
 

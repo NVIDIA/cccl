@@ -23,10 +23,8 @@
 #include "catch2_test_device_reduce.cuh"
 #include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
-#include <c2h/half.cuh>
 #include <c2h/operator.cuh>
 #include <c2h/vector_generators.h>
 

@@ -8,9 +8,8 @@
 
 #include "catch2_test_numeric_helpers.cuh"
 #include "cub_test_macros.h"
-#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
-#include <c2h/half.cuh>
+#include <c2h/extended_types.h>
 
 template <class WrappedT, class UnwrappedT>
 struct unwrap_test_types

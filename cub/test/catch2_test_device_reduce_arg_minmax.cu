@@ -25,7 +25,6 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
-#include <c2h/half.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);

@@ -13,7 +13,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/half.cuh>
+#include <c2h/extended_types.h>
 
 CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)
 {

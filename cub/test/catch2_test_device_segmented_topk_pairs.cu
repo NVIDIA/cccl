@@ -47,7 +47,6 @@
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
-#include <c2h/half.cuh>
 #include <c2h/vector_generators.h>
 #include <catch2/generators/catch_generators.hpp>
 
