@@ -8,8 +8,6 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__cccl/visibility.h>
-
 #include <cstddef>
 #include <cstdint>
 

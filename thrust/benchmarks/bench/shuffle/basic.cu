@@ -5,8 +5,6 @@
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
 
-#include <cuda/std/__cccl/extended_data_types.h>
-
 #include <cstddef>
 #include <cstdint>
 

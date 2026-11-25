@@ -5,7 +5,6 @@
 #include <thrust/uninitialized_copy.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 

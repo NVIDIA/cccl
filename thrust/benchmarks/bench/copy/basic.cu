@@ -5,7 +5,6 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #include <cstddef>

@@ -4,8 +4,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 
-#include <cuda/std/__cccl/extended_data_types.h>
-
 #include <cstddef>
 #include <cstdint>
 

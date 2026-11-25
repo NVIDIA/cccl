@@ -11,7 +11,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform_scan.h>
 
-#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__functional/operations.h>
 
 #include <cstddef>
