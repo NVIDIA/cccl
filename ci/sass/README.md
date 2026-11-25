@@ -3,7 +3,8 @@
 This directory holds the scripts that `.github/workflows/sass-diff.yml` uses to
 compare the generated machine code of the benchmarks of a project before and
 after the change in a pull request. The `sass:` section of `ci/matrix.yaml`
-lists the projects.
+lists the projects: CUB, Thrust and, for libcu++, the fpmp benchmarks under
+`libcudacxx/benchmarks/bench/fp/fpmp`, which its `target_filters` entry selects.
 
 The purpose is to tell the PR author when a benchmark run is necessary. A SASS
 change does not always change the performance, but it is the signal that the

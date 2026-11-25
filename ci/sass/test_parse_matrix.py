@@ -126,12 +126,13 @@ def test_the_filters_reach_the_workflow_as_json() -> None:
 
 def test_each_project_has_its_own_entry() -> None:
     """The ID names the artifacts and the build directory, so it must be unique."""
-    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
-        "include"
-    ]
+    rows = parse_matrix(
+        MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust", "libcudacxx"]
+    )["include"]
     assert [(row["id"], row["project"]) for row in rows] == [
         ("cub-benchmarks", "cub"),
         ("thrust-benchmarks", "thrust"),
+        ("libcudacxx-fpmp-benchmarks", "libcudacxx"),
     ]
 
 
@@ -141,6 +142,7 @@ def test_each_project_has_its_own_entry() -> None:
         (["cub"], ["cub-benchmarks"]),
         (["thrust"], ["thrust-benchmarks"]),
         (["cub", "thrust"], ["cub-benchmarks", "thrust-benchmarks"]),
+        (["libcudacxx"], ["libcudacxx-fpmp-benchmarks"]),
         ([], []),
     ],
 )
@@ -152,7 +154,7 @@ def test_projects_select_the_entries(projects, expected_ids) -> None:
 
 def test_projects_without_an_entry_are_ignored() -> None:
     """`inspect_changes.py` also reports projects that have no SASS comparison."""
-    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["libcudacxx", "thrust"])[
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cudax", "thrust"])[
         "include"
     ]
     assert [row["id"] for row in rows] == ["thrust-benchmarks"]

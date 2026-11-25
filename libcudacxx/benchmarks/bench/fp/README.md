@@ -103,6 +103,27 @@ clk/ev, Gain lat, SASS, Regs, Worst at, Device`, plus one row per function for t
 elements per second) stay in the per-family CSVs. The JSON files are what `ci/bench` compares
 between two refs.
 
+## In CI
+
+Nothing in CI runs a benchmark on its own; the fpmp benchmarks are hooked in two ways, and
+accuracy has its own gate:
+
+- **SASS diff** (`sass:` entry `libcudacxx-fpmp-benchmarks` of `ci/matrix.yaml`): whenever a PR
+  touches libcu++, the `SASS Diff` job builds the family executables at the merge base and at the
+  PR on a CPU runner, disassembles them and comments on the PR when the machine code changed.
+  Since each cell is a noinline function of its own, the comment names the function, type and
+  level whose code changed. No GPU, no timing, never a failure.
+- **Throughput and latency** are measured on request: in the PR, add
+  `'^libcudacxx\.bench\.fp\.fpmp\.'` under `benchmarks.filters.cpp` in `ci/bench.yaml`, enable a
+  GPU, push (with `[bench-only]` in the commit message), read the comparison, and reset the file
+  before merging. Locally, `libcudacxx/benchmarks/fp/fp_bench.py --compare-ref origin/main`
+  answers the same question.
+- **Accuracy** is gated by the fpmp unit tests,
+  `libcudacxx/test/libcudacxx/cuda/fp/units/fpmp/math_*.pass.cpp`, which check worst-case
+  arguments, special values and exact cases at a few u² in every libcu++ GPU test job. The
+  `Check` column of a benchmark run complements them with a sweep of 2^20 random pairs per cell
+  at the gross-error thresholds (1e-7 for fp32mp2, 1e-15 for fp64mp2).
+
 ## Adding a function
 
 Declare it in its family file with `FPB_OP1`, `FPB_OP2` or `FPB_OP3`: the pair expression, the

@@ -20,6 +20,7 @@ Compare project benchmark SASS between two git refs, for example:
 
   $0 cub origin/main HEAD -arch all-major-cccl
   $0 thrust origin/main HEAD -arch all-major-cccl
+  $0 libcudacxx origin/main HEAD -arch all-major-cccl -target-filter '^libcudacxx\\.bench\\.fp\\.fpmp\\.'
 
 Options:
   -preset <name>            CMake preset. Default: "<project>-benchmark".
@@ -52,8 +53,8 @@ repo_root="$(cd "${ci_dir}/.." && pwd)"
 readonly repo_root
 
 readonly PROJECT="$1"
-if [[ "${PROJECT}" != 'cub' && "${PROJECT}" != 'thrust' ]]; then
-  echo "Unknown project '${PROJECT}'. Must be one of [cub, thrust]" 1>&2
+if [[ "${PROJECT}" != 'cub' && "${PROJECT}" != 'thrust' && "${PROJECT}" != 'libcudacxx' ]]; then
+  echo "Unknown project '${PROJECT}'. Must be one of [cub, thrust, libcudacxx]" 1>&2
   exit 1
 fi
 readonly BASE_REF="$2"

@@ -50,11 +50,19 @@ endfunction()
 
 create_benchmark_registry()
 
+# The object files of each benchmark target, listed for ci/sass/sass_diff.sh, which dumps
+# and compares their SASS (the linked nvbench and helper objects are left out).
+set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
+
 function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
   cccl_add_executable(${bench_target} SOURCES "${bench_src}")
+  file(
+    GENERATE OUTPUT "${SASS_OBJECTS_DIR}/${bench_target}.objects"
+    CONTENT "$<JOIN:$<TARGET_OBJECTS:${bench_target}>,\n>\n"
+  )
   target_link_libraries(
     ${bench_target}
     PRIVATE libcudacxx::libcudacxx cccl.nvbench_helper nvbench::main
