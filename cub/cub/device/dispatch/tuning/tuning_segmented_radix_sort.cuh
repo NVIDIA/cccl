@@ -22,7 +22,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/is_same.h>
 
 #if _CCCL_HAS_CONCEPTS()
@@ -50,7 +50,9 @@ struct SegmentedRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedRadixSortPolicy& p)
   {
     return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
               << ", .alternate_pass = " << p.alternate_pass << " }";

@@ -418,9 +418,11 @@ and with designated initializers:
 
       friend constexpr bool operator==(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
       friend constexpr bool operator!=(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
-      friend std::ostream& operator<<(std::ostream& os, const AlgorithmPolicy& p) { ... }
+      template <class CharT, class Traits>
+      friend std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const AlgorithmPolicy& p) { ... }
     };
 
+The stream operator is a template over the stream type, so that declaring it only requires ``<iosfwd>``.
 Tuning policies can have various complexities and contain nested structures.
 Policies are defined in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 
