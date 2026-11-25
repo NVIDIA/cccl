@@ -17,9 +17,9 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_exchange.cuh>
 #include <cub/warp/warp_utils.cuh>

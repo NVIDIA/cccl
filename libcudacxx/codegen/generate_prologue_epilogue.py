@@ -51,46 +51,15 @@ FOOTER = """\
 // NO include guards here (this file is included multiple times)
 """
 
+# A macro can only break code that spells its name, so names that no CCCL header spells
+# between the prologue and the epilogue, like most __declspec modifiers, are not listed.
 # Standard attribute-tokens like `deprecated` and names declared by the standard library
-# like `allocator` or `thread` are not listed, because a program must not define them as
-# macros ([macro.names]). `min` and `max` are the exception, because <windows.h> defines
-# them.
+# like `allocator` or `thread` are not listed either, because a program must not define
+# them as macros ([macro.names]). `min` and `max` are the exception, because <windows.h>
+# defines them. Names that only spell vendor attributes, like `clang` or `intrinsic`, are
+# not listed to keep the prologue cheap.
 PUSH_POP_MACROS = {
-    "__declspec modifiers": [
-        "appdomain",
-        "code_seg",
-        "dllimport",
-        "dllexport",
-        "empty_bases",
-        "hybrid_patchable",
-        "jitintrinsic",
-        "lifetimebound",
-        "naked",
-        "noalias",
-        "noinline",
-        "nothrow",
-        "novtable",
-        "no_sanitize_address",
-        "process",
-        "property",
-        "restrict",
-        "safebuffers",
-        "selectany",
-        "spectre",
-        "uuid",
-    ],
-    "[[msvc::attribute]] attributes": [
-        "msvc",
-        "flatten",
-        "forceinline",
-        "forceinline_calls",
-        "intrinsic",
-        "noinline_calls",
-        "no_tls_guard",
-    ],
     "Windows nasty macros": ["min", "max"],
-    "sal.h on Windows": ["__callback"],
-    "other macros": ["clang"],
 }
 
 

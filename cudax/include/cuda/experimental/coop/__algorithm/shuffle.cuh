@@ -44,7 +44,7 @@ template <bool _Dummy = false>
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_level, thread_level>
-                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::bound_level, warp_level>)
+                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank)
 {
   const auto& __mapping_result = __group.__mapping_result();

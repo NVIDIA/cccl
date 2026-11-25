@@ -146,7 +146,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
   {
-    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::bound_level>(
+    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::boundary_level>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -155,7 +155,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
   {
-    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::bound_level>(
+    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::boundary_level>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -164,7 +164,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::bound_level>(
+    return ::cuda::experimental::coop::__group_as_map<true, _Unit, typename _ParentGroup::boundary_level>(
       __prev_mapping_result, __unit_counts_);
   }
 
@@ -173,7 +173,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::bound_level>(
+    return ::cuda::experimental::coop::__group_as_map<false, _Unit, typename _ParentGroup::boundary_level>(
       __prev_mapping_result, __unit_counts_);
   }
 };
@@ -265,14 +265,14 @@ public:
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::bound_level>(__prev);
+    return __do_map<true, _Unit, typename _ParentGroup::boundary_level>(__prev);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::bound_level>(__prev);
+    return __do_map<false, _Unit, typename _ParentGroup::boundary_level>(__prev);
   }
 };
 

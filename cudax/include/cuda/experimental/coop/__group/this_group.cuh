@@ -141,7 +141,7 @@ class __this_group_base
 
 public:
   using unit_level                                 = _Level;
-  using bound_level                                = _Level;
+  using boundary_level                             = _Level;
   using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
   using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
   using hierarchy_type                             = _Hierarchy;

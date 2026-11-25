@@ -190,7 +190,7 @@ class interwarp_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static auto
   __make_instance(_Range& __barrier_ids, const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
-    using _Bound = typename _ParentGroup::bound_level;
+    using _Bound = typename _ParentGroup::boundary_level;
 
     constexpr auto __static_group_count      = _MappingResult::static_group_count();
     constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_Range>;
