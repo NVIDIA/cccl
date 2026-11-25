@@ -580,11 +580,12 @@ auto Equals(const cuda::buffer<T, Props...>& expected) -> c2h::detail::vector_ma
 #include <cuda/std/utility>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename T1,
-          typename T2,
-          // provide this operator only when the pair's content is also streamable
-          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
-                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
+template <
+  typename T1,
+  typename T2,
+  // provide this operator only when the pair's content is also streamable
+  ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream&>()
+                               << ::cuda::std::declval<const T1&>() << ::cuda::std::declval<const T2&>())>* = nullptr>
 ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";

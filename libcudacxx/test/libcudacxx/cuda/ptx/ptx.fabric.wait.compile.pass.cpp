@@ -9,9 +9,8 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// Disable this test with nvcc 13.5 on windows, due to fabric.wait.sync_restrict::reads deprecation warnings promoted to
-// errors.
-// UNSUPPORTED: windows && nvcc-13.5
+// PTX 9.5 warns about fabric.wait.sync_restrict::reads and ptxas has no warning switch specific to it.
+// ADDITIONAL_COMPILE_OPTIONS_PTXAS: --disable-warnings
 
 // <cuda/ptxs/fabric_wait.h>
 
