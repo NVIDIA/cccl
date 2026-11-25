@@ -29,8 +29,7 @@
 #include <thrust/random/detail/random_core_access.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 THRUST_NAMESPACE_BEGIN
 

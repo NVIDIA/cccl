@@ -18,8 +18,7 @@
 #include <thrust/random/uniform_real_distribution.h>
 
 #include <cuda/std/__cmath/lerp.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 THRUST_NAMESPACE_BEGIN
 
