@@ -15,7 +15,10 @@
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/array>
 
+#include <algorithm>
+#include <numeric>
 #include <sstream>
 
 #include "catch2_large_problem_helper.cuh"
@@ -569,6 +572,30 @@ CUB_TEST("DeviceTransform::Fill", "[device][transform]", CUB_SMALL)
   // compute reference and verify
   const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
+}
+
+// a power-of-two size selects the vectorized kernel
+using large_pow2_t = cuda::std::array<int, 512>;
+
+CUB_TEST("DeviceTransform::Fill large power-of-two type", "[device][transform]", CUB_SMALL)
+{
+  // fills of large values use one item per thread (#11758)
+  using policy_selector_t =
+    cub::detail::transform::policy_selector_from_types<false, true, cuda::std::tuple<>, large_pow2_t*>;
+  for (const int cc : {75, 80, 90, 100, 120})
+  {
+    CAPTURE(cc);
+    REQUIRE(policy_selector_t{}(cuda::compute_capability{cc}).vectorized.items_per_thread == 1);
+  }
+
+  const int num_items = GENERATE(100, 10'000); // try to hit the small and full tile code paths
+  large_pow2_t value{};
+  std::iota(value.begin(), value.end(), 0);
+  c2h::device_vector<large_pow2_t> result(num_items, thrust::no_init);
+  fill(result.begin(), num_items, value);
+
+  const c2h::host_vector<large_pow2_t> result_h = result;
+  REQUIRE(std::count(result_h.begin(), result_h.end(), value) == num_items);
 }
 
 CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][transform]", CUB_SMALL)
