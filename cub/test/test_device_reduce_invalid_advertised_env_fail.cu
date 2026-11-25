@@ -5,7 +5,6 @@
 
 #include <cuda/execution>
 #include <cuda/stream>
-#include <cuda/stream_ref>
 
 struct invalid_env
 {

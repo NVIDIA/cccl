@@ -5,9 +5,9 @@
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
 #include <cuda/devices>
-#include <cuda/functional>
 #include <cuda/launch> // IWYU pragma: keep
 #include <cuda/memory_resource>
 #include <cuda/std/execution>

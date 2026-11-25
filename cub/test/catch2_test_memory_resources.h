@@ -7,7 +7,7 @@
 
 #include <cuda/memory_resource>
 #include <cuda/std/__exception/terminate.h>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cstddef>
 

@@ -13,7 +13,6 @@
 #include <cuda/memory_resource>
 #include <cuda/std/memory>
 #include <cuda/stream>
-#include <cuda/utility>
 
 #include <cstddef>
 #include <cstdint>

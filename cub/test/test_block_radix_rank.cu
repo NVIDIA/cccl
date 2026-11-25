@@ -7,7 +7,6 @@
 #include <cub/util_debug.cuh>
 
 #include <cuda/std/type_traits>
-#include <cuda/utility>
 
 #include <cstdint>
 #include <cstdlib>
