@@ -30,10 +30,16 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/prologue.h>
-
 #if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
-// Only declare the debug iterators of libstdc++, like <debug/formatter.h> of libstdc++ does
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9)
+// <debug/formatter.h> uses std::__addressof and std::iterator_traits without including them
+#    include <bits/move.h>
+#    include <bits/stl_iterator_base_types.h>
+#    include <debug/formatter.h> // for ::__gnu_cxx::__normal_iterator and ::__gnu_debug::_Safe_iterator
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9) ^^^ / vvv _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) vvv
+#    include <cuda/std/__cccl/prologue.h>
+
+// <debug/formatter.h> only declares __normal_iterator since libstdc++ 9, and older versions do not change anymore
 namespace __gnu_cxx
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -44,15 +50,15 @@ _GLIBCXX_END_NAMESPACE_VERSION
 
 namespace __gnu_debug
 {
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9)
-template <typename _Iterator, typename _Sequence, typename _Category>
-class _Safe_iterator;
-#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9) ^^^ / vvv _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) vvv
 template <typename _Iterator, typename _Sequence>
 class _Safe_iterator;
-#  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
 } // namespace __gnu_debug
+
+#    include <cuda/std/__cccl/epilogue.h>
+#  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
 #endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
+
+#include <cuda/std/__cccl/prologue.h> // NOLINT(readability-duplicate-include)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -233,6 +239,6 @@ _CCCL_CONCEPT __can_to_address =
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h> // NOLINT(readability-duplicate-include)
 
 #endif // _CUDA_STD___MEMORY_POINTER_TRAITS_H
