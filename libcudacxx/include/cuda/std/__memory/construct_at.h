@@ -40,7 +40,7 @@
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
 // <bits/stl_construct.h> of libstdc++ 9 and older is not self-contained and lacks std::construct_at
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 10) && __has_include(<bits/stl_construct.h>)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 10)
 #    include <bits/stl_construct.h> // for ::std::construct_at
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/construct_at.h>)
 #    include <__memory/construct_at.h> // for ::std::construct_at
