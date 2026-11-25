@@ -172,8 +172,8 @@ def check_storage(root, out, build_dir):
 
 def cccl_root(explicit):
     if explicit:
-        return os.path.abspath(explicit)
-    return git(HERE, "rev-parse", "--show-toplevel")
+        return os.path.realpath(explicit)
+    return os.path.realpath(git(HERE, "rev-parse", "--show-toplevel"))
 
 
 def families(root, bench, wanted):
@@ -201,27 +201,42 @@ def preset_build_dir(root):
 
 
 def cache_vars(build):
-    """The source directory and the architectures of an existing tree, from its CMakeCache.txt."""
+    """The source directory, the architectures and CPM's directory of an existing tree, from its
+    CMakeCache.txt."""
     cache = os.path.join(build, "CMakeCache.txt")
     vals = {}
     if os.path.exists(cache):
         for line in open(cache):
-            for key in ("CMAKE_HOME_DIRECTORY", "CMAKE_CUDA_ARCHITECTURES"):
+            for key in (
+                "CMAKE_HOME_DIRECTORY",
+                "CMAKE_CUDA_ARCHITECTURES",
+                "CPM_DIRECTORY",
+            ):
                 if line.startswith(key + ":"):
                     vals[key] = line.split("=", 1)[1].strip()
     return vals
+
+
+def tree_is_current(have, root, build):
+    """Whether an existing tree was configured for exactly this checkout path. CMake and CPM
+    compare path strings, not what they resolve to: a tree configured before the checkout moved
+    behind a symlink still resolves to it, but CPM's cached directory no longer matches the one
+    its module is included from, and the regeneration fails with "Unknown CMake command
+    CPMAddPackage"."""
+    if not have or not os.path.exists(os.path.join(build, "build.ninja")):
+        return False
+    if os.path.realpath(have.get("CMAKE_HOME_DIRECTORY", "")) != os.path.realpath(root):
+        return False  # another checkout
+    # CMake records CPM's directory resolved, whatever path the source was given as
+    cmake_dir = os.path.join(os.path.realpath(root), "cmake")
+    return have.get("CPM_DIRECTORY", cmake_dir) == cmake_dir
 
 
 def configure(root, build, log_dir, arch, cmake, cpm_cache, nvcc):
     """Configure the preset into `build` unless it is configured for this tree already; an
     existing tree keeps its architectures unless --arch names others."""
     have = cache_vars(build)
-    if (
-        have
-        and os.path.realpath(have.get("CMAKE_HOME_DIRECTORY", ""))
-        == os.path.realpath(root)
-        and os.path.exists(os.path.join(build, "build.ninja"))
-    ):
+    if tree_is_current(have, root, build):
         have_arch = have.get("CMAKE_CUDA_ARCHITECTURES", "")
         if not arch or arch == have_arch:
             log(f"  [CMAKE] {build} (configured, arch {have_arch})")
@@ -231,7 +246,8 @@ def configure(root, build, log_dir, arch, cmake, cpm_cache, nvcc):
     else:
         if have:
             log(
-                f"  [CMAKE] {build} was configured for {have.get('CMAKE_HOME_DIRECTORY')}: configuring again"
+                f"  [CMAKE] {build} was configured for {have.get('CMAKE_HOME_DIRECTORY')}"
+                f" (CPM at {have.get('CPM_DIRECTORY', '?')}): configuring again for {root}"
             )
             shutil.rmtree(build)
         os.makedirs(build, exist_ok=True)
@@ -249,8 +265,9 @@ def configure(root, build, log_dir, arch, cmake, cpm_cache, nvcc):
         if cpm_cache:
             cmd.append(f"-DCPM_SOURCE_CACHE={cpm_cache}")
         log(f"  [CMAKE] {PRESET} -> {build} (arch {arch})")
+    env = dict(os.environ, PWD=root)
     with open(os.path.join(log_dir, "configure.log"), "w") as f:
-        return run(cmd, cwd=root, stdout=f, stderr=subprocess.STDOUT)
+        return run(cmd, cwd=root, env=env, stdout=f, stderr=subprocess.STDOUT)
 
 
 def build(build_dir, log_dir, targets, jobs):
@@ -342,7 +359,7 @@ def compare(bench, out, baseline_args, compare_args):
 
 def ref_tree(root, out, ref):
     """A worktree of `ref` under out/ref/src with the current benchmarks directory overlaid."""
-    src = os.path.join(out, "ref", "src")
+    src = os.path.realpath(os.path.join(out, "ref", "src"))
     sha = git(root, "rev-parse", "--verify", ref + "^{commit}")
     if os.path.exists(os.path.join(src, ".git")):
         subprocess.run(
