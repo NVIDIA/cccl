@@ -165,6 +165,19 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
           }
         }
 
+        // Test a partial warp reduction with a 16-bit accumulator.
+        constexpr int logical_warp_threads = 16;
+        constexpr int valid_items = logical_warp_threads - 1;
+        using short_warp_reduce_t = cub::WarpReduce<short, logical_warp_threads>;
+        __shared__ short_warp_reduce_t::TempStorage short_warp_reduce_storage[32 / logical_warp_threads];
+        const short partial_sum =
+          short_warp_reduce_t(short_warp_reduce_storage[threadIdx.x / logical_warp_threads])
+            .Sum(static_cast<short>(items[0]), valid_items);
+        if (threadIdx.x == 0 && partial_sum != valid_items * (valid_items - 1) / 2)
+        {
+          atomicAdd(errors, 1);
+        }
+
         // Test warp scan
         int prefix_sum{};
         warp_scan_t(warp_scan_storage).InclusiveSum(items[0], prefix_sum);
