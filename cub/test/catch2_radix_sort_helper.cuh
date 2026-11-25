@@ -16,7 +16,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/functional>

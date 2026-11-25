@@ -13,9 +13,9 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

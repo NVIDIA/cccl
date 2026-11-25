@@ -5,8 +5,8 @@
 
 #include <cub/device/device_histogram.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/devices>
 #include <cuda/std/array>
@@ -24,7 +24,7 @@
 #  include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #  include <cub/thread/thread_load.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]", CUB_SMALL)

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <cstdint>

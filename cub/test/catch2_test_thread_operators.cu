@@ -3,7 +3,7 @@
 
 #include <cub/thread/thread_operators.cuh>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>

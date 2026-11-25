@@ -8,12 +8,12 @@
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tune.h>
 #include <cuda/functional>
-#include <cuda/std/__execution/env.h>
+#include <cuda/std/execution>
 
 // Verifies that a tuning selecting a non-deterministic block reduce is still rejected if the reduction is required to
 // be (or defaults to) run-to-run deterministic. Only the multi-tile policy is non-deterministic, so each test case

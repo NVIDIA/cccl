@@ -11,10 +11,8 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <thrust/detail/config/namespace.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/detail/normal_iterator.h>
@@ -23,24 +21,17 @@
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/zip_function.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__memory/is_sufficiently_aligned.h>
-#include <cuda/std/__tuple_dir/tie.h>
-#include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_copy_constructible.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/memory>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 #include <nv/target>
 

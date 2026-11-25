@@ -7,14 +7,12 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/devices>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 
 #include <cstddef>
 #include <cstdint>

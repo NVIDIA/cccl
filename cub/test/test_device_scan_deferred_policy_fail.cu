@@ -4,8 +4,8 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/argument>
+#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

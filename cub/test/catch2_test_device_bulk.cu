@@ -7,10 +7,10 @@
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 

@@ -12,14 +12,13 @@ struct stream_registry_factory_t;
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/execution>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/tuple>
 #include <cuda/std/utility>
 #include <cuda/stream>
 

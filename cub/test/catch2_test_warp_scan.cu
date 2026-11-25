@@ -5,9 +5,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <cuda/__functional/minimum.h>
 #include <cuda/cmath>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstddef>

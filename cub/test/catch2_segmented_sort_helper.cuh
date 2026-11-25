@@ -16,7 +16,6 @@
 #include <cub/util_device.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
 #include <thrust/logical.h>
@@ -27,10 +26,10 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>

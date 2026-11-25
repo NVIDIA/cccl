@@ -6,16 +6,15 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/functional.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__tuple_dir/tie.h>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/execution>
+#include <cuda/std/tuple>
 #include <cuda/stream>
 
 #include <cstddef>

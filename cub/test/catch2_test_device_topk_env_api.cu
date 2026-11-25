@@ -9,13 +9,13 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
 #include <cuda/devices>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/std/tuple>
 #include <cuda/stream>
 
 #include <algorithm>

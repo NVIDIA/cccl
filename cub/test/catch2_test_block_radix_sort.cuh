@@ -8,7 +8,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/type_traits>
 
 #include "catch2_radix_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>

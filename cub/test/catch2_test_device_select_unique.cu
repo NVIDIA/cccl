@@ -5,14 +5,14 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstddef>

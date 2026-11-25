@@ -3,7 +3,7 @@
 
 #include <cub/util_math.cuh>
 
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/limits>
 
 #include <cstdint>
 

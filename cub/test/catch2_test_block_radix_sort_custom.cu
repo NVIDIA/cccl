@@ -3,7 +3,7 @@
 
 #include <cub/block/block_radix_sort.cuh>
 
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include "catch2_test_block_radix_sort.cuh"
 #include "cub/block/radix_rank_sort_operations.cuh"

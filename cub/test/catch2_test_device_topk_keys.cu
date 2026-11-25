@@ -8,18 +8,18 @@
 #include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/execution>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

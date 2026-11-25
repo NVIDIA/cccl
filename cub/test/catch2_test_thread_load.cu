@@ -3,7 +3,7 @@
 
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>

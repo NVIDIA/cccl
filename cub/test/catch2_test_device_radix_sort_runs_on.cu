@@ -11,9 +11,9 @@ struct stream_registry_factory_t;
 #include <cub/util_device.cuh>
 #include <cub/util_runs_on.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/execution>
 
 #include <cstddef>

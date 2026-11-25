@@ -3,8 +3,8 @@
 
 #include <cub/grid/grid_even_share.cuh>
 
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <climits>

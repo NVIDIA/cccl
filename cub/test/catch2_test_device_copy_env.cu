@@ -10,18 +10,17 @@ struct stream_registry_factory_t;
 #include <cub/device/device_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/__stream/get_stream.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/execution>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cstddef>
 

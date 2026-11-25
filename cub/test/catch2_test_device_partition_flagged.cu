@@ -6,8 +6,8 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 

@@ -6,18 +6,16 @@
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__functional/call_or.h>
-#include <cuda/__functional/minimum.h>
 #include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 #include <cuda/execution>
+#include <cuda/functional>
 #include <cuda/memory_resource>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -33,7 +31,7 @@
 #  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #  include <cub/thread/thread_load.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 struct custom_stream_env

@@ -3,14 +3,14 @@
 
 #include <cub/device/device_copy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/identity.h>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <cstddef>

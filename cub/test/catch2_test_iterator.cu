@@ -16,7 +16,7 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #include <cub/util_type.cuh>
 
 #include <cuda/iterator>
-#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 

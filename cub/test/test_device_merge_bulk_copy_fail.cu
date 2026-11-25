@@ -6,8 +6,8 @@
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/std/array>
 #include <cuda/std/functional>
 

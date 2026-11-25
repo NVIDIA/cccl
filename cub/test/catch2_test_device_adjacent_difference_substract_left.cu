@@ -5,17 +5,17 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
-#include <cuda/__stream/stream.h>
 #include <cuda/buffer>
 #include <cuda/iterator>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <cstdint>

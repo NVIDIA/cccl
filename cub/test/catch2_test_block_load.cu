@@ -8,12 +8,12 @@
 #include <cub/util_arch.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 

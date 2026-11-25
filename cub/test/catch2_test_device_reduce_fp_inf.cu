@@ -6,7 +6,7 @@
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/limits>
 

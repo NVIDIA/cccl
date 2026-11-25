@@ -3,11 +3,11 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstring>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 #include <cstdint>
 

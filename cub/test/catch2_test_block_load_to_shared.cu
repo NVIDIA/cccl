@@ -8,11 +8,11 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__ptx/instructions/generated/get_sreg.h>
 #include <cuda/cmath>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/ptxs/get_sreg.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 

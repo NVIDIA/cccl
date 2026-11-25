@@ -5,13 +5,13 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h> // for examples
 #include <thrust/gather.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <bitset>

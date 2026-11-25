@@ -10,10 +10,10 @@
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <cstddef>
 #include <cstdint>

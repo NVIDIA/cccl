@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cuda/__algorithm/fill.h>
 #include <cuda/__container/resizable_buffer.h>
-#include <cuda/__utility/no_init.h>
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
@@ -13,6 +12,7 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <algorithm>
 #include <array>

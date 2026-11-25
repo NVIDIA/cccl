@@ -10,9 +10,9 @@
 
 #include <cub/block/block_histogram.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstddef>

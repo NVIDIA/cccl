@@ -6,25 +6,25 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
-#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/iterator>
+#include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <algorithm>
 #include <cstddef>

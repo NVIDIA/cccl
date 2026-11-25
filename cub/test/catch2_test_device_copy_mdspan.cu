@@ -4,14 +4,13 @@
 #include <cub/device/device_copy.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
-#include <cuda/__functional/equal_to_value.h>
+#include <cuda/functional>
 #include <cuda/std/__fwd/extents.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>

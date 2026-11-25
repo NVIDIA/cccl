@@ -6,8 +6,6 @@
 #include <cub/detail/double_buffer.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
@@ -28,7 +26,7 @@
 #  include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #  include <cub/thread/thread_load.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented_radix_sort][env]", CUB_SMALL)

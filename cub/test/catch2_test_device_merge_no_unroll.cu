@@ -19,9 +19,9 @@
 
 #include <thrust/sort.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
+#include <cuda/std/functional>
 
 #include <algorithm>
 

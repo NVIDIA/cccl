@@ -6,8 +6,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 
-#include <cuda/__utility/no_init.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/type_traits>
+#include <cuda/utility>
 
 #include <cstdint>
 #include <cstdlib>

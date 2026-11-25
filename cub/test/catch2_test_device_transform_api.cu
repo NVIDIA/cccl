@@ -3,13 +3,12 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <cstddef>
 #include <iostream>

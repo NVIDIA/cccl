@@ -5,9 +5,9 @@
 
 #include <cub/device/device_merge.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
 #include <cstddef>
 #include <iostream>

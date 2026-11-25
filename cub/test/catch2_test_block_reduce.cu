@@ -6,9 +6,8 @@
 #include <cub/block/block_reduce.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstdint>

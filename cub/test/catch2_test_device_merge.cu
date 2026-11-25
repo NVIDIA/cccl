@@ -8,15 +8,15 @@
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstdint>

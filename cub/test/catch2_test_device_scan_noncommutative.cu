@@ -3,11 +3,11 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/functional>
+#include <cuda/std/cstddef>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

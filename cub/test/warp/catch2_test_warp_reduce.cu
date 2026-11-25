@@ -3,11 +3,11 @@
 
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/__ptx/instructions/generated/get_sreg.h>
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/ptx>
+#include <cuda/ptxs/get_sreg.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/functional>

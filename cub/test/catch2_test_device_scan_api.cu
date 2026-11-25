@@ -4,13 +4,13 @@
 #include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__argument/argument.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/argument>
+#include <cuda/functional>
+#include <cuda/std/functional>
 
 #include <cstddef>
 #include <cstdint>

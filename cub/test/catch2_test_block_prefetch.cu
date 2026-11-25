@@ -5,16 +5,15 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/universal_vector.h>
 
-#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/memory>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <cstddef>
 #include <cstdint>

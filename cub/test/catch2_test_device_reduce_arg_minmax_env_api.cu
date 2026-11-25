@@ -5,7 +5,6 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/devices>

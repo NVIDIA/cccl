@@ -8,8 +8,6 @@
 
 #include <cub/detail/mdspan_utils.cuh>
 
-#include <thrust/detail/vector_base.h>
-
 #include <c2h/catch2_test_helper.h>
 
 // MSVC doesn't support __device__ lambdas
@@ -17,10 +15,10 @@
 
 #  include <cub/device/device_for.cuh>
 
-#  include <thrust/detail/raw_pointer_cast.h>
 #  include <thrust/device_vector.h>
 #  include <thrust/fill.h>
 #  include <thrust/host_vector.h>
+#  include <thrust/memory.h>
 
 #  include <cuda/std/array>
 #  include <cuda/std/mdspan>

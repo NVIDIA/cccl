@@ -4,11 +4,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/limits>
 
 #include <algorithm>

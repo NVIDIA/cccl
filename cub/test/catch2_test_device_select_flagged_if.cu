@@ -8,17 +8,17 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/execution>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <cstddef>

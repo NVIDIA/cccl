@@ -10,7 +10,7 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_debug.cuh>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstdio>
 

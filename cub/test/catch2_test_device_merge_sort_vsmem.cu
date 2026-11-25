@@ -5,8 +5,8 @@
 
 #include <cub/device/device_merge_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <algorithm>
 #include <cstdint>

@@ -4,13 +4,13 @@
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
+#include <cuda/execution.tune.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>

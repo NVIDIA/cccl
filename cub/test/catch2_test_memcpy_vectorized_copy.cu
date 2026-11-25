@@ -4,8 +4,8 @@
 #include <cub/device/device_memcpy.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
 #include <cstddef>

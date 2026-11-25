@@ -3,9 +3,9 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <cuda/__execution/property_query.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/execution>
+#include <cuda/stream>
+#include <cuda/stream_ref>
 
 struct invalid_env
 {

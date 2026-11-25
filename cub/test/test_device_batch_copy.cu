@@ -4,11 +4,11 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/util_debug.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__cmath/round_up.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/limits>
 #include <cuda/std/tuple>
 
 #include <algorithm>

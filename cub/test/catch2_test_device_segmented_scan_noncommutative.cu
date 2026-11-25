@@ -3,14 +3,14 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/functional>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/utility>
 
 #include <cstddef>
 

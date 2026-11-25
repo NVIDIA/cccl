@@ -11,11 +11,11 @@
 #include <thrust/count.h>
 #include <thrust/shuffle.h>
 
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <cmath>

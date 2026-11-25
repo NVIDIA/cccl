@@ -5,9 +5,8 @@
 
 #include <cub/device/device_copy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
 #include <cuda/devices>
@@ -22,7 +21,7 @@
 #if _CCCL_STD_VER >= 2020
 #  include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]", CUB_SMALL)

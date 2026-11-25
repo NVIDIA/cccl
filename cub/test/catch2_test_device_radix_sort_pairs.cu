@@ -6,10 +6,9 @@
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/memory.h>
 
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

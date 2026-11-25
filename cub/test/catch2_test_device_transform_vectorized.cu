@@ -8,12 +8,12 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <cstdint>

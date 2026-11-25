@@ -13,11 +13,11 @@ struct limited_grid_factory;
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <cstdint>

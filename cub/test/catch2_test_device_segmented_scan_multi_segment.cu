@@ -13,15 +13,15 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/generate.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits> // std::integral_constant
 
 #include <cstddef>

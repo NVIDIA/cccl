@@ -7,19 +7,17 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
-#include <cuda/__cmath/uabs.h>
-#include <cuda/std/__algorithm/max_element.h>
-#include <cuda/std/__algorithm/min_element.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/cmath>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <cstdint>

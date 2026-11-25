@@ -5,11 +5,10 @@
 
 #include <cub/device/device_find.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/devices>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 #include <cuda/stream>
 
 #include <iostream>
@@ -21,7 +20,7 @@
 #  include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #  include <cub/thread/thread_load.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[find][env][binary-search]", CUB_SMALL)

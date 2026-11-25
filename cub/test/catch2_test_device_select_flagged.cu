@@ -9,15 +9,15 @@
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
+#include <thrust/memory.h>
 #include <thrust/partition.h>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/devices>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/execution>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <cstddef>

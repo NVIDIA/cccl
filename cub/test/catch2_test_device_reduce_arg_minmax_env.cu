@@ -12,19 +12,18 @@ struct stream_registry_factory_t;
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__stream/stream.h>
+#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
+#include <cuda/stream>
 
 #include <cstddef>
 

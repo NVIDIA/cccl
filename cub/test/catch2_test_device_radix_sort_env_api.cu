@@ -5,9 +5,7 @@
 
 #include <cub/detail/double_buffer.cuh>
 
-#include <thrust/detail/vector_base.h>
-
-#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/tuple>
 
 #include <c2h/catch2_test_helper.h>
 // above header needs to be included first
@@ -34,7 +32,7 @@
 #  include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #  include <cub/thread/thread_load.cuh>
 
-#  include <cuda/__execution/tune.h>
+#  include <cuda/execution.tune.h>
 #endif // _CCCL_STD_VER >= 2020
 
 // example-begin radix-sort-keys-custom-decomposer

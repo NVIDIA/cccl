@@ -11,16 +11,15 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <algorithm>

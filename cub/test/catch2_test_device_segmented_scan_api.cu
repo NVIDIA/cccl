@@ -5,13 +5,12 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/maximum.h>
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

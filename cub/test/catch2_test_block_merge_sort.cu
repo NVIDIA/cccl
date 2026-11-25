@@ -10,7 +10,7 @@
 
 #include <cub/block/block_merge_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/limits>

@@ -4,9 +4,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/minimum.h>
 #include <cuda/functional>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

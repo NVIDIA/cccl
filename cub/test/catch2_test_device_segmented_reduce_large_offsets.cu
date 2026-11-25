@@ -11,12 +11,12 @@
 
 #include <thrust/zip_function.h>
 
-#include <cuda/__functional/maximum.h>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <cstdint>
 

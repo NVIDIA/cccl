@@ -5,9 +5,9 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <cuda/__functional/minimum.h>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstdint>
 #include <tuple>

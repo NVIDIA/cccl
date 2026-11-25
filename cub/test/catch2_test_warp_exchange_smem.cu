@@ -5,9 +5,6 @@
 
 #include <cub/warp/warp_exchange.cuh>
 
-#include <cuda/std/__cccl/compiler.h>
-#include <cuda/std/__cccl/dialect.h>
-
 #include <cstdint>
 
 #include "catch2_test_warp_exchange.cuh"

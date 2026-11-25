@@ -7,15 +7,14 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/transform.h>
 
-#include <cuda/__functional/minimum.h>
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 
 #include <algorithm>

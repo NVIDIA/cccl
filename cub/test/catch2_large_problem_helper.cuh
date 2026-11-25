@@ -5,16 +5,15 @@
 
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
 #include <thrust/find.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 

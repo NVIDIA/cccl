@@ -3,9 +3,9 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
 
 #include <iostream>
 

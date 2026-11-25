@@ -6,11 +6,11 @@
 #include <cub/util_macro.cuh>
 
 #include <thrust/detail/preprocessor.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/devices>
-#include <cuda/std/__algorithm/find_if.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 
 #include <algorithm>

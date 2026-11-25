@@ -15,28 +15,27 @@
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
+#include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 
-#include <cuda/__argument/argument.h>
-#include <cuda/__argument/argument_bounds.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/argument>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__execution/env.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
 
 #include <algorithm>
 #include <functional>

@@ -3,8 +3,6 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cuda/std/__cccl/dialect.h>
-
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -12,14 +10,11 @@
 #  include <cub/device/device_transform.cuh>
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
 
-#  include <thrust/detail/vector_base.h>
 #  include <thrust/device_vector.h>
 
-#  include <cuda/__device/compute_capability.h>
-#  include <cuda/__execution/tune.h>
-#  include <cuda/std/__cccl/compiler.h>
-#  include <cuda/std/__cccl/diagnostic.h>
-#  include <cuda/std/__functional/operations.h>
+#  include <cuda/devices>
+#  include <cuda/execution.tune.h>
+#  include <cuda/std/functional>
 
 #  include <iostream>
 

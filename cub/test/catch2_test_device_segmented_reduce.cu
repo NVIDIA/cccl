@@ -8,12 +8,10 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/functional>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 

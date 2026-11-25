@@ -10,19 +10,19 @@ struct stream_registry_factory_t;
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
 
 #include "block_size_extracting_helpers.h"

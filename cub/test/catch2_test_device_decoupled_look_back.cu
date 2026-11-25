@@ -5,10 +5,10 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/cmath>
+#include <cuda/std/functional>
 
 #include <cstddef>
 #include <cstdint>

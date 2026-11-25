@@ -17,17 +17,16 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 
-#include <cuda/__argument/argument_bounds.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>

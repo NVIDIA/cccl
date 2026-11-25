@@ -3,15 +3,14 @@
 
 #include <cub/warp/warp_reduce_batched.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__iterator/access.h>
+#include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/std/array>
+#include <cuda/std/iterator>
 #include <cuda/std/span>
 
 #include "cub_test_macros.h"

@@ -10,7 +10,7 @@
 #include <thrust/shuffle.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cstddef>
 
 #include <cstdint>
 

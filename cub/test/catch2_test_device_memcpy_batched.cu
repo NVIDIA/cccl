@@ -4,8 +4,8 @@
 #include <cub/device/device_memcpy.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
+#include <thrust/memory.h>
 #include <thrust/reduce.h>
 
 #include <cuda/iterator>

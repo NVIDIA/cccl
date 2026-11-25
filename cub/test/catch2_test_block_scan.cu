@@ -6,10 +6,10 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
 #include <climits>

@@ -6,11 +6,10 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/std/__algorithm/find_if.h>
-#include <cuda/std/__cccl/dialect.h>
-#include <cuda/std/__cstddef/types.h>
+#include <cuda/devices>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>

@@ -5,11 +5,11 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
 
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 
 #include <cstdint>
 

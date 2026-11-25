@@ -7,13 +7,12 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__cmath/isfinite.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/functional>
+#include <cuda/std/algorithm>
+#include <cuda/std/cmath>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
 
 #include <cstdint>
 #include <tuple>

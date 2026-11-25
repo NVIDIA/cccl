@@ -15,15 +15,14 @@ struct stream_registry_factory_t;
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/std/__cccl/compiler.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
 
 #include <cstddef>
 #include <sstream>

@@ -10,9 +10,9 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/__iterator/constant_iterator.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <climits>

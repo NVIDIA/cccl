@@ -5,16 +5,14 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 
-#include <cuda/__cmath/uabs.h>
+#include <cuda/cmath>
 #include <cuda/devices>
-#include <cuda/std/__algorithm/max_element.h>
-#include <cuda/std/__algorithm/min_element.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

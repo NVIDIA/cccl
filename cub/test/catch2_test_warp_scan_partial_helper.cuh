@@ -8,7 +8,7 @@
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/cmath>
-#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/algorithm>
 
 #include <c2h/catch2_test_helper.h>
 

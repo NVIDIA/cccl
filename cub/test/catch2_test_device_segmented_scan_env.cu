@@ -16,19 +16,17 @@ struct stream_registry_factory_t;
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__functional/call_or.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/std/__cccl/compiler.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <sstream>
@@ -54,7 +52,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit,
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
 
 #include "cub_test_macros.h"
 

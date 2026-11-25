@@ -5,14 +5,14 @@
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/cmath>
+#include <cuda/devices>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #include <algorithm>

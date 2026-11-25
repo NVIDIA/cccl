@@ -5,17 +5,17 @@
 
 #include <cub/device/device_find.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/__functional/equal_to_value.h>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/algorithm>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <cstddef>
 #include <cstdint>

@@ -4,19 +4,18 @@
 #include <cub/thread/thread_scan.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
-#include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/functional>
-#include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>

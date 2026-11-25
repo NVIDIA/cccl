@@ -5,7 +5,7 @@
 
 #include <cub/device/device_partition.cuh>
 
-#include <cuda/__functional/always_true_false.h>
+#include <cuda/functional>
 
 #include <cstddef>
 

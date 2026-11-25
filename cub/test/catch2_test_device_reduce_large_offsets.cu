@@ -6,12 +6,12 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
+#include <cuda/std/utility>
 
 #include <cstdint>
 

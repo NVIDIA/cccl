@@ -5,11 +5,10 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 #include <cstdint>

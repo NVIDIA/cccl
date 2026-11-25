@@ -5,7 +5,7 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 

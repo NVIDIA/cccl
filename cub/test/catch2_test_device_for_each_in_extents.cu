@@ -6,15 +6,14 @@
 #include <cub/device/device_for.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__fwd/span.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <cstdint>

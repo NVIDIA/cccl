@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/config.cuh>
+#include <thrust/detail/config.h>
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
@@ -9,8 +10,7 @@
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/detail/config/namespace.h>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cstddef>

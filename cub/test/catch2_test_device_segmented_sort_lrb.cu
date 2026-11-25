@@ -12,11 +12,10 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <cmath>

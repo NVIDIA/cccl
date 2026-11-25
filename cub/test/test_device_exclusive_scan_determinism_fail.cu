@@ -6,9 +6,9 @@
 #include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/std/functional>
 
 #include <iostream>
 

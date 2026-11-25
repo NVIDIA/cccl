@@ -4,7 +4,7 @@
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/device/device_memcpy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cstdint>
 

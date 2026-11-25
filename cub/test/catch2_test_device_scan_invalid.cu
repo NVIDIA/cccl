@@ -7,13 +7,13 @@
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
 
 #include <nv/target>
 

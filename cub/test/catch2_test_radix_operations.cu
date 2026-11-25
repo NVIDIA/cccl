@@ -3,14 +3,12 @@
 
 #include <cub/block/radix_rank_sort_operations.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__tuple_dir/tie.h>
-#include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/limits>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <algorithm>
 #include <bitset>

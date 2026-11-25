@@ -5,12 +5,12 @@
 #include <cub/warp/warp_scan.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/limits>
 
 #include <cstddef>

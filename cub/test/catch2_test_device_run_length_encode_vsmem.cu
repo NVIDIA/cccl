@@ -5,7 +5,7 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cstdint>
 #include <tuple>

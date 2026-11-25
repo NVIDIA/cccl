@@ -3,11 +3,11 @@
 
 #include <cub/thread/thread_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cuda/functional>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/array>
+#include <cuda/std/concepts>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>

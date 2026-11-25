@@ -5,7 +5,7 @@
 
 #include <cub/device/device_partition.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 #include <thrust/partition.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>

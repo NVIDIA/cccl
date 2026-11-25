@@ -21,8 +21,8 @@
 #include <cub/util_device.cuh>
 #include <cub/warp/warp_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/cstdint>
 

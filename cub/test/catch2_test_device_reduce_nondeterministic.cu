@@ -10,23 +10,22 @@
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tune.h>
+#include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 
 #include <cstddef>
 #include <cstdint>

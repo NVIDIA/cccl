@@ -7,7 +7,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
 #include <cstdint>
 

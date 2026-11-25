@@ -15,11 +15,9 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstddef>
 #include <cstdint>

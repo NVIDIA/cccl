@@ -7,13 +7,12 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/functional>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 
 #include <cstdint>
 #include <tuple>

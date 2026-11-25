@@ -12,14 +12,14 @@
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/device_histogram.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/gather.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/bit>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 

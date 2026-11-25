@@ -6,13 +6,13 @@
 #include <cub/device/device_for.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__fwd/span.h>
 #include <cuda/std/mdspan>
+#include <cuda/std/span>
 #include <cuda/std/tuple>
 
 #include <cstddef>

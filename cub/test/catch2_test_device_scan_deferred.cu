@@ -13,19 +13,18 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 
-#include <cuda/__argument/argument_bounds.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tune.h>
 #include <cuda/execution>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/span>

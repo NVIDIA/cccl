@@ -6,8 +6,8 @@
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <cuda/__functional/minimum.h>
-#include <cuda/std/__utility/pair.h>
+#include <cuda/functional>
+#include <cuda/std/utility>
 
 #include <cstddef>
 #include <cstdint>

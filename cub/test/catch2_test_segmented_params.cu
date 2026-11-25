@@ -3,15 +3,13 @@
 
 #include <cub/detail/segmented_params.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
-#include <cuda/__argument/argument_bounds.h>
 #include <cuda/argument>
-#include <cuda/std/__utility/cmp.h> // cmp_equal
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility> // cmp_equal
 
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>

@@ -3,9 +3,9 @@
 
 #include <thrust/detail/execute_with_allocator.h>
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/temporary_buffer.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/__utility/pair.h>
+#include <cuda/std/utility>
 
 #include <algorithm>
 #include <cstddef>

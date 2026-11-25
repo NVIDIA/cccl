@@ -22,23 +22,21 @@ struct stream_registry_factory_t;
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/cmath>
 #include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/functional>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
+#include <cuda/std/execution>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -68,9 +66,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key_two_
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__functional/call_or.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 #include <cuda/std/cstdint>
 
 #include <sstream>

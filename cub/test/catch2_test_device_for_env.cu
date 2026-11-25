@@ -10,12 +10,12 @@ struct stream_registry_factory_t;
 #include <cub/device/device_for.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/policy.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution.policy.h>
+#include <cuda/execution.tune.h>
 #include <cuda/functional>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>

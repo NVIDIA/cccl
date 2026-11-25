@@ -6,11 +6,11 @@
 #include <cub/device/device_select.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <cstddef>

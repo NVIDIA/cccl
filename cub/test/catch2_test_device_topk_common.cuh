@@ -11,23 +11,23 @@
 #include <cub/util_device.cuh> // cub::PtxVersion
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/find.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 #include <thrust/remove.h>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/tie_break.h>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.tie_break.h>
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <cstddef>

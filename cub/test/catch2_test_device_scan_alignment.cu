@@ -5,7 +5,7 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_vector.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

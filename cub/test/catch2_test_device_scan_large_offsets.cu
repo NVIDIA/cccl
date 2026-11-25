@@ -6,11 +6,11 @@
 #include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/functional>
 
 #include <cstdint>
 

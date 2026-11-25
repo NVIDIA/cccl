@@ -3,8 +3,6 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <thrust/detail/vector_base.h>
-
 #include <c2h/catch2_test_helper.h>
 
 // example-begin adjacent-difference-includes

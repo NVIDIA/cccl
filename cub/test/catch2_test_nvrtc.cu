@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cuda/std/__cccl/dialect.h>
-
 #include <cstddef>
 #include <memory>
 #include <string>

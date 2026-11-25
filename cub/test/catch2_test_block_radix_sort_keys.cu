@@ -5,8 +5,6 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/numeric_traits.cuh>
 
-#include <cuda/std/__cccl/extended_data_types.h>
-
 #include <cstdint>
 
 #include "catch2_test_block_radix_sort.cuh"
