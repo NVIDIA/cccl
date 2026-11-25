@@ -30,6 +30,30 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9)
+// <debug/formatter.h> uses std::__addressof and std::iterator_traits without including them
+#    include <bits/move.h>
+#    include <bits/stl_iterator_base_types.h>
+#    include <debug/formatter.h> // for ::__gnu_cxx::__normal_iterator and ::__gnu_debug::_Safe_iterator
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 9) ^^^ / vvv _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) vvv
+// <debug/formatter.h> only declares __normal_iterator since libstdc++ 9, and older versions do not change anymore
+namespace __gnu_cxx
+{
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+template <typename _Iterator, typename _Container>
+class __normal_iterator;
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace __gnu_cxx
+
+namespace __gnu_debug
+{
+template <typename _Iterator, typename _Sequence>
+class _Safe_iterator;
+} // namespace __gnu_debug
+#  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -154,6 +178,24 @@ public:
     return ::cuda::std::addressof(__r);
   }
 };
+
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
+// The debug iterators of libstdc++ verify in operator-> that they are dereferenceable, which end iterators are not
+// The number of template parameters of _Safe_iterator depends on the version of libstdc++
+template <class _Tp, class _Container, class... _Args>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+pointer_traits<::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Args...>>
+{
+  using pointer         = ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Args...>;
+  using element_type    = _Tp;
+  using difference_type = ptrdiff_t;
+
+  [[nodiscard]] _CCCL_HOST_API static element_type* to_address(const pointer& __iter) noexcept
+  {
+    return __iter.base().base();
+  }
+};
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
 // to_address
 template <class _Pointer>

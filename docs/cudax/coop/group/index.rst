@@ -92,7 +92,7 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   {
     // Member types.
     requires /*is-hierarchy-level*/<typename T::unit_level>;    // (1)
-    requires /*is-hierarchy-level*/<typename T::bound_level>;   // (2)
+    requires /*is-hierarchy-level*/<typename T::boundary_level>;   // (2)
     requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
 
     // Getters.
@@ -112,7 +112,7 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
 Where:
 
 #. ``unit_level`` identifies the hierarchy level of the units being grouped.
-#. ``bound_level`` identifies the hierarchy level within which those units are grouped.
+#. ``boundary_level`` identifies the hierarchy level within which those units are grouped.
 #. The hierarchy type within which the group is operating.
 #. Returns a reference to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.

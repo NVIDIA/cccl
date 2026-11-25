@@ -26,11 +26,21 @@ explains each line.
 Installation
 ------------
 
-From the repository root, install the package:
+On Linux with a CUDA 13-capable NVIDIA driver, install the published package
+with its CUDA Toolkit 13.4 headers, NVRTC and nvJitLink:
 
 .. code-block:: bash
 
-   python -m pip install ./python/cuda_coop_cutlass
+   python -m pip install 'cuda-coop-cutlass[cu13]'
+
+To build from source, run the following from the CCCL repository root:
+
+.. code-block:: bash
+
+   python -m pip install './python/cuda_coop_cutlass[cu13]'
+
+With a compatible system toolkit already installed, omit the ``[cu13]`` extra
+from either command.
 
 .. _coop-cutlass-requirements:
 
@@ -38,7 +48,8 @@ Requirements
 ~~~~~~~~~~~~
 
 * Python 3.10 or later.
-* CUDA Toolkit 13 and a compatible driver.
+* CUDA Toolkit 13 and a compatible driver. On Linux with CuTe DSL
+  4.9.0.dev1, use NVRTC 13.1 through 13.4.
 * A GPU architecture supported by your CuTe compiler. The earliest target
   in CuTe DSL 4.9.0.dev1 is compute capability 8.0 (SM80).
 * CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends

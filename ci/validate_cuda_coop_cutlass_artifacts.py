@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
+import argparse
 import email.parser
 import json
 import re
-import sys
 import tarfile
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -60,13 +60,17 @@ def _one(names: set[str], suffix: str) -> str:
     return matches[0]
 
 
-def _metadata(content: bytes) -> None:
+def _metadata(content: bytes, version: str | None) -> None:
     metadata = email.parser.BytesParser().parsebytes(content)
     if metadata.get("Name") != "cuda-coop-cutlass":
         raise SystemExit("Unexpected standalone distribution name")
+    if version is not None and metadata.get("Version") != version:
+        raise SystemExit(
+            f"Expected distribution version {version}, got {metadata.get('Version')}"
+        )
     if metadata.get("Requires-Python") != ">=3.10":
         raise SystemExit("The standalone package requires Python >=3.10")
-    if set(metadata.get_all("Provides-Extra", [])) != {"test"}:
+    if set(metadata.get_all("Provides-Extra", [])) != {"cu13", "test"}:
         raise SystemExit("Unexpected standalone package extras")
     requirements = [Requirement(r) for r in metadata.get_all("Requires-Dist", [])]
     names = {canonicalize_name(r.name) for r in requirements}
@@ -100,7 +104,7 @@ def _metadata(content: bytes) -> None:
         raise SystemExit("CUTLASS dependency must select the CUDA 13 4.9 integration")
 
 
-def _provenance(content: bytes) -> None:
+def _provenance(content: bytes, source_commit: str | None) -> None:
     provenance = json.loads(content)
     if (
         set(provenance) != {"cccl_source_commit"}
@@ -108,14 +112,18 @@ def _provenance(content: bytes) -> None:
         or re.fullmatch(r"[0-9A-Za-z._+-]+", provenance["cccl_source_commit"]) is None
     ):
         raise SystemExit("Invalid bundled-header source revision")
+    if source_commit is not None and provenance["cccl_source_commit"] != source_commit:
+        raise SystemExit(
+            f"Expected bundled headers from {source_commit}, got {provenance}"
+        )
 
 
-def validate_wheel(path: Path) -> None:
+def validate_wheel(path: Path, version: str | None, source_commit: str | None) -> None:
     if not path.name.endswith("-py3-none-any.whl"):
         raise SystemExit("cuda-coop-cutlass must produce a py3-none-any wheel")
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
-        _metadata(archive.read(_one(names, ".dist-info/METADATA")))
+        _metadata(archive.read(_one(names, ".dist-info/METADATA")), version)
         metadata = email.parser.BytesParser().parsebytes(
             archive.read(_one(names, ".dist-info/WHEEL"))
         )
@@ -142,10 +150,12 @@ def validate_wheel(path: Path) -> None:
         }
         if missing := _LICENSES - licenses:
             raise SystemExit(f"Missing wheel licenses: {sorted(missing)}")
-        _provenance(archive.read(_HEADERS + "cccl-bundle-provenance.json"))
+        _provenance(
+            archive.read(_HEADERS + "cccl-bundle-provenance.json"), source_commit
+        )
 
 
-def validate_sdist(path: Path) -> None:
+def validate_sdist(path: Path, version: str | None, source_commit: str | None) -> None:
     with tarfile.open(path) as archive:
         members = archive.getmembers()
         roots = {PurePosixPath(m.name).parts[0] for m in members}
@@ -177,19 +187,44 @@ def validate_sdist(path: Path) -> None:
         metadata = archive.extractfile(root + "PKG-INFO")
         provenance = archive.extractfile(root + "cccl-bundle-provenance.json")
         assert metadata is not None and provenance is not None
-        _metadata(metadata.read())
-        _provenance(provenance.read())
+        _metadata(metadata.read(), version)
+        _provenance(provenance.read(), source_commit)
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        raise SystemExit(f"Usage: {sys.argv[0]} <wheel-or-sdist> [...]")
-    for argument in sys.argv[1:]:
-        path = Path(argument)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--release-tag", help="Require the wheel and sdist for this tag"
+    )
+    parser.add_argument(
+        "--source-commit", help="Require this CCCL commit in both header bundles"
+    )
+    parser.add_argument("artifacts", type=Path, nargs="+")
+    args = parser.parse_args()
+    version = None
+    if args.release_tag is not None:
+        match = re.fullmatch(
+            r"cuda-coop-cutlass-v([0-9]+\.[0-9]+\.[0-9]+(?:rc[0-9]+)?)",
+            args.release_tag,
+        )
+        if not match:
+            parser.error(
+                "expected tag cuda-coop-cutlass-vX.Y.Z or cuda-coop-cutlass-vX.Y.ZrcN"
+            )
+        version = match.group(1)
+        prefix = f"cuda_coop_cutlass-{version}"
+        expected = sorted([f"{prefix}-py3-none-any.whl", f"{prefix}.tar.gz"])
+        if sorted(path.name for path in args.artifacts) != expected:
+            parser.error(f"expected release artifacts {expected}")
+    if args.source_commit is not None and not re.fullmatch(
+        "[0-9a-f]{40}", args.source_commit
+    ):
+        parser.error("expected a full Git commit SHA")
+    for path in args.artifacts:
         if path.suffix == ".whl":
-            validate_wheel(path)
+            validate_wheel(path, version, args.source_commit)
         elif path.name.endswith(".tar.gz"):
-            validate_sdist(path)
+            validate_sdist(path, version, args.source_commit)
         else:
             raise SystemExit(f"Unsupported artifact: {path}")
 

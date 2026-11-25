@@ -30,6 +30,7 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/type_traits>
 

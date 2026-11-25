@@ -121,14 +121,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::bound_level>(__prev_mapping_result);
+    return __do_map<true, _Unit, typename _ParentGroup::boundary_level>(__prev_mapping_result);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::bound_level>(__prev_mapping_result);
+    return __do_map<false, _Unit, typename _ParentGroup::boundary_level>(__prev_mapping_result);
   }
 };
 
@@ -191,14 +191,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<true, _Unit, typename _ParentGroup::bound_level>(__prev_mapping_result);
+    return __do_map<true, _Unit, typename _ParentGroup::boundary_level>(__prev_mapping_result);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    return __do_map<false, _Unit, typename _ParentGroup::bound_level>(__prev_mapping_result);
+    return __do_map<false, _Unit, typename _ParentGroup::boundary_level>(__prev_mapping_result);
   }
 };
 

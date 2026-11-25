@@ -28,6 +28,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/decay.h>
 

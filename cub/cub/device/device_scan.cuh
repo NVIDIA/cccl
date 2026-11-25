@@ -45,6 +45,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
