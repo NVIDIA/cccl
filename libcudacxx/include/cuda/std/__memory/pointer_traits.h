@@ -25,20 +25,18 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/prologue.h>
-
 #if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
-namespace __gnu_debug
-{
-class _Safe_iterator_base;
-} // namespace __gnu_debug
+#  include <iterator> // for ::__gnu_cxx::__normal_iterator
+
+#  include <debug/safe_iterator.h>
 #endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
+
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -163,6 +161,23 @@ public:
   }
 };
 
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
+// The debug iterators of libstdc++ verify in operator-> that they are dereferenceable, which end iterators are not
+template <class _Tp, class _Container, class _Sequence>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+pointer_traits<::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Sequence>>
+{
+  using pointer         = ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*, _Container>, _Sequence>;
+  using element_type    = _Tp;
+  using difference_type = ptrdiff_t;
+
+  [[nodiscard]] _CCCL_HOST_API static element_type* to_address(const pointer& __iter) noexcept
+  {
+    return __iter.base().base();
+  }
+};
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
+
 // to_address
 template <class _Pointer>
 _CCCL_CONCEPT __has_cuda_std_to_address = _CCCL_REQUIRES_EXPR((_Pointer), const _Pointer& __ptr)(
@@ -189,13 +204,6 @@ template <class _Pointer, enable_if_t<__is_fancy_pointer<_Pointer>, int> = 0>
   {
     return ::cuda::std::pointer_traits<_Pointer>::to_address(__ptr);
   }
-#if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
-  // The debug iterators of libstdc++ verify in operator-> that they are dereferenceable, which end iterators are not
-  else if constexpr (is_base_of_v<::__gnu_debug::_Safe_iterator_base, _Pointer>)
-  {
-    return ::cuda::std::to_address(__ptr.base());
-  }
-#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
   else
   {
     return ::cuda::std::to_address(__ptr.operator->());
