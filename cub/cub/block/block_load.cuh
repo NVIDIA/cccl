@@ -20,13 +20,13 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/unit_word.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
 
@@ -491,9 +491,12 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if constexpr (Modifier != LOAD_DEFAULT)
     {
-      _CUB::LoadDirectBlocked(i * ThreadsPerBlock,
-                              CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
-                              reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < vec_size; j++)
+      {
+        dst_items[(i * vec_size) + j] =
+          _CUB::ThreadLoad<Modifier>(thread_src_ptr + ((i * ThreadsPerBlock * vec_size) + j));
+      }
     }
     else
     {
