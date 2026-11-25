@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_callable.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -121,9 +122,22 @@ template <class _Tp, class... _Args>
 _CCCL_CONCEPT __list_initializable_from =
   _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)(_Tp{static_cast<_Args&&>(__args)...});
 
+#if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT __nothrow_list_initializable_from =
   _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)(noexcept(_Tp{static_cast<_Args&&>(__args)...}));
+#else // ^^^ _CCCL_HAS_NOEXCEPT_MANGLING() ^^^ / vvv !_CCCL_HAS_NOEXCEPT_MANGLING() vvv
+template <bool _ListInitializable, class _Tp, class... _Args>
+inline constexpr bool __nothrow_list_initializable_from_impl = false;
+
+template <class _Tp, class... _Args>
+inline constexpr bool __nothrow_list_initializable_from_impl<true, _Tp, _Args...> =
+  noexcept(_Tp{::cuda::std::declval<_Args>()...});
+
+template <class _Tp, class... _Args>
+inline constexpr bool __nothrow_list_initializable_from =
+  __nothrow_list_initializable_from_impl<__list_initializable_from<_Tp, _Args...>, _Tp, _Args...>;
+#endif // !_CCCL_HAS_NOEXCEPT_MANGLING()
 
 //! Constructible from arguments using either direct non-list initialization or direct
 //! list initialization.
@@ -146,10 +160,23 @@ template <class _Tp, class _Fn, class... _Args>
 _CCCL_CONCEPT __emplaceable_from = _CCCL_REQUIRES_EXPR((_Tp, _Fn, variadic _Args), _Fn&& __fn, _Args&&... __args)(
   _Tp(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...)));
 
+#  if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause
 template <class _Tp, class _Fn, class... _Args>
 _CCCL_CONCEPT __nothrow_emplaceable_from =
   _CCCL_REQUIRES_EXPR((_Tp, _Fn, variadic _Args), _Fn&& __fn, _Args&&... __args)(
     noexcept(_Tp(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...))));
+#  else // ^^^ _CCCL_HAS_NOEXCEPT_MANGLING() ^^^ / vvv !_CCCL_HAS_NOEXCEPT_MANGLING() vvv
+template <bool _Emplaceable, class _Tp, class _Fn, class... _Args>
+inline constexpr bool __nothrow_emplaceable_from_impl = false;
+
+template <class _Tp, class _Fn, class... _Args>
+inline constexpr bool __nothrow_emplaceable_from_impl<true, _Tp, _Fn, _Args...> =
+  noexcept(_Tp(::cuda::std::declval<_Fn>()(::cuda::std::declval<_Args>()...)));
+
+template <class _Tp, class _Fn, class... _Args>
+inline constexpr bool __nothrow_emplaceable_from =
+  __nothrow_emplaceable_from_impl<__emplaceable_from<_Tp, _Fn, _Args...>, _Tp, _Fn, _Args...>;
+#  endif // !_CCCL_HAS_NOEXCEPT_MANGLING()
 
 #else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
 
