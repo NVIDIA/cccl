@@ -17,6 +17,7 @@ CUB block-level algorithms are specialized for execution by threads in the same 
 * :cpp:struct:`cub::BlockExchange` rearranges data partitioned across a CUDA thread block
 * :cpp:class:`cub::BlockHistogram` constructs block-wide histograms from data samples partitioned across a CUDA thread block
 * :cpp:class:`cub::BlockLoad` loads a linear segment of items from memory into a CUDA thread block
+* :cpp:class:`cub::BlockMerge` merges sorted runs already in shared memory
 * :cpp:class:`cub::BlockMergeSort` sorts items partitioned across a CUDA thread block
 * :cpp:class:`cub::BlockRadixSort` sorts items partitioned across a CUDA thread block using radix sorting method
 * :cpp:struct:`cub::BlockReduce` computes reduction of items partitioned across a CUDA thread block
