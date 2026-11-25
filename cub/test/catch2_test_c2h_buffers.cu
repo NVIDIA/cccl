@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cuda/__algorithm/fill.h>
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -14,10 +15,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <limits>
 #include <new>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 #include <cuda_runtime_api.h>
@@ -539,6 +542,47 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   resource.deallocate_sync(aligned_ptr, aligned_bytes, alignment);
 
   REQUIRE_THROWS_AS(resource.allocate_sync(1, 0), std::bad_alloc);
+}
+
+CUB_TEST("c2h count-and-value host buffers can be copied immediately", "[c2h][buffers][host_resource][copy]", CUB_SMALL)
+{
+  const auto stream     = c2h::make_current_device_stream();
+  const auto check_copy = [&](auto num_items, auto& value, const auto& expected) {
+    using value_t = typename cuda::std::decay_t<decltype(expected)>::value_type;
+
+    // make device allocation before host launch
+    auto d_items = c2h::make_device_buffer<value_t>(stream, expected.size(), cuda::no_init);
+
+    // Give an immediate source read a chance to overlap any deferred fill.
+    cuda::host_launch(stream, [] {
+      std::this_thread::sleep_for(std::chrono::milliseconds{50});
+    });
+
+    // allocate host buffer and populate with requested value
+    const auto h_items = c2h::make_host_buffer<value_t>(stream, num_items, value);
+
+    // copy into preallocated device buffer, allowing driver to read the host buffer
+    // out of stream order, and requiring it to finish reading before API call returns
+    cuda::copy_configuration config{};
+    config.src_access_order = cuda::source_access_order::during_api_call;
+    cuda::copy_bytes(stream, h_items, d_items, config);
+
+    REQUIRE_THAT(d_items, c2h::Equals(stream, expected));
+  };
+
+  SECTION("mutable fill value")
+  {
+    constexpr std::size_t num_items = 4096;
+    cuda::std::int32_t value        = 42;
+    check_copy(num_items, value, std::vector<cuda::std::int32_t>(num_items, value));
+  }
+
+  SECTION("converted count and fill value")
+  {
+    constexpr int num_items = 4096;
+    constexpr int value     = 7;
+    check_copy(num_items, value, std::vector<double>(num_items, value));
+  }
 }
 
 CUB_TEST("c2h host buffer initializer list constructs elements", "[c2h][buffers][host_resource]", CUB_SMALL)
