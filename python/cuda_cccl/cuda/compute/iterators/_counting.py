@@ -104,5 +104,11 @@ class CountingIterator(IteratorBase):
 
     def __add__(self, offset: int) -> "CountingIterator":
         """Return a new CountingIterator advanced by offset elements."""
-        new_start = self._start_value + offset
+        if offset < 0:
+            # Subtract instead of adding a negative Python int, which NumPy 2
+            # rejects for unsigned starts (e.g. np.uint32(10) + (-2)).
+            # ReverseIterator advances its underlying iterator this way.
+            new_start = self._start_value - (-offset)
+        else:
+            new_start = self._start_value + offset
         return CountingIterator(new_start)
