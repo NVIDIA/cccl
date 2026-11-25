@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>

@@ -49,7 +49,7 @@ TEST_HOST_DEVICE_FUNC void test()
     ({
       using A                                     = cuda::std::atomic_flag;
       alignas(alignof(A)) char storage[sizeof(A)] = {1};
-      A& zero                                     = *new (storage) A();
+      A& zero                                     = *opaque_local_address(new (storage) A());
       assert(!zero.test_and_set());
       zero.~A();
     }))

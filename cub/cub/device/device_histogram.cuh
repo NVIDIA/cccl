@@ -30,6 +30,7 @@
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_const.h>

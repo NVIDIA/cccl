@@ -137,6 +137,20 @@ TEST_FUNC inline void DoNotOptimize(Tp& value)
 #endif
 }
 
+// NVCC 13.5 can diagnose an unreachable atomic path before folding the local-memory check.
+template <class T>
+TEST_HOST_DEVICE_FUNC T* opaque_local_address(T* ptr)
+{
+#if TEST_CUDA_COMPILER(NVCC, ==, 13, 5)
+  // Keep the object where it is and make the address-space check happen at runtime.
+  NV_IF_TARGET(NV_PROVIDES_SM_100, ({
+                 T* volatile slot = ptr;
+                 return slot;
+               }))
+#endif // TEST_CUDA_COMPILER(NVCC, ==, 13, 5)
+  return ptr;
+}
+
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing
 #ifdef __CUDA_ARCH__

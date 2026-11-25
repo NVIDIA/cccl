@@ -20,7 +20,8 @@
 template <cuda::thread_scope Sco, template <typename, typename> class BarrierSelector>
 TEST_HOST_DEVICE_FUNC void test()
 {
-  cuda::barrier<Sco> b(3);
+  cuda::barrier<Sco> storage(3);
+  auto& b = *opaque_local_address(&storage);
 
   init(&b, 2);
 

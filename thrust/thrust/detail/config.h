@@ -18,7 +18,3 @@
 #endif // no system header
 
 #include <thrust/version.h> // IWYU pragma: export
-
-#if _CCCL_HOSTED()
-#  include <cuda/__nvtx/nvtx.h> // IWYU pragma: export
-#endif // _CCCL_HOSTED()

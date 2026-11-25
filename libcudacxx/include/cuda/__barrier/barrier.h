@@ -24,7 +24,7 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

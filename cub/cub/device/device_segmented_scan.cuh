@@ -32,6 +32,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
 
