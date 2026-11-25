@@ -13,7 +13,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -24,6 +24,7 @@ class _UnaryTransform(Serializable):
         "d_out_cccl",
         "op_cccl",
         "build_results",
+        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -68,23 +69,26 @@ class _UnaryTransform(Serializable):
         *,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
-        op_adapter = make_op_adapter(op)
-
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        loaded_build_result.compute(
+        self.loaded_build_result.compute(
             self.d_in_cccl,
             self.d_out_cccl,
             num_items,
@@ -102,6 +106,7 @@ class _BinaryTransform(Serializable):
         "d_out_cccl",
         "op_cccl",
         "build_results",
+        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -153,12 +158,16 @@ class _BinaryTransform(Serializable):
         d_in1,
         d_in2,
         d_out,
-        op: Callable | OpAdapter,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -166,11 +175,11 @@ class _BinaryTransform(Serializable):
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        loaded_build_result.compute(
+        self.loaded_build_result.compute(
             self.d_in1_cccl,
             self.d_in2_cccl,
             self.d_out_cccl,

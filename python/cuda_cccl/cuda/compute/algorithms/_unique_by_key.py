@@ -16,7 +16,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -92,10 +92,14 @@ class _UniqueByKey(Serializable):
         d_out_keys: DeviceArrayLike | IteratorT,
         d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
-        op: Operator,
+        op: Operator | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -107,9 +111,8 @@ class _UniqueByKey(Serializable):
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
-        # Update op state for stateful ops
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -246,7 +249,6 @@ def unique_by_key(
         d_out_keys=d_out_keys,
         d_out_items=d_out_items,
         d_out_num_selected=d_out_num_selected,
-        op=op,
         num_items=num_items,
         stream=stream,
     )

@@ -6,9 +6,11 @@
 
 from __future__ import annotations
 
+import enum
 import sys
 import sysconfig
 import warnings
+from typing import Callable
 
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
@@ -304,6 +306,24 @@ def make_op_adapter(op) -> OpAdapter:
 
     # It's a Python callable
     return _get_jit_op_adapter()(op)
+
+
+class _Unchanged(enum.Enum):
+    """Sentinel default for a ``__call__`` arg meaning "reuse the currently
+    bound value" -- distinct from ``None``, which some args (``h_init``,
+    binary_search's ``comp``) give their own meaning. An ``Enum`` (rather
+    than a plain object) so mypy narrows ``is not UNCHANGED`` checks.
+    """
+
+    UNCHANGED = enum.auto()
+
+
+UNCHANGED = _Unchanged.UNCHANGED
+
+
+def rebind_op_state(op_cccl: Op, op: Callable | OpKind | RawOp | OpAdapter) -> None:
+    """Update ``op_cccl``'s state from ``op``, in place."""
+    op_cccl.state = make_op_adapter(op).get_state()
 
 
 cache_with_registered_key_functions.register(

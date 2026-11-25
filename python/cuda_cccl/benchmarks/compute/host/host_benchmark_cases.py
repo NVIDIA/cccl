@@ -261,8 +261,6 @@ def _twoshot_reduce(state: SimpleNamespace, wrapper) -> None:
         d_in=state.d_in,
         d_out=state.d_out[:1],
         num_items=state.num_items,
-        op=state.op,
-        h_init=state.h_init,
     )
 
 
@@ -283,8 +281,6 @@ def _twoshot_reduce_stream(state: SimpleNamespace, wrapper) -> None:
         d_in=state.d_in,
         d_out=state.d_out[:1],
         num_items=state.num_items,
-        op=state.op,
-        h_init=state.h_init,
         stream=state.stream,
     )
 
@@ -321,8 +317,6 @@ def _twoshot_scan(state: SimpleNamespace, wrapper) -> None:
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
-        op=state.op,
-        init_value=state.h_init,
         num_items=state.num_items,
     )
 
@@ -343,8 +337,6 @@ def _twoshot_scan_stream(state: SimpleNamespace, wrapper) -> None:
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
-        op=state.op,
-        init_value=state.h_init,
         num_items=state.num_items,
         stream=state.stream,
     )
@@ -397,8 +389,6 @@ def _twoshot_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
         num_segments=state.num_segments,
         start_offsets_in=state.start_offsets,
         end_offsets_in=state.end_offsets,
-        op=state.op,
-        h_init=state.h_init,
     )
 
 
@@ -423,8 +413,6 @@ def _twoshot_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
         num_segments=state.num_segments,
         start_offsets_in=state.start_offsets,
         end_offsets_in=state.end_offsets,
-        op=state.op,
-        h_init=state.h_init,
         stream=state.stream,
     )
 
@@ -450,7 +438,6 @@ def _twoshot_unary_transform(state: SimpleNamespace, wrapper) -> None:
     wrapper(
         d_in=state.d_in,
         d_out=state.d_out,
-        op=state.op,
         num_items=state.num_items,
     )
 
@@ -469,7 +456,6 @@ def _twoshot_unary_transform_stream(state: SimpleNamespace, wrapper) -> None:
     wrapper(
         d_in=state.d_in,
         d_out=state.d_out,
-        op=state.op,
         num_items=state.num_items,
         stream=state.stream,
     )
@@ -499,7 +485,6 @@ def _twoshot_binary_transform(state: SimpleNamespace, wrapper) -> None:
         d_in1=state.d_in1,
         d_in2=state.d_in2,
         d_out=state.d_out,
-        op=state.op,
         num_items=state.num_items,
     )
 
@@ -520,7 +505,6 @@ def _twoshot_binary_transform_stream(state: SimpleNamespace, wrapper) -> None:
         d_in1=state.d_in1,
         d_in2=state.d_in2,
         d_out=state.d_out,
-        op=state.op,
         num_items=state.num_items,
         stream=state.stream,
     )
@@ -646,7 +630,6 @@ def _twoshot_lower_bound(state: SimpleNamespace, wrapper) -> None:
         d_values=state.d_values,
         num_values=state.num_values,
         d_out=state.d_out,
-        comp=state.comp,
     )
 
 
@@ -669,7 +652,6 @@ def _twoshot_lower_bound_stream(state: SimpleNamespace, wrapper) -> None:
         d_values=state.d_values,
         num_values=state.num_values,
         d_out=state.d_out,
-        comp=state.comp,
         stream=state.stream,
     )
 
@@ -861,7 +843,6 @@ def _twoshot_unique_by_key(state: SimpleNamespace, wrapper) -> None:
         d_out_keys=state.d_out_keys,
         d_out_items=state.d_out_items,
         d_out_num_selected=state.d_num_selected,
-        op=state.op,
         num_items=state.num_items,
     )
 
@@ -887,7 +868,6 @@ def _twoshot_unique_by_key_stream(state: SimpleNamespace, wrapper) -> None:
         d_out_keys=state.d_out_keys,
         d_out_items=state.d_out_items,
         d_out_num_selected=state.d_num_selected,
-        op=state.op,
         num_items=state.num_items,
         stream=state.stream,
     )
@@ -934,7 +914,6 @@ def _twoshot_merge_sort(state: SimpleNamespace, wrapper) -> None:
         d_out_keys=state.d_out_keys,
         d_out_values=None,
         num_items=state.num_items,
-        op=state.op,
     )
 
 
@@ -956,7 +935,6 @@ def _twoshot_merge_sort_stream(state: SimpleNamespace, wrapper) -> None:
         d_out_keys=state.d_out_keys,
         d_out_values=None,
         num_items=state.num_items,
-        op=state.op,
         stream=state.stream,
     )
 

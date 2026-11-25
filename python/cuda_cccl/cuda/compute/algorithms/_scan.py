@@ -15,7 +15,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
-    to_cccl_value_state,
+    set_cccl_value_state,
 )
 from .._serialization import (
     BOOL,
@@ -33,7 +33,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -47,6 +47,11 @@ class _Scan(Serializable):
         "op_cccl",
         "init_kind",
         "force_inclusive",
+        "loaded_build_result",
+        "device_scan_fn",
+        # Perf cache; see _Reduce.__slots__ for rationale. init_value isn't
+        # cached this way -- same reason h_init isn't: it's mutable.
+        "_last_loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -110,6 +115,9 @@ class _Scan(Serializable):
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
+        # loaded_build_result / device_scan_fn are bound lazily on the first
+        # __call__ (see _bind_device_scan_fn).
+        self._last_loaded_build_result = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
             d_in,
@@ -131,57 +139,88 @@ class _Scan(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized.
+        self._last_loaded_build_result = None
+
+    def _bind_device_scan_fn(self) -> None:
+        # Derived from force_inclusive + init_kind, from the loaded build result (not
+        # serialized as a function); bound at __call__ once resolve_build_result picks
+        # + loads the current device's build result.
+        #
+        # Perf: skip re-deriving when loaded_build_result's identity is
+        # unchanged (see _Reduce._bind_device_reduce_fn).
+        if self.loaded_build_result is self._last_loaded_build_result:
+            return
+        match (self.force_inclusive, self.init_kind):
+            case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
+                self.device_scan_fn = (
+                    self.loaded_build_result.compute_inclusive_future_value
+                )
+            case (True, _bindings.InitKind.VALUE_INIT):
+                self.device_scan_fn = self.loaded_build_result.compute_inclusive
+            case (True, _bindings.InitKind.NO_INIT):
+                self.device_scan_fn = self.loaded_build_result.compute_inclusive_no_init
+            case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
+                self.device_scan_fn = (
+                    self.loaded_build_result.compute_exclusive_future_value
+                )
+            case (False, _bindings.InitKind.VALUE_INIT):
+                self.device_scan_fn = self.loaded_build_result.compute_exclusive
+            case (False, _bindings.InitKind.NO_INIT):
+                raise ValueError("Exclusive scan with No init value is not supported")
+        self._last_loaded_build_result = self.loaded_build_result
+
     def __call__(
         self,
         *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None | _Unchanged = (
+            UNCHANGED
+        ),
         num_items: int,
         stream=None,
     ):
-        # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        """``op``/``init_value`` default to ``UNCHANGED``: omit them to
+        reuse whatever was last bound (construction, or a previous call
+        that passed them), skipping their re-derivation entirely.
+        """
+        # Select (and lazily load) the current device's build result, then bind the
+        # derived compute fn from it.
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
-        match (self.force_inclusive, self.init_kind):
-            case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
-                device_scan_fn = loaded_build_result.compute_inclusive_future_value
-            case (True, _bindings.InitKind.VALUE_INIT):
-                device_scan_fn = loaded_build_result.compute_inclusive
-            case (True, _bindings.InitKind.NO_INIT):
-                device_scan_fn = loaded_build_result.compute_inclusive_no_init
-            case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
-                device_scan_fn = loaded_build_result.compute_exclusive_future_value
-            case (False, _bindings.InitKind.VALUE_INIT):
-                device_scan_fn = loaded_build_result.compute_exclusive
-            case (False, _bindings.InitKind.NO_INIT):
-                raise ValueError("Exclusive scan with No init value is not supported")
+        self._bind_device_scan_fn()
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
-        match self.init_kind:
-            case _bindings.InitKind.FUTURE_VALUE_INIT:
-                # We know that the init_value_cccl is an Iterator, so this cast
-                # tells MyPy what the actual type is. cast() is a no-op at runtime,
-                # which makes it better than isinstance() since this is a hot path
-                # and we have to minimize the work we do prior to calling the
-                # kernel.
-                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
-                set_cccl_iterator_state(self.init_value_cccl, init_value)
+        if init_value is not UNCHANGED:
+            match self.init_kind:
+                case _bindings.InitKind.FUTURE_VALUE_INIT:
+                    # We know that the init_value_cccl is an Iterator, so this cast
+                    # tells MyPy what the actual type is. cast() is a no-op at runtime,
+                    # which makes it better than isinstance() since this is a hot path
+                    # and we have to minimize the work we do prior to calling the
+                    # kernel.
+                    self.init_value_cccl = cast(
+                        _bindings.Iterator, self.init_value_cccl
+                    )
+                    set_cccl_iterator_state(self.init_value_cccl, init_value)
 
-            case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                self.init_value_cccl.state = to_cccl_value_state(
-                    cast("np.ndarray | GpuStruct", init_value)
-                )
+                case _bindings.InitKind.VALUE_INIT:
+                    self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
+                    set_cccl_value_state(
+                        self.init_value_cccl,
+                        cast("np.ndarray | GpuStruct", init_value),
+                    )
 
         stream_handle = validate_and_get_stream(stream)
 
@@ -192,7 +231,7 @@ class _Scan(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = device_scan_fn(
+        temp_storage_bytes = self.device_scan_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -300,8 +339,6 @@ def exclusive_scan(
         temp_storage=tmp_storage,
         d_in=d_in,
         d_out=d_out,
-        op=op,
-        init_value=init_value,
         num_items=num_items,
         stream=stream,
     )
@@ -402,8 +439,6 @@ def inclusive_scan(
         temp_storage=tmp_storage,
         d_in=d_in,
         d_out=d_out,
-        op=op,
-        init_value=init_value,
         num_items=num_items,
         stream=stream,
     )

@@ -20,7 +20,14 @@ from .._serialization import (
     Serializable,
 )
 from .._utils import protocols
-from ..op import OpAdapter, OpKind, make_op_adapter
+from ..op import (
+    UNCHANGED,
+    OpAdapter,
+    OpKind,
+    _Unchanged,
+    make_op_adapter,
+    rebind_op_state,
+)
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -114,9 +121,14 @@ class _BinarySearch:
         d_values,
         num_values: int,
         d_out,
-        comp: Operator | None,
+        comp: Operator | None | _Unchanged = UNCHANGED,
         stream=None,
     ):
+        """``comp`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely. Pass ``None`` to explicitly
+        (re)set it to ``OpKind.LESS``.
+        """
         # Select (and lazily load) the build result for the current device.
         loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -126,9 +138,8 @@ class _BinarySearch:
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
-        comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
-        self.op_cccl.state = comp_adapter.get_state()
+        if comp is not UNCHANGED:
+            rebind_op_state(self.op_cccl, OpKind.LESS if comp is None else comp)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         loaded_build_result.compute(

@@ -16,7 +16,7 @@ from ..._utils.protocols import (
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...op import OpAdapter, make_op_adapter
+from ...op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -30,6 +30,7 @@ class _MergeSort(Serializable):
         "op_adapter",
         "op_cccl",
         "build_results",
+        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -92,11 +93,15 @@ class _MergeSort(Serializable):
         d_out_keys: DeviceArrayLike,
         d_out_values: DeviceArrayLike | None,
         num_items: int,
-        op: Operator,
+        op: Operator | _Unchanged = UNCHANGED,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -111,8 +116,8 @@ class _MergeSort(Serializable):
         if present_out_values:
             set_cccl_iterator_state(self.d_out_values_cccl, d_out_values)
 
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -124,7 +129,7 @@ class _MergeSort(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = loaded_build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -255,6 +260,5 @@ def merge_sort(
         d_out_keys=d_out_keys,
         d_out_values=d_out_values,
         num_items=num_items,
-        op=op,
         stream=stream,
     )

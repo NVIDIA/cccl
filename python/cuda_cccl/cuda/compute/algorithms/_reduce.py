@@ -15,7 +15,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
-    to_cccl_value_state,
+    set_cccl_value_state,
 )
 from .._serialization import (
     BUILD_RESULTS,
@@ -30,7 +30,7 @@ from .._utils import get_init_kind
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..op import OpAdapter, make_op_adapter
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import (
     DeviceArrayLike,
     GpuStruct,
@@ -50,6 +50,12 @@ class _Reduce(Serializable):
         "op_cccl",
         "init_kind",
         "build_results",
+        "loaded_build_result",
+        "device_reduce_fn",
+        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
+        # positives). h_init isn't cached this way: it's mutable, and
+        # identity can't detect an in-place change.
+        "_last_loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -113,6 +119,9 @@ class _Reduce(Serializable):
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
+        # loaded_build_result / device_reduce_fn are bound lazily on the first
+        # __call__ (see _bind_device_reduce_fn).
+        self._last_loaded_build_result = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -134,6 +143,30 @@ class _Reduce(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized -- without this, a
+        # deserialized _Reduce would raise AttributeError the first time
+        # _bind_device_reduce_fn reads it.
+        self._last_loaded_build_result = None
+
+    def _bind_device_reduce_fn(self) -> None:
+        # Derived from the loaded build result (not serialized); bound at __call__
+        # once resolve_build_result picks + loads the current device's build result.
+        # compute() handles both init kinds: it ignores h_init for NO_INIT builds.
+        # Perf: device_reduce_fn depends only on loaded_build_result's
+        # identity, so skip re-deriving it when that's unchanged.
+        if self.loaded_build_result is self._last_loaded_build_result:
+            return
+        if (
+            Determinism(self.loaded_build_result.determinism)
+            is Determinism.NOT_GUARANTEED
+        ):
+            self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.loaded_build_result.compute
+        self._last_loaded_build_result = self.loaded_build_result
+
     def __call__(
         self,
         *,
@@ -141,34 +174,35 @@ class _Reduce(Serializable):
         d_in,
         d_out,
         num_items: int,
-        op: Callable | OpAdapter,
-        h_init: np.ndarray | GpuStruct | None,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        h_init: np.ndarray | GpuStruct | None | _Unchanged = UNCHANGED,
         stream=None,
     ):
-        # Select (and lazily load) the build result for the current device.
-        loaded_build_result = cccl.resolve_build_result(
+        """``op``/``h_init`` default to ``UNCHANGED``: omit them to reuse
+        whatever was last bound (construction, or a previous call that
+        passed them), skipping their re-derivation entirely.
+        """
+        # Select (and lazily load) the current device's build result, then bind the
+        # derived compute fn from it.
+        self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
-        if Determinism(loaded_build_result.determinism) is Determinism.NOT_GUARANTEED:
-            device_reduce_fn = loaded_build_result.compute_nondeterministic
-        else:
-            device_reduce_fn = loaded_build_result.compute
+        self._bind_device_reduce_fn()
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op is not UNCHANGED:
+            rebind_op_state(self.op_cccl, op)
 
-        if self.init_kind is _bindings.InitKind.VALUE_INIT:
+        if h_init is not UNCHANGED and self.init_kind is _bindings.InitKind.VALUE_INIT:
             # We know that h_init_cccl is a Value here, so this cast tells MyPy
             # what the actual type is. cast() is a no-op at runtime, which makes
             # it better than isinstance() since this is a hot path and we have
             # to minimize the work we do prior to calling the kernel.
             self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
-            self.h_init_cccl.state = to_cccl_value_state(
-                cast("np.ndarray | GpuStruct", h_init)
+            set_cccl_value_state(
+                self.h_init_cccl, cast("np.ndarray | GpuStruct", h_init)
             )
 
         stream_handle = validate_and_get_stream(stream)
@@ -180,7 +214,7 @@ class _Reduce(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = device_reduce_fn(
+        temp_storage_bytes = self.device_reduce_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -320,7 +354,5 @@ def reduce_into(
         d_in=d_in,
         d_out=d_out,
         num_items=num_items,
-        op=op,
-        h_init=h_init,
         stream=stream,
     )
