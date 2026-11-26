@@ -25,6 +25,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1055,8 +1056,13 @@ public:
       {
         output_items[0] = input_items[0];
       }
-      else
+      else if constexpr (!::cuda::std::is_same_v<T, OutputT> || ::cuda::is_trivially_copyable_v<T>)
       {
+        _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+      }
+      else if (static_cast<const T*>(input_items) != static_cast<const T*>(output_items))
+      {
+        // Avoid placement-constructing a non-trivially-copyable element over its own live storage.
         _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
       }
     }

@@ -5,6 +5,7 @@
 
 #include <thrust/memory.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -654,6 +655,63 @@ void test_single_item_exchange_conversion_semantics()
   REQUIRE(d_ws2b == d_in);
 }
 
+struct self_resetting_exchange_item
+{
+  int value{};
+
+  __host__ __device__ self_resetting_exchange_item() = default;
+  __host__ __device__ explicit self_resetting_exchange_item(int v)
+      : value(v)
+  {}
+  __host__ __device__ self_resetting_exchange_item(const self_resetting_exchange_item& other)
+      : value(0)
+  {
+    value = other.value;
+  }
+  self_resetting_exchange_item& operator=(const self_resetting_exchange_item&) = delete;
+};
+
+template <int BlockThreads>
+__global__ void
+single_item_warp_striped_aliased_non_trivial_kernel(const int* d_in, int* d_aliased_out, int* d_distinct_out)
+{
+  static_assert(!::cuda::is_trivially_copyable_v<self_resetting_exchange_item>);
+  using block_exchange_t = cub::BlockExchange<self_resetting_exchange_item, BlockThreads, 1, false>;
+  __shared__ typename block_exchange_t::TempStorage temp_storage;
+  block_exchange_t exchange(temp_storage);
+
+  const int tid = static_cast<int>(threadIdx.x);
+  self_resetting_exchange_item aliased[1]{self_resetting_exchange_item{d_in[tid]}};
+  exchange.WarpStripedToBlocked(aliased);
+  exchange.WarpStripedToBlocked(aliased, aliased);
+  d_aliased_out[tid] = aliased[0].value;
+
+  self_resetting_exchange_item distinct[1]{};
+  exchange.WarpStripedToBlocked(aliased, distinct);
+  d_distinct_out[tid] = distinct[0].value;
+}
+
+void test_single_item_warp_striped_aliased_non_trivial()
+{
+  constexpr int block_threads = 128;
+
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_aliased_out(block_threads, 0);
+  c2h::device_vector<int> d_distinct_out(block_threads, 0);
+
+  single_item_warp_striped_aliased_non_trivial_kernel<block_threads><<<1, block_threads>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_aliased_out.data()),
+    thrust::raw_pointer_cast(d_distinct_out.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_aliased_out == d_in);
+  REQUIRE(d_distinct_out == d_in);
+}
+
 CUB_TEST_CASE("BlockExchange single-item transposes handle in-place, aliased, and cross-type outputs",
               "[exchange][block]",
               CUB_SMALL)
@@ -668,5 +726,6 @@ CUB_TEST_CASE("BlockExchange single-item transposes handle in-place, aliased, an
   test_single_item_exchange_transpose<true>();
   test_single_item_exchange_conversion_semantics<false>();
   test_single_item_exchange_conversion_semantics<true>();
+  test_single_item_warp_striped_aliased_non_trivial();
 }
 #endif // TEST_TYPES == 0
