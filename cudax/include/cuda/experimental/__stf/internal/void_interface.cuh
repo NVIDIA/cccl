@@ -29,7 +29,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <tuple>
 
 namespace cuda::experimental::stf
 {

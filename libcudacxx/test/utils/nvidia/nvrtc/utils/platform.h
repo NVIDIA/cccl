@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #  define WINDOWS_STUFF
 #  include "platform.win.h"
 #else

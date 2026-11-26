@@ -25,7 +25,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+
+#include <array>
+#include <tuple>
 
 namespace cuda::experimental::places
 {

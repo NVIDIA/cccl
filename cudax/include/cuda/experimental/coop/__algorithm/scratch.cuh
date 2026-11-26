@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -74,15 +74,15 @@ struct __scratch_reqs
   static constexpr bool needs_shared_memory = !::cuda::std::is_same_v<_Smem, __empty_smem_scratch>;
   static constexpr bool needs_global_memory = !::cuda::std::is_same_v<_Gmem, __empty_gmem_scratch>;
 
-  static constexpr ::cuda::std::size_t shared_memory_size = (needs_shared_memory) ? sizeof(_Smem) : 0;
-  static constexpr ::cuda::std::size_t global_memory_size = (needs_global_memory) ? sizeof(_Gmem) : 0;
+  static constexpr ::cuda::std::size_t shared_memory_size = needs_shared_memory ? sizeof(_Smem) : 0;
+  static constexpr ::cuda::std::size_t global_memory_size = needs_global_memory ? sizeof(_Gmem) : 0;
 
-  static constexpr ::cuda::std::size_t shared_memory_alignment = (needs_shared_memory) ? alignof(_Smem) : 0;
-  static constexpr ::cuda::std::size_t global_memory_alignment = (needs_global_memory) ? alignof(_Gmem) : 0;
+  static constexpr ::cuda::std::size_t shared_memory_alignment = needs_shared_memory ? alignof(_Smem) : 0;
+  static constexpr ::cuda::std::size_t global_memory_alignment = needs_global_memory ? alignof(_Gmem) : 0;
 };
 
 template <class _Alg, class... _Args>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL auto get_scratch_requirements(const _Alg& __alg, _Args&&... __args)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL auto get_scratch_requirements(const _Alg&, _Args&&... __args)
   -> decltype(_Alg::__get_scratch_requirements(::cuda::std::forward<_Args>(__args)...))
 {
   static_assert(::cuda::std::is_invocable_v<_Alg, _Args...>, "_Alg must be invocable with _Args");

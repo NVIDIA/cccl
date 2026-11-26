@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -32,14 +34,19 @@
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/apply_sender.cuh>
+#include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
+
+#include <nv/target>
 
 #include <exception>
 #include <system_error>

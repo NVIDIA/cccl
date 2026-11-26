@@ -26,7 +26,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/memory>
+
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <string>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

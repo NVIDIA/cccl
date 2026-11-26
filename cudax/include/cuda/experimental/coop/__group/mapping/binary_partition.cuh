@@ -39,16 +39,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
 template <class _Callable, class _Unit, class _ParentGroup, class _PrevMappingResult>
 [[nodiscard]] _CCCL_DEVICE_API auto __binary_parition_map(
-  _Callable& __fn, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
+  _Callable& __fn, const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
 {
   static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
-  static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
+  static_assert(::cuda::std::is_same_v<typename _ParentGroup::boundary_level, warp_level>,
                 "binary_partition can be only used within warp_level");
 
   constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
@@ -82,7 +82,7 @@ template <class _Callable, class _Unit, class _ParentGroup, class _PrevMappingRe
   }
   return _MappingResult{
     __prev_mapping_result.group_count() * 2,
-    __prev_mapping_result.group_rank() + ((__pred) ? __prev_mapping_result.group_count() : 0u),
+    __prev_mapping_result.group_rank() + (__pred ? __prev_mapping_result.group_count() : 0u),
     static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask)),
     static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
     ::cuda::device::lane_mask{__match_mask}};

@@ -69,7 +69,7 @@
 // enum below are plain C++ and are always emitted so the braces stay balanced and
 // the emulation cores (which take fpemu_accuracy as a template parameter) can see
 // it in every build.
-#if !defined(__CUDA_LIBDEVICE__)
+#ifndef __CUDA_LIBDEVICE__
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -93,7 +93,7 @@ enum struct fpemu_accuracy
 };
 _CCCL_END_NAMESPACE_CUDA
 
-#if !defined(__CUDA_LIBDEVICE__)
+#ifndef __CUDA_LIBDEVICE__
 #  include <cuda/std/__cccl/epilogue.h>
 #endif
 

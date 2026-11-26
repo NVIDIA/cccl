@@ -2,11 +2,18 @@
 
 #include <thrust/copy.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

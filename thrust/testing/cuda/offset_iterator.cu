@@ -1,9 +1,12 @@
-#include <thrust/distance.h>
-#include <thrust/functional.h>
+#include <thrust/device_vector.h>
 #include <thrust/iterator/offset_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
 
+#include <cuda/std/cstddef>
 #include <cuda/std/iterator>
+
+#include <cassert>
 
 #include <unittest/unittest.h>
 

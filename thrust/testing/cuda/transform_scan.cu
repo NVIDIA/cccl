@@ -1,5 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/scan.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform_scan.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

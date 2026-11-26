@@ -694,4 +694,4 @@ minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/extrema.inl>
+#include <thrust/detail/extrema.inl> // IWYU pragma: export

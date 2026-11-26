@@ -18,4 +18,4 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/universal_allocator.h>
+#include <thrust/universal_allocator.h> // IWYU pragma: export

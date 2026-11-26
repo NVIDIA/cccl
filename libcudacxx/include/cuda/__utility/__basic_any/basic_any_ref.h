@@ -39,6 +39,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
@@ -59,7 +66,7 @@ struct __ireference : ::cuda::std::remove_const_t<_Interface>
   static constexpr size_t __align_     = alignof(void*);
   static constexpr bool __is_const_ref = ::cuda::std::is_const_v<_Interface>;
 
-  using interface _CCCL_NODEBUG = ::cuda::std::remove_const_t<_Interface>;
+  using interface_type _CCCL_NODEBUG = ::cuda::std::remove_const_t<_Interface>;
 };
 
 //!
@@ -121,7 +128,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_interface() const noexcept -> ::cuda::std::__type_info_ref
   {
     return *__get_rtti()->__interface_typeid_;
   }
@@ -137,7 +144,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
     return true;
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
@@ -188,7 +195,7 @@ private:
   _CCCL_HOST_DEVICE_API void
   __set_ref(_VTable const* __other, ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
-    using _OtherInterface = typename _VTable::interface;
+    using _OtherInterface = typename _VTable::interface_type;
     __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
     __optr_               = __vptr_ ? __obj : nullptr;
   }
@@ -321,6 +328,11 @@ private:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

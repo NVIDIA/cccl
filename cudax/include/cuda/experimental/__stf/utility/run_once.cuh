@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+#include <tuple>
 #include <unordered_map>
 
 namespace cuda::experimental::stf

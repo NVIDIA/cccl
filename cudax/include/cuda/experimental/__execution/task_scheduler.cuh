@@ -21,12 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/cuda_error.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/policy.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator.h>
-#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__utility/monostate.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pod_tuple.h>
+#include <cuda/std/__utility/typeid.h>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/bulk.cuh>
@@ -39,12 +47,22 @@
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/inline_scheduler.cuh>
 #include <cuda/experimental/__execution/parallel_scheduler_backend.cuh>
+#include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
+#include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__utility/shared_ptr.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _CUDAX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 namespace cuda::experimental::execution
 {
@@ -712,6 +730,11 @@ _CCCL_HOST_DEVICE_API auto __receiver_proxy_base<_Rcvr, _Proxy>::query(const get
 }
 } // namespace __detail
 } // namespace cuda::experimental::execution
+
+#ifdef _CUDAX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _CUDAX_POP_MACRO_empty_bases
+#endif // defined(_CUDAX_POP_MACRO_empty_bases)
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

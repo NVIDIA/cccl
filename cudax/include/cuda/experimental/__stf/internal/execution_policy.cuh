@@ -24,12 +24,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__utility/optionally_static.cuh>
 
 #include <cassert>
-#include <variant>
+
+#ifdef UNITTESTED_FILE
+#  include <tuple>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

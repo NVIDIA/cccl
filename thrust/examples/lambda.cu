@@ -2,6 +2,7 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
+#include <cstddef>
 #include <iostream>
 
 // This example demonstrates the use of placeholders to implement

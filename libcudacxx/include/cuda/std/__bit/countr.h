@@ -50,7 +50,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_BUILTIN_CTZG)
+#ifndef _CCCL_BUILTIN_CTZG
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countr_zero_impl_constexpr(_Tp __v) noexcept

@@ -1,4 +1,4 @@
-#include <cuda/std/memory>
+#include <cstddef>
 
 #include <cuda_runtime_api.h>
 

@@ -20,15 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
-#include <cuda/__event/timed_event.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

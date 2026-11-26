@@ -23,16 +23,13 @@
 
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__utility/manual_lifetime.cuh>
 

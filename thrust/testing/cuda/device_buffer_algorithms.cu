@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/buffer>
 #include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <unittest/unittest.h>
 

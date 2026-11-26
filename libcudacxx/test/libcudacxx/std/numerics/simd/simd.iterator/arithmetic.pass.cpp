@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.iterator], iterator arithmetic for __simd_iterator
 //
@@ -19,10 +19,10 @@
 // binary arithmetic (it + n, n + it, it - n, it - it), and differences
 // between iterators and default_sentinel_t.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/memory>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

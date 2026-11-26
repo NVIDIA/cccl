@@ -11,10 +11,10 @@
 // UNSUPPORTED: force-tile
 // SIMD host/device functions are not supported in tile mode.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/simd>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>

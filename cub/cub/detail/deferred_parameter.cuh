@@ -17,6 +17,7 @@
 
 #include <cuda/__argument/argument.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
@@ -27,6 +28,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// Classify argument roles here; validate the wrapped count type after selecting the overload.
+template <typename NumItemsT, bool IsWrapper = ::cuda::args::__is_wrapper_v<NumItemsT>>
+inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT>;
+
+template <typename NumItemsT>
+inline constexpr bool is_num_items_v<NumItemsT, true> = ::cuda::args::__traits<NumItemsT>::is_single_value;
+
 template <typename NumItemsT>
 using num_items_offset_t = choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
 

@@ -37,7 +37,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -77,7 +77,9 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, ScanAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -133,7 +135,9 @@ struct ScanLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanLookbackPolicy& p)
   {
     return os
         << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -188,7 +192,9 @@ struct ScanLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanLookaheadPolicy& p)
   {
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
@@ -220,7 +226,9 @@ struct ScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanPolicy& p)
   {
     return os << "ScanPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";
@@ -737,6 +745,31 @@ struct policy_hub
 template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_batched_delay_policy(LookbackDelayPolicy policy)
+  -> LookbackDelayPolicy
+{
+  if (policy.kind == LookbackDelayAlgorithm::fixed_delay || policy.kind == LookbackDelayAlgorithm::no_delay)
+  {
+    // Occupancy-sized grids may have fewer than 500 CTAs. Retain nanosleeps to avoid serious lookback regressions.
+    policy.delay = policy.kind == LookbackDelayAlgorithm::no_delay ? 0 : policy.delay;
+    policy.kind  = LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold;
+  }
+  return policy;
+}
+
+// Only persistent batch grids need waits independent of grid size. Apply this after custom tuning so
+// single-grid scans retain their selected delay policy and custom batch policies preserve their wait behavior.
+template <typename PolicySelector>
+struct batch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = PolicySelector{}(cc);
+    policy.lookback.lookback_delay = _CUB::detail::scan::make_batched_delay_policy(policy.lookback.lookback_delay);
+    return policy;
+  }
+};
 
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,

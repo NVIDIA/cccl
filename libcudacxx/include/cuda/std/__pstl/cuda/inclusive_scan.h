@@ -75,7 +75,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
+      "__pstl_cuda_inclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
       ::cuda::std::move(__first),
       __result,
       ::cuda::std::move(__binary_op),
@@ -104,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
-      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
+      "__pstl_cuda_inclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
       ::cuda::std::move(__first),
       __result,
       ::cuda::std::move(__binary_op),

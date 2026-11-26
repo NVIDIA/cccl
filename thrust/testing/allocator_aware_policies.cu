@@ -1,5 +1,11 @@
-#include <thrust/detail/seq.h>
-#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/detail/config.h>
+
+#include <thrust/detail/execute_with_allocator_fwd.h>
+#include <thrust/execution_policy.h>
+#include <thrust/mr/allocator.h>
+#include <thrust/mr/memory_resource.h>
+#include <thrust/system/cpp/execution_policy.h>
+#include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
@@ -7,13 +13,14 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cstddef>
 #include <memory>
 #include <new>
 
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/execution_policy.h>
 #endif
 
 template <typename T>

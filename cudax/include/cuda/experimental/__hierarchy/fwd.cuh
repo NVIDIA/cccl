@@ -23,12 +23,11 @@
 
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__fwd/span.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental
 {

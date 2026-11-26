@@ -37,6 +37,7 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>

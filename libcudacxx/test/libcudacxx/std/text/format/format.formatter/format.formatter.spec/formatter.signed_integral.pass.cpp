@@ -52,9 +52,9 @@ TEST_HOST_DEVICE_FUNC void test_signed_int_formatter(
 
   Container container{};
 
-  auto store   = cuda::std::make_format_args<FormatContext>(value);
-  auto args    = cuda::std::basic_format_args{store};
-  auto context = cuda::std::__fmt_make_format_context(OutIt{container}, args);
+  const auto store = cuda::std::make_format_args<FormatContext>(value);
+  const auto args  = cuda::std::basic_format_args{store};
+  auto context     = cuda::std::__fmt_make_format_context(OutIt{container}, args);
 
   cuda::std::formatter<T, CharT> formatter{};
   static_assert(cuda::std::semiregular<decltype(formatter)>);

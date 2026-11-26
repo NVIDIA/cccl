@@ -193,4 +193,4 @@ _CCCL_HOST_API OutputIterator generate_n(OutputIterator first, Size n, Generator
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/generate.inl>
+#include <thrust/detail/generate.inl> // IWYU pragma: export

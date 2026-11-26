@@ -6,13 +6,20 @@
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

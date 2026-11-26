@@ -32,7 +32,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -71,7 +71,9 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, RadixSortAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -118,7 +120,9 @@ struct RadixSortHistogramPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortHistogramPolicy& p)
   {
     return os << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .private_partitions = " << p.private_partitions
@@ -146,7 +150,9 @@ struct RadixSortExclusiveSumPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortExclusiveSumPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortExclusiveSumPolicy& p)
   {
     return os << "RadixSortExclusiveSumPolicy { .threads_per_block = " << p.threads_per_block
               << ", .radix_bits = " << p.radix_bits << " }";
@@ -186,7 +192,9 @@ struct RadixSortOnesweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortOnesweepPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortOnesweepPolicy& p)
   {
     return os
         << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
@@ -224,7 +232,9 @@ struct RadixSortDownsweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortDownsweepPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortDownsweepPolicy& p)
   {
     return os
         << "RadixSortDownsweepPolicy { .threads_per_block = " << p.threads_per_block
@@ -257,7 +267,9 @@ struct RadixSortUpsweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortUpsweepPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortUpsweepPolicy& p)
   {
     return os
         << "RadixSortUpsweepPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -297,7 +309,9 @@ struct RadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RadixSortPolicy& p)
   {
     return os
         << "RadixSortPolicy { .algorithm = " << p.algorithm << ", .histogram = " << p.histogram
@@ -1612,7 +1626,7 @@ struct policy_hub
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
     static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
-    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr bool ONESWEEP              = true;
     static constexpr int ONESWEEP_RADIX_BITS    = 8;
     static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
 
@@ -2011,10 +2025,9 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
-      const int onesweep_radix_bits = 8;
-      const bool offset_64bit       = offset_size == 8;
+      const auto use_onesweep          = RadixSortAlgorithm::onesweep;
+      const int onesweep_radix_bits    = 8;
+      const bool offset_64bit          = offset_size == 8;
 
       const auto histogram = RadixSortHistogramPolicy{
         128, 16, _CUB::detail::radix_sort::__scale_num_parts(1, key_size), onesweep_radix_bits};

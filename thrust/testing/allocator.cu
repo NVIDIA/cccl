@@ -5,15 +5,20 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
+#include <thrust/system/cpp/execution_policy.h>
 #include <thrust/system/cpp/vector.h>
 
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include <nv/target>
 
+#include <cstddef>
 #include <memory>
 
 #include <unittest/unittest.h>

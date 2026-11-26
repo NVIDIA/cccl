@@ -45,7 +45,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -173,7 +173,7 @@ class barrier_synchronizer
   [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance<_Barrier, _Unit> __make_instance(
     _Range& __barriers, const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
   {
-    using _Level = typename _ParentGroup::level_type;
+    using _Bound = typename _ParentGroup::boundary_level;
 
     constexpr auto __static_group_count   = _MappingResult::static_group_count();
     constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_Range>;
@@ -183,8 +183,8 @@ class barrier_synchronizer
       static_assert(__static_group_count <= __static_barrier_count, "invalid number of barriers passed");
     }
 
-    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
-                  "_Barrier's thread scope is insufficient for group synchronization in _Level");
+    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Bound>,
+                  "_Barrier's thread scope must cover the parent group's bound level");
 
     ::cuda::std::size_t __nthread_in_unit     = 1;
     ::cuda::std::size_t __thread_rank_in_unit = 0;
@@ -220,7 +220,7 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers)
+  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers) // NOLINT(bugprone-forwarding-reference-overload)
       : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
   {}
 

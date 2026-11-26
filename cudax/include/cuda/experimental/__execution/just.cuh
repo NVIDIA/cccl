@@ -24,11 +24,11 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

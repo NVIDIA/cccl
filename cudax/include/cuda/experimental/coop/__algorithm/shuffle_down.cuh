@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -43,12 +43,11 @@ template <bool _Dummy = false>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
-_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
-                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_level, thread_level>
+                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
 __shuffle_down_impl(const _Group& __group, const _Tp& __value, unsigned __offset)
 {
-  using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
 
   const auto __lane_mask       = __mapping_result.lane_mask();
@@ -56,18 +55,18 @@ __shuffle_down_impl(const _Group& __group, const _Tp& __value, unsigned __offset
 
   if constexpr (_Group::is_always_contiguous())
   {
-    const auto __real_offset = (__offset_is_valid) ? __offset : 0u;
+    const auto __real_offset = __offset_is_valid ? __offset : 0u;
     const auto __result =
       ::cuda::device::warp_shuffle_down(__value, static_cast<int>(__real_offset), __lane_mask.value());
-    return (__offset_is_valid) ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
+    return __offset_is_valid ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
   }
   else
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     const auto __src_lane =
-      (__offset_is_valid) ? ::__fns(__lane_mask.value(), __lane, static_cast<int>(__offset + 1)) : __lane;
+      __offset_is_valid ? ::__fns(__lane_mask.value(), __lane, static_cast<int>(__offset + 1)) : __lane;
     const auto __result = ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
-    return (__offset_is_valid) ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
+    return __offset_is_valid ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
   }
 }
 

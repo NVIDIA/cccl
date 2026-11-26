@@ -23,8 +23,7 @@
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 
 THRUST_NAMESPACE_BEGIN

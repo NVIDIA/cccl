@@ -229,12 +229,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_signed_integer_v<_Tp>)
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});)) // ADL
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});)) // ADL
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(
+        return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});) // ADL
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -265,12 +261,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_signed_integer_v<_Tp>)
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});)) // ADL
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});)) // ADL
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(
+        return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});) // ADL
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -304,10 +296,7 @@ max_relu(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __a,
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, (return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);))
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);))
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);)
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -341,10 +330,7 @@ min_relu(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __a,
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, (return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);))
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);))
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);)
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()

@@ -22,10 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_valid_expansion.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>

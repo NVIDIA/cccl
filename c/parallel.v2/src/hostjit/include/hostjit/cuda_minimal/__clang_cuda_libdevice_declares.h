@@ -10,7 +10,7 @@
 #ifndef __CLANG_CUDA_LIBDEVICE_DECLARES_H__
 #define __CLANG_CUDA_LIBDEVICE_DECLARES_H__
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -365,7 +365,7 @@ __DEVICE__ float __nv_y1f(float __a);
 __DEVICE__ float __nv_ynf(int __a, float __b);
 __DEVICE__ double __nv_yn(int __a, double __b);
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 } // extern "C"
 #endif
 #endif // __CLANG_CUDA_LIBDEVICE_DECLARES_H__

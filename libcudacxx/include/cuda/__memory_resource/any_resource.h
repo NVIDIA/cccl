@@ -38,6 +38,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#  ifdef empty_bases
+#    pragma push_macro("empty_bases")
+#    undef empty_bases
+#    define _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
@@ -272,7 +279,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   //! @endcond
 
 private:
-  using __base::interface;
+  using __base::__get_interface;
 };
 
 // ``any_resource`` wraps any given resource that satisfies the
@@ -300,7 +307,7 @@ private:
   template <class...>
   friend struct any_synchronous_resource;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -362,7 +369,7 @@ private:
   template <class...>
   friend struct synchronous_resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -433,7 +440,7 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -1175,6 +1182,11 @@ template <class... _DstProperties, class... _SrcProperties>
 }
 
 _CCCL_END_NAMESPACE_CUDA_MR
+
+#  ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#    pragma pop_macro("empty_bases")
+#    undef _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #  include <cuda/std/__cccl/epilogue.h>
 

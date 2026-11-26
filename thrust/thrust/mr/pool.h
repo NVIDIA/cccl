@@ -27,6 +27,7 @@
 #include <thrust/mr/validator.h>
 
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/algorithm>
@@ -380,22 +381,13 @@ public:
       if (n == 0)
       {
         n = m_options.min_blocks_per_chunk;
-        if (n < (m_options.min_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.min_bytes_per_chunk >> bytes_log2;
-        }
+        n = (::cuda::max) (n, m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
         n = n * 3 / 2;
-        if (n > (m_options.max_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.max_bytes_per_chunk >> bytes_log2;
-        }
-        if (n > m_options.max_blocks_per_chunk)
-        {
-          n = m_options.max_blocks_per_chunk;
-        }
+        n = (::cuda::min) (n, m_options.max_bytes_per_chunk >> bytes_log2);
+        n = (::cuda::min) (n, m_options.max_blocks_per_chunk);
       }
 
       const std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
