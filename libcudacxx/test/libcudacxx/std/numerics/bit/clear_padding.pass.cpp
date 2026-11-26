@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// __clear_padding supports host and SIMT device code.
+// UNSUPPORTED: force-tile
+
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
@@ -91,6 +94,28 @@ TEST_FUNC void test_array()
   }
 }
 
+TEST_FUNC void test_copy_overaligned_array()
+{
+  struct alignas(32) Element
+  {
+    int value;
+
+    TEST_FUNC constexpr explicit Element(int v)
+        : value(v)
+    {}
+    Element(Element&&) = default;
+  };
+  static_assert(cuda::std::is_trivially_copyable_v<Element>);
+  static_assert(!cuda::std::is_copy_constructible_v<Element>);
+  static_assert(!cuda::std::is_default_constructible_v<Element>);
+
+  const Element values[] = {Element{17}, Element{-3}, Element{42}};
+  const auto copy        = cuda::std::__create_copy(values);
+  assert(copy.__value[0].value == 17);
+  assert(copy.__value[1].value == -3);
+  assert(copy.__value[2].value == 42);
+}
+
 #endif // _CCCL_BUILTIN_CLEAR_PADDING
 
 int main(int, char**)
@@ -100,6 +125,7 @@ int main(int, char**)
   test_scalar<RelaxedWithPadding>();
   test_array<WithPadding>();
   test_array<RelaxedWithPadding>();
+  test_copy_overaligned_array();
 #endif // _CCCL_BUILTIN_CLEAR_PADDING
   return 0;
 }
