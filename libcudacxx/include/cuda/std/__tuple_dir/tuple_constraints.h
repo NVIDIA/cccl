@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -204,14 +204,10 @@ struct __tuple_constraints
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
         return false;
       }
-      else if constexpr (is_convertible_v<_UTuple, _T0>)
+      else
       { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-        return false;
-      }
-      else
-      {
-        return true;
+        return !is_convertible_v<_UTuple, _T0>;
       }
     }
     else
@@ -249,7 +245,7 @@ struct __tuple_constraints
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
       return __select_constructor::__invalid;
     }
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     else if constexpr ((reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...))
     { // [tuple.cnstr]-15: This constructor is defined as deleted if
       // (reference_constructs_from_temporary_v<Types, UTypes&&> || ...) is true

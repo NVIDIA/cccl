@@ -13,11 +13,11 @@
 
 // [simd.reductions]: nonempty masked reductions operate only on selected values.
 
-#include <cuda/simd>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 
 #include "../simd_test_utils.h"
 #include "test_macros.h"

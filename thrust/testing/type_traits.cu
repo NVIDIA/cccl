@@ -1,19 +1,30 @@
 // Suppress deprecations for trivial relocation traits
 #define CCCL_IGNORE_DEPRECATED_API
 
+#include <thrust/detail/config.h>
+
 #include <thrust/complex.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/iterator>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+#include <cuda/std/memory>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
+#include <string>
 
 #include <unittest/unittest.h>
 
@@ -23,13 +34,19 @@ TEST_CASE("TestIsContiguousIterator", "[type_traits]")
   using DeviceVector = thrust::device_vector<int>;
 
   REQUIRE(thrust::is_contiguous_iterator_v<int*>);
+  REQUIRE(cuda::std::__has_contiguous_traversal<int*>);
   REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<thrust::device_ptr<int>>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<HostVector::iterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<HostVector::iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<HostVector::const_iterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<HostVector::const_iterator>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::iterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<DeviceVector::iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::const_iterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<DeviceVector::const_iterator>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
 

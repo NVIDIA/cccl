@@ -40,15 +40,19 @@ __device__ Vec_s8_x4 test_saturating_add_s8_x4(Vec_s8_x4 lhs, Vec_s8_x4 rhs)
 /*
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_saturating_add_s8_x4.*}}
+; SM107f: {{.*VIADD\.S8x4\.ISAT.*}}
 ; SM120f: {{.*VIADD\.S8x4\.ISAT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_saturating_add_u8_x4.*}}
+; SM107f: {{.*VIADD\.U8x4\.ISAT.*}}
 ; SM120f: {{.*VIADD\.U8x4\.ISAT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_saturating_add_s16_x2.*}}
+; SM107f: {{.*VIADD\.S16x2\.ISAT.*}}
 ; SM120f: {{.*VIADD\.S16x2\.ISAT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_saturating_add_u16_x2.*}}
+; SM107f: {{.*VIADD\.16x2\.ISAT.*}}
 ; SM120f: {{.*VIADD\.16x2\.ISAT.*}}
 
 */

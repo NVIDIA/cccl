@@ -1,7 +1,10 @@
 #include <thrust/device_vector.h>
+#include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <iostream>
@@ -26,7 +29,7 @@ struct saxpy_functor
 
   __host__ __device__ float operator()(const float& x, const float& y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 };
 

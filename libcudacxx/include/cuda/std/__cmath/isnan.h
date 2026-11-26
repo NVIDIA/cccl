@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -58,7 +58,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool isnan(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNAN)
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -86,7 +86,7 @@ template <class _Tp>
   {
     _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnan_storage(__x);)
   }
-#if defined(_CCCL_BUILTIN_ISNAN)
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -96,7 +96,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isnan(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -151,6 +151,13 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isnan(__nv_fp8_ue5m3 __x) noexcept
+{
+  return __x.__x == __fp_exp_mant_mask_of_v<__nv_fp8_ue5m3>;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isnan(__nv_fp8_e8m0 __x) noexcept
 {
@@ -188,7 +195,7 @@ template <class _Tp>
     NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
                                                                         // flags
   }
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return __x != __x;

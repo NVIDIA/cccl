@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
 
@@ -19,7 +20,7 @@ struct fib_t
     {
       return t1;
     }
-    else if (n == 2)
+    if (n == 2)
     {
       return t2;
     }

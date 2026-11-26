@@ -15,7 +15,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
@@ -204,9 +205,9 @@ struct DeviceMemcpy
     using BlockOffsetT            = uint32_t;
     using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+        return _CUB::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
           storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
       });
   }
@@ -295,9 +296,9 @@ struct DeviceMemcpy
     using BlockOffsetT            = uint32_t;
     using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+        return _CUB::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
           storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
       });
   }

@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Release: Build and test cuda-coop-cutlass"
+on:
+  push:
+    tags: ['cuda-coop-cutlass-v*']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  distributions:
+    if: github.repository == 'NVIDIA/cccl' && github.event.created && !github.event.deleted
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ github.ref_name }}
+    outputs:
+      wheel-id: ${{ steps.wheel.outputs.artifact-id }}
+      sdist-id: ${{ steps.sdist.outputs.artifact-id }}
+      wheel-sha256: ${{ steps.check.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the release tag is on main
+        run: |
+          [[ "$TAG" =~ ^cuda-coop-cutlass-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(rc(0|[1-9][0-9]*))?$ ]]
+          test "$(git rev-parse --verify "refs/tags/$TAG^{commit}")" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Build the sdist and its wheel
+        run: |
+          python -m pip install build
+          # The RC and final tags can point to the same commit.
+          export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_COOP_CUTLASS="${TAG#cuda-coop-cutlass-v}"
+          python -m build --outdir dist python/cuda_coop_cutlass
+      - name: Check archive contents, version and bundled headers
+        id: check
+        run: |
+          python -m pip install packaging twine
+          python ci/validate_cuda_coop_cutlass_artifacts.py --release-tag "$TAG" --source-commit "$GITHUB_SHA" dist/*
+          python -m twine check --strict dist/*
+          echo "$TAG at $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum dist/* | tee -a "$GITHUB_STEP_SUMMARY"
+          wheel=(dist/*.whl)
+          echo "sha256=$(sha256sum "${wheel[0]}" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          # release-wheels.yml collects wheelhouse/<wheel> from each wheel-* artifact.
+          mkdir -p release/wheelhouse
+          mv "${wheel[0]}" release/wheelhouse/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        id: wheel
+        with:
+          name: wheel-cuda-coop-cutlass
+          path: release/
+          overwrite: true
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        id: sdist
+        with:
+          name: cuda-coop-cutlass-sdist-${{ github.run_attempt }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  test-wheel:
+    name: Test CUTLASS wheel ${{ needs.distributions.outputs.wheel-sha256 }} on L4
+    needs: distributions
+    runs-on: linux-amd64-gpu-l4-latest-1
+    permissions: {}
+    container:
+      image: python:3.12-slim-bookworm
+      options: --gpus all
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.distributions.outputs.wheel-id }},${{ needs.distributions.outputs.sdist-id }}
+          path: candidate
+          merge-multiple: true
+      - name: Run an installed-wheel scan on L4
+        env:
+          WHEEL_SHA256: ${{ needs.distributions.outputs.wheel-sha256 }}
+        run: |
+          wheel=(candidate/wheelhouse/*.whl)
+          echo "$WHEEL_SHA256  ${wheel[0]}" | sha256sum --check --strict
+          python -m pip install "${wheel[0]}[cu13]"
+          python -m pip check
+          sdist=(candidate/*.tar.gz)
+          root=$(basename "${sdist[0]}" .tar.gz)
+          tar -xOzf "${sdist[0]}" "$root/examples/scan.py" > "$RUNNER_TEMP/scan.py"
+          for route in 0 1; do
+            CUTE_DSL_USE_EXTENSION_COMPILER="$route" CUTE_DSL_CACHE_DIR="$RUNNER_TEMP/cute-$route" \
+              python -I "$RUNNER_TEMP/scan.py"
+          done

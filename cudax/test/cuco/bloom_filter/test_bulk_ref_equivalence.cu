@@ -40,7 +40,7 @@ using size_type = int32_t;
 template <class Ref, class Key>
 _CCCL_KERNEL_ATTRIBUTES void scalar_add_kernel(Ref ref, Key const* keys, size_type n)
 {
-  auto const i = static_cast<size_type>(blockIdx.x) * blockDim.x + threadIdx.x;
+  auto const i = (static_cast<size_type>(blockIdx.x) * blockDim.x) + threadIdx.x;
   if (i < n)
   {
     ref.add(keys[i]);
@@ -52,7 +52,7 @@ _CCCL_KERNEL_ATTRIBUTES void cg_add_kernel(Ref ref, Key const* keys, size_type n
 {
   auto const block = cg::this_thread_block();
   auto const tile  = cg::tiled_partition<CGSize>(block);
-  auto const idx   = static_cast<size_type>((blockIdx.x * blockDim.x + threadIdx.x) / CGSize);
+  auto const idx   = static_cast<size_type>(((blockIdx.x * blockDim.x) + threadIdx.x) / CGSize);
   if (idx < n)
   {
     ref.add(tile, keys[idx]);
@@ -70,7 +70,7 @@ _CCCL_KERNEL_ATTRIBUTES void cg_range_add_kernel(Ref ref, Key const* first, Key 
 template <class Ref, class Key>
 _CCCL_KERNEL_ATTRIBUTES void scalar_contains_kernel(Ref ref, Key const* keys, size_type n, bool* out)
 {
-  auto const i = static_cast<size_type>(blockIdx.x) * blockDim.x + threadIdx.x;
+  auto const i = (static_cast<size_type>(blockIdx.x) * blockDim.x) + threadIdx.x;
   if (i < n)
   {
     out[i] = ref.contains(keys[i]);
@@ -82,7 +82,7 @@ _CCCL_KERNEL_ATTRIBUTES void cg_contains_kernel(Ref ref, Key const* keys, size_t
 {
   auto const block = cg::this_thread_block();
   auto const tile  = cg::tiled_partition<CGSize>(block);
-  auto const idx   = static_cast<size_type>((blockIdx.x * blockDim.x + threadIdx.x) / CGSize);
+  auto const idx   = static_cast<size_type>(((blockIdx.x * blockDim.x) + threadIdx.x) / CGSize);
   if (idx < n)
   {
     auto const found = ref.contains(tile, keys[idx]);
@@ -176,7 +176,7 @@ C2H_TEST("bloom_filter: host bulk add equals device ref add", "[bloom_filter]", 
 
     auto ref                 = filter_b.ref();
     constexpr int block_size = 128;
-    int const grid_size      = (num_keys * CGSize + block_size - 1) / block_size;
+    int const grid_size      = ((num_keys * CGSize) + block_size - 1) / block_size;
     cuda::launch(
       stream,
       cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims(block_size)),
@@ -297,7 +297,7 @@ C2H_TEST("bloom_filter: host bulk contains equals device ref contains", "[bloom_
     c2h::device_vector<bool> ref_result(num_probe);
     auto ref                 = filter.ref();
     constexpr int block_size = 128;
-    int const grid_size      = (num_probe * CGSize + block_size - 1) / block_size;
+    int const grid_size      = ((num_probe * CGSize) + block_size - 1) / block_size;
     cuda::launch(
       stream,
       cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims(block_size)),

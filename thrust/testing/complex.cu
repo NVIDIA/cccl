@@ -1,5 +1,8 @@
 #include <thrust/complex.h>
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+
+#include <cuda/std/type_traits>
 
 #include <complex>
 #include <iostream>

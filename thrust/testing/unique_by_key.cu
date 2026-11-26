@@ -1,7 +1,20 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/cstddef>
+#include <cuda/std/iterator>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <unittest/unittest.h>
 
@@ -15,10 +28,8 @@ struct index_to_value_t
     {
       return static_cast<ValueT>(1);
     }
-    else
-    {
-      return static_cast<ValueT>(0);
-    }
+
+    return static_cast<ValueT>(0);
   }
 };
 

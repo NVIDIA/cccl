@@ -33,7 +33,7 @@ namespace a_namespace
 TEST_FUNC int a_function_in_a_namespace(int);
 } // namespace a_namespace
 
-#if !defined(__CUDACC__)
+#ifndef __CUDACC__
 // An overloaded function must be disambiguated with a cast to select one
 // overload. This is only exercised by a plain host compiler: under nvcc,
 // cudafe++ rewrites the cast back to the (ambiguous) `&an_overloaded_function`,
@@ -77,7 +77,7 @@ static_assert(cuda::std::__stringof<a_namespace::a_function_in_a_namespace>()
               == "a_namespace::a_function_in_a_namespace");
 #  endif // !TEST_COMPILER(MSVC)
 
-#  if !defined(__CUDACC__)
+#  ifndef __CUDACC__
 // An overloaded function: a cast picks the overload, and every overload spells
 // out the same (the function's) name. See the note on an_overloaded_function.
 static_assert(cuda::std::__stringof<static_cast<int (*)(int)>(an_overloaded_function)>() == "an_overloaded_function");
@@ -89,7 +89,7 @@ static_assert(cuda::std::__stringof<static_cast<int (*)(double)>(an_overloaded_f
 
 int main(int, char**)
 {
-#if !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#ifndef _CCCL_BROKEN_MSVC_FUNCSIG
   // Runtime checks on the host. The constexpr path is exercised by the
   // static_asserts above (in both the host and device compilation passes).
   NV_IF_TARGET(

@@ -11,13 +11,13 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.iterator], non-const to const iterator conversion for __simd_iterator.
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/simd>
 
 #include "../simd_test_utils.h"
 #include "test_macros.h"

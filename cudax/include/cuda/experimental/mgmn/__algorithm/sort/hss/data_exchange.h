@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,10 +23,14 @@
 #endif // no system header
 
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/simple_vector.h>
 #include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__runtime/types.h>
+#include <cuda/__utility/no_init.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>

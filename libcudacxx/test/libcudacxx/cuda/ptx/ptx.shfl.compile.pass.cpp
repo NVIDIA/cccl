@@ -98,6 +98,11 @@ TEST_HOST_DEVICE_FUNC void test_shfl_partial_mask()
     auto res1 = cuda::ptx::shfl_sync_idx(data, pred1, 2 /*idx*/, 0b11111 /*clamp*/, PartialMask);
     assert(res1 == 2 && pred1);
   }
+  if (threadIdx.x == 1)
+  {
+    auto res2 = cuda::ptx::shfl_sync_up(7u, 2 /*offset*/, 0 /*clamp*/, 0b10u);
+    assert(res2 == 7u);
+  }
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 

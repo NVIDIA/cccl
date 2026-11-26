@@ -6,6 +6,7 @@
 #include <thrust/sequence.h>
 #include <thrust/transform.h>
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 

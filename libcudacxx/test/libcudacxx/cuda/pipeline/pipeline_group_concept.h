@@ -38,11 +38,12 @@ TEST_HOST_DEVICE_FUNC void test_fully_specialized()
 {
   auto group = single_thread_test_group<T_size, T_thread_rank>{};
 
-  cuda::pipeline_shared_state<Scope, 1> shared_state;
-  auto pipe_partitioned_implicit          = make_pipeline(group, &shared_state, 1);
-  auto pipe_partitioned_explicit_consumer = make_pipeline(group, &shared_state, cuda::pipeline_role::consumer);
-  auto pipe_partitioned_explicit_producer = make_pipeline(group, &shared_state, cuda::pipeline_role::producer);
-  auto pipe_unified                       = make_pipeline(group, &shared_state);
+  cuda::pipeline_shared_state<Scope, 1> storage;
+  auto* shared_state                      = opaque_local_address(&storage);
+  auto pipe_partitioned_implicit          = make_pipeline(group, shared_state, 1);
+  auto pipe_partitioned_explicit_consumer = make_pipeline(group, shared_state, cuda::pipeline_role::consumer);
+  auto pipe_partitioned_explicit_producer = make_pipeline(group, shared_state, cuda::pipeline_role::producer);
+  auto pipe_unified                       = make_pipeline(group, shared_state);
 
   char src[2] = {1, 2};
   char dst[2] = {0, 0};

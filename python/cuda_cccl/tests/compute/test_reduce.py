@@ -1269,7 +1269,7 @@ def test_serialize_deserialize_preserves_determinism():
 
     loaded = deserialize(blob)
     # determinism is a build-time property, preserved on each compiled per-arch
-    # build result (loaded_build_result binds lazily on first call, so inspect build_results).
+    # build result (the current device's result is loaded lazily on each call).
     assert all(
         v.determinism == int(Determinism.NOT_GUARANTEED)
         for v in loaded.build_results.values()

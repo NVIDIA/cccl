@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -505,6 +505,14 @@ public:
 template <class _Range, class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES transform_view(_Range&&, _Fn)
   -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
+
+// This view preserves the size of its underlying range.
+template <class _View, class _Fn>
+inline constexpr size_t __static_size_v<transform_view<_View, _Fn>> = __static_size_v<_View>;
+
+template <class _View, class _Fn>
+inline constexpr size_t __static_size_v<const transform_view<_View, _Fn>> =
+  (range<const transform_view<_View, _Fn>>) ? __static_size_v<const _View> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

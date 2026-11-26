@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,18 @@
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// <sys/sysmacros.h> defines `major` and `minor` as function-like macros.
+#ifdef major
+#  pragma push_macro("major")
+#  undef major
+#  define _LIBCUDACXX_POP_MACRO_major
+#endif // defined(major)
+#ifdef minor
+#  pragma push_macro("minor")
+#  undef minor
+#  define _LIBCUDACXX_POP_MACRO_minor
+#endif // defined(minor)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -51,7 +63,7 @@ public:
   //! @param __major The major compute capability.
   //! @param __minor The minor compute capability. Must be less than 10.
   _CCCL_HOST_DEVICE_API constexpr compute_capability(int __major, int __minor) noexcept
-      : __cc_{10 * __major + __minor}
+      : __cc_{(10 * __major) + __minor}
   {
     _CCCL_ASSERT(__minor < 10, "invalid minor compute capability");
   }
@@ -194,7 +206,7 @@ template <int... _Vs>
 template <int... _Vs>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __make_cc_list() noexcept
 {
-#  if defined(__CUDA_ARCH_LIST__)
+#  ifdef __CUDA_ARCH_LIST__
   return ::cuda::std::array{compute_capability{_Vs / 10}...};
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
   return ::cuda::std::array{compute_capability{_Vs}...};
@@ -207,7 +219,7 @@ template <int... _Vs>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __target_compute_capabilities() noexcept
 {
-#  if defined(__CUDA_ARCH_LIST__)
+#  ifdef __CUDA_ARCH_LIST__
   return ::cuda::__make_cc_list<__CUDA_ARCH_LIST__>();
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
   return ::cuda::__make_cc_list<NV_TARGET_SM_INTEGER_LIST>();
@@ -266,6 +278,15 @@ current_compute_capability() noexcept
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CCCL_CUDA_COMPILATION()
+
+#ifdef _LIBCUDACXX_POP_MACRO_minor
+#  pragma pop_macro("minor")
+#  undef _LIBCUDACXX_POP_MACRO_minor
+#endif // defined(_LIBCUDACXX_POP_MACRO_minor)
+#ifdef _LIBCUDACXX_POP_MACRO_major
+#  pragma pop_macro("major")
+#  undef _LIBCUDACXX_POP_MACRO_major
+#endif // defined(_LIBCUDACXX_POP_MACRO_major)
 
 #include <cuda/std/__cccl/epilogue.h>
 

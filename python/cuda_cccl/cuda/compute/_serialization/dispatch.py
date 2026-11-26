@@ -31,8 +31,15 @@ def serialize(algorithm: Any) -> bytes:
     return algorithm.serialize()
 
 
-def deserialize(blob: bytes):
+def deserialize(blob: bytes, *, device_id: None | int = None):
     """Reconstruct a built algorithm from a blob produced by :func:`serialize`.
+
+    Args:
+        blob: Bytes returned by :func:`serialize`.
+        device_id: CUDA ordinal to bind to, or ``None`` (default) to select
+            the current device at each call. Binding constructs host argument
+            state only once; the selected device must be current during execution.
+            The previous CUDA context is restored even on failure.
 
     Warning:
         The returned object is **not safe to use from multiple threads
@@ -51,10 +58,12 @@ def deserialize(blob: bytes):
 
     Raises:
         ValueError: if the blob is malformed or its algorithm tag is unknown.
+        RuntimeError: If compiled code is incompatible with the selected device
+            or fails to load.
     """
     tag = codec.peek_algo(blob)
     try:
         cls = Serializable._registry[tag]
     except KeyError:
         raise ValueError(f"serialization blob: unknown algorithm tag {tag!r}") from None
-    return cls.deserialize(blob)
+    return cls.deserialize(blob, device_id=device_id)

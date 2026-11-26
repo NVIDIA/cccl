@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,7 @@
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -554,7 +555,7 @@ struct DeviceHistogram
 
 private:
   template <size_t N, typename T>
-  _CCCL_HOST_DEVICE static auto to_array(T* ptr)
+  _CCCL_HOST_DEVICE_API static auto to_array(T* ptr)
   {
     ::cuda::std::array<::cuda::std::remove_const_t<T>, N> a{};
     ::cuda::std::copy(ptr, ptr + N, a.begin());
@@ -780,7 +781,7 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -789,7 +790,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -806,7 +807,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -1508,7 +1509,7 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1517,7 +1518,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -1533,7 +1534,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -2072,13 +2073,13 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2095,7 +2096,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -2536,13 +2537,13 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2558,7 +2559,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,

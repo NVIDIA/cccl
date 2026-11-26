@@ -12,7 +12,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,11 +38,11 @@ class normal_distribution_nvcc
 {
 protected:
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
+  _CCCL_HOST_DEVICE_API RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
   {
     using uint_type                = typename UniformRandomNumberGenerator::result_type;
     using traits                   = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
-    constexpr uint_type urng_range = (traits::max) () - (traits::min) (); // NOLINT(readability-redundant-parentheses)
+    constexpr uint_type urng_range = (traits::max) () - (traits::min) ();
 
     // Constants for conversion
     constexpr RealType S1 = static_cast<RealType>(1. / static_cast<double>(urng_range));
@@ -51,7 +51,7 @@ protected:
     auto S3 = -::cuda::std::__numbers<RealType>::__sqrt2();
 
     // Get the integer value
-    uint_type u = urng() - (traits::min) (); // NOLINT(readability-redundant-parentheses)
+    uint_type u = urng() - (traits::min) ();
 
     // Ensure the conversion to float will give a value in the range [0,0.5)
     if (u > (urng_range / 2))
@@ -61,14 +61,14 @@ protected:
     }
 
     // Convert to floating point in [0,0.5)
-    RealType p = u * S1 + S2;
+    RealType p = (u * S1) + S2;
 
     // Apply inverse error function
-    return mean + stddev * S3 * erfcinv(2 * p);
+    return mean + (stddev * S3 * erfcinv(2 * p));
   }
 
   // no-op
-  _CCCL_HOST_DEVICE void reset() {}
+  _CCCL_HOST_DEVICE_API void reset() {}
 };
 
 // this version samples the normal distribution using
@@ -77,14 +77,14 @@ template <typename RealType>
 class normal_distribution_portable
 {
 protected:
-  void reset()
+  _CCCL_HOST_API void reset()
   {
     m_valid = false;
   }
 
   // note that we promise to call this member function with the same mean and stddev
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
+  _CCCL_HOST_DEVICE_API RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
   {
     // implementation from Boost
     // allow for Koenig lookup
@@ -111,7 +111,7 @@ protected:
 
     RealType result = m_cached_rho * (m_valid ? cos(RealType(2) * pi * m_r1) : sin(RealType(2) * pi * m_r1));
 
-    return mean + stddev * result;
+    return mean + (stddev * result);
   }
 
 private:

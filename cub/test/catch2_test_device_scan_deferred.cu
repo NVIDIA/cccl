@@ -90,6 +90,14 @@ using default_immediate_int_policy = cub::detail::scan::
   policy_selector_from_types<const scan_value_t*, scan_value_t*, scan_value_t, uint32_t, cuda::std::plus<>>;
 static_assert(default_immediate_int_policy{}(cuda::compute_capability{10, 0}).lookback.tiles_per_batch == 65536);
 
+using default_batch_int_policy = cub::detail::scan::batch_policy_selector<default_deferred_int_policy>;
+static_assert(default_batch_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay.kind
+              == cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold);
+static_assert(default_deferred_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == default_immediate_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay);
+static_assert(default_immediate_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay.kind
+              == cub::LookbackDelayAlgorithm::fixed_delay);
+
 using default_stable_deferred_float_policy =
   cub::detail::scan::policy_selector_from_types<const float*, float*, float, uint32_t, cuda::std::plus<>, true, true>;
 static_assert(default_stable_deferred_float_policy{}(cuda::compute_capability{9, 0}).algorithm
@@ -125,7 +133,7 @@ struct compose_affine_t
 {
   _CCCL_HOST_DEVICE_API affine_value_t operator()(affine_value_t lhs, affine_value_t rhs) const
   {
-    return {rhs.scale * lhs.scale, rhs.scale * lhs.shift + rhs.shift};
+    return {rhs.scale * lhs.scale, (rhs.scale * lhs.shift) + rhs.shift};
   }
 };
 
@@ -269,7 +277,7 @@ CUB_TEST("DeviceScan entry points accept deferred num_items", "[device][scan][de
   device_exclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, scan_value_t{7}, count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == scan_value_t{7} + scan_value_t{2} * i);
+    REQUIRE(output[i] == scan_value_t{7} + (scan_value_t{2} * i));
   }
 
   thrust::fill(output.begin(), output.end(), scan_value_t{-1});
@@ -320,7 +328,7 @@ CUB_TEST("DeviceScan in-place entry points accept deferred num_items", "[device]
   thrust::fill(data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus<>{}, scan_value_t{7}, count));
   check(data, [](count_t i) {
-    return scan_value_t{7} + scan_value_t{2} * i;
+    return scan_value_t{7} + (scan_value_t{2} * i);
   });
 
   thrust::fill(data.begin(), data.end(), scan_value_t{2});
@@ -350,7 +358,7 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
     const c2h::host_vector<scan_value_t> host = output;
     for (count_t i = 0; i < num_items; ++i)
     {
-      REQUIRE(host[i] == init + scan_value_t{2} * (i + 1));
+      REQUIRE(host[i] == init + (scan_value_t{2} * (i + 1)));
     }
     if (num_items < capacity)
     {
@@ -397,6 +405,39 @@ CUB_TEST("DeviceScan with a deferred size accepts a custom lookback policy", "[d
 // need explicit streams, graph capture or repeated invocations. Running them once, under the direct-launch
 // variant, avoids rebuilding identical work for every TEST_LAUNCH value.
 #if TEST_LAUNCH == 0
+CUB_TEST("DeviceScan batch kernel getters use the batch policy selector", "[device][scan][deferred][batch]", CUB_SMALL)
+{
+  using tile_state_t    = cub::ScanTileState<scan_value_t>;
+  using kernel_source_t = cub::detail::scan::DeviceScanKernelSource<
+    default_deferred_int_policy,
+    const scan_value_t*,
+    scan_value_t*,
+    cuda::std::plus<>,
+    cub::NullType,
+    uint32_t,
+    count_t*,
+    scan_value_t,
+    cub::ForceInclusive::Yes,
+    false,
+    true>;
+  const auto expected_init =
+    &cub::detail::scan::DeviceScanBatchInitKernel<default_batch_int_policy, tile_state_t, scan_value_t>;
+  const auto expected_scan = &cub::detail::scan::DeviceScanBatchKernel<
+    default_batch_int_policy,
+    const scan_value_t*,
+    scan_value_t*,
+    tile_state_t,
+    cuda::std::plus<>,
+    cub::NullType,
+    uint32_t,
+    count_t*,
+    scan_value_t,
+    true>;
+
+  REQUIRE(kernel_source_t::BatchInitKernel() == expected_init);
+  REQUIRE(kernel_source_t::BatchScanKernel() == expected_scan);
+}
+
 CUB_TEST("DeviceScan immediate and constant counts select the correct overloads", "[device][scan][arguments]", CUB_SMALL)
 {
   const c2h::device_vector<scan_value_t> input{1, 2, 3, 4};
@@ -460,7 +501,7 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries",
     batch_items,
     batch_items + 1,
     2 * batch_items,
-    2 * batch_items + 17);
+    (2 * batch_items) + 17);
   CAPTURE(num_items);
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
@@ -479,7 +520,7 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries",
   const auto count_ptr       = thrust::raw_pointer_cast(device_num_items.data());
   const auto unbounded_count = cuda::args::deferred{count_ptr};
   const auto bounded_count =
-    cuda::args::deferred<const large_count_t*, cuda::args::static_bounds<large_count_t{0}, 8 * batch_items + 17>>{
+    cuda::args::deferred<const large_count_t*, cuda::args::static_bounds<large_count_t{0}, (8 * batch_items) + 17>>{
       count_ptr};
   const auto query_storage = [&](auto count) {
     size_t bytes = 0;
@@ -541,10 +582,32 @@ struct batch_wait_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
   {
     auto policy = small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{}(cc);
+    constexpr auto delay_policy = cub::detail::scan::make_batched_delay_policy({Kind, Delay, L2WriteLatency});
+    using delay_constructor_t =
+      cub::detail::delay_constructor_t<delay_policy.kind, delay_policy.delay, delay_policy.l2_write_latency>;
+    static_assert(cub::detail::lookback_delay_policy_from_type<delay_constructor_t> == delay_policy);
+    static_assert(cub::detail::scan::make_batched_delay_policy(delay_policy) == delay_policy);
+    if constexpr (Kind == cub::LookbackDelayAlgorithm::fixed_delay || Kind == cub::LookbackDelayAlgorithm::no_delay)
+    {
+      static_assert(delay_policy.kind == cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold);
+      static_assert(delay_policy.delay == (Kind == cub::LookbackDelayAlgorithm::no_delay ? 0 : Delay));
+      static_assert(delay_policy.l2_write_latency == L2WriteLatency);
+    }
+    else
+    {
+      static_assert(delay_policy == cub::LookbackDelayPolicy{Kind, Delay, L2WriteLatency});
+    }
     policy.lookback.lookback_delay = {Kind, Delay, L2WriteLatency};
     return policy;
   }
 };
+
+using custom_no_delay_policy       = batch_wait_policy_selector<cub::LookbackDelayAlgorithm::no_delay, 0, 450>;
+using custom_batch_no_delay_policy = cub::detail::scan::batch_policy_selector<custom_no_delay_policy>;
+static_assert(custom_no_delay_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::no_delay, 0, 450});
+static_assert(custom_batch_no_delay_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold, 0, 450});
 
 using batch_wait_policies =
   c2h::type_list<batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 350, 450>,
@@ -596,12 +659,13 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
 {
   constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
   using large_count_t                  = int64_t;
-  constexpr large_count_t num_items    = configured_batch_tiles * large_count_t{128} + 17;
+  constexpr large_count_t num_items    = (configured_batch_tiles * large_count_t{128}) + 17;
 
   c2h::host_vector<affine_value_t> host_input(static_cast<size_t>(num_items));
   for (large_count_t i = 0; i < num_items; ++i)
   {
-    host_input[static_cast<size_t>(i)] = affine_value_t{static_cast<uint32_t>(i % 3 + 1), static_cast<uint32_t>(i % 5)};
+    host_input[static_cast<size_t>(i)] =
+      affine_value_t{static_cast<uint32_t>((i % 3) + 1), static_cast<uint32_t>(i % 5)};
   }
   const c2h::device_vector<affine_value_t> input = host_input;
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
@@ -653,7 +717,7 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
   using large_count_t                  = int64_t;
   constexpr large_count_t batch_items  = configured_batch_tiles * large_count_t{128};
-  constexpr large_count_t num_items    = 2 * batch_items + 12'345;
+  constexpr large_count_t num_items    = (2 * batch_items) + 12'345;
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);

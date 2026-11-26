@@ -203,7 +203,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
     {
       auto d = ctx.logical_data<int>(data_size);
       ctx.task(d.write())->*[](cudaStream_t, auto) {};
-      data[t * width + i] = d;
+      data[(t * width) + i] = d;
     }
   }
   ctx.get_dot()->set_tracing(true);
@@ -231,12 +231,12 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
           if (!skip_task(id, static_cast<int>(t), static_cast<int>(i), static_cast<int>(width)))
           {
             auto tsk = ctx.task();
-            tsk.add_deps(data[(t % b) * width + i].rw());
+            tsk.add_deps(data[((t % b) * width) + i].rw());
 
             auto deps = input_deps(id, static_cast<int>(t), static_cast<int>(i), static_cast<int>(width));
             for (const int d : deps)
             {
-              tsk.add_deps(data[((t - 1 + b) % b) * width + d].read());
+              tsk.add_deps(data[(((t - 1 + b) % b) * width) + d].read());
               deps_cnt++;
             }
 

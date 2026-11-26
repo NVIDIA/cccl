@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -156,7 +156,7 @@ private:
       : event_ref(::cudaEvent_t{})
   {
     [[maybe_unused]] const __ensure_current_context __ctx_setter(__device);
-    __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+    __event_ = ::cuda::__driver::__eventCreate(__flags);
   }
 };
 

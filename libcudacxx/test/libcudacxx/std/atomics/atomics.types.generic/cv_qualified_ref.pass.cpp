@@ -96,7 +96,7 @@ TEST_HOST_DEVICE_FUNC void test_volatile()
   static_assert(AtomicRef::is_always_lock_free, "test assumes volatile T is lock-free");
 
   volatile T val{};
-  AtomicRef ref(val);
+  AtomicRef ref(*opaque_local_address(&val));
 
   // Both read and write operations should work on atomic_ref<volatile T>
   ref.store(T(42));

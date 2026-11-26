@@ -95,7 +95,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_reduce_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_reduce_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

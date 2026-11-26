@@ -11,8 +11,10 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/warp>
 
@@ -28,6 +30,7 @@ __device__ void test_result_storage()
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == 3);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(!Result::has_uniform_static_unit_count());
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
 
@@ -75,6 +78,59 @@ __device__ void test_result_storage()
   const Uniform uniform{2, 7, cuda::device::lane_mask::all()};
 
   CHECK(uniform.unit_count() == 8);
+
+  using Single = cudax::coop::__mapping_result<cudax::coop::__static_unit_counts<32>, Exhaustive, Contiguous>;
+
+  static_assert(cudax::coop::__group_mapping_result<Single>);
+  static_assert(Single::static_group_rank() == 0);
+
+  const Single single{0, 7, cuda::device::lane_mask::all()};
+
+  CHECK(single.static_group_rank() == 0);
+  CHECK(single.group_rank() == single.static_group_rank());
+
+  if constexpr (!Exhaustive)
+  {
+    const auto invalid = Single::__invalid();
+
+    CHECK(!invalid.is_valid());
+    static_assert(invalid.static_group_rank() == 0);
+  }
+}
+
+template <unsigned GroupRank, bool Exhaustive, bool Contiguous>
+__device__ void test_per_group_result()
+{
+  using Result =
+    cudax::coop::__mapping_result<cudax::coop::__uniform_static_unit_count<3, 12>, Exhaustive, Contiguous, GroupRank>;
+
+  static_assert(cudax::coop::__group_mapping_result<Result>);
+  static_assert(Result::static_group_count() == 3);
+  static_assert(Result::static_group_rank() == GroupRank);
+  static_assert(Result::has_uniform_static_unit_count());
+  static_assert(Result::static_unit_count() == 12);
+  static_assert(Result::static_unit_count(GroupRank) == 12);
+  static_assert(Result::is_always_exhaustive() == Exhaustive);
+  static_assert(Result::is_always_contiguous() == Contiguous);
+
+  for (unsigned rank = 0; rank < 12; ++rank)
+  {
+    const auto mask = cuda::device::lane_mask{0x55u};
+    const Result result{3, GroupRank, 12, rank, mask};
+
+    CHECK(result.is_valid());
+    CHECK(result.group_count() == 3);
+    CHECK(result.group_rank() == GroupRank);
+    CHECK(result.unit_count() == 12);
+    CHECK(result.unit_rank() == rank);
+    CHECK(result.lane_mask() == mask);
+  }
+
+  if constexpr (Exhaustive)
+  {
+    constexpr Result result{3, GroupRank, 12, 11, cuda::device::lane_mask::all()};
+    static_assert(result.group_rank() == GroupRank);
+  }
 }
 
 template <unsigned N, bool Static, bool Exhaustive, bool Contiguous = true, class Config>
@@ -109,9 +165,11 @@ __device__ void test_group_by_counts(Config config)
 
   // The total is the sum of the complete subgroups in each input group.
   using Result               = decltype(result);
-  constexpr auto group_count = 4 / N + 12 / N + 16 / N;
+  constexpr auto group_count = (4 / N) + (12 / N) + (16 / N);
 
   static_assert(Result::static_group_count() == (Static ? group_count : cuda::std::dynamic_extent));
+  static_assert(Result::static_group_rank()
+                == ((Static ? group_count : cuda::std::dynamic_extent) == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::has_uniform_static_unit_count());
   static_assert(Result::static_unit_count() == (Static ? N : cuda::std::dynamic_extent));
   static_assert(Result::is_always_exhaustive() == (Exhaustive || (Static && N == 4)));
@@ -121,13 +179,13 @@ __device__ void test_group_by_counts(Config config)
   CHECK(result.is_valid() == (rank < counts[group] / N * N));
   if (result.is_valid())
   {
-    const unsigned offsets[]{0, 4 / N, 4 / N + 12 / N};
+    const unsigned offsets[]{0, 4 / N, (4 / N) + (12 / N)};
 
     CHECK(result.group_count() == group_count);
-    CHECK(result.group_rank() == offsets[group] + rank / N);
+    CHECK(result.group_rank() == offsets[group] + (rank / N));
     CHECK(result.unit_count() == N);
     CHECK(result.unit_rank() == rank % N);
-    CHECK(result.lane_mask() == cuda::device::lane_mask{(~0u >> (32 - N)) << (starts[group] + rank / N * N)});
+    CHECK(result.lane_mask() == cuda::device::lane_mask{(~0u >> (32 - N)) << (starts[group] + (rank / N * N))});
   }
 
   // A unit excluded by an earlier mapping must remain excluded.
@@ -160,6 +218,34 @@ __device__ void test_group_by_counts(Config config)
   }
 }
 
+template <class Config, class Width>
+__device__ void test_group_by_after_group_as(Config config, Width width)
+{
+  const cudax::coop::this_warp parent{config};
+  const unsigned counts[]{5, 9, 11};
+  auto mapping      = cudax::coop::group_as{counts} | cudax::coop::group_by{width};
+  const auto result = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+
+  // group_as excludes lanes 25 through 31. group_by also drops the tail of each input group.
+  constexpr unsigned starts[]{0, 5, 9, 14, 18};
+  const auto lane = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+  for (unsigned group = 0; group < 5; ++group)
+  {
+    const auto first = starts[group];
+    if (first <= lane && lane < first + 4)
+    {
+      REQUIRE(result.is_valid());
+      CHECK(result.group_count() == 5);
+      CHECK(result.group_rank() == group);
+      CHECK(result.unit_count() == 4);
+      CHECK(result.unit_rank() == lane - first);
+      CHECK(result.lane_mask() == cuda::device::lane_mask{0xfu << first});
+      return;
+    }
+  }
+  CHECK(!result.is_valid());
+}
+
 struct OddRank
 {
   template <class Result>
@@ -168,6 +254,45 @@ struct OddRank
     return result.unit_rank() % 2 != 0;
   }
 };
+
+template <class Config, class Width>
+__device__ void test_group_by_after_binary_partition(Config config, Width width)
+{
+  const cudax::coop::this_warp parent{config};
+  auto mapping      = cudax::coop::take{cuda::std::cw<25>} | cudax::coop::binary_partition{OddRank{}}
+                    | cudax::coop::group_by{width};
+  const auto result = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+  const auto lane   = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+
+  // Lane 24 is the tail of the even partition. take already excluded lanes 25 through 31.
+  REQUIRE(result.is_valid() == (lane < 24));
+  if (lane < 24)
+  {
+    // Within each eight-lane span, even and odd lanes form separate groups of four.
+    const auto first = ((lane / 8) * 8) + (lane % 2);
+    CHECK(result.group_count() == 6);
+    CHECK(result.group_rank() == ((lane / 8) * 2) + (lane % 2));
+    CHECK(result.unit_count() == 4);
+    CHECK(result.unit_rank() == (lane / 2) % 4);
+    CHECK(result.lane_mask() == cuda::device::lane_mask{0x55u << first});
+  }
+
+  // Lanes 0, 8, 16, and 24 form one child with unit ranks 0, 1, 2, and 3.
+  const auto every_eighth = cudax::coop::binary_partition{[](const auto& prev) {
+    return prev.unit_rank() % 8 == 0;
+  }};
+  const auto split =
+    (every_eighth | cudax::coop::group_by{width}).map(cuda::gpu_thread, parent, ThreadsInWarpMappingResult{});
+  REQUIRE(split.is_valid());
+  CHECK(split.group_count() == 8);
+  CHECK(split.unit_count() == 4);
+  if (lane % 8 == 0)
+  {
+    CHECK(split.group_rank() == 0);
+    CHECK(split.unit_rank() == lane / 8);
+    CHECK(split.lane_mask() == cuda::device::lane_mask{0x0101'0101u});
+  }
+}
 
 struct RankLabel
 {
@@ -205,16 +330,17 @@ __device__ void test_other_mappings(Config config)
   const auto integer_result = integer_labels.map(cuda::gpu_thread, parent, prev);
 
   static_assert(decltype(binary_result)::static_group_count() == 6);
-  static_assert(decltype(boolean_result)::static_group_count() == 6);
+  static_assert(decltype(boolean_result)::static_group_count() == cuda::std::dynamic_extent);
   static_assert(decltype(integer_result)::static_group_count() == cuda::std::dynamic_extent);
 
   // Boolean partitions put all false groups before all true groups. Integer labels
   // number groups by their first physical lane instead.
   CHECK(binary_result.group_count() == 6);
-  CHECK(binary_result.group_rank() == group + (rank % 2) * 3);
-  CHECK(boolean_result.group_rank() == binary_result.group_rank());
+  CHECK(binary_result.group_rank() == group + ((rank % 2) * 3));
+  CHECK(boolean_result.group_count() == 6);
+  CHECK(boolean_result.group_rank() == integer_result.group_rank());
   CHECK(integer_result.group_count() == 6);
-  CHECK(integer_result.group_rank() == group * 2 + rank % 2);
+  CHECK(integer_result.group_rank() == (group * 2) + (rank % 2));
 
   CHECK(binary_result.unit_count() == counts[group] / 2);
   CHECK(boolean_result.unit_count() == counts[group] / 2);
@@ -246,7 +372,7 @@ __device__ void test_other_mappings(Config config)
   if (reshaped.is_valid())
   {
     CHECK(reshaped.group_count() == 6);
-    CHECK(reshaped.group_rank() == group * 2 + (rank != 0));
+    CHECK(reshaped.group_rank() == (group * 2) + (rank != 0));
     CHECK(reshaped.unit_count() == (rank == 0 ? 1 : 3));
     CHECK(reshaped.unit_rank() == (rank == 0 ? 0 : rank - 1));
   }
@@ -284,6 +410,15 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     test_other_mappings(config);
+    test_group_by_after_group_as(config, cuda::std::cw<4>);
+    test_group_by_after_group_as(config, 4u);
+    test_group_by_after_binary_partition(config, cuda::std::cw<4>);
+    test_group_by_after_binary_partition(config, 4u);
+
+    test_per_group_result<0, true, true>();
+    test_per_group_result<1, true, false>();
+    test_per_group_result<2, false, true>();
+    test_per_group_result<2, false, false>();
 
     // Storage must preserve both exhaustive and contiguous guarantees independently.
     test_result_storage<true, true>();

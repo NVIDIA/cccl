@@ -1,9 +1,13 @@
 #include <thrust/allocate_unique.h>
+#include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/universal_allocator.h>
 #include <thrust/universal_vector.h>
 
+#include <cstddef>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 #include <catch2/matchers/catch_matchers_range_equals.hpp>

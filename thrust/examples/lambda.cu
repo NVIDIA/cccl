@@ -2,6 +2,7 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
+#include <cstddef>
 #include <iostream>
 
 // This example demonstrates the use of placeholders to implement
@@ -27,9 +28,9 @@ struct saxpy_functor
       : a(a)
   {}
 
-  __host__ __device__ float operator()(float x, float y)
+  __host__ __device__ float operator()(float x, float y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 };
 

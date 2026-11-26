@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,36 +56,32 @@ __vsub_16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32
 __vadd_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vadd4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vadd4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("add.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("add.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vsub_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vsub4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vsub_8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vsub4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("sub.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vsub_8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("sub.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vsub_8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 #  endif // _CCCL_HAS_SIMD_8BIT()
@@ -131,72 +127,64 @@ __vmax_s16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint3
 __vmin_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vminu4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmin_u8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vminu4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("min.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmin_u8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("min.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vmin_u8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmin_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vmins4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmin_s8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vmins4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("min.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmin_s8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("min.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vmin_s8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmax_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vmaxu4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmax_u8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vmaxu4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("max.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmax_u8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("max.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vmax_u8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmax_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               (return ::__vmaxs4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmax_s8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::__vmaxs4(__lhs, __rhs);)
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("max.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vmax_s8x4: Unsupported architecture"); return uint32_t{};));
+  _CCCL_DISPATCH_SIMD_8BIT_TARGET({
+    uint32_t __result{};
+    asm("max.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+    return __result;
+  })
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  _CCCL_VERIFY(false, "cuda::std::simd::__vmax_s8x4: Unsupported architecture");
+  return uint32_t{};
 }
 
 #  endif // _CCCL_HAS_SIMD_8BIT()

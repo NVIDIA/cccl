@@ -418,7 +418,7 @@ try
   if (cccl_iterator_kind_t::CCCL_POINTER != keys_in_it.type || cccl_iterator_kind_t::CCCL_POINTER != values_in_it.type)
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_segmented_sort_build(): keys_in_it and values_in_it must be a pointer\n ");
+    printf("\nERROR in cccl_device_segmented_sort_compile(): keys_in_it and values_in_it must be a pointer\n ");
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
@@ -427,7 +427,7 @@ try
       || cccl_iterator_kind_t::CCCL_POINTER != end_offset_it.type)
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_segmented_sort_build(): start_offset_it and end_offset_it must be a pointer\n ");
+    printf("\nERROR in cccl_device_segmented_sort_compile(): start_offset_it and end_offset_it must be a pointer\n ");
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }

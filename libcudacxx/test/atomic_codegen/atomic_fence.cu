@@ -27,16 +27,10 @@ __global__ void fence_seq_cst_cluster()
 ; SMXX: fence.sc.gpu;
 ; SMXX: ret;
 
-; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*fence_seq_cst_cluster.*}}({{.*}}
-; NOT-SM90-PLUS-NOT: fence.sc.cluster;
-; NOT-SM90-PLUS: fence.sc.gpu;
-; NOT-SM90-PLUS-NOT: fence.sc.cluster;
-; NOT-SM90-PLUS: ret;
-
-; SM90-PLUS-LABEL: .visible .entry {{_.*fence_seq_cst_cluster.*}}({{.*}}
-; SM90-PLUS-NOT: fence.sc.gpu;
-; SM90-PLUS: fence.sc.cluster;
-; SM90-PLUS-NOT: fence.sc.gpu;
-; SM90-PLUS: ret;
+; SMXX-LABEL: .visible .entry {{_.*fence_seq_cst_cluster.*}}({{.*}}
+; SMXX-NOT: {{.*}}fence.{{.*}}
+; SMXX: fence.sc.[[CLUSTER_SCOPE]];
+; SMXX-NOT: {{.*}}fence.{{.*}}
+; SMXX: ret;
 
 */

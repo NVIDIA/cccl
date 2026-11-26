@@ -35,12 +35,14 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/arithmetic.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
@@ -49,7 +51,7 @@ namespace detail::complex
 using thrust::complex;
 
 /* round down to 8 = 24/3 bits */
-_CCCL_HOST_DEVICE inline float trim(float x)
+_CCCL_HOST_DEVICE_API inline float trim(float x)
 {
   uint32_t hx;
   get_float_word(hx, x);
@@ -59,7 +61,7 @@ _CCCL_HOST_DEVICE inline float trim(float x)
   return ret;
 }
 
-_CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> clogf(const complex<float>& z)
 {
   // Adapted from FreeBSDs msun
   float x;
@@ -137,12 +139,13 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 
   if (ax >= 1.0f)
   {
-    return (complex<float>(::cuda::std::log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return (
+      complex<float>(::cuda::std::log1pf(((ax - 1.f) * (ax + 1.f)) + (ay * ay)) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7f)
+  if ((ax * ax) + (ay * ay) <= 0.7f)
   {
-    return (complex<float>(::cuda::std::log(ax * ax + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -199,7 +202,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> log(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> log(const complex<float>& z)
 {
   return detail::complex::clogf(z);
 }

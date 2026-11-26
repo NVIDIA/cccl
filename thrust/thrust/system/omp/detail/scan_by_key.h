@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,10 +14,10 @@
 #endif // no system header
 
 // this system inherits this algorithm
-#include <thrust/system/cpp/detail/scan_by_key.h>
+#include <thrust/system/cpp/detail/scan_by_key.h> // IWYU pragma: export
 
 // Ensure OMP scan is available before using generic scan_by_key
-#include <thrust/system/omp/detail/scan.h>
+#include <thrust/system/omp/detail/scan.h> // IWYU pragma: export
 
 // use generic parallel implementation
-#include <thrust/system/detail/generic/scan_by_key.h>
+#include <thrust/system/detail/generic/scan_by_key.h> // IWYU pragma: export

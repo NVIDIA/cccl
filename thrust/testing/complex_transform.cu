@@ -1,7 +1,9 @@
 #include <thrust/complex.h>
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
+#include <cstddef>
 #include <iostream>
 
 #include <unittest/unittest.h>
@@ -13,7 +15,7 @@ struct basic_arithmetic_functor
   {
     // exercise unary and binary arithmetic operators
     // Should return approximately 1
-    return (+x + +y) + (x * y) / (y * x) + (-y + -x);
+    return (+x + +y) + ((x * y) / (y * x)) + (-y + -x);
   } // end operator()()
 }; // end make_pair_functor
 

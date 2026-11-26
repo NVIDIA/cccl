@@ -84,6 +84,7 @@ C2H_CCCLRT_TEST("can copy construct an event_ref and compare for equality", "[ev
   const cuda::event_ref ref2 = ref;
   REQUIRE(ref2 == ref);
   REQUIRE(!(ref != ref2));
+  // NOLINTNEXTLINE(readability-simplify-boolean-expr)
   REQUIRE((ref ? true : false)); // test contextual convertibility to bool
   REQUIRE(!!ref);
   REQUIRE(::cudaEvent_t{} != ref);

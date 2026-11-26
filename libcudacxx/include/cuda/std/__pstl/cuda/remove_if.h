@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -144,7 +144,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
     else
     {
       static_assert(__always_false_v<_Policy>,
-                    "__pstl_cuda_generate: CUDA backend of cuda::std::generate requires at least random access "
+                    "__pstl_cuda_remove_if: CUDA backend of cuda::std::remove_if requires at least random access "
                     "iterators");
       auto __last = ::cuda::std::next(__first, __count);
       return ::cuda::std::remove_if(::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));

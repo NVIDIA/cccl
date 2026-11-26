@@ -5,6 +5,7 @@
 #include <cub/util_macro.cuh>
 
 #include <thrust/gather.h>
+#include <thrust/random.h>
 #include <thrust/scatter.h>
 #include <thrust/shuffle.h>
 
