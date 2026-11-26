@@ -343,7 +343,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_mul(
     so x_hi*y_hi + z_hi = s + (t + q), and s is the high limb. The cross terms and z_lo are
     summed by three fmas, smallest term first, off the path of q and t, and join their sum
     last. Rounding x_hi*y_hi + z_hi once with a hardware fma for the high limb would only
-    move one ulp between the limbs, for three more operations.
+    move up to an ulp of the product between the limbs, for three more operations. Where
+    p and z_hi cancel, s is zero and the low limb carries the whole result.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_fma(

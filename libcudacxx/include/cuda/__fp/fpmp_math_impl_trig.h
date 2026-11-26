@@ -2611,8 +2611,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trigpi_poly(
 _CCCL_FPMP_CORE_API void __internal_fpmp2_sinpi_or_cospi_kernel(
   const bool __cosine, const float __f_hi, const float __f_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  // pi in three limbs. The pair of the first two is 2^-49.7 below pi, a third of u^2 that
-  // every sine would be low by; the third limb joins z_lo, the smallest of the low words.
+  // pi in three limbs. The pair of the first two is a relative 2^-49.7 above pi, a third of
+  // u^2 that every sine would be high by; the third limb joins z_lo, the smallest of the low
+  // words.
   constexpr float __pi_hi  = 0x1.921fb6p+1f;
   constexpr float __pi_lo  = -0x1.777a5cp-24f;
   constexpr float __pi_lo2 = -0x1.ee59dap-49f;

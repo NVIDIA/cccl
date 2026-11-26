@@ -908,12 +908,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp_is_zero(double __x) noexcept
 // cubic step r (1 + d + d^2), d = 1 - x r, gives in one operation more.
 //
 // The approximate instruction flushes a subnormal operand and a subnormal result to zero.
-// Where x or its reciprocal is not a normal number (biased exponent 0 or above 2044), the
-// seed is the correctly rounded reciprocal, as it is on the host.
+// Where x or its reciprocal is not a normal number (biased exponent 0 or above 2044), and in
+// the binade below (biased exponent 2044), the seed is the correctly rounded reciprocal, as it
+// is on the host. Near the top of that binade the reciprocal is within a relative 2^-20 of the
+// smallest normal number, where the approximate one can be subnormal and is flushed to zero.
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp_rcp_is_edge(double __x) noexcept
 {
   const uint32_t __e = static_cast<uint32_t>(::cuda::std::bit_cast<uint64_t>(__x) >> 32) & 0x7FF00000U;
-  return __e - 0x00100000U > 0x7FB00000U;
+  return __e - 0x00100000U > 0x7FA00000U;
 }
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_div_seed(double __x) noexcept
 {

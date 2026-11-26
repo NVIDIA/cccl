@@ -880,9 +880,10 @@ TEST_HOST_DEVICE_FUNC void test_ldexp_frexp()
 // ---- fp64mp2 division next to the ends of the exponent range -------------------
 //
 // On the device the division starts from an approximate reciprocal, which flushes subnormal
-// numbers to zero. A divisor whose reciprocal is subnormal (from 2^1022 on) takes the correctly
-// rounded reciprocal instead, and the quotient does not collapse to zero: 64 u^2 allows for
-// the bits the subnormal reciprocal is short of at the low accuracy level.
+// numbers to zero. A divisor whose reciprocal is subnormal (from 2^1022 on), or within a
+// binade of that (from 2^1021 on), takes the correctly rounded reciprocal instead, and the
+// quotient does not collapse to zero: 64 u^2 allows for the bits the subnormal reciprocal is
+// short of at the low accuracy level.
 template <typename MP2>
 TEST_HOST_DEVICE_FUNC void test_division_ends_fp64mp2()
 {
@@ -904,6 +905,12 @@ TEST_HOST_DEVICE_FUNC void test_division_ends_fp64mp2()
   MP2 big = MP2(cuda::std::numeric_limits<double>::max());
   MP2 one = big / big;
   assert(cuda::std::fabs((one.hi() - 1.0) + one.lo()) <= 64 * u2);
+  // the divisor next below 2^1022: its reciprocal is the normal number next above 2^-1022
+  constexpr double edge = 0x1.fffffffffffffp+1021;
+  MP2 half              = MP2(0.5 * edge) / MP2(edge);
+  assert(cuda::std::fabs((half.hi() - 0.5) + half.lo()) <= 64 * u2);
+  half = MP2(0.5 * edge) / edge;
+  assert(cuda::std::fabs((half.hi() - 0.5) + half.lo()) <= 64 * u2);
 }
 
 int main(int, char**)
