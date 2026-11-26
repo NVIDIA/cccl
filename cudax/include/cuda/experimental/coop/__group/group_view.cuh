@@ -33,9 +33,11 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/dispatch.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
+#include <cuda/experimental/coop/__group/tags.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -119,59 +121,6 @@ template <class _Unit, class _Group>
 using __group_view_mapping_result_t _CCCL_NODEBUG =
   decltype(::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, ::cuda::std::declval<_Group>()));
 
-template <::cuda::std::size_t _First, ::cuda::std::size_t _Last, class _Group, class _Fn>
-_CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __group, _Fn&& __fn)
-{
-  using _MappingResult = typename _Group::__mapping_result_type;
-  using _Unit          = typename _Group::unit_level;
-
-  const auto& __mapping_result = __group.__mapping_result();
-
-  if constexpr (_Last - _First > 1)
-  {
-    // Rank thresholds keep large collective callbacks in a branch tree instead
-    // of encouraging jump-table dispatch from a chain of equality comparisons.
-    constexpr auto __mid = _First + ((_Last - _First) / 2);
-    return (__mapping_result.group_rank() < __mid)
-           ? ::cuda::experimental::coop::__with_static_unit_count_range<_First, __mid>(
-               __group, ::cuda::std::forward<_Fn>(__fn))
-           : ::cuda::experimental::coop::__with_static_unit_count_range<__mid, _Last>(
-               __group, ::cuda::std::forward<_Fn>(__fn));
-  }
-  else
-  {
-    using _PerGroupMappingResult = ::cuda::experimental::coop::__mapping_result<
-      __uniform_static_unit_count<_MappingResult::static_group_count(), _MappingResult::static_unit_count(_First)>,
-      _MappingResult::is_always_exhaustive(),
-      _MappingResult::is_always_contiguous(),
-      _First>;
-
-    const _PerGroupMappingResult __view_mapping_result{
-      static_cast<::cuda::std::uint32_t>(_PerGroupMappingResult::static_group_count()),
-      static_cast<::cuda::std::uint32_t>(_First),
-      static_cast<::cuda::std::uint32_t>(_PerGroupMappingResult::static_unit_count()),
-      __mapping_result.unit_rank(),
-      __mapping_result.lane_mask()};
-    return ::cuda::std::forward<_Fn>(__fn)(
-      group_view<_Unit, __viewed_group_t<_Group>, _PerGroupMappingResult>{__group, __view_mapping_result});
-  }
-}
-
-template <class _Group, class _Fn>
-_CCCL_DEVICE_API decltype(auto) __with_static_unit_count(const _Group& __group, _Fn&& __fn)
-{
-  using _MappingResult = typename _Group::__mapping_result_type;
-  if constexpr (_MappingResult::has_uniform_static_unit_count())
-  {
-    return ::cuda::std::forward<_Fn>(__fn)(group_view{__group});
-  }
-  else
-  {
-    return ::cuda::experimental::coop::__with_static_unit_count_range<0, _MappingResult::static_group_count()>(
-      __group, ::cuda::std::forward<_Fn>(__fn));
-  }
-}
-
 template <class _Unit, class _Group, class _MappingResult>
 class group_view
 {
@@ -248,12 +197,16 @@ public:
       , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
-  //! @brief Invokes the callable with a view specialized for this group's static unit count.
-  //! Counts that are only known at runtime remain dynamic.
   template <class _Fn>
-  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_group_rank_t& __tag, _Fn&& __fn) const
   {
-    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
+  }
+
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_unit_count_t& __tag, _Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND

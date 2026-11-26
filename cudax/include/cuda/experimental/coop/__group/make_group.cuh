@@ -39,7 +39,6 @@
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
-#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/this_group.cuh>
