@@ -102,7 +102,7 @@ _CCCL_HOST_API void run_bench(nvbench::state& state)
 }
 
 template <typename ActionT, BenchMode Mode, typename KeyT, typename ValueT, int Len, int MaxK>
-void run_topk_bench(nvbench::state& state, int valid_items)
+_CCCL_HOST_API void run_topk_bench(nvbench::state& state, int valid_items)
 {
   static_assert(MaxK >= 1);
   if constexpr (MaxK > Len)

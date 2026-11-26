@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,7 +16,6 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_bitonic_sort.cuh>
 #include <cub/warp/warp_utils.cuh>
 
@@ -222,7 +221,7 @@ class WarpBitonicTopK
   using SortNetworkT = WarpBitonicSortNetwork<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
   using MaxKSortT    = SortNetworkT<max_k_per_thread>;
 
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
@@ -230,7 +229,10 @@ public:
   //! @brief Constructs a WarpBitonicTopK object.
   //!
   //! @param[in] temp_storage Temporary storage.
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicTopK(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicTopK(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   //! @brief Selects top-k keys from per-thread arrays across a logical warp.
   //!
@@ -334,7 +336,7 @@ public:
       {
         const int offset = max_k_per_thread * i;
         MaxKSortT{}.template Sort<CompareOp, !reverse>(keys + offset, values + offset, compare_op);
-        warp_bitonic_topk::compare_and_replace<max_k_per_thread>(
+        _CUB::detail::warp_bitonic_topk::compare_and_replace<max_k_per_thread>(
           keys, values, keys + offset, values + offset, compare_op);
         MaxKSortT{}.template Merge<CompareOp, reverse>(keys, values, compare_op);
       }
@@ -345,11 +347,12 @@ public:
         SortNetworkT<remain>{}.template Sort<CompareOp, !reverse>(keys + offset, values + offset, compare_op);
         if constexpr (reverse)
         {
-          warp_bitonic_topk::compare_and_replace<remain>(keys, values, keys + offset, values + offset, compare_op);
+          _CUB::detail::warp_bitonic_topk::compare_and_replace<remain>(
+            keys, values, keys + offset, values + offset, compare_op);
         }
         else
         {
-          warp_bitonic_topk::compare_and_replace<remain>(
+          _CUB::detail::warp_bitonic_topk::compare_and_replace<remain>(
             keys + max_k_per_thread - remain,
             values + max_k_per_thread - remain,
             keys + offset,
@@ -362,7 +365,8 @@ public:
       // restore the requested order after processing all data
       if constexpr (reverse)
       {
-        warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
+        _CUB::detail::warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(
+          keys, values, lane, member_mask);
       }
     }
   }
@@ -429,7 +433,8 @@ public:
 
     if (valid_items <= MaxK)
     {
-      warp_bitonic_topk::sort_partial<max_k_per_thread, LogicalWarpThreads>(keys, values, compare_op, valid_items, lane);
+      _CUB::detail::warp_bitonic_topk::sort_partial<max_k_per_thread, LogicalWarpThreads>(
+        keys, values, compare_op, valid_items, lane);
       return;
     }
 
@@ -442,14 +447,15 @@ public:
       if (remain_items >= MaxK)
       {
         MaxKSortT{}.template Sort<CompareOp, false>(keys + i, values + i, compare_op);
-        warp_bitonic_topk::compare_and_replace<max_k_per_thread>(keys, values, keys + i, values + i, compare_op);
+        _CUB::detail::warp_bitonic_topk::compare_and_replace<max_k_per_thread>(
+          keys, values, keys + i, values + i, compare_op);
         MaxKSortT{}.template Merge<CompareOp, true>(keys, values, compare_op);
       }
       else if (remain_items > 0)
       {
-        warp_bitonic_topk::sort_partial<max_k_per_thread, LogicalWarpThreads>(
+        _CUB::detail::warp_bitonic_topk::sort_partial<max_k_per_thread, LogicalWarpThreads>(
           keys + i, values + i, compare_op, remain_items, lane);
-        warp_bitonic_topk::compare_and_replace<max_k_per_thread, LogicalWarpThreads>(
+        _CUB::detail::warp_bitonic_topk::compare_and_replace<max_k_per_thread, LogicalWarpThreads>(
           keys, values, keys + i, values + i, compare_op, remain_items, lane);
         MaxKSortT{}.template Merge<CompareOp, true>(keys, values, compare_op);
         // Don't reverse and then return here. A common return point here may cause the compiler to use runtime
@@ -463,20 +469,21 @@ public:
       const int remain_items = valid_items - offset * LogicalWarpThreads;
       if (remain_items > 0)
       {
-        warp_bitonic_topk::sort_partial<remain, LogicalWarpThreads>(
+        _CUB::detail::warp_bitonic_topk::sort_partial<remain, LogicalWarpThreads>(
           keys + offset, values + offset, compare_op, remain_items, lane);
-        warp_bitonic_topk::compare_and_replace<remain, LogicalWarpThreads>(
+        _CUB::detail::warp_bitonic_topk::compare_and_replace<remain, LogicalWarpThreads>(
           keys, values, keys + offset, values + offset, compare_op, remain_items, lane);
         MaxKSortT{}.template Merge<CompareOp, true>(keys, values, compare_op);
       }
     }
 
-    warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
+    _CUB::detail::warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(
+      keys, values, lane, member_mask);
   }
 
 private:
-  int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
+  int lane                 = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 };
 } // namespace detail
 

@@ -17,7 +17,7 @@ using max_k_values = nvbench::enum_type_list<32, 64, 96>;
 
 // For best efficiency, max_k should be set to the smallest multiple of warp_threads that is not less than k.
 // Choose k in the range (max_k - warp_threads, max_k] to reflect this.
-[[nodiscard]] __device__ __host__ constexpr int calc_k(int max_k)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr int calc_k(int max_k)
 {
   return max_k - warp_threads / 3 * 2;
 }
@@ -26,7 +26,8 @@ template <int WarpsPerBlock, int MaxK>
 struct full_op_t
 {
   template <typename KeyT, typename ValueT, int ItemsPerThread>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int) const
   {
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, ValueT>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
@@ -52,7 +53,7 @@ template <int WarpsPerBlock, int MaxK>
 struct partial_op_t
 {
   template <typename KeyT, typename ValueT, int ItemsPerThread>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
   {
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, ValueT>;

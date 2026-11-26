@@ -16,7 +16,6 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
