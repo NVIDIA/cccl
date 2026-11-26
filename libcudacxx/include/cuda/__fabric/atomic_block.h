@@ -27,6 +27,7 @@
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/assume_aligned.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/cstring>
 
@@ -57,7 +58,10 @@ struct alignas(__fabric_block_size) atomic_block
     const auto __slot = __offset % __fabric_block_size;
     _CCCL_ASSERT(__offset % sizeof(_Tp) == 0 && __slot + sizeof(_Tp) <= __fabric_block_size,
                  "invalid atomic element offset");
-    ::cuda::std::memcpy(__storage_ + __slot, ::cuda::std::addressof(__value), sizeof(_Tp));
+
+    const auto __dst = ::cuda::std::assume_aligned<alignof(_Tp)>(__storage_ + __slot);
+    const auto __src = ::cuda::std::assume_aligned<alignof(_Tp)>(::cuda::std::addressof(__value));
+    ::cuda::std::memcpy(__dst, __src, sizeof(_Tp));
   }
 
   //! @brief Read the value in the slot selected by the endpoint offset.
@@ -75,7 +79,8 @@ struct alignas(__fabric_block_size) atomic_block
       unsigned char __bytes[sizeof(_Tp)];
     };
     __buffer __value;
-    ::cuda::std::memcpy(__value.__bytes, __storage_ + __slot, sizeof(_Tp));
+    const auto __src = ::cuda::std::assume_aligned<alignof(_Tp)>(__storage_ + __slot);
+    ::cuda::std::memcpy(__value.__bytes, __src, sizeof(_Tp));
     return ::cuda::std::bit_cast<_Tp>(__value);
   }
 

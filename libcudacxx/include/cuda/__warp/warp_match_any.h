@@ -30,6 +30,7 @@
 #  include <cuda/std/__bit/clear_padding.h>
 #  include <cuda/std/__cstring/memcpy.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/assume_aligned.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
@@ -127,7 +128,7 @@ warp_match_any(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
     static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");
     const auto __data_ptr = ::cuda::std::addressof(__data);
 #  endif // _CCCL_BUILTIN_CLEAR_PADDING
-    ::cuda::std::memcpy(__array, __data_ptr, sizeof(_Tp));
+    ::cuda::std::memcpy(__array, ::cuda::std::assume_aligned<alignof(_Tp)>(__data_ptr), sizeof(_Tp));
 
     lane_mask __ret = __lane_mask;
     _CCCL_PRAGMA_UNROLL_FULL()
