@@ -106,14 +106,17 @@ class basic_format_context<typename __fmt_retarget_buffer<_CharT>::__iterator, _
   basic_format_arg<basic_format_context> (*__arg_)(void* __ctx, size_t __id);
 
   template <class _Context>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static basic_format_arg<basic_format_context> __arg_impl(void* __ctx, size_t __id)
+  struct __arg_visitor
   {
-    auto __visitor = [&](auto __arg) -> basic_format_arg<basic_format_context> {
-      if constexpr (same_as<decltype(__arg), monostate>)
+    template <class _Tp>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<basic_format_context>
+    _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] _Tp __arg)
+    {
+      if constexpr (same_as<_Tp, monostate>)
       {
         return {};
       }
-      else if constexpr (same_as<decltype(__arg), typename basic_format_arg<_Context>::handle>)
+      else if constexpr (same_as<_Tp, typename basic_format_arg<_Context>::handle>)
       {
         // At the moment it's not possible for formatting to use a re-targeted handle.
         // TODO FMT add this when support is needed.
@@ -121,12 +124,16 @@ class basic_format_context<typename __fmt_retarget_buffer<_CharT>::__iterator, _
       }
       else
       {
-        return basic_format_arg<basic_format_context>{
-          ::cuda::std::__fmt_determine_arg_t<basic_format_context, decltype(__arg)>(),
-          __basic_format_arg_value<basic_format_context>(__arg)};
+        return basic_format_arg<basic_format_context>{::cuda::std::__fmt_determine_arg_t<basic_format_context, _Tp>(),
+                                                      __basic_format_arg_value<basic_format_context>(__arg)};
       }
-    };
-    return ::cuda::std::visit_format_arg(::cuda::std::move(__visitor), static_cast<_Context*>(__ctx)->arg(__id));
+    }
+  };
+
+  template <class _Context>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static basic_format_arg<basic_format_context> __arg_impl(void* __ctx, size_t __id)
+  {
+    return ::cuda::std::visit_format_arg(__arg_visitor<_Context>{}, static_cast<_Context*>(__ctx)->arg(__id));
   }
 
 public:

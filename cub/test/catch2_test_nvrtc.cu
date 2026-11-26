@@ -114,6 +114,9 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using warp_reduce_t = cub::WarpReduce<int>;
       using warp_reduce_storage_t = warp_reduce_t::TempStorage;
 
+      using warp_reduce_short_t = cub::WarpReduce<short>;
+      using warp_reduce_short_storage_t = warp_reduce_short_t::TempStorage;
+
       using warp_merge_sort_t = cub::WarpMergeSort<int, items_per_thread>;
       using warp_merge_sort_storage_t = warp_merge_sort_t::TempStorage;
 
@@ -126,6 +129,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       __shared__ warp_load_storage_t warp_load_storage;
       __shared__ warp_exchange_storage_t warp_exchange_storage;
       __shared__ warp_reduce_storage_t warp_reduce_storage;
+      __shared__ warp_reduce_short_storage_t warp_reduce_short_storage;
       __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
       __shared__ warp_scan_storage_t warp_scan_storage;
       __shared__ warp_store_storage_t warp_store_storage;
@@ -160,6 +164,18 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         if (threadIdx.x == 0)
         {
           if (sum != (32 * (32 - 1) / 2))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test partial warp reduce of 16-bit items
+        constexpr int valid_items = 16;
+        const short partial_sum =
+          warp_reduce_short_t(warp_reduce_short_storage).Sum(static_cast<short>(items[0]), valid_items);
+        if (threadIdx.x == 0)
+        {
+          if (partial_sum != (valid_items * (valid_items - 1) / 2))
           {
             atomicAdd(errors, 1);
           }
