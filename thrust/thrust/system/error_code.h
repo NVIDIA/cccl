@@ -19,7 +19,7 @@
 #endif // no system header
 #include <thrust/system/detail/errno.h>
 
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 

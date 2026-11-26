@@ -403,18 +403,36 @@ __fpmp2_high_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi,
   const _FpType __s = ::cuda::__fpmp_fma_rn(-__y, __y, __a_hi);
   const _FpType __e = ::cuda::__fpmp_add_rn(__s, __a_lo);
   const _FpType __t = ::cuda::__fpmp_mul_rn(__h, __e);
-  /* The remainder is s - 2 y t + a_lo - t^2, whose first sum is rounded once (it is about
-   * -a_lo), and the correction joins t before the pair is formed, which rounds a t of more
-   * than half an ulp of y once more. Against MPFR, on the host and on the device: 1.26 u^2
-   * max, 0.15 u^2 mean, against 2.5 u^2 and 0.23 u^2 for __fpmp2_sqrt, at 19 against 16
-   * operations. A variant that carries the rounding error of e and adds t to y before the
-   * correction reaches 0.5 u^2 at 24 operations. Like __fpmp2_sqrt it keeps its accuracy down
-   * to a high limb of about 2^-100. */
-  _FpType __rem          = ::cuda::__fpmp_fma_rn(-::cuda::__fpmp_add_rn(__y, __y), __t, __s);
-  __rem                  = ::cuda::__fpmp_add_rn(__rem, __a_lo);
-  __rem                  = ::cuda::__fpmp_fma_rn(-__t, __t, __rem);
-  const _FpType __t_corr = ::cuda::__fpmp_add_rn(__t, ::cuda::__fpmp_mul_rn(__h, __rem));
-  *__res_hi              = ::cuda::__fpmp_fast_two_sum(__y, __t_corr, __res_lo);
+  if constexpr (sizeof(_FpType) == 4)
+  {
+    /* fp32mp2: the remainder is s - 2 y t + a_lo - t^2, whose first sum is rounded once (it
+     * is about -a_lo), and the correction joins t before the pair is formed, which rounds a
+     * t of more than half an ulp of y once more. Against MPFR, on the host and on the device:
+     * 1.26 u^2 max, 0.15 u^2 mean, against 2.5 u^2 and 0.23 u^2 for __fpmp2_sqrt, at 19
+     * against 16 operations. Carrying the rounding error of e and adding t to y before the
+     * correction (the fp64mp2 branch) reaches 0.5 u^2 at 24 operations. Like __fpmp2_sqrt it
+     * keeps its accuracy down to a high limb of about 2^-100. */
+    _FpType __rem          = ::cuda::__fpmp_fma_rn(-::cuda::__fpmp_add_rn(__y, __y), __t, __s);
+    __rem                  = ::cuda::__fpmp_add_rn(__rem, __a_lo);
+    __rem                  = ::cuda::__fpmp_fma_rn(-__t, __t, __rem);
+    const _FpType __t_corr = ::cuda::__fpmp_add_rn(__t, ::cuda::__fpmp_mul_rn(__h, __rem));
+    *__res_hi              = ::cuda::__fpmp_fast_two_sum(__y, __t_corr, __res_lo);
+  }
+  else
+  {
+    /* fp64mp2: the device's seed is a few ulps from the root, so t is added to y with its
+     * rounding error kept, and the remainder is formed from e and its own rounding error:
+     * 0.5 u^2 on the host and 1.9 u^2 on the device. */
+    const _FpType __e_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__s, __e), __a_lo);
+    _FpType __t_lo       = ::cuda::__fpmp_fma_rn(-::cuda::__fpmp_add_rn(__y, __y), __t, __e);
+    __t_lo               = ::cuda::__fpmp_add_rn(__t_lo, __e_lo);
+    __t_lo               = ::cuda::__fpmp_fma_rn(-__t, __t, __t_lo);
+    __t_lo               = ::cuda::__fpmp_mul_rn(__h, __t_lo);
+    const _FpType __r    = ::cuda::__fpmp_add_rn(__y, __t);
+    _FpType __u          = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__y, __r), __t);
+    __u                  = ::cuda::__fpmp_add_rn(__u, __t_lo);
+    *__res_hi            = ::cuda::__fpmp_fast_two_sum(__r, __u, __res_lo);
+  }
 } // __fpmp2_high_sqrt
 
 #else // _CCCL_FPMP_USE_LIB
@@ -490,6 +508,10 @@ _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_sqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_rsqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp64mp2_high_sqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp64mp2_high_rsqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
 
 // -- type-generic template declarations (dispatch to fp32/fp64) --
 template <typename _Tp>
@@ -643,6 +665,18 @@ _CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
 {
   ::cuda::__fp64mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__fp64mp2_high_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__fp64mp2_high_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
 
 #endif // _CCCL_FPMP_USE_LIB
