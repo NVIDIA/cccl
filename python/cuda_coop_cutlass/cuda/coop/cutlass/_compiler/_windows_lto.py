@@ -22,6 +22,7 @@ def lower_and_link(
     *,
     cubin_path: str | Path | None = None,
     ptxas_options: str = "",
+    enable_verifier: bool = True,
 ) -> ir.Module:
     """Lower a CuTe launch and embed its fully linked device image."""
     # Use the device and host passes for this invocation, preserving the
@@ -41,11 +42,15 @@ def lower_and_link(
             and "link-libraries" in gpu.attributes
         ):
             del gpu.attributes["link-libraries"]
+
     # CuTe's llvm-only pass keeps the host launcher and its caller in the
     # same IR module so their symbol and launch metadata stay together.
-    passmanager.PassManager.parse(head + " llvm-only=true}" + closing).run(
-        module.operation
-    )
+    def run(passes):
+        manager = passmanager.PassManager.parse(passes)
+        manager.enable_verifier(enable_verifier)
+        manager.run(module.operation)
+
+    run(head + " llvm-only=true}" + closing)
     gpu_modules = [
         op for op in module.body.operations if op.operation.name == "gpu.module"
     ]
@@ -68,23 +73,26 @@ def lower_and_link(
             + f' dump-cubin-path= dump-fatbin-path= dump-ltoir-path="{prefix}"'
             + "})"
         )
-        passmanager.PassManager.parse(emit_caller).run(module.operation)
+        run(emit_caller)
         caller = Path(scratch, f"caller.{arch}.ltoir").read_bytes()
 
     cubin = link_lto(caller, paths, arch, ptxas_options=ptxas_options)
     binary = next(
-        op
-        for op in module.body.operations
-        if op.operation.name == "cuda.binary"
+        (
+            op
+            for op in module.body.operations
+            if op.operation.name == "cuda.binary"
+        ),
+        None,
     )
+    if binary is None:
+        raise RuntimeError(f"CuTe did not emit a cuda.binary for {arch}")
     image_type = ir.VectorType.get([len(cubin)], ir.IntegerType.get_signless(8))
     binary.attributes["binary"] = ir.DenseResourceElementsAttr.get_from_buffer(
         cubin, "linked_cubin", image_type, alignment=8
     )
     binary.attributes["compute_targets"] = targets
-    passmanager.PassManager.parse(
-        "builtin.module(cuda-to-llvm" + host_tail
-    ).run(module.operation)
+    run("builtin.module(cuda-to-llvm" + host_tail)
     if cubin_path is not None:
         Path(cubin_path).write_bytes(cubin)
     return module

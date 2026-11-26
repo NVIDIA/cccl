@@ -296,6 +296,13 @@ libraries, then places the cubin in the ``cuda.binary`` operation. CuTe
 lowers the host launcher and loads the kernel as usual. A CuTe JIT cache hit
 reuses the compiled module and skips the device link.
 
+On Windows, ``@cute.jit`` launches and ``cute.compile`` use this link
+step. The trace must contain one CuTe ``gpu.module``, which can contain
+several kernel entry points. CuTe's staged
+``cute.compile_to(ArtifactType.CompiledMlir, ...)`` export bypasses the
+link step. Use ``cute.compile`` to obtain a callable with the cooperative
+device code linked in.
+
 Scratch addresses follow a separate path. During tracing, calls that need
 deferred scratch use placeholder address and size operands. NVRTC supplies
 the exact C++ size and alignment. The finalizer inserts shared-memory

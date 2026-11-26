@@ -257,6 +257,19 @@ def test_finalize_preserves_unrelated_session_and_user_link_libraries(
     assert len(linked) == 1
 
 
+def test_windows_linker_rejects_an_older_caller_ir_reader(monkeypatch):
+    from cuda import pathfinder
+    from cuda.bindings import nvjitlink
+    from cuda.coop.cutlass._compiler import _nvjitlink
+
+    monkeypatch.setattr(
+        pathfinder, "load_nvidia_dynamic_lib", lambda name: None
+    )
+    monkeypatch.setattr(nvjitlink, "version", lambda: (13, 3))
+    with pytest.raises(RuntimeError, match=r"13\.4 or newer.*13\.3"):
+        _nvjitlink.link_lto(b"", (), "sm_80")
+
+
 def test_windows_link_plan_belongs_to_the_traced_module(monkeypatch, tmp_path):
     from cutlass._mlir import ir, passmanager
 
@@ -275,9 +288,19 @@ def test_windows_link_plan_belongs_to_the_traced_module(monkeypatch, tmp_path):
     dsl = SimpleNamespace(compile_options=options, compiler_provider=compiler)
     linked = []
 
-    def record(module, pipeline, paths, arch, *, cubin_path, ptxas_options):
+    def record(
+        module,
+        pipeline,
+        paths,
+        arch,
+        *,
+        cubin_path,
+        ptxas_options,
+        enable_verifier,
+    ):
         assert libraries.serialize() not in pipeline
         assert LinkLibraries(str(bitcode)).serialize() in pipeline
+        assert enable_verifier is False
         assert (arch, cubin_path, ptxas_options) == (
             "sm_120a",
             "final.cubin",
@@ -300,12 +323,18 @@ def test_windows_link_plan_belongs_to_the_traced_module(monkeypatch, tmp_path):
         pipeline = compiler.passmanager.PassManager.parse(
             f"builtin.module(cute-to-nvvm{{{passes}}})"
         )
+        pipeline.enable_verifier(False)
         pipeline.run(second.operation)
         pipeline.run(first.operation)
         assert linked == [
             (second.operation, (str(user), "second.ltoir")),
             (first.operation, (str(user), "first.ltoir")),
         ]
+        missing_options = compiler.passmanager.PassManager.parse(
+            "builtin.module(cute-to-nvvm{cubin-chip=sm_120a})"
+        )
+        with pytest.raises(RuntimeError, match="device link options"):
+            missing_options.run(first.operation)
         original = str(first)
         user.write_bytes(b"replacement device image")
         _windows_pipeline.configure_device_link(

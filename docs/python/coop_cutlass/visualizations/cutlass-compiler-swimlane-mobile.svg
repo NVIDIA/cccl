@@ -77,7 +77,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <path d="M135 1085V1140" marker-end="url(#cutlass-handoffs-overview-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <rect x="76.8095703125" y="1105" width="116.380859375" height="21" fill="#ffffff"/>
   <text x="135" y="1119" text-anchor="middle" font-family="sans-serif" font-size="12px" font-weight="400" fill="#172b3a">Final IR + link inputs</text>
-  <g data-node="Compile the kernel" role="group" aria-label="CuTe compiler. Compile the kernel. Hash and build the finalized module.. Lower and optimize the completed IR.">
+  <g data-node="Emit kernel LTO-IR" role="group" aria-label="CuTe compiler. Emit kernel LTO-IR. Hash the finalized module. Lower and optimize its device code.">
     <rect x="8" y="1143" width="254" height="131.90000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="1171.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">CuTe compiler · step</text>
     <text x="20" y="1193.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Emit kernel LTO-IR</text>

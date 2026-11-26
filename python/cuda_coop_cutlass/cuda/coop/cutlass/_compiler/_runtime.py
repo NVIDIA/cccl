@@ -55,8 +55,8 @@ class CutlassRuntime:
 def _runtime_requirement() -> str:
     """Describe the installed runtime and required capabilities.
 
-    Distribution metadata improves diagnostics; compatibility is established
-    by the API checks rather than by a version threshold.
+    The diagnostic reports the installed distribution version. The capability
+    checks identify the CuTe APIs used for tracing and compilation.
     """
 
     version = None
@@ -75,7 +75,7 @@ def _runtime_requirement() -> str:
     return (
         f"{detected}. Use a CUTLASS DSL runtime with scoped trace "
         "finalization, active compiler-environment ownership, exact launch "
-        "facts, and external LTO-IR linking support."
+        "facts, and a LinkLibraries compile option."
     )
 
 
@@ -122,7 +122,7 @@ def _missing_capabilities(
     """List missing compiler APIs without creating a DSL or trace.
 
     Check environment ownership, exact launch facts, finalization hooks,
-    target selection, and the link-library option that the provider uses.
+    target selection, and the link-library option read on both platforms.
     """
 
     dsl_type = getattr(cutlass_dsl, "CuTeDSL", None)
@@ -191,7 +191,7 @@ def validate_cutlass_runtime() -> CutlassRuntime:
             "backend-runtime-incompatible",
             "cuda.coop.cutlass requires active compiler-environment ownership, "
             "scoped trace finalization, exact launch facts, architecture "
-            "selection, and link-library merging; missing: "
+            "selection, and a LinkLibraries compile option; missing: "
             + ", ".join(missing_capabilities)
             + f". {_runtime_requirement()}",
             missing_capabilities=missing_capabilities,

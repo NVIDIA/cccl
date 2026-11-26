@@ -105,7 +105,9 @@ headers and compiler/linker libraries must resolve to a compatible toolkit.
 NVRTC and nvJitLink are loaded from the CUDA installation that holds the
 selected CUDA headers. NVRTC must report the same version as those headers,
 and nvJitLink the same major version and a minor version at least as new.
-A mismatch is an error before any CUB code is compiled.
+The package checks these versions before compiling CUB code.
+On Windows, the device linker also requires nvJitLink 13.4 or later in the
+CUDA 13 series to read the kernel LTO-IR emitted by CuTe DSL 4.9.0.dev1.
 Plans describe the primitive; the lowering adapts CuTe values and lifecycle
 to those decisions.
 

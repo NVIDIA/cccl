@@ -4,17 +4,31 @@
 
 """Compile scalar callback signatures and recover from failed final links."""
 
+import subprocess
+import sys
 from dataclasses import replace
 
 import cutlass
+import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.common import DSLUserCodeError, get_current_env_manager
-from cutlass.base_dsl.compiler import GPUArch
+from cutlass.base_dsl.compiler import (
+    DumpDir,
+    GPUArch,
+    KeepCUBIN,
+    LinkLibraries,
+    PtxasOptions,
+)
+from cutlass.compiler import LlvmIrArtifact
+from cutlass.cute.ffi import extern
 from cutlass.cute.runtime import make_ptr
 
 import cuda.coop.cutlass as coop
-from cuda.coop.cutlass._compiler import _bundle, _cache
+from cuda.coop.cutlass._compiler import _bundle, _cache, _finalize, _nvrtc
+from cuda.coop.cutlass._compiler._windows_pipeline import configure_device_link
+from tests.runtime_support import device_array
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -44,6 +58,85 @@ def _launcher(callback, dtype=cutlass.Int32):
 def _compile(launch, dtype=cutlass.Int32):
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
     return cute.compile[(GPUArch("sm_80"),)](launch, pointer)
+
+
+@pytest.fixture
+def windows_device_link(monkeypatch):
+    if sys.platform == "win32":
+        return
+    if _nvrtc.resolve_compile_context(()).nvjitlink_version < (13, 4):
+        pytest.skip(
+            "The Windows device linker requires nvJitLink 13.4 or later"
+        )
+    monkeypatch.setattr(_finalize, "_attach_link_inputs", configure_device_link)
+
+
+@pytest.mark.usefixtures("windows_device_link")
+@pytest.mark.parametrize("arch", ("sm_80", "sm_90a"))
+def test_windows_device_link_targets(tmp_path, arch):
+    callback = coop.compile_operator(_add_one, cutlass.Int32, arch=arch)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
+    options = (GPUArch(arch), KeepCUBIN, DumpDir(str(tmp_path)))
+    cute.compile[options](_launcher(callback), pointer)
+    (cubin,) = tmp_path.glob("*.cubin")
+    assert arch in cubin.name
+    assert cubin.read_bytes().startswith(b"\x7fELF")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
+    if cuobjdump is not None:
+        sass = subprocess.check_output(
+            [cuobjdump, "--dump-sass", str(cubin)], text=True
+        )
+        assert f"code for {arch}\n" in sass
+
+
+@pytest.mark.gpu
+@pytest.mark.usefixtures("windows_device_link")
+def test_windows_device_link_mixed_libraries(tmp_path):
+    """Run one kernel that calls user bitcode, user LTO and a CCCL scan."""
+    callback = coop.compile_operator(_add_one, cutlass.Int32)
+    library_dir = tmp_path / "user λ"
+    library_dir.mkdir()
+    lto = library_dir / "combine.ltoir"
+    lto.write_bytes(callback._ltoir)
+    bitcode = tmp_path / "triple.bc"
+    module = LlvmIrArtifact.from_textual_form(
+        b"define i32 @triple(i32 %x) { %y = mul i32 %x, 3 ret i32 %y }"
+    )
+    bitcode.write_bytes(module.get_bitcode())
+
+    @extern(name=callback.symbol)
+    def combine(a: cutlass.Int32, b: cutlass.Int32) -> cutlass.Int32: ...
+
+    @extern
+    def triple(x: cutlass.Int32) -> cutlass.Int32: ...
+
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        block = coop.this_block()
+        thread = block.rank()
+        output = cute.make_tensor(destination, cute.make_layout(32))
+        value = combine(triple(cutlass.Int32(thread)), cutlass.Int32(0))
+        output[thread] = coop.inclusive_scan(block, cutlass.Int32(value))
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    options = (
+        LinkLibraries(f"{bitcode},{lto}"),
+        PtxasOptions("--maxrregcount=32 --warn-on-spills"),
+        KeepCUBIN,
+        DumpDir(str(tmp_path)),
+    )
+    result = np.full(32, -1, dtype=np.int32)
+    with device_array(result) as dst:
+        compiled = cute.compile[options](launch, dst)
+        compiled(dst)
+    np.testing.assert_array_equal(result, np.cumsum(3 * np.arange(32) + 1))
+    (cubin,) = tmp_path.glob("*.cubin")
+    assert cubin.read_bytes().startswith(b"\x7fELF")
 
 
 @pytest.mark.parametrize("failure", ("provider-compile", "final-link"))

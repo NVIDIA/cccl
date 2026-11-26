@@ -50,6 +50,8 @@ Requirements
 * Python 3.10 or later.
 * CUDA Toolkit 13 and a compatible driver. On Linux with CuTe DSL
   4.9.0.dev1, use NVRTC 13.1 through 13.4.
+* On Windows, linking kernels requires nvJitLink 13.4 or later in the
+  CUDA 13 series. The ``[cu13]`` extra installs a compatible linker.
 * A GPU architecture supported by your CuTe compiler. The earliest target
   in CuTe DSL 4.9.0.dev1 is compute capability 8.0 (SM80).
 * CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends
@@ -59,9 +61,9 @@ One tested Linux configuration pairs an NVIDIA L4 with CUDA Toolkit 13.4
 and CuTe DSL 4.9.0.dev1. It uses CuTe's default setting of PyIR off.
 
 The wheel includes the CCCL headers it needs. The toolkit's NVRTC compiles
-the CUB device code to LTO-IR. CuTe's final linker must be at least as
-new as NVRTC within the same CUDA major series. The Linux CUDA 13 wheel
-for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
+the CUB device code to LTO-IR. On Linux, CuTe's final linker must be at
+least as new as NVRTC within the same CUDA major series. The Linux CUDA 13
+wheel for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
 13.4 have been tested with this wheel. CUDA 13.5 LTO-IR needs a newer
 linker. See
 `nvJitLink compatibility <https://docs.nvidia.com/cuda/nvjitlink/#compatibility>`__

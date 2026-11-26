@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import shlex
+from pathlib import Path
 
 
 def link_lto(
@@ -21,6 +22,15 @@ def link_lto(
     load_nvidia_dynamic_lib("nvJitLink")
     from cuda.bindings import nvjitlink
 
+    # The caller LTO-IR emitted by stock CuTe DSL 4.9 needs the CUDA 13.4
+    # reader even when NVRTC compiled its provider using older headers.
+    major, minor = nvjitlink.version()
+    if (major, minor) < (13, 4):
+        raise RuntimeError(
+            "CuTe caller LTO-IR on Windows requires nvJitLink 13.4 or "
+            f"newer, but the loaded library is {major}.{minor}"
+        )
+
     # CuTe emits current NVVM IR even for targets whose default reader is
     # the legacy NVVM implementation (for example, sm_80).
     options = [f"-arch={arch}", "-lto", "-nvvm-version=nvvm-latest"]
@@ -30,7 +40,13 @@ def link_lto(
         flags.commenters = ""
         flags.escape = ""  # Backslashes in Windows paths are literal.
         options.extend(f"-Xptxas={flag}" for flag in flags)
-    handle = nvjitlink.create(len(options), options)
+    try:
+        handle = nvjitlink.create(len(options), options)
+    except nvjitlink.nvJitLinkError as exc:
+        raise RuntimeError(
+            f"nvJitLink could not create a linker for {arch} "
+            f"with options {options!r}: {exc}"
+        ) from exc
     failed = True
     operation = "add the CuTe caller"
     try:
@@ -41,9 +57,14 @@ def link_lto(
             len(caller),
             "caller.ltoir",
         )
-        for path in paths:
-            operation = f"add {path!r}"
-            nvjitlink.add_file(handle, nvjitlink.InputType.ANY, path)
+        # Python opens Unicode paths with the Windows wide-character API.
+        # Keep the input buffers alive through nvJitLinkComplete.
+        libraries = [(path, path.read_bytes()) for path in map(Path, paths)]
+        for library, data in libraries:
+            operation = f"add {str(library)!r}"
+            nvjitlink.add_data(
+                handle, nvjitlink.InputType.ANY, data, len(data), library.name
+            )
 
         operation = f"link device code for {arch}"
         nvjitlink.complete(handle)

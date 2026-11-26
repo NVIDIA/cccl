@@ -21,9 +21,14 @@ class _DeviceLinkPipeline:
         self.native = native
         self.pipeline = pipeline
         self.dsl = dsl
+        self.verify_passes = True
 
     def __getattr__(self, name):
         return getattr(self.native, name)
+
+    def enable_verifier(self, enable=True):
+        self.verify_passes = enable
+        self.native.enable_verifier(enable)
 
     def run(self, operation, *args, **kwargs):
         if _LINK_PLAN not in operation.attributes:
@@ -38,6 +43,11 @@ class _DeviceLinkPipeline:
         bitcode = ",".join(path.value for path in plan["bitcode"])
         pipeline = self.pipeline
         if native_option:
+            if native_option not in pipeline:
+                raise RuntimeError(
+                    "Cannot locate CuTe's device link options in the "
+                    "Windows compilation pipeline"
+                )
             pipeline = pipeline.replace(
                 native_option, LinkLibraries(bitcode).serialize(), 1
             )
@@ -48,6 +58,7 @@ class _DeviceLinkPipeline:
             plan["arch"].value,
             cubin_path=options.full_cubin_path,
             ptxas_options=options.options[PtxasOptions].value,
+            enable_verifier=self.verify_passes,
         )
 
 
