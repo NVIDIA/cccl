@@ -792,14 +792,14 @@ struct StringMaker<cuda::device::__aligned_ptr<T>>
   static auto convert(cuda::device::__aligned_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
-    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << "}";
+    ss << "{ptr: " << static_cast<const void*>(abp.__ptr) << ", head_padding: " << abp.__head_padding << "}";
     return ss.str();
   }
 };
 } // namespace Catch
 
 // TODO(bgruber): rewrite this example using int3
-CUB_TEST("DeviceTransform::Transform __aligned_ptr", "[device][transform]", CUB_SMALL)
+CUB_TEST("DeviceTransform::Transform aligned_ptr", "[device][transform]", CUB_SMALL)
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
@@ -823,7 +823,7 @@ CUB_TEST("DeviceTransform::Transform __aligned_ptr", "[device][transform]", CUB_
         == cuda::device::__aligned_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
 }
 
-CUB_TEST("DeviceTransform::Transform __aligned_ptr", "[device][transform]", CUB_SMALL)
+CUB_TEST("DeviceTransform::Transform aligned_ptr", "[device][transform]", CUB_SMALL)
 {
   using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;

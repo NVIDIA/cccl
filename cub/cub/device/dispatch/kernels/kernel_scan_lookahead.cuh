@@ -419,7 +419,7 @@ struct lookahead_scan_closure
       warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
       AccumT regInput[elemPerThread];
       const auto* smem_data_start =
-        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.head_padding);
+        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.__head_padding);
       // in the last tile, we load some invalid elements, but don't process them later
       _CUB::detail::warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
 
@@ -699,7 +699,7 @@ struct lookahead_scan_closure
 
     // We are always loading a full tile even for the last tile, so we are loading invalid data
     _CUB::detail::warpspeed::squadLoadSmem(
-      squad, regAggrInclusive, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.head_padding));
+      squad, regAggrInclusive, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.__head_padding));
 
     _CCCL_IKET_RANGE_PUSH(ThreadScan);
     // Perform inclusive scan of register array in current thread.
@@ -720,7 +720,7 @@ struct lookahead_scan_closure
       const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
 
       _CUB::detail::warpspeed::squadStoreSmem(
-        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.head_padding), regAggrInclusive);
+        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.__head_padding), regAggrInclusive);
     }
     else
     {
@@ -734,12 +734,12 @@ struct lookahead_scan_closure
         const auto storeBytes = static_cast<::cuda::std::uint32_t>(chunk_size * sizeof(OutputT));
 
         // only stage elements of the current chunk to SMEM
-        // storeInfo.head_padding < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-        _CCCL_ASSERT(storeInfo.head_padding + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
+        // storeInfo.__head_padding < 16 and smem_output_tile contains extra 16 bytes, so we should fit
+        _CCCL_ASSERT(storeInfo.__head_padding + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
         _CUB::detail::warpspeed::squadStoreSmemPartial(
           squad,
-          reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.head_padding), // different in each
-                                                                                 // iteration
+          reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.__head_padding), // different in each
+                                                                                   // iteration
           regAggrInclusive,
           chunk_offset,
           chunk_offset + chunk_size);
@@ -751,7 +751,7 @@ struct lookahead_scan_closure
 
         // Store result to global memory using TMA
         _CUB::detail::warpspeed::squadStoreBulkSync(
-          squad, storeInfo, storeBytes, smem_output_tile + storeInfo.head_padding);
+          squad, storeInfo, storeBytes, smem_output_tile + storeInfo.__head_padding);
 
         squad.syncThreads();
       }
@@ -777,7 +777,7 @@ struct lookahead_scan_closure
         squad,
         storeInfo,
         static_cast<::cuda::std::uint32_t>(valid_items * sizeof(OutputT)),
-        refInOutS.data().inout + storeInfo.head_padding);
+        refInOutS.data().inout + storeInfo.__head_padding);
     }
   }
 

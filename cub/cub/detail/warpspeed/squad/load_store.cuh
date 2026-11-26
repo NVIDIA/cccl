@@ -17,23 +17,14 @@
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
 #include <cuda/__async_copy>
-#include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__memory/is_aligned.h>
-#include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstdint>
-
-#include <nv/target>
-
-#if __cccl_ptx_isa < 920
-#  include <cuda/std/__type_traits/make_nbit_int.h>
-#endif // __cccl_ptx_isa < 920
 
 CUB_NAMESPACE_BEGIN
 
@@ -58,7 +49,7 @@ _CCCL_DEVICE_API void squadLoadBulk(
   if constexpr (alignof(Tp) >= 16)
   {
     // for alignments larger than 16, we can just bulk copy, even just a single element
-    _CCCL_ASSERT(ptrGmem.head_padding == 0, "");
+    _CCCL_ASSERT(ptrGmem.__head_padding == 0, "");
     if (squad.isLeaderThread())
     {
       ::cuda::device::__bulk_load(ptrSmem, ptrGmem.data(), bytes, ptrBar);
@@ -73,17 +64,19 @@ _CCCL_DEVICE_API void squadLoadBulk(
     if (squad.isLeaderThread())
     {
       copied =
-        ::cuda::device::__bulk_load_unaligned_ignore_oob(ptrSmem, ptrGmem.ptr, bytes, ptrGmem.head_padding, ptrBar);
+        ::cuda::device::__bulk_load_unaligned_ignore_oob(ptrSmem, ptrGmem.__ptr, bytes, ptrGmem.__head_padding, ptrBar);
     }
     refDestSmem.squadIncreaseTxCount(squad, copied);
 #  else // __cccl_ptx_isa >= 920
-    // if we don't have cp_async_bulk_ignore_oob, we have to undercopy and copy head and tail elements manually
+    // if we don't have cp_async_bulk_ignore_oob, we have to undercopy and copy head and tail elements manually,
+    // which takes one thread per alignof(Tp) bytes of the up to 16 head or tail bytes
+    _CCCL_ASSERT(static_cast<int>(16 / alignof(Tp)) <= squad.threadCount(), "");
     ::cuda::std::uint32_t copied = 0;
     ::cuda::device::__bulk_load_unaligned_precise<16, alignof(Tp)>(
-      ptrSmem + ptrGmem.head_padding,
+      ptrSmem + ptrGmem.__head_padding,
       ptrGmem.data(),
       bytes,
-      ptrGmem.head_padding,
+      ptrGmem.__head_padding,
       ptrBar,
       squad.threadRank(),
       squad.isLeaderThread(),
@@ -107,7 +100,7 @@ _CCCL_DEVICE_API void squadStoreBulkSync(
     // Make the generic-proxy writes to shared memory visible to the async proxy. Executed by the full warp to avoid
     // BSSY/BSYNC around the elected copies.
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
-    // both pointers point to the data, which starts ptrGmem.head_padding bytes after a 16-byte boundary
+    // both pointers point to the data, which starts ptrGmem.__head_padding bytes after a 16-byte boundary
     ::cuda::device::__bulk_store_unaligned(
       const_cast<OutputT*>(ptrGmem.data()), srcSmem, bytes, squad.threadRank(), ::cuda::ptx::elect_sync(~0));
     // wait for the stores to have completed reading from shared memory

@@ -28,29 +28,30 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief A pointer to a contiguous range of @c _Tp, aligned down to the alignment a bulk copy needs, together with the
-//! distance back to the first element. Bulk copies start at @c ptr; the elements start at @c ptr + @c head_padding.
+//! distance back to the first element. Bulk copies start at @c __ptr; the elements start at @c __ptr + @c
+//! __head_padding.
 template <typename _Tp>
 struct __aligned_ptr
 {
   using value_type = _Tp;
 
-  const char* ptr; // aligned down from the element pointer, may not be aligned to alignof(_Tp)
-  unsigned head_padding; // bytes from ptr to the first element, in [0, alignment)
+  const char* __ptr; // aligned down from the element pointer, may not be aligned to alignof(_Tp)
+  unsigned __head_padding; // bytes from __ptr to the first element, in [0, alignment)
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* data() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* data() const noexcept
   {
-    return reinterpret_cast<const _Tp*>(ptr + head_padding);
+    return reinterpret_cast<const _Tp*>(__ptr + __head_padding);
   }
 
-  _CCCL_HOST_DEVICE_API friend bool operator==(const __aligned_ptr& __a, const __aligned_ptr& __b)
+  _CCCL_HOST_DEVICE_API friend bool operator==(const __aligned_ptr& __a, const __aligned_ptr& __b) noexcept
   {
-    return __a.ptr == __b.ptr && __a.head_padding == __b.head_padding;
+    return __a.__ptr == __b.__ptr && __a.__head_padding == __b.__head_padding;
   }
 };
 
 //! @brief Aligns @p __ptr down to @p __alignment bytes and records the distance in the result.
 template <typename _Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE_API __aligned_ptr<_Tp> __make_aligned_ptr(const _Tp* __ptr, int __alignment)
+[[nodiscard]] _CCCL_HOST_DEVICE_API __aligned_ptr<_Tp> __make_aligned_ptr(const _Tp* __ptr, int __alignment) noexcept
 {
   const auto __raw  = reinterpret_cast<const char*>(__ptr);
   const auto __base = ::cuda::align_down(__raw, __alignment);
