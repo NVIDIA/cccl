@@ -26,18 +26,19 @@ explains each line.
 Installation
 ------------
 
-On Linux with a CUDA 13-capable NVIDIA driver, install the published package
-with its CUDA Toolkit 13.4 headers, NVRTC and nvJitLink:
+On Linux or Windows with a CUDA 13-capable NVIDIA driver, use the
+``[cu13]`` extra to install CUDA Toolkit 13.4 headers and NVRTC together
+with a compatible version of nvJitLink:
 
 .. code-block:: bash
 
-   python -m pip install 'cuda-coop-cutlass[cu13]'
+   python -m pip install "cuda-coop-cutlass[cu13]"
 
 To build from source, run the following from the CCCL repository root:
 
 .. code-block:: bash
 
-   python -m pip install './python/cuda_coop_cutlass[cu13]'
+   python -m pip install "./python/cuda_coop_cutlass[cu13]"
 
 With a compatible system toolkit already installed, omit the ``[cu13]`` extra
 from either command.
@@ -59,6 +60,8 @@ Requirements
 
 One tested Linux configuration pairs an NVIDIA L4 with CUDA Toolkit 13.4
 and CuTe DSL 4.9.0.dev1. It uses CuTe's default setting of PyIR off.
+On Windows, the examples ran with CuTe DSL 4.9.0.dev1 on both x64
+(Python 3.14, SM120a) and Arm64 (Python 3.13, SM121a).
 
 The wheel includes the CCCL headers it needs. The toolkit's NVRTC compiles
 the CUB device code to LTO-IR. On Linux, CuTe's final linker must be at

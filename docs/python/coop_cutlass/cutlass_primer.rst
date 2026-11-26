@@ -432,9 +432,10 @@ all wrappers into one C++ translation unit, compiles them with NVRTC to
 LTO-IR, and materializes deferred scratch. ``_compiler/_convergence.py``
 then replaces each wrapper's ``func.func`` declaration and ``func.call``
 operations with ``llvm.func`` and ``llvm.call`` operations marked
-``convergent``. Last, the hook attaches the artifact path to each
-``gpu.module``. The LTO-IR file of each ``DeviceOperator`` the trace uses
-is attached the same way.
+``convergent``. On Linux, the hook attaches the wrapper and
+``DeviceOperator`` LTO-IR paths to each ``gpu.module``. On Windows, it
+records those paths in the traced module's
+:ref:`device link plan <cuda.coop.cutlass.windows_device_link>`.
 
 The DSL's own module hash runs after the hook and includes the module's
 attributes, so a different bundle path changes the hash. The key of our
