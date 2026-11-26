@@ -400,9 +400,12 @@ leave at zero: ``(2^24, 0.25) - 2^24`` is ``(0, 0.25)``. ``exp``, ``exp2``, ``ex
 need no such step: they take the size of the argument and the multiple of their reduction from
 the sum of the limbs. The ``fp32mp2_low`` functions ``sin``, ``cos``, ``tan``, ``sincos``,
 ``sinpi``, ``cospi``, ``sincospi``, ``asin``, ``acos`` and ``atan`` take an argument with a zero
-high limb for its low limb, as ``atan2``, ``rhypot``, ``norm3d``, ``norm4d``, ``rnorm3d`` and
-``rnorm4d`` do for their operands at every level. ``sqrt``, ``rsqrt``, ``cbrt``, ``rcbrt``, ``hypot``, ``pow``
-and ``fmod`` read the high limb alone: renormalize such an argument before the call. Below the
+high limb for its low limb, as ``atan2`` does for its operands at every level. ``rhypot``,
+``norm3d``, ``norm4d``, ``rnorm3d``, ``rnorm4d`` and the ``fp64mp2`` ``hypot`` read a ``low``
+operand whose low limb is the larger one in magnitude with its limbs exchanged. That covers a
+zero high limb, a high limb far below the low one, and an infinity in the low limb alone.
+``sqrt``, ``rsqrt``, ``cbrt``, ``rcbrt``, the ``fp32mp2`` ``hypot``, ``pow`` and ``fmod`` read the
+high limb alone: renormalize such an argument before the call. Below the
 threshold the domain of a function is decided on the high limb, except for ``acosh``, which
 decides ``x < 1`` on both limbs.
 Over a long ``low`` chain the overlap grows

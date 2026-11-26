@@ -694,6 +694,28 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(rnorm3d(D(0x1p-600), D(0.0), -w)), 4.0));
   assert(approx_eq(static_cast<double>(norm4d(D(0x1p-600), w, D(0.0), w)), 0.35355339059327379));
   assert(approx_eq(static_cast<double>(norm3d(w, D(3.0), D(4.0))), 5.0062460986251967));
+
+  // A low limb above the high limb in magnitude: the norms read the operand with its limbs
+  // exchanged, so a high limb far below the low one does not set the scale, and an infinity
+  // in the low limb alone is an infinite operand.
+  const float finf = cuda::std::numeric_limits<float>::infinity();
+  const T below(0x1p-80f, 3.0f);
+  assert(approx_eq(static_cast<double>(rhypot(below, T(4.0f))), 0.2));
+  assert(approx_eq(static_cast<double>(norm3d(T(0.0f), below, T(4.0f))), 5.0));
+  assert(approx_eq(static_cast<double>(rnorm4d(T(4.0f), T(0.0f), T(0.0f), -below)), 0.2));
+  assert(is_zero(rhypot(T(1.0f, finf), T(0.0f))) && is_pos_inf(norm3d(T(-1.0f, finf), T(2.0f), T(0.0f))));
+  assert(is_pos_inf(norm4d(T(0.0f), T(1.0f, -finf), T(0.0f), T(0.0f)))
+         && is_zero(rnorm3d(T(1.0f, finf), T(2.0f), T(0.0f))));
+
+  const double dinf = cuda::std::numeric_limits<double>::infinity();
+  const D dbelow(0x1p-600, 3.0);
+  assert(approx_eq(static_cast<double>(hypot(dbelow, D(4.0))), 5.0));
+  assert(approx_eq(static_cast<double>(rhypot(dbelow, D(4.0))), 0.2));
+  assert(approx_eq(static_cast<double>(norm3d(D(0.0), dbelow, D(4.0))), 5.0));
+  assert(approx_eq(static_cast<double>(rnorm4d(D(4.0), D(0.0), D(0.0), -dbelow)), 0.2));
+  assert(is_pos_inf(hypot(D(1.0, dinf), D(0.0))) && is_pos_inf(hypot(D(-1.0, dinf), D(2.0))));
+  assert(is_zero(rhypot(D(1.0, dinf), D(0.0))) && is_pos_inf(norm3d(D(-1.0, dinf), D(2.0), D(0.0))));
+  assert(is_pos_inf(norm4d(D(0.0), D(1.0, -dinf), D(0.0), D(0.0))) && is_zero(rnorm3d(D(1.0, dinf), D(2.0), D(0.0))));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------
