@@ -23,8 +23,6 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -42,6 +40,66 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void NormalizeReductionOutput(
   KeyValuePairT& val, OffsetT base_offset, ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
 {
   val.key -= base_offset;
+}
+
+/// Reduces the segments of a small or medium segment agent, one segment per logical warp
+template <typename AgentWarpReduceT,
+          int ThreadsPerWarp,
+          int SegmentsPerBlock,
+          typename OffsetT,
+          typename AccumT,
+          typename StorageT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename ReductionOpT,
+          typename InitValueT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void small_medium_seg_reduction(
+  StorageT& storage,
+  const InputIteratorT& d_in,
+  const OutputIteratorT& d_out,
+  const BeginOffsetIteratorT& d_begin_offsets,
+  const EndOffsetIteratorT& d_end_offsets,
+  const int num_segments,
+  ReductionOpT& reduction_op,
+  const InitValueT& init,
+  const int bid,
+  const int tid)
+{
+  const int sid_within_block = tid / ThreadsPerWarp;
+  const int lane_id          = tid % ThreadsPerWarp;
+  // The dispatch limits the number of segments per invocation to a multiple of SegmentsPerBlock, so
+  // the global segment id cannot overflow
+  _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * SegmentsPerBlock) + sid_within_block
+                 <= (::cuda::std::numeric_limits<int>::max)(),
+               "global segment id overflows int");
+  const int global_segment_id = (bid * SegmentsPerBlock) + sid_within_block;
+
+  if (global_segment_id < num_segments)
+  {
+    const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[global_segment_id]);
+    const auto segment_end   = static_cast<OffsetT>(d_end_offsets[global_segment_id]);
+
+    if (segment_begin == segment_end)
+    {
+      if (lane_id == 0)
+      {
+        _CUB::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
+      }
+      return;
+    }
+
+    AccumT warp_aggregate =
+      AgentWarpReduceT(storage[sid_within_block], d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
+
+    _CUB::detail::segmented_reduce::NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
+
+    if (lane_id == 0)
+    {
+      _CUB::detail::reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+    }
+  }
 }
 
 /**
@@ -186,62 +244,35 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_reduce.th
   const int bid = static_cast<int>(blockIdx.x);
   const int tid = static_cast<int>(threadIdx.x);
 
-  auto small_medium_seg_reduction =
-    [&](auto agent_tag, auto& storage, auto threads_per_warp_tag, auto segments_per_block_tag) {
-      using AgentWarpReduceT           = typename decltype(agent_tag)::type;
-      constexpr int threads_per_warp   = decltype(threads_per_warp_tag)::value;
-      constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
-      const int sid_within_block       = tid / threads_per_warp;
-      const int lane_id                = tid % threads_per_warp;
-      // The dispatch limits the number of segments per invocation to a multiple of segments_per_block, so
-      // the global segment id cannot overflow
-      _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_block) + sid_within_block
-                     <= (::cuda::std::numeric_limits<int>::max)(),
-                   "global segment id overflows int");
-      const int global_segment_id = (bid * segments_per_block) + sid_within_block;
-
-      if (global_segment_id < num_segments)
-      {
-        const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[global_segment_id]);
-        const auto segment_end   = static_cast<OffsetT>(d_end_offsets[global_segment_id]);
-
-        if (segment_begin == segment_end)
-        {
-          if (lane_id == 0)
-          {
-            _CUB::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
-          }
-          return;
-        }
-
-        AccumT warp_aggregate =
-          AgentWarpReduceT(storage[sid_within_block], d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
-
-        _CUB::detail::segmented_reduce::NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
-
-        if (lane_id == 0)
-        {
-          _CUB::detail::reduce::finalize_and_store_aggregate(
-            d_out + global_segment_id, reduction_op, init, warp_aggregate);
-        }
-      }
-    };
-
   if (::cuda::in_range(max_segment_size, static_cast<size_t>(1), static_cast<size_t>(small_items_per_tile)))
   {
-    small_medium_seg_reduction(
-      ::cuda::std::type_identity<AgentSmallReduceT>{},
-      temp_storage.small_storage,
-      ::cuda::std::integral_constant<int, small_threads_per_warp>{},
-      ::cuda::std::integral_constant<int, segments_per_small_block>{});
+    _CUB::detail::segmented_reduce::
+      small_medium_seg_reduction<AgentSmallReduceT, small_threads_per_warp, segments_per_small_block, OffsetT, AccumT>(
+        temp_storage.small_storage,
+        d_in,
+        d_out,
+        d_begin_offsets,
+        d_end_offsets,
+        num_segments,
+        reduction_op,
+        init,
+        bid,
+        tid);
   }
   else if (::cuda::in_range(max_segment_size, static_cast<size_t>(1), static_cast<size_t>(medium_items_per_tile)))
   {
-    small_medium_seg_reduction(
-      ::cuda::std::type_identity<AgentMediumReduceT>{},
-      temp_storage.medium_storage,
-      ::cuda::std::integral_constant<int, medium_threads_per_warp>{},
-      ::cuda::std::integral_constant<int, segments_per_medium_block>{});
+    _CUB::detail::segmented_reduce::
+      small_medium_seg_reduction<AgentMediumReduceT, medium_threads_per_warp, segments_per_medium_block, OffsetT, AccumT>(
+        temp_storage.medium_storage,
+        d_in,
+        d_out,
+        d_begin_offsets,
+        d_end_offsets,
+        num_segments,
+        reduction_op,
+        init,
+        bid,
+        tid);
   }
   else
   {

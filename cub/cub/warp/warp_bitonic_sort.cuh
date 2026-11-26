@@ -535,12 +535,20 @@ private:
   int lane                 = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
   unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
+  template <typename CompareOp, bool Reverse, bool Full>
+  struct merge_stage_op
+  {
+    template <typename Stage, typename... Args>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Stage stage, const WarpBitonicSort& self, Args&... args) const
+    {
+      self.template merge_stage<CompareOp, Reverse, Full, stage()>(args...);
+    }
+  };
+
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    ::cuda::static_for<num_stages>([&](auto stage) {
-      merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op);
-    });
+    ::cuda::static_for<num_stages>(merge_stage_op<CompareOp, Reverse, true>{}, *this, keys, values, compare_op);
   }
 
   template <typename CompareOp, bool Reverse>
@@ -556,9 +564,8 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    ::cuda::static_for<num_stages>([&](auto stage) {
-      merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items);
-    });
+    ::cuda::static_for<num_stages>(
+      merge_stage_op<CompareOp, Reverse, false>{}, *this, keys, values, compare_op, valid_items);
   }
 
   template <typename CompareOp, bool Reverse>

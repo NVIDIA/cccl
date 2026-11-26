@@ -76,6 +76,22 @@ struct warp_reduce_batched_wspro
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/) {}
 
+  template <bool ToBlocked>
+  struct reduction_tree_op
+  {
+    template <typename OutIdx, typename InputT, typename ReductionOp>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(
+      OutIdx out_idx,
+      warp_reduce_batched_wspro& self,
+      ::cuda::std::array<T, max_out_per_thread>& intermediate_outputs,
+      const InputT& inputs,
+      ReductionOp& reduction_op) const
+    {
+      constexpr auto first_idx      = out_idx * LogicalWarpThreads;
+      intermediate_outputs[out_idx] = self.template RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
+    }
+  };
+
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
@@ -96,10 +112,8 @@ struct warp_reduce_batched_wspro
     // The reduction tree fills every entry before the output copy.
     ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
-    ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
-      constexpr auto first_idx      = out_idx * LogicalWarpThreads;
-      intermediate_outputs[out_idx] = RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
-    });
+    ::cuda::static_for<0, max_out_per_thread>(
+      reduction_tree_op<ToBlocked>{}, *this, intermediate_outputs, inputs, reduction_op);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < max_out_per_thread; ++i)

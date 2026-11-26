@@ -209,6 +209,42 @@ struct WarpScanSmem
     __syncwarp(member_mask);
   }
 
+  template <typename ScanOp>
+  struct partial_scan_step_op
+  {
+    WarpScanSmem& self;
+    T& inclusive_output;
+    ScanOp& scan_op;
+    int& valid_items;
+
+    template <typename Step>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Step step) const
+    {
+      constexpr int offset = 1 << step;
+
+      // Share partial into buffer
+      if constexpr (step == 0)
+      {
+        // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
+        _CUB::detail::uninitialized_copy_single(&self.temp_storage[HALF_WARP_THREADS + self.lane_id], inclusive_output);
+      }
+      else
+      {
+        self.temp_storage[HALF_WARP_THREADS + self.lane_id] = inclusive_output;
+      }
+      __syncwarp(self.member_mask);
+      T addend = self.temp_storage[HALF_WARP_THREADS + self.lane_id - offset];
+      // Update partial if addend is in range
+      if ((self.lane_id >= offset) && (static_cast<int>(self.lane_id) < valid_items))
+      {
+        inclusive_output = scan_op(addend, inclusive_output);
+      }
+      // TODO(pauleonix): Possible optimization: Avoid this in the last iteration.
+      // Downside: Need to be very careful syncing in other functions when writing to temp_storage.
+      __syncwarp(self.member_mask);
+    }
+  };
+
   /**
    * @brief Partial inclusive scan
    *
@@ -238,30 +274,7 @@ struct WarpScanSmem
     {
       inclusive_output = input;
     }
-    ::cuda::static_for<STEPS>([&](auto step) {
-      constexpr int offset = 1 << step;
-
-      // Share partial into buffer
-      if constexpr (step == 0)
-      {
-        // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
-        _CUB::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
-      }
-      else
-      {
-        temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
-      }
-      __syncwarp(member_mask);
-      T addend = temp_storage[HALF_WARP_THREADS + lane_id - offset];
-      // Update partial if addend is in range
-      if ((lane_id >= offset) && (static_cast<int>(lane_id) < valid_items))
-      {
-        inclusive_output = scan_op(addend, inclusive_output);
-      }
-      // TODO(pauleonix): Possible optimization: Avoid this in the last iteration.
-      // Downside: Need to be very careful syncing in other functions when writing to temp_storage.
-      __syncwarp(member_mask);
-    });
+    ::cuda::static_for<STEPS>(partial_scan_step_op<ScanOp>{*this, inclusive_output, scan_op, valid_items});
   }
 
   /**

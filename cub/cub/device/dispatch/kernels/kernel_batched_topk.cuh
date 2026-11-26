@@ -521,6 +521,72 @@ template <int ThreadsPerBlock,
           typename KeyT,
           typename ValueT,
           typename KeyOutputItItT,
+          typename ValueOutputItItT>
+struct sort_segment_op
+{
+  static constexpr bool is_keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+  using block_radix_sort_t           = BlockRadixSort<KeyT, ThreadsPerBlock, ItemsPerThread, ValueT>;
+  using block_load_keys_t            = BlockLoad<KeyT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using block_load_values_t          = BlockLoad<ValueT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using traits                       = detail::radix::traits_t<KeyT>;
+  using bit_ordered_type             = typename traits::bit_ordered_type;
+
+  sort_temp_storage<KeyT, ValueT, ThreadsPerBlock, ItemsPerThread>& temp_storage;
+  KeyT (&keys)[ItemsPerThread];
+  ValueT (&values)[ItemsPerThread];
+  const KeyT* d_keys;
+  const ValueT* d_value_scratch;
+  ::cuda::std::int64_t scratch_offset;
+  KeyOutputItItT& d_key_segments_out_it;
+  ValueOutputItItT& d_value_segments_out_it;
+  int segment_id;
+  int valid_items;
+
+  template <typename DirectionTag>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(DirectionTag) const
+  {
+    constexpr bool descending         = DirectionTag::value == detail::topk::select::max;
+    bit_ordered_type default_key_bits = descending ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
+                                                   : traits::max_raw_binary_key(detail::identity_decomposer_t{});
+    KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
+
+    // Unstable sorting permits this register-only striped load, avoiding a shared-memory transpose.
+    if constexpr (is_keys_only)
+    {
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
+    }
+    else
+    {
+      const ValueT* const d_values = d_value_scratch + scratch_offset;
+      block_load_keys_t(temp_storage.load_keys).Load(d_keys, keys, valid_items, default_key);
+      __syncthreads();
+      block_load_values_t(temp_storage.load_values).Load(d_values, values, valid_items, ValueT{});
+      __syncthreads();
+    }
+
+    // `NullType` selects BlockRadixSort's keys-only internal path, so this works for both keys and pairs.
+    if constexpr (descending)
+    {
+      block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);
+    }
+    else
+    {
+      block_radix_sort_t(temp_storage.sort).SortBlockedToStriped(keys, values);
+    }
+
+    _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_key_segments_out_it[segment_id], keys, valid_items);
+    if constexpr (!is_keys_only)
+    {
+      _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_value_segments_out_it[segment_id], values, valid_items);
+    }
+  }
+};
+
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          typename KeyT,
+          typename ValueT,
+          typename KeyOutputItItT,
           typename ValueOutputItItT,
           typename SegmentSizeParameterT,
           typename KParameterT,
@@ -537,13 +603,6 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
   NumSegmentsParameterT num_segments,
   ::cuda::std::int64_t max_out)
 {
-  constexpr bool is_keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
-  using block_radix_sort_t    = BlockRadixSort<KeyT, ThreadsPerBlock, ItemsPerThread, ValueT>;
-  using block_load_keys_t     = BlockLoad<KeyT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
-  using block_load_values_t   = BlockLoad<ValueT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
-  using traits                = detail::radix::traits_t<KeyT>;
-  using bit_ordered_type      = typename traits::bit_ordered_type;
-
   const int segment_id = static_cast<int>(blockIdx.x);
   if (segment_id >= _CUB::detail::params::get_param(num_segments, 0))
   {
@@ -569,43 +628,20 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
   KeyT keys[ItemsPerThread];
   ValueT values[ItemsPerThread];
 
-  const bool is_successful_dispatch =
-    _CUB::detail::params::dispatch_discrete(select_directions, segment_id, [&](auto direction_tag) {
-      constexpr bool descending         = decltype(direction_tag)::value == detail::topk::select::max;
-      bit_ordered_type default_key_bits = descending ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
-                                                     : traits::max_raw_binary_key(detail::identity_decomposer_t{});
-      KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
-
-      // Unstable sorting permits this register-only striped load, avoiding a shared-memory transpose.
-      if constexpr (is_keys_only)
-      {
-        _CUB::LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
-      }
-      else
-      {
-        const ValueT* const d_values = d_value_scratch + scratch_offset;
-        block_load_keys_t(temp_storage.load_keys).Load(d_keys, keys, valid_items, default_key);
-        __syncthreads();
-        block_load_values_t(temp_storage.load_values).Load(d_values, values, valid_items, ValueT{});
-        __syncthreads();
-      }
-
-      // `NullType` selects BlockRadixSort's keys-only internal path, so this works for both keys and pairs.
-      if constexpr (descending)
-      {
-        block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);
-      }
-      else
-      {
-        block_radix_sort_t(temp_storage.sort).SortBlockedToStriped(keys, values);
-      }
-
-      _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_key_segments_out_it[segment_id], keys, valid_items);
-      if constexpr (!is_keys_only)
-      {
-        _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_value_segments_out_it[segment_id], values, valid_items);
-      }
-    });
+  const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
+    select_directions,
+    segment_id,
+    sort_segment_op<ThreadsPerBlock, ItemsPerThread, KeyT, ValueT, KeyOutputItItT, ValueOutputItItT>{
+      temp_storage,
+      keys,
+      values,
+      d_keys,
+      d_value_scratch,
+      scratch_offset,
+      d_key_segments_out_it,
+      d_value_segments_out_it,
+      segment_id,
+      valid_items});
   _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
 }
 } // namespace detail::batched_topk

@@ -77,6 +77,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/warp/warp_load.cuh>
     #include <cub/warp/warp_store.cuh>
     #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/warp/warp_reduce_batched.cuh>
     #include <cub/util_arch.cuh>
     #include <cub/util_cpp_dialect.cuh>
     #include <cub/util_debug.cuh>
@@ -123,6 +124,14 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using warp_scan_t = cub::WarpScan<int>;
       using warp_scan_storage_t = warp_scan_t::TempStorage;
 
+      constexpr int non_pow2_warp_threads = 9;
+      using warp_scan_non_pow2_t = cub::WarpScan<int, non_pow2_warp_threads>;
+      using warp_scan_non_pow2_storage_t = warp_scan_non_pow2_t::TempStorage;
+
+      constexpr int num_batches = 4;
+      using warp_reduce_batched_t = cub::WarpReduceBatched<int, num_batches>;
+      using warp_reduce_batched_storage_t = warp_reduce_batched_t::TempStorage;
+
       using warp_store_t = cub::WarpStore<int, items_per_thread>;
       using warp_store_storage_t = warp_store_t::TempStorage;
 
@@ -132,6 +141,8 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       __shared__ warp_reduce_short_storage_t warp_reduce_short_storage;
       __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
       __shared__ warp_scan_storage_t warp_scan_storage;
+      __shared__ warp_scan_non_pow2_storage_t warp_scan_non_pow2_storage;
+      __shared__ warp_reduce_batched_storage_t warp_reduce_batched_storage;
       __shared__ warp_store_storage_t warp_store_storage;
 
       int items[items_per_thread];
@@ -187,6 +198,33 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
         {
           atomicAdd(errors, 1);
+        }
+
+        // Test partial warp scan of a non-power-of-two logical warp, which only spans the leading lanes
+        if (threadIdx.x < non_pow2_warp_threads)
+        {
+          constexpr int scan_valid_items = 5;
+          int partial_prefix_sum = -1;
+          warp_scan_non_pow2_t(warp_scan_non_pow2_storage).InclusiveScanPartial(
+            items[0], partial_prefix_sum, [](int a, int b) { return a + b; }, scan_valid_items);
+          const int expected_prefix_sum =
+            threadIdx.x < scan_valid_items ? static_cast<int>(threadIdx.x * (threadIdx.x + 1) / 2) : -1;
+          if (partial_prefix_sum != expected_prefix_sum)
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test batched warp reduce
+        const int batch_inputs[num_batches] = {1, 2, 3, 4};
+        int batch_sums[1]{};
+        warp_reduce_batched_t(warp_reduce_batched_storage).SumToStriped(batch_inputs, batch_sums);
+        if (threadIdx.x < num_batches)
+        {
+          if (batch_sums[0] != 32 * static_cast<int>(threadIdx.x + 1))
+          {
+            atomicAdd(errors, 1);
+          }
         }
 
         // Test warp merge sort
