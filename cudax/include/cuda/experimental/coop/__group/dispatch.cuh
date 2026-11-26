@@ -25,7 +25,6 @@
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -66,44 +65,6 @@ template <::cuda::std::size_t _Count, ::cuda::std::size_t _GroupRank = ::cuda::s
       __mapping.lane_mask()}};
 }
 
-// Invoke the callback with the runtime index as a compile-time constant. The conditional operator
-// preserves references and void results, and applies the usual conversions between different result types.
-template <::cuda::std::size_t _First, ::cuda::std::size_t _Last, class _Fn>
-_CCCL_DEVICE_API decltype(auto) __dispatch_index(::cuda::std::uint32_t __index, const _Fn& __fn)
-{
-  if constexpr (_Last - _First == 1)
-  {
-    return __fn(::cuda::std::integral_constant<::cuda::std::size_t, _First>{});
-  }
-  else
-  {
-    constexpr auto __mid = _First + ((_Last - _First) / 2);
-    return __index < __mid ? ::cuda::experimental::coop::__dispatch_index<_First, __mid>(__index, __fn)
-                           : ::cuda::experimental::coop::__dispatch_index<__mid, _Last>(__index, __fn);
-  }
-}
-
-template <class _Group, class _Fn>
-_CCCL_DEVICE_API decltype(auto) __dispatch(const _Group& __group, by_group_rank_t, _Fn&& __fn)
-{
-  using _MappingResult         = typename _Group::__mapping_result_type;
-  constexpr auto __group_count = _MappingResult::static_group_count();
-
-  if constexpr (_MappingResult::static_group_rank() != ::cuda::std::dynamic_extent || __group_count == 0
-                || __group_count == ::cuda::std::dynamic_extent)
-  {
-    return ::cuda::std::forward<_Fn>(__fn)(__dispatch_view_t<_Group>{__group});
-  }
-  else
-  {
-    return ::cuda::experimental::coop::__dispatch_index<0, __group_count>(
-      __group.__mapping_result().group_rank(), [&](auto __rank) -> decltype(auto) {
-        return ::cuda::std::forward<_Fn>(__fn)(
-          ::cuda::experimental::coop::__make_dispatch_view<_MappingResult::static_unit_count(__rank), __rank>(__group));
-      });
-  }
-}
-
 // Number distinct unit counts in order of first appearance so equal-sized groups dispatch to the same callback.
 template <class _MappingResult>
 struct __dispatch_unit_counts
@@ -130,7 +91,79 @@ struct __dispatch_unit_counts
       __indices_[__rank] = __index;
     }
   }
+
+  template <unsigned _Bits>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto __pack_indices() const noexcept
+  {
+    constexpr auto __per_word = 32 / _Bits;
+    constexpr auto __nwords   = ::cuda::ceil_div(_MappingResult::static_group_count(), __per_word);
+    ::cuda::std::array<::cuda::std::uint32_t, __nwords> __words{};
+    for (::cuda::std::size_t __i = 0; __i < _MappingResult::static_group_count(); ++__i)
+    {
+      __words[__i / __per_word] |= __indices_[__i] << ((__i % __per_word) * _Bits);
+    }
+    return __words;
+  }
 };
+
+template <::cuda::std::size_t _Rank, class _Group, class _Fn>
+_CCCL_DEVICE_API decltype(auto) __dispatch_case(by_group_rank_t, const _Group& __group, _Fn&& __fn)
+{
+  using _MappingResult = typename _Group::__mapping_result_type;
+  return ::cuda::std::forward<_Fn>(__fn)(
+    ::cuda::experimental::coop::__make_dispatch_view<_MappingResult::static_unit_count(_Rank), _Rank>(__group));
+}
+
+template <::cuda::std::size_t _Index, class _Group, class _Fn>
+_CCCL_DEVICE_API decltype(auto) __dispatch_case(by_unit_count_t, const _Group& __group, _Fn&& __fn)
+{
+  constexpr __dispatch_unit_counts<typename _Group::__mapping_result_type> __cases{};
+  return ::cuda::std::forward<_Fn>(__fn)(
+    ::cuda::experimental::coop::__make_dispatch_view<__cases.__counts_[_Index]>(__group));
+}
+
+template <::cuda::std::size_t _Index, ::cuda::std::size_t _Size>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t
+__dispatch_case(const ::cuda::std::array<::cuda::std::uint32_t, _Size>& __words) noexcept
+{
+  return __words[_Index];
+}
+
+// Select the case for the runtime index. The conditional operator
+// preserves references and void results, and applies the usual conversions between different result types.
+template <::cuda::std::size_t _First, ::cuda::std::size_t _Last, class... _Args>
+_CCCL_DEVICE_API decltype(auto) __dispatch_index(::cuda::std::uint32_t __index, _Args&&... __args)
+{
+  if constexpr (_Last - _First == 1)
+  {
+    return ::cuda::experimental::coop::__dispatch_case<_First>(::cuda::std::forward<_Args>(__args)...);
+  }
+  else
+  {
+    constexpr auto __mid = _First + ((_Last - _First) / 2);
+    return __index < __mid
+           ? ::cuda::experimental::coop::__dispatch_index<_First, __mid>(__index, ::cuda::std::forward<_Args>(__args)...)
+           : ::cuda::experimental::coop::__dispatch_index<__mid, _Last>(__index, ::cuda::std::forward<_Args>(__args)...);
+  }
+}
+
+template <class _Group, class _Fn>
+_CCCL_DEVICE_API decltype(auto) __dispatch(const _Group& __group, by_group_rank_t __policy, _Fn&& __fn)
+{
+  using _MappingResult         = typename _Group::__mapping_result_type;
+  constexpr auto __group_count = _MappingResult::static_group_count();
+
+  if constexpr (_MappingResult::static_group_rank() != ::cuda::std::dynamic_extent || __group_count == 0
+                || __group_count == ::cuda::std::dynamic_extent)
+  {
+    return ::cuda::std::forward<_Fn>(__fn)(__dispatch_view_t<_Group>{__group});
+  }
+  else
+  {
+    return ::cuda::experimental::coop::__dispatch_index<0, __group_count>(
+      __group.__mapping_result().group_rank(), __policy, __group, ::cuda::std::forward<_Fn>(__fn));
+  }
+}
 
 // Pack case indices into immediate words so looking up a rank needs no per-mapping device table.
 template <class _MappingResult>
@@ -146,24 +179,14 @@ template <class _MappingResult>
   {
     constexpr auto __bits     = ::cuda::std::bit_ceil<unsigned>(::cuda::std::bit_width(__cases.__size_ - 1));
     constexpr auto __per_word = 32 / __bits;
-    constexpr auto __nwords   = ::cuda::ceil_div(_MappingResult::static_group_count(), __per_word);
-    constexpr auto __words    = [&]() {
-      ::cuda::std::array<::cuda::std::uint32_t, __nwords> __packed{};
-      for (::cuda::std::size_t __i = 0; __i < _MappingResult::static_group_count(); ++__i)
-      {
-        __packed[__i / __per_word] |= __cases.__indices_[__i] << ((__i % __per_word) * __bits);
-      }
-      return __packed;
-    }();
-    const auto __word = ::cuda::experimental::coop::__dispatch_index<0, __nwords>(__rank / __per_word, [&](auto __i) {
-      return __words[__i];
-    });
+    constexpr auto __words    = __cases.template __pack_indices<__bits>();
+    const auto __word = ::cuda::experimental::coop::__dispatch_index<0, __words.size()>(__rank / __per_word, __words);
     return (__word >> ((__rank % __per_word) * __bits)) & (~::cuda::std::uint32_t{0} >> (32 - __bits));
   }
 }
 
 template <class _Group, class _Fn>
-_CCCL_DEVICE_API decltype(auto) __dispatch(const _Group& __group, by_unit_count_t, _Fn&& __fn)
+_CCCL_DEVICE_API decltype(auto) __dispatch(const _Group& __group, by_unit_count_t __policy, _Fn&& __fn)
 {
   using _MappingResult = typename _Group::__mapping_result_type;
 
@@ -178,10 +201,8 @@ _CCCL_DEVICE_API decltype(auto) __dispatch(const _Group& __group, by_unit_count_
     const auto __rank  = __group.__mapping_result().group_rank();
     const auto __index = ::cuda::experimental::coop::__unit_count_index<_MappingResult>(__rank);
 
-    return ::cuda::experimental::coop::__dispatch_index<0, __cases.__size_>(__index, [&](auto __case) -> decltype(auto) {
-      return ::cuda::std::forward<_Fn>(__fn)(
-        ::cuda::experimental::coop::__make_dispatch_view<__cases.__counts_[__case]>(__group));
-    });
+    return ::cuda::experimental::coop::__dispatch_index<0, __cases.__size_>(
+      __index, __policy, __group, ::cuda::std::forward<_Fn>(__fn));
   }
 }
 } // namespace cuda::experimental::coop
