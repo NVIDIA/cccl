@@ -146,11 +146,15 @@ __group_as_find(::cuda::std::index_sequence<_Counts...>, ::cuda::std::uint32_t, 
   constexpr auto __total = (_Counts + ...);
   _CCCL_ASSERT(::cuda::experimental::coop::__group_as_fits<_Exhaustive>(__total, __prev.unit_count()),
                "group_as counts are incompatible with the previous unit count");
-  if (!_Exhaustive && __prev.unit_rank() >= __total)
+  if constexpr (__total != 0)
   {
-    return {};
+    const auto __unit = __prev.unit_rank();
+    if (_Exhaustive || __unit < __total)
+    {
+      return __group_as_search<_Counts...>::template __find<0, sizeof...(_Counts)>(__unit);
+    }
   }
-  return __group_as_search<_Counts...>::template __find<0, sizeof...(_Counts)>(__prev.unit_rank());
+  return {};
 }
 
 template <bool _Exhaustive, class _Unit, class _Bound, class _PrevMappingResult, class _Partition>
