@@ -809,27 +809,6 @@ private:
     }
   }
 
-  template <bool UseUninitializedCopy = false, typename OutputT>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void
-  CopySingleItem(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
-  {
-    if constexpr (::cuda::std::is_same_v<T, OutputT>)
-    {
-      if (input_items == output_items)
-      {
-        return;
-      }
-    }
-    if constexpr (UseUninitializedCopy)
-    {
-      _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
-    }
-    else
-    {
-      output_items[0] = input_items[0];
-    }
-  }
-
 public:
   //! @name Collective constructors
   //! @{
@@ -910,7 +889,7 @@ public:
   {
     if constexpr (ItemsPerThread == 1)
     {
-      CopySingleItem(input_items, output_items);
+      output_items[0] = input_items[0];
     }
     else
     {
@@ -929,13 +908,9 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    if constexpr (ItemsPerThread == 1)
-    {
-      [[maybe_unused]] auto& unused = items;
-    }
-    else
+    if constexpr (ItemsPerThread > 1)
     {
       StripedToBlocked(items, items);
     }
@@ -995,7 +970,7 @@ public:
   {
     if constexpr (ItemsPerThread == 1)
     {
-      CopySingleItem(input_items, output_items);
+      output_items[0] = input_items[0];
     }
     else
     {
@@ -1014,13 +989,9 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    if constexpr (ItemsPerThread == 1)
-    {
-      [[maybe_unused]] auto& unused = items;
-    }
-    else
+    if constexpr (ItemsPerThread > 1)
     {
       BlockedToStriped(items, items);
     }
@@ -1080,7 +1051,14 @@ public:
   {
     if constexpr (ItemsPerThread == 1)
     {
-      CopySingleItem<!WarpTimeSlicing>(input_items, output_items);
+      if constexpr (WarpTimeSlicing)
+      {
+        output_items[0] = input_items[0];
+      }
+      else
+      {
+        _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+      }
     }
     else
     {
@@ -1099,13 +1077,9 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **warp-striped** and **blocked** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    if constexpr (ItemsPerThread == 1)
-    {
-      [[maybe_unused]] auto& unused = items;
-    }
-    else
+    if constexpr (ItemsPerThread > 1)
     {
       WarpStripedToBlocked(items, items);
     }
@@ -1168,7 +1142,7 @@ public:
   {
     if constexpr (ItemsPerThread == 1)
     {
-      CopySingleItem(input_items, output_items);
+      output_items[0] = input_items[0];
     }
     else
     {
@@ -1187,13 +1161,9 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **blocked** and **warp-striped** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    if constexpr (ItemsPerThread == 1)
-    {
-      [[maybe_unused]] auto& unused = items;
-    }
-    else
+    if constexpr (ItemsPerThread > 1)
     {
       BlockedToWarpStriped(items, items);
     }

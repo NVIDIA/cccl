@@ -1272,16 +1272,16 @@ public:
         }
       }
     }
-    else if constexpr (ItemsPerThread == 1 && Algorithm == BLOCK_LOAD_WARP_TRANSPOSE)
+    else if constexpr (ItemsPerThread == 1 && Algorithm == BLOCK_LOAD_TRANSPOSE)
+    {
+      // Single-item threads have identical blocked and striped layouts, skipping SMEM transpose.
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
     {
       // Preserve placement-construction semantics of LoadDirectWarpStriped when ItemsPerThread == 1.
       _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
-    }
-    else if constexpr (ItemsPerThread == 1
-                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
-    {
-      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
-      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
@@ -1356,16 +1356,16 @@ public:
     {
       _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
-    else if constexpr (ItemsPerThread == 1 && Algorithm == BLOCK_LOAD_WARP_TRANSPOSE)
+    else if constexpr (ItemsPerThread == 1 && Algorithm == BLOCK_LOAD_TRANSPOSE)
+    {
+      // Single-item threads have identical blocked and striped layouts, skipping SMEM transpose.
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
     {
       // Preserve placement-construction semantics of LoadDirectWarpStriped when ItemsPerThread == 1.
       _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
-    }
-    else if constexpr (ItemsPerThread == 1
-                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
-    {
-      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
-      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
@@ -1443,12 +1443,16 @@ public:
     {
       _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
-    else if constexpr (ItemsPerThread == 1
-                       && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
-                           || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+    else if constexpr (ItemsPerThread == 1 && Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      // Single-item threads have identical blocked, striped, and warp-striped layouts, skipping SMEM transpose.
+      // Single-item threads have identical blocked and striped layouts, skipping SMEM transpose.
       _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (ItemsPerThread == 1
+                       && (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+    {
+      // Preserve placement-construction semantics of LoadDirectWarpStriped when ItemsPerThread == 1.
+      _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
