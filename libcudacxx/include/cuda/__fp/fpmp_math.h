@@ -688,7 +688,8 @@ __fpmp2_math_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* 
  * the test above: at fpmp2_accuracy::low an argument with a zero high limb over a nonzero low
  * limb, which a cancellation leaves, is taken for its low limb, without a branch. A zero keeps
  * its sign. atan2 does the same for its operands at every level; for rhypot and the norms see
- * __fpmp2_norm_arg. sqrt, rsqrt, cbrt, rcbrt, hypot, pow and fmod read the high limb alone.
+ * __fpmp2_norm_arg. sqrt, rsqrt, cbrt, rcbrt, the fp32mp2 hypot, pow and fmod read the high
+ * limb alone.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -706,9 +707,14 @@ __fpmp2_math_arg_zero_high(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi,
 
 /*
  * An operand of rhypot, norm3d, norm4d, rnorm3d and rnorm4d, and of the fp64mp2 hypot. Their
- * pair kernel chooses its scale from the high limbs. At fpmp2_accuracy::low an operand with a
- * zero high limb is taken for its low limb, so that the scale sees its size next to operands
- * that have a high limb. The sign of a zero does not matter to a norm.
+ * pair kernel chooses its scale from the high limbs and finds the infinities on them. At
+ * fpmp2_accuracy::low an operand whose low limb is the larger one in magnitude is read with
+ * its limbs exchanged. That covers a zero high limb, which a cancellation leaves, a high limb
+ * far below the low one, and an infinity in the low limb alone. The value of the operand is
+ * the same, and the sign of a zero does not matter to a norm.
+ *
+ * The fp64mp2 test is on the bits: an FP64 comparison costs as much as an FP64 multiplication
+ * on a GPU with a reduced FP64 rate.
  */
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
@@ -718,9 +724,21 @@ __fpmp2_norm_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* 
   *__x_lo = __x.lo();
   if constexpr (_TypeAcc == fpmp2_accuracy::low)
   {
-    const bool __loose = __x.hi() == _FpType(0);
-    *__x_hi            = __loose ? __x.lo() : __x.hi();
-    *__x_lo            = __loose ? _FpType(0) : __x.lo();
+    bool __loose;
+    if constexpr (__fpmp2_is_fp32_v<_FpType>)
+    {
+      __loose = ::cuda::__fpmp_internal_fabs(__x.lo()) > ::cuda::__fpmp_internal_fabs(__x.hi());
+    }
+    else
+    {
+      // |lo| > |hi| on the bits with the sign shifted out. A NaN lies above the infinity: a NaN
+      // hi fails the first test and a NaN lo the second.
+      const uint64_t __hi_bits = ::cuda::std::bit_cast<uint64_t>(__x.hi()) << 1;
+      const uint64_t __lo_bits = ::cuda::std::bit_cast<uint64_t>(__x.lo()) << 1;
+      __loose                  = __lo_bits > __hi_bits && __lo_bits <= (uint64_t{0x7FF} << 53);
+    }
+    *__x_hi = __loose ? __x.lo() : __x.hi();
+    *__x_lo = __loose ? __x.hi() : __x.lo();
   }
 }
 
