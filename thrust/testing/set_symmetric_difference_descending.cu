@@ -1,6 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

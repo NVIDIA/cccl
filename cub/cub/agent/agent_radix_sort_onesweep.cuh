@@ -32,7 +32,7 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -80,7 +80,9 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, RadixSortStoreAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }

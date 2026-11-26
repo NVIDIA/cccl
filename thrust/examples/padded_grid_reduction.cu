@@ -2,12 +2,16 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/tuple>
+
 #include <cfloat>
 #include <cmath>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 

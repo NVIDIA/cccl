@@ -39,9 +39,9 @@ int main()
 #else
   constexpr int N = 256;
   int host_data[N];
-  for (int i = 0; i < N; i++)
+  for (int& v : host_data)
   {
-    host_data[i] = 0;
+    v = 0;
   }
 
   graph_ctx ctx;
@@ -60,9 +60,9 @@ int main()
 
   ctx.finalize();
 
-  for (int i = 0; i < N; i++)
+  for ([[maybe_unused]] const int v : host_data)
   {
-    assert(host_data[i] == 42);
+    assert(v == 42);
   }
 #endif // !_CCCL_CTK_BELOW(13, 0)
 }

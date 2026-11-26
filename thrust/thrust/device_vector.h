@@ -17,7 +17,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/vector_base.h>
+#include <thrust/detail/vector_base.h> // IWYU pragma: export
 #include <thrust/device_allocator.h>
 
 #include <cuda/std/__utility/move.h>

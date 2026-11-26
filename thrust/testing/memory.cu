@@ -1,12 +1,21 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/memory>
 #include <cuda/std/utility>
 
+#include <cstddef>
+#include <cstdlib>
 #include <iostream>
 
 #include <unittest/unittest.h>

@@ -1,5 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/reduce.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/tuple>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

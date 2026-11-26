@@ -1,5 +1,10 @@
+#include <thrust/detail/config.h>
+
 #include <thrust/count.h>
+#include <thrust/device_free.h>
+#include <thrust/device_malloc.h>
 #include <thrust/device_malloc_allocator.h>
+#include <thrust/device_vector.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_fill.h>
 

@@ -4,7 +4,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/transform_input_output_iterator.h>
 #include <thrust/sequence.h>
+#include <thrust/transform.h>
 
+#include <cuda/std/functional>
+
+#include <cstddef>
 #include <iostream>
 
 // Base 2 fixed point

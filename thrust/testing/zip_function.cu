@@ -1,15 +1,21 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/type_deduction.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/std/iterator>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
 #include <iostream>
 
 #include <unittest/unittest.h>

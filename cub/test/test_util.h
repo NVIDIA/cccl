@@ -603,16 +603,6 @@ InitValue(GenMode gen_mode, CUB_NS_QUALIFIER::KeyValuePair<KeyT, ValueT>& value,
  * Comparison and ostream operators
  ******************************************************************************/
 
-/**
- * KeyValuePair ostream operator
- */
-template <typename Key, typename Value>
-std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<Key, Value>& val)
-{
-  os << '(' << CoutCast(val.key) << ',' << CoutCast(val.value) << ')';
-  return os;
-}
-
 #if _CCCL_HAS_NVFP16()
 
 inline std::ostream& operator<<(std::ostream& stream, const __half2& value)
