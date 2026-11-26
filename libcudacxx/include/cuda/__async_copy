@@ -85,10 +85,10 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
   void* __smem_dst,
   const void* __gmem_src,
   ::cuda::std::uint32_t __bytes,
-  int __head_padding,
+  ::cuda::std::uint32_t __head_padding,
   ::cuda::std::uint64_t* __bar) noexcept -> ::cuda::std::uint32_t
 {
-  _CCCL_ASSERT(0 <= __head_padding && __head_padding < 16, "__bulk_load_unaligned_ignore_oob: invalid head padding");
+  _CCCL_ASSERT(__head_padding < 16, "__bulk_load_unaligned_ignore_oob: invalid head padding");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_dst),
                "__bulk_load_unaligned_ignore_oob: destination must be 16-byte aligned");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_src),
@@ -100,18 +100,18 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
   _CCCL_ASSERT(::cuda::device::is_address_from(__bar, ::cuda::device::address_space::shared),
                "__bulk_load_unaligned_ignore_oob: barrier must be in the calling block's shared memory");
 
-  const ::cuda::std::uint32_t __padded_bytes = static_cast<::cuda::std::uint32_t>(__head_padding) + __bytes;
+  const ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
   // round up as head padding + (bytes + 15), so the compiler can share bytes + 15 between copies of equally sized
-  // ranges that only differ in their head padding. Rounding __padded_bytes up costs one SASS instruction per such copy.
-  // Not cuda::round_up: its ceil_div + multiply costs 8 SASS instructions on sm_100 in DeviceTransform.
-  const ::cuda::std::uint32_t __size = (static_cast<::cuda::std::uint32_t>(__head_padding) + (__bytes + 15u)) & ~15u;
+  // ranges that only differ in their head padding. Rounding __padded_bytes up, e.g. with cuda::__round_up_pow2, costs
+  // one SASS instruction per such copy.
+  const ::cuda::std::uint32_t __size = (__head_padding + (__bytes + 15u)) & ~15u;
   ::cuda::ptx::cp_async_bulk_ignore_oob(
     ::cuda::ptx::space_shared,
     ::cuda::ptx::space_global,
     __smem_dst,
     __gmem_src,
     __size,
-    /* ignore left */ static_cast<::cuda::std::uint32_t>(__head_padding),
+    /* ignore left */ __head_padding,
     /* ignore right */ __size - __padded_bytes,
     __bar);
   return __size;
@@ -153,7 +153,7 @@ _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
   void* __smem_dst,
   const void* __gmem_src,
   ::cuda::std::uint32_t __bytes,
-  int __head_padding,
+  ::cuda::std::uint32_t __head_padding,
   ::cuda::std::uint64_t* __bar,
   ::cuda::std::uint32_t __thread_rank,
   bool __elected,
@@ -165,15 +165,12 @@ _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
                 "__bulk_load_unaligned_precise: copy unit must be 1, 2, 4 or 8 bytes");
   using __unit_t = ::cuda::std::__make_nbit_uint_t<_CopyUnit * CHAR_BIT>;
 
-  _CCCL_ASSERT(0 <= __head_padding && __head_padding < _TargetAlignment,
-               "__bulk_load_unaligned_precise: invalid head padding");
+  _CCCL_ASSERT(__head_padding < _TargetAlignment, "__bulk_load_unaligned_precise: invalid head padding");
   _CCCL_ASSERT(__head_padding % _CopyUnit == 0 && __bytes % _CopyUnit == 0,
                "__bulk_load_unaligned_precise: head padding and size must be multiples of the copy unit");
-  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__smem_dst) % _TargetAlignment
-                 == static_cast<::cuda::std::uintptr_t>(__head_padding),
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__smem_dst) % _TargetAlignment == __head_padding,
                "__bulk_load_unaligned_precise: head padding does not match the destination's misalignment");
-  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % _TargetAlignment
-                 == static_cast<::cuda::std::uintptr_t>(__head_padding),
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % _TargetAlignment == __head_padding,
                "__bulk_load_unaligned_precise: head padding does not match the source's misalignment");
   _CCCL_ASSERT(::cuda::device::is_address_from(__smem_dst, ::cuda::device::address_space::shared),
                "__bulk_load_unaligned_precise: destination must be in the calling block's shared memory");
@@ -289,11 +286,11 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
   void* __gmem_dst,
   const void* __smem_src,
   ::cuda::std::uint32_t __bytes,
-  int __head_padding,
+  ::cuda::std::uint32_t __head_padding,
   ::cuda::std::uint32_t __thread_rank,
   bool __elected) noexcept
 {
-  _CCCL_ASSERT(0 <= __head_padding && __head_padding < 16, "__bulk_store_unaligned: invalid head padding");
+  _CCCL_ASSERT(__head_padding < 16, "__bulk_store_unaligned: invalid head padding");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_dst),
                "__bulk_store_unaligned: destination must be 16-byte aligned");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_src),
@@ -306,7 +303,7 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
   auto* __dst       = static_cast<char*>(__gmem_dst);
   const auto* __src = static_cast<const char*>(__smem_src);
 
-  const ::cuda::std::uint32_t __padded_bytes = static_cast<::cuda::std::uint32_t>(__head_padding) + __bytes;
+  const ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
   const ::cuda::std::uint32_t __tail_bytes   = __padded_bytes % 16; // bytes after the last 16-byte boundary
   const ::cuda::std::uint32_t __size         = __padded_bytes - __tail_bytes; // rounded down
   const bool __do_start                      = __head_padding > 0;
@@ -346,7 +343,7 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
     }
     if (__do_start)
     {
-      __store_masked(0, __mask_start, static_cast<::cuda::std::uint32_t>(__head_padding), 16);
+      __store_masked(0, __mask_start, __head_padding, 16);
     }
     if (__do_end)
     {
@@ -358,7 +355,7 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
     // everything sits within one 16-byte block
     __store_masked(0,
                    static_cast<::cuda::std::uint16_t>(__mask_start & (__full_mask >> (16 - __padded_bytes))),
-                   static_cast<::cuda::std::uint32_t>(__head_padding),
+                   __head_padding,
                    __padded_bytes);
   }
 }

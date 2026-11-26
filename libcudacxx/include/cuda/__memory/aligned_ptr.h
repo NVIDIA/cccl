@@ -35,7 +35,7 @@ struct __aligned_ptr
   using value_type = _Tp;
 
   const char* ptr; // aligned down from the element pointer, may not be aligned to alignof(_Tp)
-  int head_padding; // bytes from ptr to the first element, in [0, alignment)
+  unsigned head_padding; // bytes from ptr to the first element, in [0, alignment)
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* data() const
   {
@@ -54,7 +54,7 @@ template <typename _Tp>
 {
   const auto __raw  = reinterpret_cast<const char*>(__ptr);
   const auto __base = ::cuda::align_down(__raw, __alignment);
-  return __aligned_ptr<_Tp>{__base, static_cast<int>(__raw - __base)};
+  return __aligned_ptr<_Tp>{__base, static_cast<unsigned>(__raw - __base)};
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE

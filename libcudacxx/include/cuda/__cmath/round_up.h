@@ -22,12 +22,14 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -94,6 +96,33 @@ _CCCL_API constexpr ::cuda::std::common_type_t<::cuda::std::underlying_type_t<_T
 round_up(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::round_up(::cuda::std::to_underlying(__a), ::cuda::std::to_underlying(__b));
+}
+
+//! @brief Round the number \p __a to the next multiple of \p __b, where \p __b is a power of two
+//!
+//! If \p __b is known to be a power of two, this rounds with a mask, whereas `cuda::round_up` divides and multiplies.
+//! The mask sometimes leads to better code generation.
+//! @param __a The input number
+//! @param __b The multiplicand
+//! @pre \p __a must be non-negative
+//! @pre \p __b must be a power of two
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND ::cuda::std::is_integral_v<_Up>)
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Up>
+__round_up_pow2(const _Tp __a, const _Up __b) noexcept
+{
+  using _Common = ::cuda::std::common_type_t<_Tp, _Up>;
+  using _UProm  = ::cuda::std::make_unsigned_t<decltype(_Tp{} / _Up{})>;
+  _CCCL_ASSERT(__b > _Up{0} && ::cuda::is_power_of_two(static_cast<_UProm>(__b)),
+               "cuda::__round_up_pow2: 'b' must be a power of two");
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
+  {
+    _CCCL_ASSERT(__a >= _Tp{0}, "cuda::__round_up_pow2: 'a' must be non negative");
+  }
+  const _UProm __mask = static_cast<_UProm>(__b) - 1;
+  _CCCL_ASSERT(static_cast<_UProm>(__a) <= static_cast<_UProm>(::cuda::std::numeric_limits<_Common>::max()) - __mask,
+               "cuda::__round_up_pow2: result overflow");
+  return static_cast<_Common>((static_cast<_UProm>(__a) + __mask) & ~__mask);
 }
 
 _CCCL_END_NAMESPACE_CUDA

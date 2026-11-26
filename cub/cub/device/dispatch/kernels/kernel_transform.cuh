@@ -431,7 +431,7 @@ _CCCL_DEVICE_API void memcpy_async_aligned(void* dst, const void* src, unsigned 
 
 template <int ThreadsPerBlock>
 _CCCL_DEVICE_API void
-memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
+memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, unsigned int head_padding)
 {
   // early exiting if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0) does not yield a benefit
 
@@ -489,7 +489,7 @@ memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_c
 // value type (which may be less).
 template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE_API auto
-copy_and_return_smem_dst(AlignedPtr __aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items)
+copy_and_return_smem_dst(AlignedPtr __aligned_ptr, unsigned& smem_offset, Offset offset, char* smem, int valid_items)
 {
   using T = typename decltype(__aligned_ptr)::value_type;
   // because SMEM base pointer and bytes_to_copy are always multiples of ldgsts_size_and_align, we only need to align
@@ -497,23 +497,24 @@ copy_and_return_smem_dst(AlignedPtr __aligned_ptr, int& smem_offset, Offset offs
   _CCCL_ASSERT(smem_offset % ldgsts_size_and_align == 0, "");
   if constexpr (alignof(T) > ldgsts_size_and_align)
   {
-    smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
+    smem_offset = ::cuda::__round_up_pow2(smem_offset, unsigned{alignof(T)});
   }
   const char* const src = __aligned_ptr.ptr + (offset * sizeof(T));
   char* const dst       = smem + smem_offset;
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst), "");
 
-  int bytes_to_copy;
+  unsigned bytes_to_copy;
   if constexpr (alignof(T) < ldgsts_size_and_align)
   {
+    static_assert(::cuda::is_power_of_two(ldgsts_size_and_align));
     bytes_to_copy =
-      ::cuda::round_up(__aligned_ptr.head_padding + (int{sizeof(T)} * valid_items), ldgsts_size_and_align);
+      ::cuda::__round_up_pow2(__aligned_ptr.head_padding + (unsigned{sizeof(T)} * valid_items), ldgsts_size_and_align);
   }
   else
   {
     _CCCL_ASSERT(__aligned_ptr.head_padding == 0, "");
-    bytes_to_copy = int{sizeof(T)} * valid_items;
+    bytes_to_copy = unsigned{sizeof(T)} * valid_items;
   }
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
@@ -525,7 +526,7 @@ copy_and_return_smem_dst(AlignedPtr __aligned_ptr, int& smem_offset, Offset offs
 
 template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE_API auto copy_and_return_smem_dst_fallback(
-  AlignedPtr __aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
+  AlignedPtr __aligned_ptr, unsigned& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
 {
   // TODO(bgruber): drop handling of head bytes and just read OOB, since gmem buffers are always sufficiently aligned
 
@@ -536,16 +537,16 @@ _CCCL_DEVICE_API auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(smem_offset % ldgsts_size_and_align == 0, "");
   if constexpr (alignof(T) > ldgsts_size_and_align)
   {
-    smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
+    smem_offset = ::cuda::__round_up_pow2(smem_offset, unsigned{alignof(T)});
   }
   _CCCL_ASSERT(alignof(T) < ldgsts_size_and_align || __aligned_ptr.head_padding == 0, "");
-  const int head_padding = alignof(T) < ldgsts_size_and_align ? __aligned_ptr.head_padding : 0;
+  const unsigned head_padding = alignof(T) < ldgsts_size_and_align ? __aligned_ptr.head_padding : 0;
 
   const char* src = __aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
   char* dst       = smem + smem_offset + head_padding;
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
-  const int bytes_to_copy = int{sizeof(T)} * valid_items;
+  const unsigned bytes_to_copy = unsigned{sizeof(T)} * valid_items;
   _CUB::detail::transform::memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
@@ -586,7 +587,7 @@ _CCCL_DEVICE_API void transform_kernel_ldgsts(
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
-  [[maybe_unused]] int smem_offset = 0;
+  [[maybe_unused]] unsigned smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
   // work for inputs in host stack memory ...
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
@@ -732,7 +733,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
 
-        int head_padding = 0;
+        unsigned head_padding = 0;
         if constexpr (alignof(T) < bulk_copy_size_multiple)
         {
           head_padding = __aligned_ptr.head_padding;
@@ -741,12 +742,12 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         {
           _CCCL_ASSERT(__aligned_ptr.head_padding == 0, "");
         }
-        const int bytes_to_copy = static_cast<int>(
-          ::cuda::device::__bulk_load_unaligned_ignore_oob(dst, src, int{sizeof(T)} * valid_items, head_padding, &bar));
+        const unsigned bytes_to_copy = ::cuda::device::__bulk_load_unaligned_ignore_oob(
+          dst, src, unsigned{sizeof(T)} * valid_items, head_padding, &bar);
         total_copied += bytes_to_copy;
 
         smem += tile_padding + int{sizeof(T)} * tile_size;
-        _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
+        _CCCL_ASSERT(bytes_to_copy <= unsigned{sizeof(T)} * tile_size + bulk_copy_alignment, "");
       };
 
       // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
@@ -792,22 +793,23 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
           _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
 
           // TODO(bgruber): we could precompute bytes_to_copy on the host
-          int bytes_to_copy;
+          unsigned bytes_to_copy;
           if constexpr (alignof(T) < bulk_copy_size_multiple)
           {
-            bytes_to_copy =
-              ::cuda::round_up(__aligned_ptr.head_padding + (int{sizeof(T)} * tile_size), bulk_copy_size_multiple);
+            static_assert(::cuda::is_power_of_two(bulk_copy_size_multiple));
+            bytes_to_copy = ::cuda::__round_up_pow2(
+              __aligned_ptr.head_padding + (unsigned{sizeof(T)} * tile_size), bulk_copy_size_multiple);
           }
           else
           {
             _CCCL_ASSERT(__aligned_ptr.head_padding == 0, "");
-            bytes_to_copy = int{sizeof(T)} * tile_size;
+            bytes_to_copy = unsigned{sizeof(T)} * tile_size;
           }
 
           total_copied += ::cuda::device::__bulk_load(dst, src, bytes_to_copy, &bar);
 
           smem += tile_padding + (int{sizeof(T)} * tile_size);
-          _CCCL_ASSERT(bytes_to_copy <= (int{sizeof(T)} * tile_size) + bulk_copy_alignment, "");
+          _CCCL_ASSERT(bytes_to_copy <= (unsigned{sizeof(T)} * tile_size) + bulk_copy_alignment, "");
         };
 
         // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
@@ -854,13 +856,13 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         using T = typename decltype(__aligned_ptr)::value_type;
 
         _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || __aligned_ptr.head_padding == 0, "");
-        const int head_padding = alignof(T) < bulk_copy_alignment ? __aligned_ptr.head_padding : 0;
+        const unsigned head_padding = alignof(T) < bulk_copy_alignment ? __aligned_ptr.head_padding : 0;
 
         const char* src = __aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
         char* dst       = smem + head_padding;
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
-        const int bytes_to_copy = int{sizeof(T)} * valid_items;
+        const unsigned bytes_to_copy = unsigned{sizeof(T)} * valid_items;
         // byte-wise head and tail copies measured best here (word-wise copies cost 8 SASS instructions)
         ::cuda::device::__bulk_load_unaligned_precise<bulk_copy_alignment, 1>(
           dst, src, bytes_to_copy, head_padding, &bar, threadIdx.x, elected, total_copied);
@@ -961,8 +963,8 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
           // NOTE: we only require the size of the output type to be < 16B; there are no bounds on the size of the input
           // type; case 1 can definitely happen!
           _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || __aligned_ptr.head_padding == 0, "");
-          const int head_padding = alignof(T) < bulk_copy_alignment ? __aligned_ptr.head_padding : 0;
-          const T* base          = reinterpret_cast<const T*>(smem + head_padding);
+          const unsigned head_padding = alignof(T) < bulk_copy_alignment ? __aligned_ptr.head_padding : 0;
+          const T* base               = reinterpret_cast<const T*>(smem + head_padding);
           smem += tile_padding + (int{sizeof(T)} * tile_size);
           // Gather this input's store_vec_size elements for output-vector v into a register array.
           // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
