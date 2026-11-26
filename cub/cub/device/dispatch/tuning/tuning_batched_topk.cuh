@@ -23,7 +23,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -50,7 +50,9 @@ struct epilogue_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const epilogue_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const epilogue_policy& p)
   {
     return os
         << "epilogue_policy { .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -83,7 +85,9 @@ struct worker_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const worker_policy& p)
   {
     return os << "worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -110,7 +114,9 @@ struct multi_worker_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const multi_worker_policy& p)
   {
     return os << "multi_worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << " }";
@@ -164,7 +170,9 @@ struct baseline_topk_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const baseline_topk_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const baseline_topk_policy& p)
   {
     os << "baseline_topk_policy { .worker_per_segment_policies = { ";
     for (::cuda::std::size_t i = 0; i < p.worker_per_segment_policies.size(); ++i)
@@ -280,7 +288,9 @@ struct cluster_topk_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const cluster_topk_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const cluster_topk_policy& p)
   {
     return os
         << "cluster_topk_policy { .threads_per_block = " << p.threads_per_block
@@ -2000,7 +2010,9 @@ enum class topk_algorithm
 };
 
 #if _CCCL_HOSTED()
-[[nodiscard]] _CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, topk_algorithm backend)
+template <class CharT, class Traits>
+[[nodiscard]] _CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, topk_algorithm backend)
 {
   switch (backend)
   {
@@ -2037,7 +2049,9 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const topk_policy& p)
   {
     return os << "topk_policy { .backend = " << p.backend << ", .baseline = " << p.baseline
               << ", .cluster = " << p.cluster << " }";

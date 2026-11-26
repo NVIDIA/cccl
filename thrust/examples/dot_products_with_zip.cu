@@ -5,6 +5,9 @@
 #include <thrust/random.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/tuple>
+
+#include <cstddef>
 #include <iostream>
 
 // This example shows how thrust::zip_iterator can be used to create a

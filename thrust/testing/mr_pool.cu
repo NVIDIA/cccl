@@ -1,8 +1,16 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
 #include <thrust/mr/pool.h>
+#include <thrust/mr/pool_options.h>
 #include <thrust/mr/sync_pool.h>
+
+#include <cstddef>
+#include <cstring>
 
 #include <unittest/unittest.h>
 

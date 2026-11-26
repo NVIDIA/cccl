@@ -1,11 +1,16 @@
 #pragma once
 
+#include <thrust/detail/config.h>
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 namespace unittest
 {

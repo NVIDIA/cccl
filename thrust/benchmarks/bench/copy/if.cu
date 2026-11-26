@@ -4,7 +4,9 @@
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 

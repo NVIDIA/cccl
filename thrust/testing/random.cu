@@ -1,9 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/generate.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/random/detail/urng_traits.h>
 
 #include <cuda/std/random>
 
+#include <cstdint>
 #include <sstream>
 
 #include <unittest/unittest.h>

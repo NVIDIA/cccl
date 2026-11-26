@@ -5,7 +5,11 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
+#include <thrust/transform.h>
 
+#include <cuda/std/tuple>
+
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 
