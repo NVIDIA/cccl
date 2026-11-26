@@ -23,7 +23,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
 
@@ -71,7 +71,9 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, const TransformAlgorithm& algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -126,7 +128,9 @@ struct TransformPrefetchPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformPrefetchPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const TransformPrefetchPolicy& policy)
   {
     return os
         << "TransformPrefetchPolicy { .threads_per_block = " << policy.threads_per_block
@@ -159,7 +163,9 @@ struct TransformVectorizedPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformVectorizedPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const TransformVectorizedPolicy& policy)
   {
     return os << "TransformVectorizedPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
@@ -200,7 +206,9 @@ struct TransformAsyncCopyPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const TransformAsyncCopyPolicy& policy)
   {
     return os
         << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
@@ -241,7 +249,9 @@ struct TransformPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const TransformPolicy& policy)
   {
     return os << "TransformPolicy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
               << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch

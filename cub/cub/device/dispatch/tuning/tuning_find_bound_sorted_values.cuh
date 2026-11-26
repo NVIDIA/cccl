@@ -19,7 +19,7 @@
 #include <cuda/__device/compute_capability.h>
 
 #if _CCCL_HOSTED()
-#  include <ostream>
+#  include <iosfwd>
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HAS_CONCEPTS()
@@ -49,7 +49,9 @@ struct FindBoundSortedValuesPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindBoundSortedValuesPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const FindBoundSortedValuesPolicy& p)
   {
     return os << "FindBoundSortedValuesPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";

@@ -26,7 +26,7 @@
 #include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 CUB_NAMESPACE_BEGIN
@@ -219,7 +219,9 @@ public:
 
 #if _CCCL_HOSTED()
   /// ostream operator
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const self_type& itr)
   {
     return os;
   }

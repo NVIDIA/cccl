@@ -26,7 +26,7 @@
 #include <cuda/__memory/align_down.h> // IWYU pragma: keep
 #include <cuda/__memory/align_up.h> // IWYU pragma: keep
 #include <cuda/__memory/ptr_rebind.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 #include <nv/target>
 
@@ -52,7 +52,9 @@ enum class LoadPrefetch : int
 };
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, LoadPrefetch prefetch)
 {
   switch (prefetch)
   {
