@@ -21,7 +21,10 @@ int main(int, char**)
   using cuda::std::optional;
 
   optional<in_place_t> opt{}; // expected-note {{requested here}}
-  // expected-error@optional:* {{instantiation of optional with in_place_t is ill-formed}}
+  // expected-error@cuda/std/__optional/optional.h:* {{instantiation of optional with in_place_t is ill-formed}}
+
+  optional<const in_place_t&> opt_ref{}; // expected-note {{requested here}}
+  // expected-error@cuda/std/__optional/optional_ref.h:* {{instantiation of optional with in_place_t is ill-formed}}
 
   return 0;
 }

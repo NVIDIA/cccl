@@ -134,8 +134,8 @@ public:
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
 
-  _CCCL_TEMPLATE(size_t _Sz = _Extent)
-  _CCCL_REQUIRES((_Sz != 0))
+  _CCCL_TEMPLATE(size_t _Sz)
+  _CCCL_REQUIRES((_Sz == _Extent))
   _CCCL_API constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
   {}
@@ -192,9 +192,9 @@ public:
     _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in span's constructor (initializer_list)");
   }
 
-  _CCCL_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
-  _CCCL_REQUIRES((_Extent2 != dynamic_extent) _CCCL_AND __span_array_convertible<_OtherElementType, element_type>)
-  _CCCL_API constexpr span(const span<_OtherElementType, _Extent2>& __other) noexcept
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_API constexpr span(const span<_OtherElementType, _Extent>& __other) noexcept
       : __data_{__other.data()}
   {}
 

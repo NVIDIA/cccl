@@ -36,6 +36,10 @@ TEST_FUNC constexpr void test()
   static_assert(cuda::std::is_same_v<cuda::scalar_type_t<const volatile Vec>, T>);
 }
 
+// CUDA 13 deprecated several four-component vector types that the trait still supports.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
 TEST_FUNC void test()
 {
   test<char1, signed char>();
@@ -175,6 +179,8 @@ TEST_FUNC void test()
   static_assert(!has_type_alias<cuda::scalar_type<volatile MyStruct>>);
   static_assert(!has_type_alias<cuda::scalar_type<const volatile MyStruct>>);
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 int main(int, char**)
 {

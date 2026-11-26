@@ -251,7 +251,7 @@ workflows:
     # Standard being exactly "min" is required. clang-tidy may emit additional diagnostics
     # for later C++ versions (for example, warning that you should use designated
     # initializers in C++20 or higher).
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang-cuda'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:
@@ -456,10 +456,10 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang-cuda'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
-    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
-    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;107a;110a;120a;121a'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm:     '100f;103f;107f;110f;120f;121f'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -589,10 +589,10 @@ workflows:
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang-cuda'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
-    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
-    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;107a;110a;120a;121a'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm:     '100f;103f;107f;110f;120f;121f'}
 
   python-wheels:
     # NOTE: release-wheels.yml harvests every 'wheel-*' artifact of a run of
@@ -619,11 +619,10 @@ workflows:
     - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
     - {jobs: ['dc'],     ctk: [                        '13.X'], cxx: ['gcc16', 'clang22']}
     - {jobs: ['dc_ext'], ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc14', 'clang20']}
-    # Clang21+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang21.
-    - {jobs: ['dc_ext'], ctk: [        '12.X',         '13.X'], cxx: ['clang21']}
     - {jobs: ['dc_ext'], ctk: [                        '13.X'], cxx: ['gcc15']}
-    # Clang22+CTK12.9 is currently only used for clang-cuda testing. nvcc 12.9 doesn't support clang22.
-    - {jobs: ['dc_ext'], ctk: [        '12.X'                ], cxx: ['clang_preview22']}
+    # clang-cuda devcontainers.
+    - {jobs: ['dc_ext'], ctk: ['clang-cuda'],         cxx: ['clang-cuda']}
+    - {jobs: ['dc_ext'], ctk: ['clang_preview-cuda'], cxx: ['clang_preview-cuda']}
     # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
     # that doesn't matter for running python tests.
     - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
@@ -645,7 +644,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.12'
+devcontainer_version: '27.02'
 
 # Devcontainer image configuration.
 #
@@ -702,9 +701,9 @@ all_stds: [17, 20, 23]
 # - pybuild: Selects image to use for python wheel builds' outer docker instance
 ctk_versions:
   '12.0': { stds: [17, 20] }
-  '12.9': { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
+  '12.9': { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda'] }
   '13.0': { stds: [17, 20] }
-  '13.2': { stds: [17, 20], alias: ['nvhpc-prev']}
+  '13.2': { stds: [17, 20], alias: ['nvhpc-prev', 'clang_preview-cuda']}
   '13.3': { stds: [17, 20, 23], alias: ['nvhpc']}
   '13.5': { stds: [17, 20, 23], alias: ['13.X'] }
 
@@ -744,14 +743,14 @@ host_compilers:
       18: { stds: [17, 20, 23] }
       19: { stds: [17, 20, 23] }
       20: { stds: [17, 20, 23] }
-      21: { stds: [17, 20, 23], alias: 'cuda' }
-      22: { stds: [17, 20, 23] }
+      21: { stds: [17, 20, 23] }
+      22: { stds: [17, 20, 23], alias: 'cuda' }
   clang_preview:
     name: 'Clang'
     container_tag: 'llvm'
     exe: 'clang++'
     versions:
-      22: { stds: [17, 20, 23], alias: 'cuda' }
+      23: { stds: [17, 20, 23], alias: 'cuda' }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
