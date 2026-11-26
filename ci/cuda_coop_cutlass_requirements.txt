@@ -5,4 +5,3 @@
 # The CPU wheel build checks external LTO-IR linking before the GPU tests.
 nvidia-cutlass-dsl[cu13]>=4.9.0.dev1,<5
 cuda-bindings>=13.1,<14
-cuda-toolkit[nvrtc,nvjitlink]>=13.1,<14
