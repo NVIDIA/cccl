@@ -3,19 +3,29 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/zip_function.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
+
+#include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 #include <catch2/generators/catch_generators.hpp>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);

@@ -3,11 +3,20 @@
 
 #include <cub/device/device_find.cuh>
 
-#include <thrust/count.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/device_vector.h>
 #include <thrust/find.h>
 
+#include <cuda/__functional/equal_to_value.h>
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/device/dispatch/tuning/tuning_find.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_LOAD ld 0:2:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1

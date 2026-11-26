@@ -8,11 +8,13 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/devices>
+#include <cuda/std/cstdint>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("cub::DeviceReduce::ArgMinMax API example", "[reduce][env]", CUB_SMALL)
 {

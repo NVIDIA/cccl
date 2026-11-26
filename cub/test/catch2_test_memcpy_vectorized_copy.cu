@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/device/device_memcpy.cuh>
-#include <cub/util_macro.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
+#include <cstddef>
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int LocigalWarpSize, typename VectorT, typename ByteOffsetT>
 __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteOffsetT copy_size)

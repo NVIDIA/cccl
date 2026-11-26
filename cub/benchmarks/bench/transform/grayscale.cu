@@ -22,7 +22,14 @@
 #  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
 #endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
+#include <thrust/device_vector.h>
 #include <thrust/zip_function.h>
+
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <new>
+
+#include <nvbench_helper.cuh>
 
 #include "common.h"
 

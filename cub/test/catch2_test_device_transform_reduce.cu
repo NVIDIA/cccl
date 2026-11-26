@@ -5,13 +5,16 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/memory.h>
+
+#include <cuda/std/functional>
+
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/custom_type.h>
-#include <c2h/extended_types.h>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 

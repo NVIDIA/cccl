@@ -3,6 +3,9 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/execution>
+#include <cuda/stream>
+
 struct invalid_env
 {
   using property_keys = cuda::execution::property_key_list<cuda::get_stream_t>;

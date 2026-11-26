@@ -15,14 +15,17 @@
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <new>
 #include <stdexcept>
 #include <string>
 

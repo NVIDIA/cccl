@@ -2,22 +2,25 @@
 // SPDX-License-Identifier: BSD-3
 
 // Ensure printing of CUDA runtime errors to console
-#include "cub/util_type.cuh"
 #define CUB_STDERR
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_vsmem.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
-#include <iostream>
+#include <cstdlib>
 #include <memory>
 
 #include "cub_non_catch2_test_memory.h"

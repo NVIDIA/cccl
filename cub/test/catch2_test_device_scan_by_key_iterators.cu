@@ -5,16 +5,20 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <cstdint>
+#include <tuple>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
-#include <c2h/extended_types.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);

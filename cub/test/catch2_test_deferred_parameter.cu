@@ -11,8 +11,10 @@
 
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 
 #include <cuda/argument>
+#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

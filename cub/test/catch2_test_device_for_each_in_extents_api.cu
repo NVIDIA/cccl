@@ -6,16 +6,19 @@
 
 #include <cub/config.cuh>
 
+#include <cub/detail/mdspan_utils.cuh>
+
+#include <c2h/catch2_test_helper.h>
+
 // MSVC doesn't support __device__ lambdas
 #if !_CCCL_COMPILER(MSVC)
 
 #  include <cub/device/device_for.cuh>
 
-#  include <thrust/detail/raw_pointer_cast.h>
 #  include <thrust/device_vector.h>
-#  include <thrust/equal.h>
 #  include <thrust/fill.h>
 #  include <thrust/host_vector.h>
+#  include <thrust/memory.h>
 
 #  include <cuda/std/array>
 #  include <cuda/std/mdspan>

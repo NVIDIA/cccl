@@ -7,13 +7,18 @@
 
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
-#include <thrust/sequence.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 

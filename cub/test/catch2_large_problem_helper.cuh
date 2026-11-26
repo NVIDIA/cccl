@@ -6,11 +6,19 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/equal.h>
+#include <thrust/find.h>
+#include <thrust/functional.h>
+#include <thrust/memory.h>
 
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <c2h/catch2_test_helper.h>
 

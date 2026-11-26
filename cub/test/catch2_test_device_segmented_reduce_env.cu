@@ -7,21 +7,39 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
+#include <cub/block/block_reduce.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
 #include <cuda/__functional/call_or.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/stream>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/generators.h>
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Sum, device_segmented_reduce_sum);
@@ -39,8 +57,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_redu
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 
 #include "cub_test_macros.h"
 

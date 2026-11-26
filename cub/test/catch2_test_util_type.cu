@@ -5,9 +5,14 @@
 
 #include <cuda/iterator>
 #include <cuda/std/cstring>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/type_traits>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 
 CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)

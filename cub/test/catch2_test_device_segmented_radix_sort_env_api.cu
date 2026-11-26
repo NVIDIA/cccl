@@ -3,17 +3,31 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/double_buffer.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 
+#include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/std/cstdint>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_radix_rank.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#  include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/execution.tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented_radix_sort][env]", CUB_SMALL)
 {

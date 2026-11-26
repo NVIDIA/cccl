@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // All examples below operate on the same two sorted key sequences, so that the different set operations can be compared
 // side by side purely by their results:

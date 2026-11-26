@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/util_macro.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
+
+#include <thrust/memory.h>
 
 #include <cuda/functional>
 #include <cuda/std/cstdint>
@@ -10,8 +12,12 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+#include <c2h/vector_generators.h>
 
 template <int LogicalWarpThreads, int TotalWarps, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)

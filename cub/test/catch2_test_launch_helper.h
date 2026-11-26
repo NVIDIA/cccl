@@ -3,16 +3,20 @@
 
 #pragma once
 
+#include <cub/detail/detect_cuda_runtime.cuh>
+
 #include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
 #include <cuda/devices>
-#include <cuda/launch>
+#include <cuda/launch> // IWYU pragma: keep
+#include <cuda/memory_resource>
 #include <cuda/std/execution>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <cstddef>
 #include <cstdint>
@@ -21,10 +25,10 @@
 #include <stream_registry_factory.h>
 
 #include <c2h/buffer_utils.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/device_and_stream.h>
-#include <catch2/generators/catch_generators_all.hpp>
 #include <catch2_test_memory_resources.h>
 
 //! @file

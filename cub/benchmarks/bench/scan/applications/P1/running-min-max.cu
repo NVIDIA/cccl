@@ -1,18 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cub/device/device_transform.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/iterator>
-#include <cuda/std/cmath>
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 
-#include <look_back_helper.cuh>
+#include <cassert>
+#include <cstddef>
+
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1

@@ -11,6 +11,8 @@
 #  include <sys/resource.h>
 #endif
 
+#include <thrust/detail/config.h>
+
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -21,7 +23,9 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/algorithm>
+#include <cuda/std/limits>
 #include <cuda/stream>
 
 #include <nv/target>
@@ -30,6 +34,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <memory>

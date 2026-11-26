@@ -3,8 +3,15 @@
 
 #pragma once
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
+
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_scan_reference.cuh"
 #include <c2h/catch2_test_helper.h>

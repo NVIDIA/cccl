@@ -1,6 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/device/device_histogram.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
 
 #include "histogram_common.cuh"
@@ -52,7 +61,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
+      cuda::execution::tune(bench_policy_selector<SampleT, 1, 1>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_RUNTIME_API(

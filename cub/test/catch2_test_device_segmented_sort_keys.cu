@@ -3,22 +3,40 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/device/device_segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
-#include <cuda/__execution/tune.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
+
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
+#include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/bfloat16.cuh>
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/half.cuh>
+#include <c2h/vector_generators.h>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.

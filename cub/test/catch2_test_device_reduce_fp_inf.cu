@@ -3,12 +3,16 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_reduce.cuh>
+
+#include <thrust/memory.h>
 
 #include <cuda/std/limits>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);

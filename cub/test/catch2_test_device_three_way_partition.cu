@@ -5,9 +5,9 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/memory.h>
 #include <thrust/partition.h>
 #include <thrust/random.h>
-#include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
@@ -16,12 +16,14 @@
 #include <cuda/iterator>
 #include <cuda/std/utility>
 
+#include <cstdint>
+
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 

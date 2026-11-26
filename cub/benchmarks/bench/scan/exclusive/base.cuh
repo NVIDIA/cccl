@@ -3,9 +3,19 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__functional/invoke.h>
+
+#include <cstddef>
+#include <limits>
+#include <new>
 
 #include <nvbench_helper.cuh>
 

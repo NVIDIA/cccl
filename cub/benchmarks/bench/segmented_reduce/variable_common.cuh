@@ -6,8 +6,16 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
+
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 

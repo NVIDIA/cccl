@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/config.cuh>
+
+#include <cub/warp/warp_exchange.cuh>
+
+#include <cstdint>
+
 #include "catch2_test_warp_exchange.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/generator_common.h>
 
 namespace
 {

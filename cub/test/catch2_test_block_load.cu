@@ -2,14 +2,24 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/block/block_load.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_allocator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/iterator>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <typename T, int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
 static __device__ int get_output_idx(int item, bool full_tile)

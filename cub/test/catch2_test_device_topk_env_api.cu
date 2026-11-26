@@ -5,23 +5,24 @@
 
 #include <cub/device/device_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
 #include <cuda/devices>
-#include <cuda/std/__execution/env.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/std/tuple>
 #include <cuda/stream>
 
 #include <algorithm>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // Simple user-defined key type for the decomposer-based examples.
 struct topk_custom_t

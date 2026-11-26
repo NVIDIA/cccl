@@ -5,17 +5,26 @@
 
 #include <cub/device/device_find.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/algorithm>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

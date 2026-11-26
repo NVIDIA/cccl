@@ -3,13 +3,16 @@
 
 #include <cub/block/block_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/numeric>
+#include <cuda/functional>
+
+#include <cstddef>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;

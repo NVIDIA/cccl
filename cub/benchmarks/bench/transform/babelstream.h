@@ -3,6 +3,17 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <cstdint>
+#include <new>
+
+#include <nvbench_helper.cuh>
+
 #include "common.h"
 
 #ifdef TUNE_T

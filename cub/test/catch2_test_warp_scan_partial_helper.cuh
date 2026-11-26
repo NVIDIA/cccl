@@ -4,9 +4,11 @@
 #pragma once
 
 #include <cub/util_arch.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/cmath>
+#include <cuda/std/algorithm>
 
 #include <c2h/catch2_test_helper.h>
 

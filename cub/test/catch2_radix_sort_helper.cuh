@@ -16,6 +16,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/cmath>
 #include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
@@ -23,9 +24,12 @@
 
 #include <array>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/generator_common.h>
 #include <c2h/generators.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>

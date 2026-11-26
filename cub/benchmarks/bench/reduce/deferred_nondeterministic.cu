@@ -6,17 +6,28 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/argument>
 #include <cuda/execution.determinism.h>
 #include <cuda/execution.require.h>
 #include <cuda/std/functional>
 
 #include <cstddef>
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 
 #include <nvbench/range.cuh>
 #include <nvbench/types.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+#  include <cub/util_arch.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 3:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

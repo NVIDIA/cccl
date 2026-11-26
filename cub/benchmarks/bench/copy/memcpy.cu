@@ -3,6 +3,21 @@
 
 #include <cub/device/device_memcpy.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/cstdint>
+
+#include <cstddef>
+
+#if !TUNE_BASE
+#  include <cub/device/dispatch/tuning/common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
+
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
 // %RANGE% TUNE_TLEV_BYTES_PER_THREAD tlevbpt 2:16:2

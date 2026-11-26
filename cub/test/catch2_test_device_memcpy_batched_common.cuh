@@ -10,8 +10,12 @@
 #include <thrust/shuffle.h>
 
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+
+#include <cstdint>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/generator_common.h>
 
 #pragma once
 

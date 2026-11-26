@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/config.cuh>
+
 #include <cub/block/block_scan.cuh>
+
+#include <cuda/std/__functional/operations.h>
+
+#include <cstdint>
 
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>

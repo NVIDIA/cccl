@@ -7,14 +7,31 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
+#include <cub/block/block_scan.cuh>
 #include <cub/device/device_set_operations.cuh>
+#include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
+#include <cub/thread/thread_load.cuh>
+
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
+
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetIntersectionPairs, set_intersection_pairs);

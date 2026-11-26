@@ -1,24 +1,32 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_macro.cuh>
+
+#include <thrust/copy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
+#include <cuda/std/array>
 #include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
+
+#include <type_traits>
 
 #include "catch2_test_device_reduce.cuh"
 #include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/operator.cuh>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <c2h/vector_generators.h>
 
 inline constexpr int max_size  = 16;
 inline constexpr int num_seeds = 3;

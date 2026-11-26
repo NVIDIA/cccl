@@ -16,11 +16,21 @@
 #  endif // TUNE_ALGORITHM == 3
 #endif // !TUNE_BASE
 
+#include <cub/device/device_transform.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__numeric/narrow.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#if !TUNE_BASE
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+
+#  include <cuda/devices>
+#  include <cuda/execution.tune.h>
+#endif // !TUNE_BASE
 
 #include <stdexcept>
 

@@ -5,7 +5,12 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <cuda/functional>
+
+#include <cstddef>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // Guard: the legacy memory-size query call with all defaults (no explicit stream)
 // must resolve unambiguously to the legacy temp-storage overload when the env

@@ -10,20 +10,27 @@ struct stream_registry_factory_t;
 #include <cub/device/device_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/tune.h>
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
+#include <cuda/std/execution>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
+
+#include <cstddef>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceCopy::Batched, device_copy_batched);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-#include <cuda/__execution/require.h>
 
 #include "cub_test_macros.h"
 

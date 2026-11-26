@@ -3,6 +3,8 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <c2h/catch2_test_helper.h>
+
 // example-begin adjacent-difference-includes
 #include <cub/device/device_adjacent_difference.cuh>
 

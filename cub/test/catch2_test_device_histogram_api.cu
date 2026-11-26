@@ -4,10 +4,14 @@
 #include <cub/device/device_histogram.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/array>
 
+#include <cstddef>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("cub::DeviceHistogram::HistogramEven non-env overload is not ambiguous", "[histogram][device]", CUB_SMALL)
 {

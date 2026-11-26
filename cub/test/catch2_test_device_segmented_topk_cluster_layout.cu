@@ -4,7 +4,7 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh> // smem_block_tile_layout
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_cluster_policy()
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/cmath>
 #include <cuda/std/cstdint>
 
 #include "cub_test_macros.h"

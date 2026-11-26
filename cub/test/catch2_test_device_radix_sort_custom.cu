@@ -5,21 +5,28 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h> // for examples
 #include <thrust/gather.h>
-#include <thrust/reverse.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
+
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <bitset>
 #include <climits>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <ostream>
+#include <utility>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);

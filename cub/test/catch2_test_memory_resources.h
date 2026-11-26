@@ -5,10 +5,9 @@
 
 #include <cub/detail/device_memory_resource.cuh>
 
-#include <cuda/__memory_resource/memory_resource_base.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/memory_resource>
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/stream>
 
 #include <cstddef>
 

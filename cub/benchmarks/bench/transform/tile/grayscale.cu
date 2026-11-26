@@ -6,6 +6,18 @@
 // can vectorize. The named rgb_to_y op registers a tile_operator substitute (gated). This file
 // disappears once tile dispatch is fully transparent.
 
+#include <cub/config.cuh>
+
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <new>
+
+#include <nvbench_helper.cuh>
+
 #include "../common.h"
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()

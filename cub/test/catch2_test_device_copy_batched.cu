@@ -2,17 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/device/device_copy.cuh>
-#include <cub/util_macro.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
+#include <thrust/reduce.h>
 #include <thrust/scan.h>
-#include <thrust/transform.h>
 
 #include <cuda/iterator>
-#include <cuda/std/execution>
+#include <cuda/std/functional>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <ostream>
+#include <tuple>
+#include <vector>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
@@ -21,6 +27,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

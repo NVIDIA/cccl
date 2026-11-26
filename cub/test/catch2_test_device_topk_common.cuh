@@ -3,24 +3,39 @@
 
 #pragma once
 
+#include <cub/detail/double_buffer.cuh>
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_baseline_policy
 #include <cub/util_device.cuh> // cub::PtxVersion
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/find.h>
+#include <thrust/functional.h>
+#include <thrust/memory.h>
 #include <thrust/remove.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/tie_break.h>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.tie_break.h>
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+#include <ostream>
+
 #include <c2h/catch2_test_helper.h>
+#include <c2h/generator_common.h>
+#include <c2h/vector_generators.h>
 
 // Low-level predicate: true when a request that must use the SM90+ cluster backend has no cluster-capable target in the
 // build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test sources do), such a request

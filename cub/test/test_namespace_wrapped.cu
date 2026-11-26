@@ -9,15 +9,20 @@
 // Enable error checking:
 #define CUB_STDERR
 
+#include <thrust/detail/config.h>
+
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 
 #include "cub_non_catch2_test_memory.h"
 #include "test_util.h"

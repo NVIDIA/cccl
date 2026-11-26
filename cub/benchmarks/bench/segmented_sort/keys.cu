@@ -3,7 +3,29 @@
 
 #include <cub/device/device_segmented_sort.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/cstdint>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_radix_rank.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#  include <cub/thread/thread_load.cuh>
+#  include <cub/warp/warp_load.cuh>
+#  include <cub/warp/warp_store.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_L_ITEMS ipt 7:24:1
 // %RANGE% TUNE_M_ITEMS ipmw 1:17:1

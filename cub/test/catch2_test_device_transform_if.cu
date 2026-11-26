@@ -5,9 +5,17 @@
 
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/functional.h>
+
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+
+#include <cstdint>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/test_util_vec.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

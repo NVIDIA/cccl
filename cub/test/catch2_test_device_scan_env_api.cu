@@ -3,19 +3,35 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/argument>
 #include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/block/block_store.cuh>
+#  include <cub/device/dispatch/tuning/common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/execution.tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirements", "[scan][env]", CUB_SMALL)
 {

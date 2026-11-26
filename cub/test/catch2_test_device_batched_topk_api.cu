@@ -5,20 +5,25 @@
 
 #include <cub/device/device_batched_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
 #include <cuda/argument>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
 
+#include <cstddef>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_topk][device]", CUB_SMALL)
 {

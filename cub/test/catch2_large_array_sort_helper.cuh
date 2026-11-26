@@ -9,21 +9,26 @@
 #include <thrust/functional.h>
 #include <thrust/memory.h>
 #include <thrust/random.h>
+#include <thrust/random/uniform_int_distribution.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/cmath>
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 
 #include <c2h/catch2_test_helper.h>
 #include <c2h/cpu_timer.h>
 #include <c2h/device_policy.h>
+#include <c2h/generator_common.h>
 #include <c2h/generators.h> // seed_t
 #include <c2h/vector.h>
 

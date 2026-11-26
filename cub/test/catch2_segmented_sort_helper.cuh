@@ -2,19 +2,34 @@
 // SPDX-License-Identifier: BSD-3
 #pragma once
 
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
 #include <thrust/logical.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
+#include <thrust/scatter.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/cmath>
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -22,13 +37,17 @@
 
 #include <nv/target>
 
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
+#include <c2h/generator_common.h>
 #include <c2h/utility.h>
+#include <c2h/vector_generators.h>
 
 // Tests select a backend; public dispatch remains unchanged.
 enum class test_algorithm

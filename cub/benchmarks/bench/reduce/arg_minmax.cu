@@ -4,7 +4,23 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/cstdint>
+
+#include <cstddef>
+
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

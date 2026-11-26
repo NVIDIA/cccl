@@ -3,8 +3,10 @@
 
 #include <cub/detail/prefetch.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/universal_vector.h>
 
 #include <cuda/buffer>
@@ -12,7 +14,12 @@
 #include <cuda/std/memory>
 #include <cuda/stream>
 
+#include <cstddef>
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // BlockPrefetch emits global-memory prefetch *hints*: they carry no functional result and cannot be observed from
 // the device program. A runtime test can therefore only assert that issuing the hints compiles and never faults for

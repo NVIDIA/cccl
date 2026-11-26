@@ -4,14 +4,14 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_select.cuh>
-#include <cub/device/dispatch/dispatch_select_if.cuh>
 
-#include <thrust/distance.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/offset_iterator.h>
 #include <thrust/logical.h>
+#include <thrust/memory.h>
 #include <thrust/partition.h>
-#include <thrust/reverse.h>
 #include <thrust/sequence.h>
 
 #include <cuda/functional>
@@ -20,12 +20,16 @@
 #include <cuda/std/limits>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 

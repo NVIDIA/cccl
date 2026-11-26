@@ -3,12 +3,15 @@
 
 #include <cub/device/device_copy.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/mdspan>
 
+#include <cstddef>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 void check_status(cudaError_t status)
 {

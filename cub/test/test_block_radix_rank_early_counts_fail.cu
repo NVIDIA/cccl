@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 
 // Verifies that BlockRadixRankMatchEarlyCounts rejects ranking in multiple parts if the digit count is not a multiple
 // of the warp size. The check fires as soon as the class is instantiated.

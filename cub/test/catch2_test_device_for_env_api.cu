@@ -5,16 +5,22 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/device/dispatch/tuning/tuning_for.cuh>
+
+#  include <cuda/execution.tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 // example-begin bulk-square-env-t
 struct square_t

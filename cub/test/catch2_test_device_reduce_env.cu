@@ -7,22 +7,46 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_reduce.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__functional/call_or.h>
+#include <cuda/cmath>
 #include <cuda/devices>
+#include <cuda/execution.tune.h>
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/array>
+#include <cuda/std/execution>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
+
+#include <cstddef>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Sum, device_reduce_sum);
@@ -43,9 +67,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key_two_
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__functional/call_or.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 #include <cuda/std/cstdint>
 
 #include <sstream>

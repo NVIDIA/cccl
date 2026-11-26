@@ -10,7 +10,10 @@
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#include <nv/target>
 
 #include <ostream>
 

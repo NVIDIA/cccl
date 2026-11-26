@@ -26,6 +26,7 @@
 
 #include <cuda_runtime_api.h>
 
+// IWYU pragma: begin_exports
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
@@ -39,11 +40,15 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_tostring.hpp>
-#include <catch2/generators/catch_generators_all.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/generators/catch_generators_adapters.hpp>
+#include <catch2/generators/catch_generators_random.hpp>
+#include <catch2/generators/catch_generators_range.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
+// IWYU pragma: end_exports
 
 #ifndef VAR_IDX
 #  define VAR_IDX 0
@@ -636,8 +641,8 @@ struct Catch::StringMaker<cudaError>
   }
 };
 
-#include <c2h/custom_type.h>
-#include <c2h/generators.h>
+#include <c2h/custom_type.h> // IWYU pragma: export
+#include <c2h/generators.h> // IWYU pragma: export
 
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 

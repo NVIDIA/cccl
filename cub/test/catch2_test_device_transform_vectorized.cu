@@ -3,12 +3,25 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_transform.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/devices>
+#include <cuda/execution.tune.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/tuple>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

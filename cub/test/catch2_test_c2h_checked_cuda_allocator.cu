@@ -1,13 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <thrust/detail/execute_with_allocator.h>
 #include <thrust/detail/execution_policy.h>
-#include <thrust/execution_policy.h>
+#include <thrust/memory.h>
+
+#include <cuda/std/utility>
 
 #include <algorithm>
+#include <cstddef>
 #include <new> // std::bad_alloc
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 std::size_t get_alloc_bytes()
 {

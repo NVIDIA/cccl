@@ -5,6 +5,9 @@
 
 #include <cub/device/device_find.cuh>
 
+#include <cuda/__runtime/api_wrapper.h>
+
+#include <cstddef>
 #include <cstdint>
 
 #include <nvbench_helper.cuh>

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cuda/std/execution>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <c2h/catch2_test_helper.h>

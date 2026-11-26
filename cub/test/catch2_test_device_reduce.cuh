@@ -7,12 +7,14 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <numeric>
 #include <type_traits>

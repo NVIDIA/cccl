@@ -3,7 +3,10 @@
 
 #include <cub/block/block_reduce.cuh>
 
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/type_traits>
+
+#include <cstdint>
 
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>

@@ -5,18 +5,24 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
 #include <cuda/iterator>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/std/tuple>
 #include <cuda/stream>
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results",
          "[device][device_transform]",

@@ -5,9 +5,12 @@
 
 #include <cub/device/device_set_operations.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <cstddef>
@@ -15,12 +18,11 @@
 #include <tuple>
 #include <vector>
 
-#include <test_util.h>
-
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

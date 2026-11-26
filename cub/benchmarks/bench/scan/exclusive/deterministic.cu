@@ -3,9 +3,16 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/device_vector.h>
+
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <new>
 
 #include <nvbench_helper.cuh>
 

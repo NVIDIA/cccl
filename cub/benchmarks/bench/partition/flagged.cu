@@ -1,15 +1,30 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/agent/agent_select_if.cuh>
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/tuning_select_if.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1

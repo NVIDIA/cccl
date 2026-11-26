@@ -3,16 +3,18 @@
 
 #include <cub/warp/warp_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/__algorithm/fill.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__numeric/inclusive_scan.h>
-#include <cuda/std/__numeric/iota.h>
+#include <cuda/functional>
+#include <cuda/std/algorithm>
+#include <cuda/std/cstdlib>
+#include <cuda/std/functional>
+#include <cuda/std/numeric>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_warps = 4;
 

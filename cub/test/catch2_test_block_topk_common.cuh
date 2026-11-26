@@ -7,21 +7,23 @@
 
 #pragma once
 
+#include <cub/device/dispatch/dispatch_common.cuh>
+
 #include <thrust/random.h>
+#include <thrust/random/uniform_int_distribution.h>
+#include <thrust/random/uniform_real_distribution.h>
 #include <thrust/shuffle.h>
 
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cmath/isfinite.h>
-#include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/bit>
+#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/memory>
 #include <cuda/std/optional>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 #include <algorithm>

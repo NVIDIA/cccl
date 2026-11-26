@@ -3,9 +3,18 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+
+#include <thrust/memory.h>
+
+#include <cuda/cmath>
+#include <cuda/std/functional>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)

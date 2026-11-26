@@ -3,20 +3,33 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/device/device_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tune.h>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/numeric>
 
-#include "catch2_test_device_reduce.cuh"
+#include <cstddef>
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 
 using float_type_list = c2h::type_list<float, double>;
 

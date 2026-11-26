@@ -4,35 +4,42 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/input_value.cuh>
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tune.h>
 #include <cuda/execution>
 #include <cuda/iterator>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
+#include <cstddef>
 #include <cstdint>
 
 #include <cuda_runtime_api.h>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/generators.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

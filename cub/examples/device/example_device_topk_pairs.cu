@@ -11,16 +11,23 @@
 #define CUB_STDERR
 
 #include <cub/device/device_topk.cuh>
+#include <cub/util_debug.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
+#include <cuda/execution>
+#include <cuda/std/execution>
 #include <cuda/std/tuple>
 #include <cuda/stream>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 
 #include "../../test/test_util.h"

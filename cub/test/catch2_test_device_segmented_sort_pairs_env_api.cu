@@ -3,9 +3,11 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/double_buffer.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/devices>
 #include <cuda/stream>
@@ -13,6 +15,7 @@
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_sort][pairs][env]", CUB_SMALL)
 {

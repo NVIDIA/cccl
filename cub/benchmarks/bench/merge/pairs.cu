@@ -4,9 +4,12 @@
 #include <cub/device/device_merge.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/utility>
 
+#include <cstddef>
 #include <cstdint>
 
 #include <nvbench_helper.cuh>
@@ -59,7 +62,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<key_t>{})
+      cuda::execution::tune(bench_policy_selector<KeyT>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_RUNTIME_API(

@@ -1,13 +1,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/config.cuh>
+
 #include <cub/block/block_reduce.cuh>
+#include <cub/util_ptx.cuh>
+
+#include <cuda/functional>
+#include <cuda/std/limits>
 
 #include <algorithm>
-#include <limits>
+#include <cstdint>
 #include <numeric>
+#include <vector>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,

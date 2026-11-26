@@ -8,13 +8,14 @@ struct stream_registry_factory_t;
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/policy.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution.policy.h>
+#include <cuda/execution.tune.h>
 #include <cuda/functional>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
@@ -22,12 +23,14 @@ struct stream_registry_factory_t;
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <cstddef>
 #include <cstdint>
 #include <sstream>
 
 #include <block_size_extracting_helpers.h>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 #include <catch2_test_launch_helper.h>
 

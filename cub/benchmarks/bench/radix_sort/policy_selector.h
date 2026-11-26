@@ -1,7 +1,30 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_radix_sort.cuh>
+
+#if !TUNE_BASE
+#  include <cub/agent/agent_radix_sort_histogram.cuh>
+#  include <cub/agent/agent_radix_sort_onesweep.cuh>
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_radix_rank.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/block/block_store.cuh>
+#  include <cub/detail/choose_offset.cuh>
+#  include <cub/device/dispatch/dispatch_common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/thread/thread_load.cuh>
+#  include <cub/util_arch.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__type_traits/conditional.h>
+
+#  include <cstddef>
+#endif // !TUNE_BASE
 
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>

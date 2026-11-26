@@ -3,21 +3,33 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/device/device_run_length_encode.cuh>
+#include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
+#include <cub/thread/thread_load.cuh>
 
+#include <thrust/device_vector.h>
 #include <thrust/logical.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
 
 #include <algorithm>
-#include <limits>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 

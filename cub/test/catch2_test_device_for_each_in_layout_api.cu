@@ -6,6 +6,12 @@
 
 #include <cub/config.cuh>
 
+#include <cub/detail/mdspan_utils.cuh>
+
+#include <thrust/memory.h>
+
+#include <cuda/std/mdspan>
+
 // MSVC doesn't support __device__ lambdas
 #if !_CCCL_COMPILER(MSVC)
 

@@ -6,12 +6,14 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/argument>
 #include <cuda/execution>
 #include <cuda/std/functional>
 #include <cuda/std/utility>
 
 #include <cstddef>
+#include <new>
 
 #include <nvbench_helper.cuh>
 

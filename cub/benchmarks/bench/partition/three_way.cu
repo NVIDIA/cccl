@@ -3,8 +3,24 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <cstddef>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1

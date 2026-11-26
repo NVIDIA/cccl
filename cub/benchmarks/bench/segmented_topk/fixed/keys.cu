@@ -8,23 +8,40 @@
 #define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/argument>
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/cstdint>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_store.cuh>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

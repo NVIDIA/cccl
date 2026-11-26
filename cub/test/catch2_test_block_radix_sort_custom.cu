@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <algorithm>
-#include <type_traits>
-#include <utility>
+#include <cub/block/block_radix_sort.cuh>
+
+#include <cuda/std/tuple>
 
 #include "catch2_test_block_radix_sort.cuh"
 #include "cub/block/radix_rank_sort_operations.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin custom-type
 struct custom_t

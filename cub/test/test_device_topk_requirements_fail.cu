@@ -5,12 +5,13 @@
 
 #include <cub/device/device_topk.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tie_break.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
 #include <cuda/std/execution>
 
+#include <cstddef>
 #include <iostream>
 
 // Verifies that cub::DeviceTopK rejects, at compile time, tie-break requests it cannot honor. DeviceTopK implements

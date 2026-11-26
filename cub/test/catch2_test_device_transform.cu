@@ -3,27 +3,53 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <thrust/detail/config.h>
+
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
+#include <cub/thread/thread_store.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/transform_output_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
 #include <thrust/sequence.h>
+#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/zip_function.h>
 
-#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/memory>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
+#include <nv/target>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/test_util_vec.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -815,7 +841,7 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", C
 
 CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", CUB_SMALL)
 {
-  using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using It         = thrust::device_vector<int>::reverse_iterator;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
   STATIC_REQUIRE(cuda::std::is_constructible_v<kernel_arg>);

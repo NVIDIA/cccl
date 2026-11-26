@@ -10,6 +10,8 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/std/functional>
+
 #include <cstdio>
 
 #include "cub_non_catch2_test_memory.h"

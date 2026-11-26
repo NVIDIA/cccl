@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <nvbench_helper.cuh>
 

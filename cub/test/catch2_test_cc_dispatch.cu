@@ -1,11 +1,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/detail/cc_dispatch.cuh>
+#include <cub/config.cuh>
 
-#include <cuda/std/__algorithm/find_if.h>
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
+
+#include <cuda/devices>
+#include <cuda/std/algorithm>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 using cuda::compute_capability;
 

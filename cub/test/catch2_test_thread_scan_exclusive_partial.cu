@@ -3,19 +3,35 @@
 
 #include <cub/thread/thread_scan.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
+
 #include <cuda/functional>
-#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
+#include <cuda/std/span>
+
+#include <algorithm>
+#include <type_traits>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/operator.cuh>
+#include <c2h/vector_generators.h>
 
 constexpr int max_size  = 16;
 constexpr int num_seeds = 3;

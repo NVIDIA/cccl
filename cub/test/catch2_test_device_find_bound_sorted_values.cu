@@ -3,20 +3,27 @@
 
 #include <cub/device/device_find.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sort.h>
 
 #include <cuda/cmath>
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

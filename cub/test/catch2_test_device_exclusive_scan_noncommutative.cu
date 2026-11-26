@@ -3,10 +3,18 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/memory.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/functional>
+#include <cuda/std/cstddef>
+#include <cuda/std/utility>
+
+#include <cstddef>
+
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
-#include <catch2_test_device_scan.cuh>
+#include <c2h/catch2_test_helper.h>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
  * Elements of this algebra are ``q^m * p^n``, identified by a pair of integral exponents. The identity

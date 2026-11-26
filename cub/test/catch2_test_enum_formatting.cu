@@ -19,9 +19,12 @@
 
 #include <sstream>
 #include <string_view>
-#include <version>
+#include <version> // IWYU pragma: keep
+
+#include <c2h/catch2_test_helper.h>
 #if __cpp_lib_format >= 201907L
 #  include <format>
+#  include <string>
 #endif // __cpp_lib_format >= 201907L
 
 #include "cub_test_macros.h"

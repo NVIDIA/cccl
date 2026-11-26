@@ -5,6 +5,14 @@
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
+#include <thrust/device_vector.h>
+
+#include <cuda/__runtime/api_wrapper.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
 
 template <class T, typename OffsetT>

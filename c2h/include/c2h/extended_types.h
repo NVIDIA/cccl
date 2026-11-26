@@ -29,13 +29,13 @@
 #endif // TEST_INT128
 
 #if TEST_HALF_T()
-#  include <cuda_fp16.h>
+#  include <cuda_fp16.h> // IWYU pragma: export
 
-#  include <c2h/half.cuh>
+#  include <c2h/half.cuh> // IWYU pragma: export
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
-#  include <cuda_bf16.h>
+#  include <cuda_bf16.h> // IWYU pragma: export
 
-#  include <c2h/bfloat16.cuh>
+#  include <c2h/bfloat16.cuh> // IWYU pragma: export
 #endif // TEST_BF_T()

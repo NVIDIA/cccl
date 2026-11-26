@@ -8,20 +8,26 @@ struct stream_registry_factory_t;
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/argument>
+#include <cuda/devices>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
+#include <cuda/execution.require.h>
+#include <cuda/execution.tie_break.h>
+#include <cuda/execution.tune.h>
 #include <cuda/iterator>
-#include <cuda/std/__execution/env.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceBatchedTopK::MaxKeys, device_batched_topk_max_keys);
 

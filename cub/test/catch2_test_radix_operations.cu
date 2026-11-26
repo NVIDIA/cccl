@@ -3,14 +3,23 @@
 
 #include <cub/block/radix_rank_sort_operations.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/memory.h>
 
+#include <cuda/std/limits>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#include <algorithm>
 #include <bitset>
 #include <climits>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
 #include <type_traits>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <typename KeyT>
 struct fundamental_extractor_t

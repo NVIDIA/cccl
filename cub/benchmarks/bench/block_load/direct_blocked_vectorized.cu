@@ -6,6 +6,7 @@
 #include <cub/thread/thread_load.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>

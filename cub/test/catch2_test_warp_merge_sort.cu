@@ -1,18 +1,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/util_macro.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 
 struct CustomLess

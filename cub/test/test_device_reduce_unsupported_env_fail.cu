@@ -3,9 +3,10 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 #include <cuda/std/complex>
+#include <cuda/std/functional>
 
 #include <iostream>
 

@@ -3,16 +3,22 @@
 
 #pragma once
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm/find.h>
+#include <cuda/devices>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/optional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+
+#include <nv/target>
+
+#include <cstddef>
 
 #include <c2h/catch2_test_helper.h>
 

@@ -3,16 +3,25 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 
+#include <thrust/memory.h>
+
+#include <cuda/functional>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 
-#include <numeric>
+#include <cstdint>
+#include <tuple>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 

@@ -2,12 +2,21 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/util_arch.cuh>
-#include <cub/util_macro.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/cmath>
+#include <cuda/functional>
+#include <cuda/std/limits>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)

@@ -4,18 +4,22 @@
 #include <cub/device/device_copy.cuh>
 
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/std/array>
-#include <cuda/std/execution>
 #include <cuda/std/mdspan>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2

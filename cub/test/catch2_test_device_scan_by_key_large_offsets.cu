@@ -5,7 +5,11 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/equal.h>
+#include <thrust/memory.h>
+
 #include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <cstdint>
 
@@ -13,6 +17,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);

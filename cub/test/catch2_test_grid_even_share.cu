@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/grid/grid_mapping.cuh>
 
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/algorithm>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <climits>
+#include <cstdint>
+
 #include "cub_test_macros.h"
-#include <c2h/generators.h>
+#include <c2h/catch2_test_helper.h>
 
 using offset_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
 

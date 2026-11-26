@@ -31,10 +31,14 @@
 #  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
 #endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
+#include <cub/device/device_transform.cuh>
+
 #include <thrust/device_vector.h>
 
 #include <cuda/iterator>
 #include <cuda/random>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/algorithm.max.h>
 #include <cuda/std/algorithm.min.h>
 #include <cuda/std/algorithm.transform.h>
@@ -43,8 +47,19 @@
 #include <cuda/std/random>
 #include <cuda/std/type_traits>
 
+#include <cmath>
+#include <cstdint>
+#include <functional>
+#include <new>
+
+#include <nvbench_helper.cuh>
+
 #include "../../common.h"
 #include "bfloat16.h"
+
+#if !TUNE_BASE
+#  include <cuda/__execution/tune.h>
+#endif // !TUNE_BASE
 
 // ============================================================================
 // at::opmath_type<T> — the compute type for intermediate math

@@ -6,15 +6,26 @@
 #include <cub/device/device_histogram.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/stream>
 
+#include <cstddef>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/agent/agent_histogram.cuh>
+#  include <cub/block/block_load.cuh>
+#  include <cub/device/dispatch/tuning/tuning_histogram.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/execution.tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]", CUB_SMALL)
 {

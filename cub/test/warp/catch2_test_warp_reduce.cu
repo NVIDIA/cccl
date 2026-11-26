@@ -1,29 +1,31 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/ptx>
+#include <cuda/ptxs/get_sreg.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/cast.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <array>
+#include <cstdint>
 #include <numeric>
 
 #include <test_util.h>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/operator.cuh>
+#include <c2h/vector_generators.h>
 
 /***********************************************************************************************************************
  * Constants

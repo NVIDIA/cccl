@@ -3,21 +3,27 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
+
+#include <nv/target>
 
 #include <cstdint>
+#include <ostream>
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/custom_type.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);

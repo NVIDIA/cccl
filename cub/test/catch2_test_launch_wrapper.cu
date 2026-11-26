@@ -11,6 +11,7 @@ struct stream_registry_factory_t;
 
 #include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
+#include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/__exception/exception_macros.h>
@@ -24,7 +25,6 @@ struct stream_registry_factory_t;
 #include <cstdint>
 
 #include <cub_test_macros.h>
-#include <cuda_runtime.h>
 
 #include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_test_helper.h>

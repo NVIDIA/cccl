@@ -3,12 +3,27 @@
 
 #include <cub/device/device_topk.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
+
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/std/__execution/env.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/tuning_topk.cuh>
+
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__algorithm/max.h>
+#endif // !TUNE_BASE
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32

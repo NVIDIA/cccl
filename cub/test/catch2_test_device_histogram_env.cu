@@ -7,19 +7,30 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/agent/agent_histogram.cuh>
+#include <cub/block/block_load.cuh>
 #include <cub/device/device_histogram.cuh>
+#include <cub/device/dispatch/tuning/tuning_histogram.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
+#include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramRange, histogram_range);
@@ -38,8 +49,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER_ENV(
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
 
 #include "cub_test_macros.h"
 

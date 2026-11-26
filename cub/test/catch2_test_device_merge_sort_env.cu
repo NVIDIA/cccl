@@ -7,19 +7,29 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
 #include <cub/device/device_merge_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
+#include <cub/thread/thread_load.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
+#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
