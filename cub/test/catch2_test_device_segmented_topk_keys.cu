@@ -1086,9 +1086,9 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys synchronize a multi-CTA cluster",
   constexpr auto direction          = cub::detail::topk::select::max;
   using selector = cluster_tuning_selector<4, 0, 0, cluster_test_chunk_bytes, 0, 0, /*bits_per_pass=*/11>;
 
-  constexpr cuda::std::int64_t segment_size        = 4096;
-  static constexpr cuda::std::int64_t static_max_k = 512;
-  constexpr cuda::std::int64_t num_segments        = 2;
+  constexpr cuda::std::int64_t segment_size = 4096;
+  constexpr cuda::std::int64_t static_max_k = 512;
+  constexpr cuda::std::int64_t num_segments = 2;
 
   // Fills the segments with `make_key(i)`, runs the cluster top-k and checks a sorted reference.
   const auto check = [&](cuda::std::int64_t k, auto make_key) {
@@ -1123,8 +1123,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys synchronize a multi-CTA cluster",
   // large key on rank 0.
   SECTION("stop early in lockstep")
   {
-    const cuda::std::int64_t k =
-      GENERATE(values({cuda::std::int64_t{1}, cuda::std::int64_t{64}, cuda::std::int64_t{512}}));
+    const cuda::std::int64_t k = GENERATE_COPY(values({cuda::std::int64_t{1}, cuda::std::int64_t{64}, static_max_k}));
     CAPTURE(segment_size, k, num_segments);
     check(k, planted_top_keys_op{segment_size, k});
   }
