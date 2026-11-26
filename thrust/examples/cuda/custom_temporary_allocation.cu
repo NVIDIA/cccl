@@ -2,16 +2,18 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 #include <thrust/system/cuda/execution_policy.h>
+#include <thrust/system/cuda/memory.h>
+#include <thrust/system/cuda/pointer.h>
 #include <thrust/system/cuda/vector.h>
 
-#include <cuda/std/utility>
-
 #include <cassert>
+#include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <stdexcept>
+#include <utility>
 
 // This example demonstrates how to control how Thrust allocates temporary
 // storage during algorithms such as thrust::sort. The idea will be to create a

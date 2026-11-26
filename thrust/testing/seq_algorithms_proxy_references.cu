@@ -18,6 +18,7 @@
 #include <thrust/find.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
 #include <thrust/merge.h>

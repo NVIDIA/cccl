@@ -5,9 +5,9 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/memory>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <array>
 #include <deque>

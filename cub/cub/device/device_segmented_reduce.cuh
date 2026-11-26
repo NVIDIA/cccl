@@ -46,6 +46,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__execution/env.h>

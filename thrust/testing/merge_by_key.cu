@@ -1,12 +1,23 @@
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <unittest/unittest.h>
 

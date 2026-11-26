@@ -1,10 +1,12 @@
 #include <thrust/execution_policy.h>
 #include <thrust/merge.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/buffer>
 #include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <unittest/unittest.h>
 

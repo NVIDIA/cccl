@@ -18,6 +18,7 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__utility/forward.h>
 
 THRUST_NAMESPACE_BEGIN

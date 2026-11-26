@@ -18,19 +18,16 @@ __global__ void store_relaxed_cluster_non_volatile(int* data, int in)
 ; SMXX:      .visible .entry [[FUNCTION:_.*store_relaxed_device_non_volatile.*]](
 ; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
 ; SMXX-DAG:  ld.param.{{b|u}}32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
-; SMXX-NEXT: {{/*[[:space:]] *}}st.relaxed.gpu.b32 [%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
+; GLOBAL-DAG: cvta.to.global.u64 %rd[[#GATOM:]], %rd[[#ATOM]];
+; GENERIC-NEXT: {{/*[[:space:]] *}}st.relaxed.gpu.b32 [%rd[[#ATOM]]],{{ ?}}%r[[#INPUT]];{{[[:space:]]/*}}
+; GLOBAL-NEXT: st.relaxed.gpu.global.b32 [%rd[[#GATOM]]], %r[[#INPUT]];
 ; SMXX-NEXT: ret;
 
-; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*store_relaxed_cluster_non_volatile.*}}(
-; NOT-SM90-PLUS-NOT: {{.*}}st.relaxed.cluster{{.*}}
-; NOT-SM90-PLUS: {{.*}}st.relaxed.gpu.b32{{.*}}
-; NOT-SM90-PLUS-NOT: {{.*}}st.relaxed.cluster{{.*}}
-; NOT-SM90-PLUS: ret;
-
-; SM90-PLUS-LABEL: .visible .entry {{_.*store_relaxed_cluster_non_volatile.*}}(
-; SM90-PLUS-NOT: {{.*}}st.relaxed.gpu{{.*}}
-; SM90-PLUS: {{.*}}st.relaxed.cluster.b32{{.*}}
-; SM90-PLUS-NOT: {{.*}}st.relaxed.gpu{{.*}}
-; SM90-PLUS: ret;
+; SMXX-LABEL: .visible .entry {{_.*store_relaxed_cluster_non_volatile.*}}(
+; SMXX-NOT: {{.*}}st.relaxed.{{.*}}
+; GENERIC: {{.*}}st.relaxed.[[CLUSTER_SCOPE]].b32 {{.*}}
+; GLOBAL: st.relaxed.[[CLUSTER_SCOPE]].global.b32 {{.*}}
+; SMXX-NOT: {{.*}}st.relaxed.{{.*}}
+; SMXX: ret;
 
 */

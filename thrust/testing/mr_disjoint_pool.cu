@@ -2,7 +2,16 @@
 
 #include <thrust/mr/disjoint_pool.h>
 #include <thrust/mr/disjoint_sync_pool.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/pool_options.h>
+#include <thrust/system/detail/bad_alloc.h>
+
+#include <cuda/std/memory>
+
+#include <algorithm>
+#include <cstddef>
+#include <vector>
 
 #include <unittest/unittest.h>
 

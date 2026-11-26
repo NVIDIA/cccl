@@ -11,8 +11,8 @@
 // UNSUPPORTED: force-tile
 // error: dynamic allocation is not supported in tile mode
 
-// UNSUPPORTED: !c++17
-// ptxas error: Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
+// A owns itself, so ptxas sees a recursive destructor even though reset clears ptr_ before deleting A.
+// ADDITIONAL_COMPILE_OPTIONS_PTXAS: --suppress-stack-size-warning
 
 // <memory>
 
@@ -27,19 +27,13 @@
 struct A
 {
   cuda::std::unique_ptr<A> ptr_;
-
-  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A()
-      : ptr_(this)
-  {}
-  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void reset()
-  {
-    ptr_.reset();
-  }
 };
 
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
-  (new A)->reset();
+  auto* self = new A;
+  self->ptr_.reset(self);
+  self->ptr_.reset();
 
   return true;
 }

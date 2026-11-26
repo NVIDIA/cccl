@@ -1,11 +1,23 @@
 #include <thrust/copy.h>
+#include <thrust/device_reference.h>
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
+#include <thrust/find.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/tuple_of_iterator_references.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

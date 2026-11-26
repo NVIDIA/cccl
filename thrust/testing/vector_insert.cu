@@ -1,5 +1,10 @@
 #include <thrust/device_malloc_allocator.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/sequence.h>
+
+#include <cstddef>
+#include <memory>
 
 #include <unittest/unittest.h>
 

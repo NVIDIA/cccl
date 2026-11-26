@@ -1,5 +1,3 @@
-#include <thrust/detail/preprocessor.h>
-
 #include <string>
 
 #include <unittest/unittest.h>

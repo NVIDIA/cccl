@@ -4,8 +4,10 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <numeric>

@@ -32,6 +32,7 @@
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>

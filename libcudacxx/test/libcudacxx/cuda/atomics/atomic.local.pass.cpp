@@ -29,7 +29,7 @@ TEST_DEVICE_FUNC T compare_exchange_weak(T in)
 {
   cuda::atomic<T> x(in);
   T old = T(7);
-  x.compare_exchange_weak(old, T(42), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->compare_exchange_weak(old, T(42), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -38,7 +38,7 @@ TEST_DEVICE_FUNC T compare_exchange_strong(T in)
 {
   cuda::atomic<T> x(in);
   T old = T(7);
-  x.compare_exchange_strong(old, T(42), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->compare_exchange_strong(old, T(42), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -46,7 +46,7 @@ template <typename T>
 TEST_DEVICE_FUNC T exchange(T in)
 {
   cuda::atomic<T> x(in);
-  T out = x.exchange(T(1), cuda::memory_order_relaxed);
+  T out = opaque_local_address(&x)->exchange(T(1), cuda::memory_order_relaxed);
   return out + x.load(cuda::memory_order_relaxed);
 }
 
@@ -54,7 +54,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_add(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_add(T(1), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_add(T(1), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -62,7 +62,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_sub(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_sub(T(1), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_sub(T(1), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -70,7 +70,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_and(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_and(T(1), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_and(T(1), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -78,7 +78,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_or(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_or(T(1), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_or(T(1), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -86,7 +86,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_xor(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_xor(T(1), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_xor(T(1), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -94,7 +94,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_min(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_min(T(7), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_min(T(7), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
@@ -102,7 +102,7 @@ template <typename T>
 TEST_DEVICE_FUNC T fetch_max(T in)
 {
   cuda::atomic<T> x(in);
-  x.fetch_max(T(7), cuda::memory_order_relaxed);
+  opaque_local_address(&x)->fetch_max(T(7), cuda::memory_order_relaxed);
   return x.load(cuda::memory_order_relaxed);
 }
 
