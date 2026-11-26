@@ -117,7 +117,7 @@ public:
 
   static constexpr __simd_size_constant<__mask_size_v<_Bytes, _Abi>> size{};
 
-  static constexpr auto __usize = size_t{size};
+  static constexpr auto __usize = static_cast<size_t>(size);
   static constexpr auto __size  = __simd_size_type{size};
 
   _CCCL_HIDE_FROM_ABI constexpr basic_mask() noexcept = default;
