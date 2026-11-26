@@ -131,7 +131,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
 
 // Configure shared scratch, validate occupancy, and launch one sorting kernel with a policy-sized grid.
 template <typename Kernel,
-          SortOrder Order = SortOrder::Ascending,
+          SortOrder Order,
           typename PolicyGetter,
           typename Key,
           typename BeginIterator,
@@ -230,7 +230,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
 // Host-launched internal bounded keys-only backend; device-side API calls are not supported.
 // Oversized segments are left unsorted in the overflow ID range; overflow sorting belongs to a later change.
 // Its kernel list and policies are fixed here, with no public API route.
-template <SortOrder Order = SortOrder::Ascending,
+template <SortOrder Order,
           typename Key,
           typename BeginIterator,
           typename EndIterator,

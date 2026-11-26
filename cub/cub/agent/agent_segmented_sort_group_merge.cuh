@@ -177,16 +177,17 @@ struct agent_group_merge
 
     if (thread_idx_in_segment * ItemsPerThread < segment_size)
     {
-      Key max_key = keys[0];
+      // Pad with the valid key that sorts last in this run (largest ascending, smallest descending).
+      Key padding_key = keys[0];
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if ((thread_idx_in_segment * ItemsPerThread) + item < segment_size)
         {
-          max_key = (::cuda::std::max) (max_key, keys[item], compare_op);
+          padding_key = (::cuda::std::max) (padding_key, keys[item], compare_op);
         }
         else
         {
-          keys[item] = max_key;
+          keys[item] = padding_key;
         }
       }
       NullType values[ItemsPerThread];
