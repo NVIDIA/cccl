@@ -21,6 +21,8 @@
 #include "clear_padding_test_helpers.h"
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
+
 #ifdef _CCCL_BUILTIN_CLEAR_PADDING
 
 template <class T>
