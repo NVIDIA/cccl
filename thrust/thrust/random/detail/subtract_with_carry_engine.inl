@@ -19,8 +19,7 @@
 #include <thrust/random/subtract_with_carry_engine.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 THRUST_NAMESPACE_BEGIN
 

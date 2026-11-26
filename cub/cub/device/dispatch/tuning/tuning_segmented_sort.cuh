@@ -27,7 +27,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -61,7 +61,9 @@ struct SegmentedSortRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortRadixSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortRadixSortPolicy& p)
   {
     return os
         << "SegmentedSortRadixSortPolicy { .threads_per_block = " << p.threads_per_block
@@ -107,7 +109,9 @@ struct SegmentedSortSubWarpMergeSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortSubWarpMergeSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortSubWarpMergeSortPolicy& p)
   {
     return os
         << "SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = " << p.threads_per_block
@@ -141,7 +145,9 @@ struct SegmentedSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortPolicy& p)
   {
     return os << "SegmentedSortPolicy { .large_segment = " << p.large_segment
               << ", .medium_segment = " << p.medium_segment << ", .small_segment = " << p.small_segment

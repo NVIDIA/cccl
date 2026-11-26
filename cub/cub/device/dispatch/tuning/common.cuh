@@ -21,7 +21,7 @@
 
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/is_signed.h>
 
 #if __cpp_lib_format >= 201907L
@@ -238,7 +238,9 @@ namespace detail
 } // namespace detail
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, LookbackDelayAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -280,7 +282,9 @@ struct LookbackDelayPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const LookbackDelayPolicy& p)
   {
     return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";

@@ -54,6 +54,13 @@ class _Safe_iterator;
 #  endif // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 9) ^^^
 #endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
+#if _CCCL_HOST_STD_LIB(STL)
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_pointer.h>
+#  include <cuda/std/__utility/declval.h>
+#endif // _CCCL_HOST_STD_LIB(STL)
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -196,6 +203,29 @@ pointer_traits<::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Tp*
   }
 };
 #endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
+
+#if _CCCL_HOST_STD_LIB(STL)
+// The checked iterators of the MSVC STL verify in operator-> that they are dereferenceable, which end iterators are not
+// Those that wrap a pointer return it unchecked from _Unwrapped()
+template <class _Iter>
+_CCCL_CONCEPT __is_msvc_contiguous_iterator = _CCCL_REQUIRES_EXPR((_Iter), const _Iter& __iter)(
+  typename(typename _Iter::_Prevent_inheriting_unwrap),
+  requires(is_same_v<typename _Iter::_Prevent_inheriting_unwrap, _Iter>),
+  requires(is_pointer_v<decltype(__iter._Unwrapped())>));
+
+template <class _Iter>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Iter, enable_if_t<__is_msvc_contiguous_iterator<_Iter>>>
+{
+  using pointer         = _Iter;
+  using element_type    = remove_pointer_t<decltype(::cuda::std::declval<const _Iter&>()._Unwrapped())>;
+  using difference_type = typename _Iter::difference_type;
+
+  [[nodiscard]] _CCCL_HOST_API static constexpr element_type* to_address(const pointer& __iter) noexcept
+  {
+    return __iter._Unwrapped();
+  }
+};
+#endif // _CCCL_HOST_STD_LIB(STL)
 
 // to_address
 template <class _Pointer>
