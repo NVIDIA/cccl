@@ -31,7 +31,15 @@
 #include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
-#  include <iterator>
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/stl_iterator_base_types.h>)
+#    include <bits/stl_iterator_base_types.h> // for ::std::iterator_traits
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__iterator/iterator_traits.h>)
+#    include <__iterator/iterator_traits.h> // for ::std::iterator_traits
+#  elif _CCCL_HOST_STD_LIB(STL) && __has_include(<__msvc_iter_core.hpp>)
+#    include <__msvc_iter_core.hpp> // for ::std::iterator_traits
+#  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
+#    include <iterator> // for ::std::iterator_traits
+#  endif // ^^^ other host standard library ^^^
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>

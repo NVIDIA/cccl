@@ -26,6 +26,8 @@
 
 #if _CCCL_HOST_STD_LIB(STL)
 #  include <cuda/std/__type_traits/is_pointer.h>
+
+#  include <xutility> // for ::std::_Unwrapped_t
 #endif // _CCCL_HOST_STD_LIB(STL)
 
 THRUST_NAMESPACE_BEGIN
