@@ -273,7 +273,9 @@ _CCCL_HOST_DEVICE_API constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-inline constexpr int ldgsts_size_and_align = 16;
+// Both asynchronous copy mechanisms (LDGSTS and bulk copies) need 16-byte aligned addresses and sizes
+inline constexpr int async_copy_alignment  = 16;
+inline constexpr int ldgsts_size_and_align = async_copy_alignment;
 
 template <int InputCount>
 _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
@@ -294,9 +296,11 @@ _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-inline constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = async_copy_alignment;
 
-_CCCL_HOST_DEVICE_API constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
+// Alignment of each tile in shared memory, which is the destination of a bulk copy. Hopper performs measurably worse
+// with 16-byte aligned destinations, so it keeps 128.
+_CCCL_HOST_DEVICE_API constexpr auto smem_tile_alignment(::cuda::compute_capability cc) -> int
 {
   return (cc < ::cuda::compute_capability{10, 0}) ? 128 : 16;
 }
@@ -421,7 +425,6 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
     {
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
-      const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
 
       auto prefetch = TransformPrefetchPolicy{256};
 #if __cccl_ptx_isa >= 940
@@ -451,14 +454,14 @@ struct policy_selector
       // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
       const bool exhaust_smem =
         _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<InputCount>(
-          inputs, async_block_size * async.min_items_per_thread, alignment)
+          inputs, async_block_size * async.min_items_per_thread, _CUB::detail::transform::smem_tile_alignment(cc))
         > int{max_smem_per_block};
 
-      // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained
-      // if the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
-      // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly
-      // and complex, so let's fall back in this case.
-      int max_alignment = alignment;
+      // if each tile size is a multiple of the shared memory tile and maximum value type alignments, the alignment is
+      // retained if the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all
+      // value types following the current tile). we would otherwise need to realign every SMEM tile individually, which
+      // is costly and complex, so let's fall back in this case.
+      int max_alignment = _CUB::detail::transform::smem_tile_alignment(cc);
       for (const auto& input : inputs)
       {
         max_alignment = (::cuda::std::max) ({max_alignment, input.value_type_alignment});
@@ -478,7 +481,7 @@ struct policy_selector
         vector_kernel_is_faster &= input.value_type_size < 4;
       }
 
-      const bool enough_threads_for_peeling = async_block_size >= alignment; // head and tail bytes
+      const bool enough_threads_for_peeling = async_block_size >= bulk_copy_size_multiple; // head and tail bytes
       const bool fallback_to_vectorized = exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling
                                        || no_input_streams || !can_memcpy_all_inputs || vector_kernel_is_faster;
 
