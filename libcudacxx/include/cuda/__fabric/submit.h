@@ -43,12 +43,39 @@ _CCCL_DEVICE_API inline void submit_restrict_fetching() noexcept
 {
   ::cuda::ptx::fabric_submit_op_restrict_fetching();
 }
-//! @brief Wait until submitted fabric requests have consumed their local shared-memory inputs.
+#  if __cccl_ptx_isa >= 950
+//! @brief Submit this thread's previously issued fabric requests and commit a fabric submit group.
 //!
-//! @note This permits input reuse; it does not establish remote completion or inspect status.
-_CCCL_DEVICE_API inline void wait_reads() noexcept
+//! Compared to plain @c submit(), this creates a fabric submit group that can be waited on with @c wait_reads().
+//!
+//! @note Requires CUDA 13.5 and SM100 or later. Previously submitted requests are unaffected.
+//! Does not arrive on the barrier or wait for completion.
+_CCCL_DEVICE_API inline void submit_commit_group() noexcept
 {
+  asm volatile("fabric.submit.commit_group;" : : : "memory");
+}
+
+#  endif // __cccl_ptx_isa >= 950
+
+//! @brief Wait for local shared-memory reads, allowing up to @p _PendingGroups recent submit groups to remain pending.
+//!
+//! @tparam _PendingGroups Number of recent fabric submit groups allowed to remain pending; defaults to zero,
+//! which waits for all groups.
+//! @note Before CUDA 13.5, submit groups were unavailable: only zero is supported,
+//! and this waits for local shared-memory reads of requests submitted with @c submit().
+//! @note CUDA 13.5 introduced @c submit_commit_group(). With CUDA 13.5 and later, this waits
+//! only on groups created by that function; requests submitted with @c submit() are not tracked.
+//! Wait for the relevant submit groups before arriving on their completion barrier.
+//! @note Requires SM100 or later. This permits input reuse; it does not establish remote completion or inspect status.
+template <unsigned int _PendingGroups = 0>
+_CCCL_DEVICE_API void wait_reads() noexcept
+{
+#  if __cccl_ptx_isa >= 950
+  asm volatile("fabric.wait.sync_restrict::read %0;" : : "n"(_PendingGroups) : "memory");
+#  else
+  static_assert(_PendingGroups == 0, "nonzero pending fabric submit groups require CUDA 13.5 or later");
   ::cuda::ptx::fabric_wait();
+#  endif // __cccl_ptx_isa >= 950
 }
 _CCCL_END_NAMESPACE_CUDA_FABRIC
 
