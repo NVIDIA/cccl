@@ -521,6 +521,19 @@ TEST_HOST_DEVICE_FUNC void test_fdim_fp64mp2()
   assert(is_nan(fdim(nl::quiet_NaN(), T(1.0))));
 }
 
+// A low operation can leave a NaN in the low limb alone. fdim returns NaN for it in either
+// operand, whichever way the high limbs compare.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_fdim_nan_low_limb()
+{
+  using F     = decltype(T{}.hi());
+  const F nan = cuda::std::numeric_limits<F>::quiet_NaN();
+  const T x   = T(F(1), nan);
+  assert(is_nan_both(fdim(x, T(F(2)))) && is_nan_both(fdim(x, T(F(0.5)))));
+  assert(is_nan_both(fdim(T(F(2)), x)) && is_nan_both(fdim(T(F(0.5)), x)));
+}
+
 // ---- error and probability functions ------------------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_erf_family()
@@ -941,6 +954,12 @@ int main(int, char**)
   test_norm_specials<cuda::fp32mp2_low>();
   test_norm_specials<cuda::fp32mp2_high>();
   test_fdim_fp64mp2();
+  test_fdim_nan_low_limb<cuda::fp32mp2>();
+  test_fdim_nan_low_limb<cuda::fp32mp2_low>();
+  test_fdim_nan_low_limb<cuda::fp32mp2_high>();
+  test_fdim_nan_low_limb<cuda::fp64mp2>();
+  test_fdim_nan_low_limb<cuda::fp64mp2_low>();
+  test_fdim_nan_low_limb<cuda::fp64mp2_high>();
   test_erf_family();
   test_erfc_ends<cuda::fp32mp2>();
   test_erfc_ends<cuda::fp32mp2_low>();
