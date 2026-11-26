@@ -11,11 +11,9 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
@@ -843,7 +841,7 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", C
 
 CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", CUB_SMALL)
 {
-  using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using It         = thrust::device_vector<int>::reverse_iterator;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
   STATIC_REQUIRE(cuda::std::is_constructible_v<kernel_arg>);
