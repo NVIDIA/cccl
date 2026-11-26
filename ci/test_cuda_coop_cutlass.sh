@@ -38,10 +38,6 @@ case "$stage:$suite" in
 esac
 # shellcheck source=ci/pyenv_helper.sh
 source "$ci_dir/pyenv_helper.sh"
-if [[ "$stage" != host ]]; then
-  command -v nvcc >/dev/null || { echo "nvcc is required for $stage" >&2; exit 1; }
-  pin_cuda_toolkit "${ctk_mode}"
-fi
 setup_python_env "${py_version}" ".cccl-coop-cutlass-test-venv"
 if [[ -n "${GITHUB_ACTIONS:-}" && "$stage" == runtime ]]; then
   artifact_name="$(CCCL_WHEEL_KIND=coop-cutlass "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
@@ -51,9 +47,12 @@ else
 fi
 mapfile -t wheels < <(find "$repo_root/wheelhouse" -maxdepth 1 -name 'cuda_coop_cutlass-*.whl' -print | sort)
 [[ ${#wheels[@]} -eq 1 ]] || { echo "Expected exactly one cuda-coop-cutlass wheel" >&2; exit 1; }
-python -m pip install "${wheels[0]}[test]"
-if [[ "$stage" != host ]]; then
-  python -m pip install -r "$ci_dir/cuda_coop_cutlass_requirements.txt"
+if [[ "$stage" == host ]]; then
+  python -m pip install "${wheels[0]}[test]"
+else
+  # CuTe links the provider LTO-IR with its own nvJitLink, which can be older
+  # than the container's toolkit. The cu13 extra pins a toolkit it accepts.
+  python -m pip install "${wheels[0]}[test,cu13]" -r "$ci_dir/cuda_coop_cutlass_requirements.txt"
 fi
 python -m pip check
 # Isolated mode and disabled PYTHONPATH prevent the checkout from masking defects.
