@@ -629,9 +629,13 @@ def test_final_cubin_storage_contract(tmp_path, algorithm, items_per_thread):
 
     First verify the copy result. Then check that provider calls have been
     inlined and that only multi-item transpose algorithms allocate shared-memory
-    scratch and emit barriers. Multi-item transpose scratch must use LDS/STS,
-    and no generic LD/ST may remain. Resource metadata covers static
-    allocation; shared accesses also detect dynamically allocated scratch.
+    scratch and emit barriers. Multi-item time-sliced warp transpose can trigger
+    intra-kernel ``ptxas`` basic-block outlining (``CALL.REL... 0x...``) within
+    the single linked kernel function, so verify there are no additional
+    device functions or non-offset calls in that case. Multi-item transpose
+    scratch must use LDS/STS, and no generic LD/ST may remain. Resource
+    metadata covers static allocation; shared accesses also detect dynamically
+    allocated scratch.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -696,7 +700,23 @@ def test_final_cubin_storage_contract(tmp_path, algorithm, items_per_thread):
         cubin.with_suffix(".resources").write_text(resources)
         assert "cuda_coop_cutlass_load_" not in sass
         assert "cuda_coop_cutlass_store_" not in sass
-        assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
+        call_lines = [
+            line
+            for line in sass.splitlines()
+            if re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", line) is not None
+        ]
+        if uses_scratch and algorithm == "warp_transpose_timesliced":
+            assert len(re.findall(r"^\s*Function\s+\S+:", resources, re.M)) == 1
+            assert len(re.findall(r"^\s*Function\s*:", sass, re.M)) == 1
+            assert all(
+                re.search(
+                    r"\bCALL\.REL(?:\.[A-Z0-9_]+)*\s+0x[0-9a-fA-F]+\b", line
+                )
+                is not None
+                for line in call_lines
+            )
+        else:
+            assert not call_lines
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
         if uses_scratch:
             assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
