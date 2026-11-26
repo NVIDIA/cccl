@@ -14,7 +14,8 @@ and caches. This page isolates them. One script,
 <https://github.com/NVIDIA/cccl/blob/main/docs/python/coop_cutlass/cutlass_integration_example.py>`_,
 calls ``cub::BlockReduce`` from a CuTe kernel using only the DSL's own
 interfaces, NVRTC, and the CCCL headers. It imports nothing from
-``cuda.coop.cutlass``.
+``cuda.coop.cutlass``. On Windows, running this standalone script requires a
+CuTe build with native NVLink file linking support.
 
 The intended readers are CUTLASS developers reviewing whether this is how
 the DSL is meant to be extended, and ``cuda.coop.cutlass`` developers who

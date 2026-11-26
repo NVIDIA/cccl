@@ -12,6 +12,7 @@ does not inspect generated code; the example's documentation page records
 what the final cubin contains.
 """
 
+import re
 import subprocess
 import sys
 
@@ -43,5 +44,14 @@ def test_cutlass_integration_example():
         check=False,
         timeout=180,
     )
+    # This standalone script exercises CuTe's own device linker.
+    if sys.platform == "win32" and result.returncode == 1 and not result.stdout:
+        diagnostic = re.sub(r"\x1b\[[0-9;]*m", "", result.stderr)
+        if diagnostic.strip().splitlines() == [
+            "error: compiler pass failed",
+            "  error: unknown: NVLink file linking is not supported "
+            "on this platform (nvJitLink unavailable)",
+        ]:
+            pytest.xfail("This CuTe build lacks Windows NVLink file linking")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "block sum verified: 3008" in result.stdout

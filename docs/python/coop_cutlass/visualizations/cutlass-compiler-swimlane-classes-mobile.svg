@@ -114,7 +114,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </g>
   <path d="M135 1813.2V1868.2" marker-end="url(#cutlass-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <rect x="58.138671875" y="1833.2" width="153.72265625" height="21" fill="#ffffff"/>
-  <text x="135" y="1847.2" text-anchor="middle" font-family="sans-serif" font-size="12px" font-weight="400" fill="#172b3a">Final IR + link-libraries path</text>
+  <text x="135" y="1847.2" text-anchor="middle" font-family="sans-serif" font-size="12px" font-weight="400" fill="#172b3a">Final IR + link inputs</text>
   <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class; inherited methods. CuTeDSL. generate_original_ir(): hash and build after the hook.. _merge_gpu_link_libraries(): copy paths into LinkLibraries.. compile_and_cache(): compile the kernel.">
     <rect x="8" y="1871.2" width="254" height="219.40000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="1899.5" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">CuTe compiler · Compiler class; inherited</text>
@@ -122,8 +122,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="20" y="1942.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CuTeDSL</text>
     <text x="20" y="1964.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">generate_original_ir(): hash and</text>
     <text x="20" y="1987" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">build after the hook.</text>
-    <text x="20" y="2009.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_merge_gpu_link_libraries(): copy</text>
-    <text x="20" y="2031.8" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">paths into LinkLibraries.</text>
+    <text x="20" y="2009.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">On Windows, delegate the link to</text>
+    <text x="20" y="2031.8" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">cuda.coop.cutlass.</text>
     <text x="20" y="2054.2" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">compile_and_cache(): compile the</text>
     <text x="20" y="2076.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel.</text>
   </g>

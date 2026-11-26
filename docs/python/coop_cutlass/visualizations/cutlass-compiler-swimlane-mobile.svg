@@ -80,7 +80,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <g data-node="Compile the kernel" role="group" aria-label="CuTe compiler. Compile the kernel. Hash and build the finalized module.. Lower and optimize the completed IR.">
     <rect x="8" y="1143" width="254" height="131.90000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="1171.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">CuTe compiler · step</text>
-    <text x="20" y="1193.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Compile the kernel</text>
+    <text x="20" y="1193.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">Emit kernel LTO-IR</text>
     <text x="20" y="1216.1" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Hash and build the finalized module.</text>
     <text x="20" y="1238.5" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Lower and optimize the completed</text>
     <text x="20" y="1260.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">IR.</text>

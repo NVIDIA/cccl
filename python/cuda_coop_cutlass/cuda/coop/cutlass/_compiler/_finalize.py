@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any
 
 from cutlass.base_dsl.common import DSLRuntimeError, DSLUserCodeError
@@ -57,6 +58,17 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
     ]
     if filtered_paths != paths:
         options[LinkLibraries] = LinkLibraries(",".join(filtered_paths))
+
+
+def _attach_link_inputs(dsl, module, arch, paths):
+    """Select the device-link implementation for this trace."""
+    if sys.platform == "win32":
+        from ._windows_pipeline import configure_device_link
+
+        configure_device_link(dsl, module, arch, paths)
+    else:
+        for link_path in paths:
+            _bundle.append_link_library_attr(module, link_path)
 
 
 def _trace_finalize_hook(dsl, module, function_name):
@@ -136,9 +148,8 @@ def _trace_finalize_hook(dsl, module, function_name):
     _storage.materialize_deferred_temp_storage_plans(plans)
     _lifetime.erase_temp_storage_lifetime_markers(session)
     _convergence.lower_convergent_provider_calls(module, requests)
-    _bundle.append_link_library_attr(module, path)
-    for operator in operators:
-        _bundle.append_link_library_attr(module, operator._materialize())
+    paths = (path, *(operator._materialize() for operator in operators))
+    _attach_link_inputs(dsl, module, arch, paths)
 
 
 _state.register_bundle_finalizer(_trace_finalize_hook)
