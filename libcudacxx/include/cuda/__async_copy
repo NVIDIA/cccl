@@ -144,10 +144,11 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
 //! @param __head_padding Distance in bytes from @p __smem_dst and from @p __gmem_src back to the preceding address
 //! aligned to `_TargetAlignment`. It must be the same for both pointers.
 //! @param __transaction_bytes Incremented by the bytes the bulk copy contributes to the transaction count of @p __bar.
-//! Only the elected thread modifies it. This is an in-out parameter instead of a return value, because adding a
-//! returned count in the caller costs 3 SASS instructions in DeviceTransform.
+//! Only the elected thread modifies it.
 //
 // TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
+// TODO(bgruber): we would love to return the transaction bytes instead of taking them by reference. But because of the
+// early returns, conditionally adding to them leads to better codegen (3 SASS instructions less in DeviceTransform).
 template <int _TargetAlignment = 16, int _CopyUnit = 1>
 _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
   void* __smem_dst,
