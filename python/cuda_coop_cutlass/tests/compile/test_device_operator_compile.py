@@ -24,6 +24,7 @@ from cutlass.base_dsl.compiler import (
 from cutlass.compiler import LlvmIrArtifact
 from cutlass.cute.ffi import extern
 from cutlass.cute.runtime import make_ptr
+from cutlass.cutlass_dsl import CuTeDSL
 
 import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler import _bundle, _cache, _finalize, _nvrtc
@@ -68,6 +69,9 @@ def windows_device_link(monkeypatch):
         pytest.skip(
             "The Windows device linker requires nvJitLink 13.4 or later"
         )
+    # The forced linker replaces the pass manager on CuTe's singleton.
+    compiler = CuTeDSL().compiler_provider
+    monkeypatch.setattr(compiler, "passmanager", compiler.passmanager)
     monkeypatch.setattr(_finalize, "_attach_link_inputs", configure_device_link)
 
 
