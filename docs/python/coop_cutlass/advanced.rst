@@ -150,11 +150,12 @@ A reserved tensor can also be the source of ``load`` or the destination of
 are ``Float16`` and ``BFloat16`` tensors, which ``load`` and ``store``
 reject when the kernel is compiled. The algorithms ``"direct"``,
 ``"striped"`` and ``"vectorize"`` use no scratch. A transpose algorithm uses
-scratch while it reads or writes the tensor. With ``sharing="shared"``, a
-transpose ``load`` or ``store`` that takes the tensor's own ``TempStorage``
-puts that scratch where the tensor starts, and nothing checks for the
-overlap. Give that call scratch elsewhere: leave ``temp_storage`` out, or
-pass another ``TempStorage``.
+scratch on warps and groups of lanes, or on a block when ``items_per_thread``
+is greater than 1. Single-item block transfers use no scratch. With
+``sharing="shared"``, a transpose ``load`` or ``store`` that uses scratch and
+takes the tensor's own ``TempStorage`` puts that scratch where the tensor
+starts, and nothing checks for the overlap. Give that call scratch elsewhere:
+leave ``temp_storage`` out, or pass another ``TempStorage``.
 
 .. _coop-cutlass-producer-interop:
 

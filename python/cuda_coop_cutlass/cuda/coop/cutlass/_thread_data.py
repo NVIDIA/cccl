@@ -45,7 +45,8 @@ This kernel squares the items it loaded and sums the squares over the block:
 * A primitive that returns a payload returns a new one and leaves its input
   unchanged. Two arguments are written in place: ``aggregate_output`` of a
   scan and ``exclusive_digit_prefix`` of ``radix_rank_keys``. ``store`` with
-  a transpose algorithm leaves the items of its payload undefined.
+  a transpose algorithm leaves the items of its payload undefined on warps
+  and groups of lanes, and on blocks with more than one item per thread.
 
 Items can be ``Int8`` to ``Int64``, ``Uint8`` to ``Uint64``, ``Float32`` or
 ``Float64``. Some primitives accept fewer types, and their entries say

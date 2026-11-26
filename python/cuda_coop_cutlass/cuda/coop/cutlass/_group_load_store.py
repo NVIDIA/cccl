@@ -73,21 +73,23 @@ of the payload and whether the call uses
    * - ``"transpose"``
      - All
      - Blocked
-     - Yes
-     - As ``"striped"``. The threads exchange items through scratch, after
-       they read or before they write.
+     - If ``> 1`` item or warp
+     - As ``"striped"``. On warps and groups of lanes, or on blocks with
+       more than one item per thread, the threads exchange items through
+       scratch after they read or before they write. A single-item block
+       call transfers directly and uses no scratch.
    * - ``"warp_transpose"``
      - Blocks
      - Blocked
-     - Yes
+     - If ``> 1`` item
      - As ``"transpose"``, with each warp of the block working by itself on
-       its own part of the tile.
+       its own part of the tile when ``items_per_thread`` exceeds 1.
    * - ``"warp_transpose_timesliced"``
      - Blocks
      - Blocked
-     - Yes
+     - If ``> 1`` item
      - As ``"warp_transpose"``, with scratch for one warp that the warps
-       use in turn.
+       use in turn when ``items_per_thread`` exceeds 1.
 
 Item ``i`` of the thread with rank ``t`` in its group is tile element
 ``t * K + i`` in a :term:`blocked` payload and ``t + i * G`` in a
@@ -317,18 +319,20 @@ def load(
         on each trip.
     temp_storage : TempStorage, optional
         For blocks. ``"transpose"``, ``"warp_transpose"`` and
-        ``"warp_transpose_timesliced"`` use scratch. Leave this out and
+        ``"warp_transpose_timesliced"`` use scratch when
+        ``items_per_thread`` is greater than 1. Leave this out and
         the compiler provides the scratch and a block barrier after the
         call. Pass a :ref:`TempStorage <coop-temp-storage>` to share the
         bytes with other calls. A barrier then follows the call only if
         the ``TempStorage`` was created with ``auto_sync=True``. The other
-        three algorithms use no scratch and no barrier, with or without a
-        ``TempStorage``.
+        three algorithms, and the three block transpose algorithms with
+        ``items_per_thread=1``, use no scratch and no barrier, with or
+        without a ``TempStorage``.
 
         Warps and groups of lanes take ``None``. There, ``"transpose"``
-        uses scratch from the compiler, one slice for each warp or group
-        of lanes, and a warp barrier for that group's lanes follows the
-        call.
+        uses scratch from the compiler for every ``items_per_thread``, one
+        slice for each warp or group of lanes, and a warp barrier for that
+        group's lanes follows the call.
 
     Returns
     -------
@@ -474,10 +478,12 @@ def store(
         :meth:`~cuda.coop.cutlass.ThreadData.from_register_tensor` or
         :meth:`~cuda.coop.cutlass.ThreadData.from_vector`.
 
-        ``"direct"``, ``"striped"`` and ``"vectorize"`` leave the payload
-        as it was. After ``"transpose"``, ``"warp_transpose"`` or
-        ``"warp_transpose_timesliced"`` its items are undefined, so copy
-        the ones the kernel still needs before the call.
+        ``"direct"``, ``"striped"``, ``"vectorize"``, and block calls with
+        ``items_per_thread=1`` leave the payload as it was. After
+        ``"transpose"``, ``"warp_transpose"`` or ``"warp_transpose_timesliced"``
+        on a block with more than one item per thread, or ``"transpose"`` on
+        a warp or group of lanes, its items are undefined, so copy the ones
+        the kernel still needs before the call.
     dtype : CUTLASS or NumPy type, optional
         Declares the integers in ``destination`` unsigned, under the rules
         of ``dtype`` of ``load``. To store an unsigned payload through a
@@ -500,8 +506,9 @@ def store(
         The number of elements from the start of ``destination`` to the
         tile, 0 by default, under the rules of ``offset`` of ``load``.
     temp_storage : TempStorage, optional
-        For blocks, the scratch of the three transpose algorithms, under
-        the rules of ``temp_storage`` of ``load``.
+        For blocks, the scratch of the three transpose algorithms when
+        ``items_per_thread`` is greater than 1, under the rules of
+        ``temp_storage`` of ``load``.
 
     Returns
     -------

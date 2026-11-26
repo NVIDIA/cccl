@@ -54,7 +54,7 @@ def test_released_view_covers_existing_allocation(sharing, capacity, dtype):
     assert result[68] == size
 
 
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@pytest.mark.parametrize("items_per_thread", (2, 4))
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_release_after_primitive_and_fresh_loop_instance(
     items_per_thread, auto_sync

@@ -16,18 +16,21 @@ from cuda.coop.cutlass._compiler import _rendering
 from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
 from cuda.coop.cutlass._planning import (
     ArgumentBinding,
+    GroupLoadStoreSemantics,
     StorageOwnership,
+    SynchronizationScope,
     this_block,
+    this_warp,
 )
 from tests._group_planning import _load_store, _plan
 
 pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 
 
-def _request(kind, algorithm, **kwargs):
+def _request(kind, algorithm, group=None, **kwargs):
     return _CubLoadStoreRequest(
         _plan(
-            this_block(),
+            this_block() if group is None else group,
             _load_store(kind, dtype=Int32, algorithm=algorithm, **kwargs),
         ),
         Int32,
@@ -54,6 +57,98 @@ def test_storage_free_provider_ignores_descriptor_controls(kind, algorithm):
     assert not _rendering.bundle_scratch_layout_probes([explicit])
     for token in ("temp_storage", "TempStorage", "__shared__", "__syncthreads"):
         assert token not in source
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    ("transpose", "warp_transpose", "warp_transpose_timesliced"),
+)
+@pytest.mark.parametrize("kind", ("load", "store"))
+def test_single_item_block_transpose_is_storage_free(kind, algorithm):
+    implicit = _request(kind, algorithm, items_per_thread=1)
+    explicit = _request(
+        kind,
+        algorithm,
+        items_per_thread=1,
+        storage_ownership=StorageOwnership.CALLER,
+        storage_sharing="exclusive",
+        storage_size_in_bytes=1,
+        storage_alignment=64,
+        storage_auto_sync=False,
+    )
+    none_owned = _request(
+        kind,
+        algorithm,
+        items_per_thread=1,
+        storage_ownership=StorageOwnership.NONE,
+        storage_auto_sync=False,
+    )
+    assert implicit.plan.temp_storage.ownership is StorageOwnership.NONE
+    assert (
+        implicit.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.NONE
+    )
+    assert implicit == explicit == none_owned
+    assert implicit.symbol_name == explicit.symbol_name
+    assert implicit.symbol_name == none_owned.symbol_name
+    source = _rendering.render_bundle_source([implicit])
+    assert source == _rendering.render_bundle_source([explicit])
+    assert not _rendering.bundle_scratch_layout_probes([explicit])
+    for token in ("temp_storage", "TempStorage", "__shared__", "__syncthreads"):
+        assert token not in source
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    ("transpose", "warp_transpose", "warp_transpose_timesliced"),
+)
+@pytest.mark.parametrize("kind", ("load", "store"))
+def test_multi_item_block_transpose_retains_storage(kind, algorithm):
+    request = _request(kind, algorithm, items_per_thread=2)
+    assert (
+        request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    )
+    assert (
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
+    )
+    assert _rendering.bundle_scratch_layout_probes([request])
+    with pytest.raises(ValueError, match="storage-free"):
+        GroupLoadStoreSemantics(
+            kind=kind,
+            dtype=Int32,
+            items_per_thread=2,
+            algorithm=algorithm,
+            storage_ownership=StorageOwnership.NONE,
+            storage_auto_sync=False,
+        )
+
+
+@pytest.mark.parametrize("group", (this_warp(), this_warp().group_by(8)))
+@pytest.mark.parametrize("kind", ("load", "store"))
+def test_single_item_warp_transpose_retains_scratch_and_barrier(group, kind):
+    request = _request(kind, "transpose", group=group, items_per_thread=1)
+    assert (
+        request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    )
+    assert (
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.WARP
+    )
+    assert request.uses_scratch
+    assert _rendering.bundle_scratch_layout_probes([request])
+    unsupported = _plan(
+        group,
+        _load_store(
+            kind,
+            dtype=Int32,
+            items_per_thread=1,
+            algorithm="transpose",
+            storage_ownership=StorageOwnership.NONE,
+            storage_auto_sync=False,
+        ),
+    )
+    assert unsupported.unsupported is not None
 
 
 @pytest.mark.parametrize("kind", ("load", "store"))

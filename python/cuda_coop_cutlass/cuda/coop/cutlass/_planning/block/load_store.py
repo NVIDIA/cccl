@@ -57,11 +57,14 @@ class BlockLoadStoreAlgorithm(str, Enum):
     accesses where CUB's type, alignment, and item-count requirements allow.
 
     The transpose variants also present blocked items to the caller, using
-    shared memory to reorder coalesced accesses. ``TRANSPOSE`` exchanges a
-    block-striped arrangement; ``WARP_TRANSPOSE`` exchanges a warp-striped
-    arrangement. ``WARP_TRANSPOSE_TIMESLICED`` reuses one warp's exchange
-    storage across warps to reduce shared memory use. Both warp-transpose
-    variants require the block's thread count to be a multiple of 32.
+    shared memory to reorder coalesced accesses when ``items_per_thread`` is
+    greater than 1. ``TRANSPOSE`` exchanges a block-striped arrangement;
+    ``WARP_TRANSPOSE`` exchanges a warp-striped arrangement.
+    ``WARP_TRANSPOSE_TIMESLICED`` reuses one warp's exchange storage across
+    warps to reduce shared memory use. When ``items_per_thread == 1``, CUB
+    executes all three transpose variants directly without temporary storage.
+    Both warp-transpose variants require the block's thread count to be a
+    multiple of 32.
 
     ``BlockLoadAlgorithm`` and ``BlockStoreAlgorithm`` alias this enum; the
     operation kind selects the corresponding CUB load or store constant.
