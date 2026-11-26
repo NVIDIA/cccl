@@ -34,9 +34,9 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <cuda/__async_copy>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: keep
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>

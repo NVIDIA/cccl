@@ -11,6 +11,7 @@
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>

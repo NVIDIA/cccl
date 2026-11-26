@@ -28,6 +28,7 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
+#include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__memory/uninitialized.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>

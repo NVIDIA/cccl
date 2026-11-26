@@ -13,54 +13,13 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <cuda/__memory/align_down.h>
-#include <cuda/std/cstdint>
-
-#include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-
-//! @brief A pointer to a contiguous range of @c _Tp, aligned down to the alignment a bulk copy needs, together with the
-//! distance back to the first element. Bulk copies start at @c ptr; the elements start at @c ptr + @c head_padding.
-template <typename _Tp>
-struct __aligned_ptr
-{
-  using value_type = _Tp;
-
-  const char* ptr; // aligned down from the element pointer, may not be aligned to alignof(_Tp)
-  int head_padding; // bytes from ptr to the first element, in [0, alignment)
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* data() const
-  {
-    return reinterpret_cast<const _Tp*>(ptr + head_padding);
-  }
-
-  _CCCL_HOST_DEVICE_API friend bool operator==(const __aligned_ptr& __a, const __aligned_ptr& __b)
-  {
-    return __a.ptr == __b.ptr && __a.head_padding == __b.head_padding;
-  }
-};
-
-//! @brief Aligns @p __ptr down to @p __alignment bytes and records the distance in the result.
-template <typename _Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE_API __aligned_ptr<_Tp> __make_aligned_ptr(const _Tp* __ptr, int __alignment)
-{
-  const auto __raw  = reinterpret_cast<const char*>(__ptr);
-  const auto __base = ::cuda::align_down(__raw, __alignment);
-  return __aligned_ptr<_Tp>{__base, static_cast<int>(__raw - __base)};
-}
-
-_CCCL_END_NAMESPACE_CUDA_DEVICE
-
-#include <cuda/std/__cccl/epilogue.h>
 
 #if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
 
@@ -145,7 +104,7 @@ _CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
   // round up as head padding + (bytes + 15), so the compiler can share bytes + 15 between copies of equally sized
   // ranges that only differ in their head padding. Rounding __padded_bytes up costs one SASS instruction per such copy.
   // Not cuda::round_up: its ceil_div + multiply costs 8 SASS instructions on sm_100 in DeviceTransform.
-  const ::cuda::std::uint32_t __size = (static_cast<::cuda::std::uint32_t>(__head_padding) + (__bytes + 15)) & ~15u;
+  const ::cuda::std::uint32_t __size = (static_cast<::cuda::std::uint32_t>(__head_padding) + (__bytes + 15u)) & ~15u;
   ::cuda::ptx::cp_async_bulk_ignore_oob(
     ::cuda::ptx::space_shared,
     ::cuda::ptx::space_global,
@@ -278,6 +237,23 @@ _CCCL_DEVICE_API void __bulk_load_unaligned_precise(
   }
 }
 
+//! @brief Overload of `__bulk_load_unaligned_precise` deriving the head padding from @p __gmem_src.
+template <int _TargetAlignment = 16, int _CopyUnit = 1>
+_CCCL_DEVICE_API void __bulk_load_unaligned_precise(
+  void* __smem_dst,
+  const void* __gmem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint64_t* __bar,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected,
+  ::cuda::std::uint32_t& __transaction_bytes) noexcept
+{
+  const int __head_padding =
+    static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % static_cast<unsigned>(_TargetAlignment));
+  ::cuda::device::__bulk_load_unaligned_precise<_TargetAlignment, _CopyUnit>(
+    __smem_dst, __gmem_src, __bytes, __head_padding, __bar, __thread_rank, __elected, __transaction_bytes);
+}
+
 //! @brief Copies @p __bytes bytes from the calling block's shared memory to global memory with one `cp.async.bulk`.
 //! The copy joins the calling thread's current bulk async group; the caller commits the group and waits for it, and
 //! issues a `fence.proxy.async` beforehand if threads wrote the shared memory. Issued by the calling thread alone.
@@ -295,23 +271,6 @@ __bulk_store(void* __gmem_dst, const void* __smem_src, ::cuda::std::uint32_t __b
                "__bulk_store: source must be in the calling block's shared memory");
 
   ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __gmem_dst, __smem_src, __bytes);
-}
-
-//! @brief Overload of `__bulk_load_unaligned_precise` deriving the head padding from @p __gmem_src.
-template <int _TargetAlignment = 16, int _CopyUnit = 1>
-_CCCL_DEVICE_API void __bulk_load_unaligned_precise(
-  void* __smem_dst,
-  const void* __gmem_src,
-  ::cuda::std::uint32_t __bytes,
-  ::cuda::std::uint64_t* __bar,
-  ::cuda::std::uint32_t __thread_rank,
-  bool __elected,
-  ::cuda::std::uint32_t& __transaction_bytes) noexcept
-{
-  const int __head_padding =
-    static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % static_cast<unsigned>(_TargetAlignment));
-  ::cuda::device::__bulk_load_unaligned_precise<_TargetAlignment, _CopyUnit>(
-    __smem_dst, __gmem_src, __bytes, __head_padding, __bar, __thread_rank, __elected, __transaction_bytes);
 }
 
 #  if __cccl_ptx_isa >= 860

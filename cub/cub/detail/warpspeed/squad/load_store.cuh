@@ -18,6 +18,7 @@
 
 #include <cuda/__async_copy>
 #include <cuda/__memory/align_down.h>
+#include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
