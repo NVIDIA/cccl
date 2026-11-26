@@ -87,7 +87,10 @@ that turned the 54 s build of a family into 7 minutes and a one-minute configure
 Keep the checkout and the build on local or scratch storage: a git worktree of the branch there
 (`git -C ~/cccl worktree add /scratch/cccl dev/<branch>`), run the driver from it, and give it
 `--out` and `--build-dir` on the same volume; `--compare-ref` then places its worktree under
-`--out` as well. The driver measures the open latency of the checkout's headers and the write
+`--out` as well. A checkout shared between hosts over NFS needs one build tree per host, since a
+tree records the host's cmake and nvcc paths: set `CCCL_BUILD_INFIX` (the hostname, say) or pass
+`--build-dir` and `--out` per host; the driver drops and reconfigures a tree that another host's
+cmake made. The driver measures the open latency of the checkout's headers and the write
 latency of the output directories when it starts: a `[NOTE]` with the figure above 3 ms per
 open, a `[WARN]` above 8 ms per open or 20 ms per write. Measured points: 1.6 ms gave the
 one-minute family build, 5.8 ms about three minutes, 10 ms seven.

@@ -45,6 +45,14 @@ def test_tree_is_current_checks_the_checkout_and_cpm_directory(tmp_path):
     (tmp_path / "cccl").mkdir()
     have = {"CMAKE_HOME_DIRECTORY": root, "CPM_DIRECTORY": root + "/cmake"}
     assert fp_bench.tree_is_current(have, root, str(tmp_path))
+    # a tree made with another cmake, or one this host does not have, is not current
+    mine = fp_bench.shutil.which("cmake") or "/usr/bin/cmake"
+    assert fp_bench.tree_is_current(
+        {**have, "CMAKE_COMMAND": mine}, root, str(tmp_path)
+    )
+    assert not fp_bench.tree_is_current(
+        {**have, "CMAKE_COMMAND": "/nonexistent/bin/cmake"}, root, str(tmp_path)
+    )
     # the source recorded under a symlinked path still names this checkout
     link = tmp_path / "link"
     link.symlink_to(tmp_path / "cccl")

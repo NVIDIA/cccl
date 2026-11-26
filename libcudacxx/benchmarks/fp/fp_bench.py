@@ -211,32 +211,55 @@ def cache_vars(build):
                 "CMAKE_HOME_DIRECTORY",
                 "CMAKE_CUDA_ARCHITECTURES",
                 "CPM_DIRECTORY",
+                "CMAKE_COMMAND",
             ):
                 if line.startswith(key + ":"):
                     vals[key] = line.split("=", 1)[1].strip()
     return vals
 
 
-def tree_is_current(have, root, build):
+def tree_is_current(have, root, build, cmake="cmake"):
     """Whether an existing tree was configured for exactly this checkout path. CMake and CPM
     compare path strings, not what they resolve to: a tree configured before the checkout moved
     behind a symlink still resolves to it, but CPM's cached directory no longer matches the one
     its module is included from, and the regeneration fails with "Unknown CMake command
-    CPMAddPackage"."""
+    CPMAddPackage". A tree made on another host records that host's cmake path."""
     if not have or not os.path.exists(os.path.join(build, "build.ninja")):
         return False
     if os.path.realpath(have.get("CMAKE_HOME_DIRECTORY", "")) != os.path.realpath(root):
         return False  # another checkout
     # CMake records CPM's directory resolved, whatever path the source was given as
     cmake_dir = os.path.join(os.path.realpath(root), "cmake")
-    return have.get("CPM_DIRECTORY", cmake_dir) == cmake_dir
+    if have.get("CPM_DIRECTORY", cmake_dir) != cmake_dir:
+        return False
+    # ninja regenerates with the cmake that configured the tree: a tree made on a host whose
+    # cmake is missing here, or of another version, fails there ("cmake: not found")
+    mine = shutil.which(cmake) or cmake
+    return (
+        cmake_version(have.get("CMAKE_COMMAND", mine))
+        == cmake_version(mine)
+        is not None
+    )
+
+
+def cmake_version(exe):
+    """The first line of `exe --version`, None when it cannot run (a cmake of another host).
+    Paths are no basis for the comparison: a snap's `cmake` on PATH is a wrapper, the cache
+    records the binary behind it."""
+    try:
+        out = subprocess.run(
+            [exe, "--version"], capture_output=True, text=True, check=True
+        ).stdout
+        return out.split("\n", 1)[0]
+    except (OSError, subprocess.CalledProcessError):
+        return None
 
 
 def configure(root, build, log_dir, arch, cmake, cpm_cache, nvcc):
     """Configure the preset into `build` unless it is configured for this tree already; an
     existing tree keeps its architectures unless --arch names others."""
     have = cache_vars(build)
-    if tree_is_current(have, root, build):
+    if tree_is_current(have, root, build, cmake):
         have_arch = have.get("CMAKE_CUDA_ARCHITECTURES", "")
         if not arch or arch == have_arch:
             log(f"  [CMAKE] {build} (configured, arch {have_arch})")
@@ -247,7 +270,8 @@ def configure(root, build, log_dir, arch, cmake, cpm_cache, nvcc):
         if have:
             log(
                 f"  [CMAKE] {build} was configured for {have.get('CMAKE_HOME_DIRECTORY')}"
-                f" (CPM at {have.get('CPM_DIRECTORY', '?')}): configuring again for {root}"
+                f" (CPM at {have.get('CPM_DIRECTORY', '?')}, cmake {have.get('CMAKE_COMMAND', '?')}):"
+                f" configuring again for {root}"
             )
             shutil.rmtree(build)
         os.makedirs(build, exist_ok=True)
