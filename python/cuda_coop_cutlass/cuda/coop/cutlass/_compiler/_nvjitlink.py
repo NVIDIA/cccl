@@ -21,7 +21,9 @@ def link_lto(
     load_nvidia_dynamic_lib("nvJitLink")
     from cuda.bindings import nvjitlink
 
-    options = [f"-arch={arch}", "-lto"]
+    # CuTe emits current NVVM IR even for targets whose default reader is
+    # the legacy NVVM implementation (for example, sm_80).
+    options = [f"-arch={arch}", "-lto", "-nvvm-version=nvvm-latest"]
     if ptxas_options:
         flags = shlex.shlex(ptxas_options, posix=True)
         flags.whitespace_split = True
