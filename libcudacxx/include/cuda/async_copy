@@ -95,7 +95,9 @@ _CCCL_DEVICE_API inline auto bulk_load_unaligned_ignore_oob(
                "bulk_load_unaligned_ignore_oob: barrier must be in the calling block's shared memory");
 
   const ::cuda::std::uint32_t __padded_bytes = static_cast<::cuda::std::uint32_t>(__head_padding) + __bytes;
-  const ::cuda::std::uint32_t __size         = (__padded_bytes + 15) & ~15u;
+  // round up as head padding + (bytes + 15), so the compiler can share bytes + 15 between copies of equally sized
+  // ranges that only differ in their head padding. Rounding __padded_bytes up costs one SASS instruction per such copy.
+  const ::cuda::std::uint32_t __size = (static_cast<::cuda::std::uint32_t>(__head_padding) + (__bytes + 15)) & ~15u;
   ::cuda::ptx::cp_async_bulk_ignore_oob(
     ::cuda::ptx::space_shared,
     ::cuda::ptx::space_global,
@@ -119,18 +121,21 @@ _CCCL_DEVICE_API inline auto bulk_load_unaligned_ignore_oob(
 //! of it, e.g. the alignment of the element type.
 //! @param __head_padding Distance in bytes from @p __smem_dst and from @p __gmem_src back to the preceding address
 //! aligned to `_TargetAlignment`. It must be the same for both pointers.
-//! @return Bytes the bulk copy contributes to the transaction count of @p __bar. Nonzero only for the elected thread.
+//! @param __transaction_bytes Incremented by the bytes the bulk copy contributes to the transaction count of @p __bar.
+//! Only the elected thread modifies it. This is an in-out parameter instead of a return value, because adding a
+//! returned count in the caller costs 3 SASS instructions in DeviceTransform.
 //
 // TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
 template <int _TargetAlignment = 16, int _CopyUnit = 1>
-_CCCL_DEVICE_API auto bulk_load_unaligned_precise(
+_CCCL_DEVICE_API void bulk_load_unaligned_precise(
   void* __smem_dst,
   const void* __gmem_src,
   ::cuda::std::uint32_t __bytes,
   int __head_padding,
   ::cuda::std::uint64_t* __bar,
   ::cuda::std::uint32_t __thread_rank,
-  bool __elected) noexcept -> ::cuda::std::uint32_t
+  bool __elected,
+  ::cuda::std::uint32_t& __transaction_bytes) noexcept
 {
   static_assert(_TargetAlignment >= 16 && _TargetAlignment % 16 == 0,
                 "bulk_load_unaligned_precise: alignment must be a multiple of 16");
@@ -165,7 +170,7 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
     {
       __dst[__thread_rank] = __src[__thread_rank];
     }
-    return 0;
+    return;
   }
 
   const ::cuda::std::uint32_t __head_bytes = (_TargetAlignment - __head_padding) % _TargetAlignment;
@@ -173,7 +178,6 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   _CCCL_ASSERT(__bytes >= __head_bytes + __tail_bytes, "");
 
   // launch the bulk copy only from the elected thread
-  ::cuda::std::uint32_t __copied = 0;
   if (__elected)
   {
     const ::cuda::std::uint32_t __aligned_bytes = __bytes - __head_bytes - __tail_bytes;
@@ -184,7 +188,7 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
         reinterpret_cast<const char*>(__src) + __head_bytes,
         __aligned_bytes,
         __bar);
-      __copied = __aligned_bytes;
+      __transaction_bytes += __aligned_bytes;
     }
   }
 
@@ -209,7 +213,6 @@ _CCCL_DEVICE_API auto bulk_load_unaligned_precise(
   {
     __dst[(__bytes - __tail_bytes) / _CopyUnit + __thread_rank] = __tail_value;
   }
-  return __copied;
 }
 
 #  if __cccl_ptx_isa >= 860

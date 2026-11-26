@@ -892,8 +892,8 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
         // byte-wise head and tail copies measured best here (word-wise copies cost 8 SASS instructions)
-        total_copied += ::cuda::device::bulk_load_unaligned_precise<bulk_copy_alignment, 1>(
-          dst, src, bytes_to_copy, head_padding, &bar, threadIdx.x, elected);
+        ::cuda::device::bulk_load_unaligned_precise<bulk_copy_alignment, 1>(
+          dst, src, bytes_to_copy, head_padding, &bar, threadIdx.x, elected, total_copied);
 
         // add padding to account for this tile's head padding
         smem += tile_padding + (int{sizeof(T)} * tile_size);
