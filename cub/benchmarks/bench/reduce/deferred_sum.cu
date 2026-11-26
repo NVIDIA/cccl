@@ -17,6 +17,7 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
+// %RANGE% TUNE_OVERSUBSCRIPTION_FACTOR osf 1:5:1
 
 #if !TUNE_BASE
 template <typename AccumT>
@@ -27,7 +28,12 @@ struct policy_selector
     const auto [items, threads] =
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
     const auto policy = cub::ReducePassPolicy{
-      threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      threads,
+      items,
+      1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      cub::LOAD_DEFAULT,
+      TUNE_OVERSUBSCRIPTION_FACTOR};
     return {policy, policy};
   }
 };

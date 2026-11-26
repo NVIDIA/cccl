@@ -16,7 +16,12 @@ struct policy_selector
     const auto [items, threads] =
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
     const auto policy = cub::ReducePassPolicy{
-      threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      threads,
+      items,
+      1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      cub::LOAD_DEFAULT,
+      TUNE_OVERSUBSCRIPTION_FACTOR};
     return {policy, policy};
   }
 };

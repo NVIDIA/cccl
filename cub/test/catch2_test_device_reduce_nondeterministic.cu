@@ -39,7 +39,8 @@ struct custom_policy_selector
       ItemsPerThread,
       4,
       cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
-      cub::CacheLoadModifier::LOAD_DEFAULT};
+      cub::CacheLoadModifier::LOAD_DEFAULT,
+      5};
     return {rp, rp};
   }
 };

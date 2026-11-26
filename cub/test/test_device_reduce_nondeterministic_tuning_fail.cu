@@ -20,8 +20,8 @@ struct nondeterministic_reduce_tuning
   __host__ __device__ constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
     const auto multi_tile =
-      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT};
-    const auto single_tile = cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT, 5};
+    const auto single_tile = cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT, 5};
     return {multi_tile, single_tile};
   }
 };

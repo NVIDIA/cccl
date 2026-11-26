@@ -390,7 +390,7 @@ struct segmented_reduce_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedReducePolicy
   {
-    auto rp = cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    auto rp = cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT, 5};
     // need the repetition of the return type for GCC9
     return cub::SegmentedReducePolicy{
       rp,
@@ -1441,7 +1441,7 @@ CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", 
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReduceWarpReducePolicy>);
 
   // aggregate init
-  constexpr auto p1_large  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
+  constexpr auto p1_large  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG, 5};
   constexpr auto p1_medium = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG};
   constexpr auto p1_small  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG};
   constexpr auto p1        = cub::SegmentedReducePolicy{p1_large, p1_medium, p1_small};
@@ -1449,11 +1449,12 @@ CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2_large = cub::ReducePassPolicy{
-    .threads_per_block = 256,
-    .items_per_thread  = 16,
-    .vec_size          = 4,
-    .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-    .load_modifier     = cub::LOAD_LDG};
+    .threads_per_block       = 256,
+    .items_per_thread        = 16,
+    .vec_size                = 4,
+    .reduce_algorithm        = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier           = cub::LOAD_LDG,
+    .oversubscription_factor = 5};
   constexpr auto p2_medium = cub::SegmentedReduceWarpReducePolicy{
     .threads_per_block = 256,
     .threads_per_warp  = 32,
@@ -1493,9 +1494,10 @@ CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", 
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1_large)
-          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
-             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(
+    to_string(p1_large)
+    == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG, .oversubscription_factor = 5 }");
   REQUIRE(to_string(p1_medium)
           == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 32"
              ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
@@ -1506,7 +1508,7 @@ CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", 
     to_string(p1)
     == "SegmentedReducePolicy { .large_reduce = ReducePassPolicy { .threads_per_block = 256"
        ", .items_per_thread = 16, .vec_size = 4"
-       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG, .oversubscription_factor = 5 }"
        ", .medium_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
        ", .threads_per_warp = 32, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }"
        ", .small_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
