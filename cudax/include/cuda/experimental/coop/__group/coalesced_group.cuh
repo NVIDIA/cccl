@@ -35,6 +35,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/coop/__group/dispatch.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
@@ -158,12 +159,16 @@ public:
   coalesced_group& operator=(const coalesced_group&) = delete;
   coalesced_group& operator=(coalesced_group&&)      = delete;
 
-  //! @brief Invokes the callable with a view specialized for this group's static unit count.
-  //! Counts that are only known at runtime remain dynamic.
   template <class _Fn>
-  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_group_rank_t& __tag, _Fn&& __fn) const
   {
-    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
+  }
+
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_unit_count_t& __tag, _Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND

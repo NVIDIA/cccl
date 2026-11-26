@@ -393,7 +393,7 @@ __device__ void test_nonuniform_group_view(Config config)
   check(same_unit, cuda::block, 1);
 
   // Changing units preserves the selected group rank even when the new unit count is dynamic.
-  group.with_static_unit_count([&](auto specialized) {
+  group.dispatch(cudax::coop::by_group_rank, [&](auto specialized) {
     constexpr auto selected_rank = specialized.static_rank(cudax::coop::parent_group);
     static_assert(selected_rank < 2);
     const cudax::coop::group_view threads{cuda::gpu_thread, specialized};
@@ -416,14 +416,14 @@ __device__ void test_nonuniform_group_view(Config config)
   check(warps, cuda::warp, 4);
 
   // Specializing a view must retain the original group, including on repeated dispatch.
-  warps.with_static_unit_count([&](const auto& specialized) {
+  warps.dispatch(cudax::coop::by_group_rank, [&](const auto& specialized) {
     using Specialized = cuda::std::remove_cvref_t<decltype(specialized)>;
     using Result      = typename Specialized::__mapping_result_type;
     using Group       = cuda::std::remove_cv_t<decltype(group)>;
     static_assert(cuda::std::is_same_v<Specialized, cudax::coop::group_view<cuda::warp_level, Group, Result>>);
-    static_assert((Result::static_group_rank() != cuda::std::dynamic_extent) == Static);
+    static_assert(Result::static_group_rank() != cuda::std::dynamic_extent);
     check(specialized, cuda::warp, 4);
-    specialized.with_static_unit_count([&](const auto& again) {
+    specialized.dispatch(cudax::coop::by_group_rank, [&](const auto& again) {
       static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(again)>, Specialized>);
       check(again, cuda::warp, 4);
     });
@@ -554,9 +554,9 @@ struct ViewedParentKernel
     // Specialized views must retain their static counts when the parent has unequal counts.
     const cudax::coop::virtual_group unequal{
       cuda::gpu_thread, block, cudax::coop::group_as{cuda::std::integer_sequence<int, 32, 96>{}}};
-    unequal.with_static_unit_count([&](const auto& view) {
+    unequal.dispatch(cudax::coop::by_group_rank, [&](const auto& view) {
       test_viewed_parent(unequal, view);
-      view.with_static_unit_count([&](const auto& specialized_view) {
+      view.dispatch(cudax::coop::by_group_rank, [&](const auto& specialized_view) {
         test_viewed_parent(unequal, specialized_view);
       });
     });

@@ -360,7 +360,7 @@ __device__ void test_static_group_as(Config config, Input input, cuda::std::inde
     return true;
   }());
 
-  static_assert(!Result::has_uniform_static_unit_count());
+  static_assert(Result::has_uniform_static_unit_count() == ((Counts == Result::static_unit_count(0)) && ...));
   static_assert(Result::is_always_exhaustive() == Exhaustive);
   static_assert(Result::is_always_contiguous());
 
@@ -498,6 +498,12 @@ __device__ void test_compile_time_ranges(Config config)
   test_static_group_as<true>(config, cuda::std::integer_sequence<unsigned short, 4, 12, 16>{}, FullPartition{});
   test_static_group_as<true>(config, FullPartition{}, FullPartition{});
   test_static_group_as<false>(config, cuda::std::integer_sequence<unsigned, 4, 6, 8>{}, PartialPartition{});
+
+  // Consecutive empty groups share a boundary. Check the group index on both sides and in an all-empty partition.
+  using WithEmptyGroups = cuda::std::index_sequence<0, 0, 7, 0, 0, 0, 25, 0>;
+  using EmptyPartition  = cuda::std::index_sequence<0, 0, 0>;
+  test_static_group_as<true>(config, WithEmptyGroups{}, WithEmptyGroups{});
+  test_static_group_as<false>(config, EmptyPartition{}, EmptyPartition{});
 
 #if _CCCL_STD_VER >= 2020
   // Class-valued cw inputs include both arrays and a forward-only range.

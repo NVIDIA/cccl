@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMMON_CUH
-#define _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMMON_CUH
+#ifndef _CUDA_EXPERIMENTAL_COOP___GROUP_TAGS_CUH
+#define _CUDA_EXPERIMENTAL_COOP___GROUP_TAGS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,24 +21,39 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/coop/__group/fwd.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
-
-#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
+struct _CCCL_TYPE_VISIBILITY_DEFAULT by_group_rank_t
+{
+  _CCCL_HIDE_FROM_ABI explicit by_group_rank_t() = default;
+};
+
+_CCCL_GLOBAL_CONSTANT by_group_rank_t by_group_rank{};
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT by_unit_count_t
+{
+  _CCCL_HIDE_FROM_ABI explicit by_unit_count_t() = default;
+};
+
+_CCCL_GLOBAL_CONSTANT by_unit_count_t by_unit_count{};
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT non_exhaustive_t
 {
   _CCCL_HIDE_FROM_ABI explicit non_exhaustive_t() = default;
 };
 
 _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
-} // namespace cuda::experimental::coop
 
-#endif // !_CCCL_DOXYGEN_INVOKED
+struct _CCCL_TYPE_VISIBILITY_DEFAULT parent_group_t
+{
+  _CCCL_HIDE_FROM_ABI explicit parent_group_t() = default;
+};
+
+_CCCL_GLOBAL_CONSTANT parent_group_t parent_group{};
+} // namespace cuda::experimental::coop
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMMON_CUH
+#endif // _CUDA_EXPERIMENTAL_COOP___GROUP_TAGS_CUH
