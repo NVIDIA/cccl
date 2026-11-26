@@ -21,7 +21,7 @@
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cub/util_device.cuh>
@@ -56,7 +56,9 @@ struct SegmentedScanBlockPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanBlockPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedScanBlockPolicy& policy)
   {
     return os
         << "SegmentedScanBlockPolicy { .threads_per_block = " << policy.threads_per_block
@@ -86,7 +88,9 @@ struct SegmentedScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedScanPolicy& policy)
   {
     return os << "SegmentedScanPolicy { .block = " << policy.block << " }";
   }
