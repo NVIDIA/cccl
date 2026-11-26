@@ -1,6 +1,8 @@
 #include <thrust/fill.h>
 #include <thrust/mr/new.h>
 
+#include <cstddef>
+
 #include <unittest/unittest.h>
 
 template <typename MemoryResource>

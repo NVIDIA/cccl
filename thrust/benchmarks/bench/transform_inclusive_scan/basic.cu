@@ -11,8 +11,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform_scan.h>
 
-#include <cuda/memory_pool>
-#include <cuda/stream>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

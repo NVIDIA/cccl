@@ -16,7 +16,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/use_default.h>
+#include <thrust/detail/use_default.h> // IWYU pragma: export
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_adaptor.h>

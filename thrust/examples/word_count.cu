@@ -4,6 +4,7 @@
 #include <thrust/inner_product.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/iterator> // Required for std::begin/std::end
 
 #include <iostream>

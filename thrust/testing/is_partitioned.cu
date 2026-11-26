@@ -1,8 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
 #include <cuda/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

@@ -1,8 +1,11 @@
 #include <thrust/binary_search.h>
 #include <thrust/device_vector.h>
 #include <thrust/distance.h>
+#include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
+#include <thrust/system/cuda/execution_policy.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include <unittest/unittest.h>

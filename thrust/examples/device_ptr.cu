@@ -4,6 +4,8 @@
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
+
 #include <cassert>
 #include <iostream>
 
