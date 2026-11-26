@@ -108,7 +108,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 fdim(__float128 __x, __float128 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FDIMF128)
+#  ifdef _CCCL_BUILTIN_FDIMF128
   return _CCCL_BUILTIN_FDIMF128(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FDIMF128 ^^^ / vvv !_CCCL_BUILTIN_FDIMF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fdim(__x, __y);))
