@@ -25,7 +25,8 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/__cmath/pow2.h>
-#include <cuda/std/cstdint>
+#include <cuda/__ptx/instructions/exit.h>
+#include <cuda/__ptx/instructions/shfl_sync.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -88,40 +89,13 @@ _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, 
   return _CUB::BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-/**
- * Warp synchronous shfl_up
- */
-_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
-SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
-{
-  asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
-               : "=r"(word)
-               : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
-  return word;
-}
-
-/**
- * Warp synchronous shfl_down
- */
-_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
-SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
-{
-  asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
-               : "=r"(word)
-               : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
-  return word;
-}
-
-#endif // _CCCL_DOXYGEN_INVOKED
-
 /**
  * \brief Terminates the calling thread
  */
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadExit()
+//! Deprecated [Since 3.7]
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::exit()") _CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadExit()
 {
-  asm volatile("exit;");
+  ::cuda::ptx::exit();
 }
 
 /**
@@ -222,7 +196,9 @@ template <int LogicalWarpThreads, typename T>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
+  constexpr int SHFL_C     = (32 - LogicalWarpThreads) << 8;
+  const auto clamp_segmask = static_cast<unsigned>(first_thread | SHFL_C);
+  const auto lane_offset   = static_cast<unsigned>(src_offset);
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -234,15 +210,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int firs
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
-  unsigned int shuffle_word;
-  shuffle_word    = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
-  output_alias[0] = shuffle_word;
+  output_alias[0] =
+    ::cuda::ptx::shfl_sync_up(static_cast<unsigned>(input_alias[0]), lane_offset, clamp_segmask, member_mask);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
-    output_alias[WORD] = shuffle_word;
+    output_alias[WORD] =
+      ::cuda::ptx::shfl_sync_up(static_cast<unsigned>(input_alias[WORD]), lane_offset, clamp_segmask, member_mask);
   }
 
   return output;
@@ -303,6 +278,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int la
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
+  const auto clamp_segmask    = static_cast<unsigned>(last_thread | SHFL_C);
+  const auto lane_offset      = static_cast<unsigned>(src_offset);
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -314,16 +291,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int la
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
-  unsigned int shuffle_word;
-  shuffle_word    = _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
-  output_alias[0] = shuffle_word;
+  output_alias[0] =
+    ::cuda::ptx::shfl_sync_down(static_cast<unsigned>(input_alias[0]), lane_offset, clamp_segmask, member_mask);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word =
-      _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
-    output_alias[WORD] = shuffle_word;
+    output_alias[WORD] = ::cuda::ptx::shfl_sync_down(
+      static_cast<unsigned>(input_alias[WORD]), lane_offset, clamp_segmask, member_mask);
   }
 
   return output;
@@ -461,28 +436,6 @@ struct warp_matcher_t<LabelBits, warp_threads>
     return retval;
   }
 };
-
-/**
- * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
- * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
- */
-_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
-{
-  uint32_t ret{}; // NOLINT(misc-const-correctness)
-  asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
-  return ret;
-}
-
-/**
- * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
- * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
- */
-_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
-{
-  uint32_t ret{}; // NOLINT(misc-const-correctness)
-  asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
-  return ret;
-}
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 

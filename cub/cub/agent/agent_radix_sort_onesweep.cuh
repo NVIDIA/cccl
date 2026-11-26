@@ -30,6 +30,7 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__ptx/instructions/exit.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -483,7 +484,7 @@ struct AgentRadixSortOnesweep
     }
 
     // exit early
-    _CUB::ThreadExit();
+    ::cuda::ptx::exit();
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
