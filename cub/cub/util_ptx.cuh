@@ -297,8 +297,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int la
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    output_alias[WORD] = ::cuda::ptx::shfl_sync_down(
-      static_cast<unsigned>(input_alias[WORD]), lane_offset, clamp_segmask, member_mask);
+    output_alias[WORD] =
+      ::cuda::ptx::shfl_sync_down(static_cast<unsigned>(input_alias[WORD]), lane_offset, clamp_segmask, member_mask);
   }
 
   return output;
