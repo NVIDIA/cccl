@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

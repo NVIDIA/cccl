@@ -182,7 +182,7 @@ MULTI_GPU_TEST("transform, uneven rank sizes", value_types, transform_test_util:
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto count = static_cast<cuda::std::size_t>(r) * 100 + 1;
+    const auto count = (static_cast<cuda::std::size_t>(r) * 100) + 1;
 
     inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(count, make_value<T>(r));
   }

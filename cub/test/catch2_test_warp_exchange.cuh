@@ -81,7 +81,7 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    const auto item_idx       = lane_id * ItemsPerThread + item;
+    const auto item_idx       = (lane_id * ItemsPerThread) + item;
     exchange_data.input[item] = input_data[item_idx];
     ranks[item]               = tile_size - 1 - item_idx;
   }
@@ -91,7 +91,7 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
   // Striped to blocked
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    output_data[item * LogicalWarpThreads + lane_id] = exchange_data.output[item];
+    output_data[(item * LogicalWarpThreads) + lane_id] = exchange_data.output[item];
   }
 }
 
@@ -140,14 +140,14 @@ __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT a
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    exchange_data.input[item] = input_data[lane_id * ItemsPerThread + item];
+    exchange_data.input[item] = input_data[(lane_id * ItemsPerThread) + item];
   }
 
   action(exchange_data.input, exchange_data.output, exchange);
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    output_data[lane_id * ItemsPerThread + item] = exchange_data.output[item];
+    output_data[(lane_id * ItemsPerThread) + item] = exchange_data.output[item];
   }
 }
 

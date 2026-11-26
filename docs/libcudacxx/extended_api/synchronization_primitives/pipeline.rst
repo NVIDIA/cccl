@@ -86,10 +86,10 @@ producers and consumers. In a *partitioned pipeline*, each participating thread 
 
    * - Member function
      - Description
-   * - (constructor) [deleted]
-     - ``cuda::pipeline`` is not constructible.
-   * - ``operator=`` [deleted]
-     - ``cuda::pipeline`` is not assignable.
+   * - (constructor)
+     - ``cuda::pipeline`` is created by ``cuda::make_pipeline``. It can be moved, but not copied.
+   * - ``operator=``
+     - ``cuda::pipeline`` can be moved, but not copied.
    * - :ref:`(destructor) <libcudacxx-extended-api-synchronization-pipeline-pipeline-destructor>`
      -  Destroys the ``cuda::pipeline``.
    * - :ref:`producer_acquire <libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-acquire>`

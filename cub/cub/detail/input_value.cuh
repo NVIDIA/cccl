@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,7 +29,7 @@ struct InputValue
 {
   using value_type    = T;
   using iterator_type = IterT;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE operator T() const
   {
     if (m_is_future)
     {
@@ -37,15 +37,15 @@ struct InputValue
     }
     return m_immediate_value;
   }
-  explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(T immediate_value)
+  explicit _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE InputValue(T immediate_value)
       : m_is_future(false)
       , m_immediate_value(immediate_value)
   {}
-  explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(FutureValue<T, IterT> future_value)
+  explicit _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE InputValue(FutureValue<T, IterT> future_value)
       : m_is_future(true)
       , m_future_value(future_value)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(const InputValue& other)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE InputValue(const InputValue& other)
       : m_is_future(other.m_is_future)
   {
     if (m_is_future)
@@ -54,7 +54,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
+      _CUB::detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 

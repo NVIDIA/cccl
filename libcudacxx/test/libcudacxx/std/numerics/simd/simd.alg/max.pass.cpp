@@ -11,15 +11,15 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.alg], algorithms
 //
 // template<class T, class Abi> constexpr basic_vec<T, Abi> max(
 //   const basic_vec<T, Abi>& a, const basic_vec<T, Abi>& b) noexcept;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

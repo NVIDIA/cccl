@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,9 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -34,12 +37,12 @@ public:
 
     using result_type = ValueType;
 
-    _CCCL_HOST_DEVICE head_flag_functor(RandomAccessIterator iter, BinaryPredicate binary_pred = {})
+    _CCCL_HOST_DEVICE_API head_flag_functor(RandomAccessIterator iter, BinaryPredicate binary_pred = {})
         : binary_pred(binary_pred)
         , iter(iter)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result_type operator()(const IndexType i)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE result_type operator()(const IndexType i)
     {
       // note that we do not dereference the iterators i <= 0
       // and therefore do not dereference a bad location at the boundary
@@ -54,24 +57,25 @@ public:
 
   using iterator = thrust::transform_iterator<head_flag_functor, thrust::counting_iterator<IndexType>>;
 
-  _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred = {})
+  _CCCL_HOST_DEVICE_API
+  head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred = {})
       : m_begin(thrust::make_transform_iterator(
           thrust::counting_iterator<IndexType>(0), head_flag_functor(first, binary_pred)))
       , m_count(last - first)
   {}
 
-  _CCCL_HOST_DEVICE iterator begin() const
+  _CCCL_HOST_DEVICE_API iterator begin() const
   {
     return m_begin;
   }
 
-  _CCCL_HOST_DEVICE iterator end() const
+  _CCCL_HOST_DEVICE_API iterator end() const
   {
     return m_begin + m_count;
   }
 
   template <typename OtherIndex>
-  _CCCL_HOST_DEVICE typename iterator::reference operator[](OtherIndex i)
+  _CCCL_HOST_DEVICE_API typename iterator::reference operator[](OtherIndex i)
   {
     return *(begin() + i);
   }
@@ -84,14 +88,15 @@ private:
 };
 
 template <typename RandomAccessIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE head_flags<RandomAccessIterator, BinaryPredicate>
+_CCCL_HOST_DEVICE_API head_flags<RandomAccessIterator, BinaryPredicate>
 make_head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
 {
   return head_flags<RandomAccessIterator, BinaryPredicate>(first, last, binary_pred);
 }
 
 template <typename RandomAccessIterator>
-_CCCL_HOST_DEVICE head_flags<RandomAccessIterator> make_head_flags(RandomAccessIterator first, RandomAccessIterator last)
+_CCCL_HOST_DEVICE_API head_flags<RandomAccessIterator>
+make_head_flags(RandomAccessIterator first, RandomAccessIterator last)
 {
   return head_flags<RandomAccessIterator>(first, last);
 }

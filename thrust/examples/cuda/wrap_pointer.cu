@@ -3,6 +3,8 @@
 
 #include <cuda/__runtime/api_wrapper.h>
 
+#include <cstddef>
+
 #include <cuda.h>
 
 int main()
@@ -17,7 +19,7 @@ int main()
   const thrust::device_ptr<int> dev_ptr = thrust::device_pointer_cast(raw_ptr);
 
   // use device_ptr in Thrust algorithms
-  thrust::fill(dev_ptr, dev_ptr + static_cast<std::ptrdiff_t>(N), (int) 0);
+  thrust::fill(dev_ptr, dev_ptr + static_cast<std::ptrdiff_t>(N), 0);
 
   // access device memory transparently through device_ptr
   dev_ptr[0] = 1;

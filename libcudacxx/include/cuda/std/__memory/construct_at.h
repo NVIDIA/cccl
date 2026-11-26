@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
@@ -50,7 +50,7 @@ template <class _Tp,
           class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#    ifdef _CCCL_BUILTIN_ADDRESSOF
   return ::new (::cuda::std::__voidify(*__location)) _Tp(::cuda::std::forward<_Args>(__args)...);
 #    else
   return ::new (const_cast<void*>(static_cast<const volatile void*>(__location)))

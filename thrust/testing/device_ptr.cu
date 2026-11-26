@@ -1,8 +1,20 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/memory.h>
 
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
 
 #include <unittest/unittest.h>
@@ -31,8 +43,8 @@ TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
 
   REQUIRE(end - begin == 5);
 
-  begin = begin + (int) 1;
-  begin = begin - (int) 1;
+  begin = begin + 1;
+  begin = begin - 1;
 
   REQUIRE(end - begin == 5);
 

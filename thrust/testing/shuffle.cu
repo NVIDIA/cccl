@@ -1,6 +1,14 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/random_bijection.h>
+#include <thrust/detail/temporary_array.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/execution_policy.h>
 #include <thrust/gather.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/shuffle_iterator.h>
 #include <thrust/random.h>
 #include <thrust/scatter.h>
@@ -8,10 +16,14 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/algorithm>
+#include <cuda/std/cmath>
 #include <cuda/std/numbers>
 #include <cuda/std/random>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <map>
 
@@ -281,10 +293,10 @@ double inverse_erf(double x)
   x   = (1 - x) * (1 + x);
   lnx = cuda::std::log(x);
 
-  tt1 = 2 / (cuda::std::__numbers<double>::__pi() * 0.147) + 0.5f * lnx;
+  tt1 = (2 / (cuda::std::__numbers<double>::__pi() * 0.147)) + (0.5f * lnx);
   tt2 = 1 / 0.147 * lnx;
 
-  return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt(tt1 * tt1 - tt2)));
+  return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt((tt1 * tt1) - tt2)));
 }
 
 // Individual input keys should be permuted to output locations with uniform
@@ -311,7 +323,7 @@ void test_shuffle_key_position_base()
   }
 
   const double mu    = (n - 1) / 2.0;
-  const double sigma = cuda::std::sqrt((n * n - 1) / 12.0);
+  const double sigma = cuda::std::sqrt(((n * n) - 1) / 12.0);
   double zmax        = 0.0;
   for (size_t i = 0; i < n; ++i)
   {
@@ -321,7 +333,7 @@ void test_shuffle_key_position_base()
   }
 
   const double alpha = 0.05;
-  const double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
+  const double zcrit = inverse_erf(1.0 - (alpha / (2.0 * n))) * cuda::std::sqrt(2.0);
   REQUIRE(zmax < zcrit);
 }
 template <typename Vector>

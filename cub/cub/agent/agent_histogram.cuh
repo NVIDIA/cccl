@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,7 @@
 #include <cub/thread/thread_load.cuh>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -68,9 +68,11 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, BlockHistogramMemoryPreference mempref)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(mempref);
+  return os << _CUB::detail::to_string(mempref);
 }
 #endif // _CCCL_HOSTED()
 
@@ -78,12 +80,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
+  auto format(const _CUB::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(mempref), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(mempref), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -155,14 +157,14 @@ namespace detail::histogram
 {
 // Return a native item pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
 {
   return itr.ptr;
 }
 
 // Return a native item pointer (specialized for other types)
 template <typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 {
   return nullptr;
 }
@@ -276,7 +278,7 @@ struct AgentHistogram
   bool prefer_smem; // for privatized counterss
 
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -294,7 +296,7 @@ struct AgentHistogram
 
   // Update final output histograms from privatized histograms
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     // Barrier to make sure all threads are done updating counters
     __syncthreads();
@@ -321,7 +323,7 @@ struct AgentHistogram
 
   // Accumulate items.  Specialized for RLE compression.
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateItems(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void AccumulateItems(
     SampleT samples[items_per_thread][NumChannels],
     bool is_valid[items_per_thread],
     TwoDimSubscriptableCounterT& privatized_histograms,
@@ -371,7 +373,7 @@ struct AgentHistogram
 
   // Accumulate items.  Specialized for individual accumulation of each item.
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateItems(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void AccumulateItems(
     SampleT samples[items_per_thread][NumChannels],
     bool is_valid[items_per_thread],
     TwoDimSubscriptableCounterT& privatized_histograms,
@@ -396,7 +398,7 @@ struct AgentHistogram
   }
 
   // Load full, aligned tile using item iterator
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[items_per_thread][NumChannels])
   {
     // The vectorized load can only load whole tiles if the samples per thread are a multiple of the vector size
@@ -417,7 +419,7 @@ struct AgentHistogram
   }
 
   template <bool IsFullTile, bool IsAligned>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[items_per_thread][NumChannels])
   {
     if constexpr (IsFullTile)
@@ -457,18 +459,18 @@ struct AgentHistogram
   }
 
   template <bool IsFullTile, bool IsStriped>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[items_per_thread], int valid_samples)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[items_per_thread], int valid_samples)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
       if constexpr (IsStriped)
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x + threads_per_block * item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x + (threads_per_block * item)) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x * items_per_thread + item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || ((((threadIdx.x * items_per_thread) + item) * NumChannels) < valid_samples);
       }
     }
   }
@@ -481,7 +483,7 @@ struct AgentHistogram
   //! @tparam IsFullTile
   //!  Whether the tile is full
   template <bool IsAligned, bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
   {
     SampleT samples[items_per_thread][NumChannels];
     bool is_valid[items_per_thread];
@@ -513,7 +515,7 @@ struct AgentHistogram
   //! @param tiles_per_row
   //!   Number of image tiles per row
   template <bool IsAligned>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_items,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -561,7 +563,7 @@ struct AgentHistogram
 
   // The shared memory of BLOCK_LOAD_TRANSPOSE is reused when loading the next tile. The work-stealing ConsumeTiles
   // already synchronizes between tiles.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncBeforeNextTile()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SyncBeforeNextTile()
   {
     if constexpr (AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_TRANSPOSE)
     {
@@ -580,7 +582,7 @@ struct AgentHistogram
   //! @param row_stride_samples
   //!   The number of samples between starts of consecutive rows in the region of interest
   template <bool IsAligned>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_items, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
     for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
@@ -638,7 +640,7 @@ struct AgentHistogram
   //!
   //! @param privatized_decode_op
   //!   The transform operator for determining privatized counter indices from samples, one for each channel
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& temp_storage,
     SampleIteratorT d_samples,
     const int* num_output_bins,
@@ -649,7 +651,7 @@ struct AgentHistogram
     const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
-      , d_native_samples(NativePointer(d_wrapped_samples))
+      , d_native_samples(_CUB::detail::histogram::NativePointer(d_wrapped_samples))
       , num_output_bins(num_output_bins)
       , num_privatized_bins(num_privatized_bins)
       , d_output_histograms(d_output_histograms)
@@ -687,7 +689,7 @@ struct AgentHistogram
   //!
   //! @param tile_queue
   //!   Queue descriptor for assigning tiles of work to thread blocks
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_items, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
     // Check whether all row starting offsets are vec-aligned (in single-channel) or item-aligned (in multi-channel)
@@ -724,7 +726,7 @@ struct AgentHistogram
   }
 
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitBinCounters()
   {
     if (prefer_smem)
     {
@@ -737,7 +739,7 @@ struct AgentHistogram
   }
 
   //! Store privatized histogram to device-accessible memory.  Specialized for privatized shared-memory counters
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StoreOutput()
   {
     if (prefer_smem)
     {

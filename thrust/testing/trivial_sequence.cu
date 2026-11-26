@@ -1,6 +1,10 @@
 #include <thrust/detail/trivial_sequence.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+
+#include <cuda/std/iterator>
+#include <cuda/std/memory>
 
 #include <unittest/unittest.h>
 
@@ -28,6 +32,7 @@ void test(Iterator first, Iterator last)
 
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<Iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<TrivialIterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<TrivialIterator>);
 }
 
 template <class Vector>

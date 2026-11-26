@@ -75,6 +75,7 @@ TEST_FUNC constexpr bool test()
   test_format<cuda::std::__fp_format::__fp80_x86>();
 #endif // _CCCL_HAS_INT128()
   test_format<cuda::std::__fp_format::__fp8_nv_e4m3>();
+  test_format<cuda::std::__fp_format::__fp8_nv_ue5m3>();
   test_format<cuda::std::__fp_format::__fp8_nv_e5m2>();
   test_format<cuda::std::__fp_format::__fp8_nv_e8m0>();
   test_format<cuda::std::__fp_format::__fp6_nv_e2m3>();

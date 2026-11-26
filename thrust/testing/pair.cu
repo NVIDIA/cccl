@@ -1,6 +1,11 @@
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/pair.h>
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
+
+#include <type_traits>
+#include <utility>
 
 #include <unittest/unittest.h>
 

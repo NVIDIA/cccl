@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,6 +26,7 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -74,12 +75,12 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -124,12 +125,12 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -166,9 +167,9 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -211,9 +212,9 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,

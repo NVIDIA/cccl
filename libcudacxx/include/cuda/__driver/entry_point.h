@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -206,7 +206,7 @@ __getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = f
 {
   _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
-  return __major * 1000 + __minor * 10;
+  return (__major * 1000) + (__minor * 10);
 }
 
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version without initializing
@@ -308,8 +308,8 @@ __get_driver_entry_point(const char* __name, int __major = 12, int __minor = 0) 
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::function_name), #function_name)
 
-#  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
-    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major, minor)
+#  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major_version, minor_version) \
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major_version, minor_version)
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_NO_INIT
 

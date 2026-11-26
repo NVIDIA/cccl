@@ -1,9 +1,15 @@
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/std/tuple>
+
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -54,7 +60,7 @@ void test_fill_mixed_types()
 {
   Vector v(4);
 
-  thrust::fill(v.begin(), v.end(), bool(true));
+  thrust::fill(v.begin(), v.end(), true);
 
   Vector ref(4, 1);
   REQUIRE(v == ref);
@@ -155,7 +161,7 @@ void test_fill_n_mixed_types()
 {
   Vector v(4);
 
-  typename Vector::iterator iter = thrust::fill_n(v.begin(), v.size(), bool(true));
+  typename Vector::iterator iter = thrust::fill_n(v.begin(), v.size(), true);
 
   Vector ref(4, 1);
   REQUIRE(v == ref);

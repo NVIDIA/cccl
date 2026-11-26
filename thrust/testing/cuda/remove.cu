@@ -1,7 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/remove.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -63,7 +68,7 @@ struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
-    return x ? true : false;
+    return static_cast<bool>(x);
   }
 };
 

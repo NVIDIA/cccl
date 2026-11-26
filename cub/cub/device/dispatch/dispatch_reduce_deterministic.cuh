@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -66,25 +66,25 @@ struct deterministic_sum_t
 {
   using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;
 
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
+  _CCCL_DEVICE_API DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
+  _CCCL_DEVICE_API DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
+  _CCCL_DEVICE_API DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
     DeterministicAcc rtn = lhs;
     rtn += rhs;
     return rtn;
   }
 
-  _CCCL_DEVICE FloatType operator()(FloatType lhs, FloatType rhs)
+  _CCCL_DEVICE_API FloatType operator()(FloatType lhs, FloatType rhs)
   {
     return lhs + rhs;
   }
@@ -151,7 +151,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 
 template <typename PolicySelector,
@@ -202,7 +202,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
   const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
 
-  const int num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  const int num_items_per_chunk = (::cuda::std::numeric_limits<::cuda::std::int32_t>::max)();
 
   // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
   // problem in a single launch with the worst-case grid, whose surplus blocks exit early.
@@ -216,16 +216,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     num_chunks = static_cast<int>(::cuda::ceil_div(num_items, num_items_per_chunk));
 
     const int chunk_tile_grid_size = ::cuda::ceil_div(num_items_per_chunk, reduce_config.tile_size);
-    chunk_grid_size                = ::cuda::std::min(max_blocks, chunk_tile_grid_size);
+    chunk_grid_size                = (::cuda::std::min) (max_blocks, chunk_tile_grid_size);
 
     partial_chunk_size                  = num_items % num_items_per_chunk;
     has_partial_chunk                   = partial_chunk_size != 0;
     const int last_chunk_tile_grid_size = ::cuda::ceil_div(partial_chunk_size, reduce_config.tile_size);
 
-    last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
+    last_chunk_grid_size = (::cuda::std::min) (max_blocks, last_chunk_tile_grid_size);
   }
 
-  const int reduce_grid_size = chunk_grid_size * (num_chunks - 1) + last_chunk_grid_size;
+  const int reduce_grid_size = (chunk_grid_size * (num_chunks - 1)) + last_chunk_grid_size;
 
   // Temporary storage allocation requirements
   void* allocations[1]             = {};
@@ -236,7 +236,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   // Alias the temporary allocations from the single storage blob (or
   // compute the necessary size of the blob)
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -256,15 +256,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const int num_current_items =
       ((chunk_index + 1 == num_chunks) && has_partial_chunk) ? partial_chunk_size : num_items_per_chunk;
 
-    const auto current_grid_size =
-      static_cast<int>(num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size);
+    const auto current_grid_size = num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size;
 
     // An immediate problem size is passed as the current chunk size; a deferred problem size is read on device and
     // `num_current_items` holds the worst-case chunk size, which must not be passed to the kernel.
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::make_num_items_kernel_arg(num_items);
+        return _CUB::detail::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -315,7 +314,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -340,7 +339,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::make_num_items_kernel_arg(num_items),
+              _CUB::detail::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,
@@ -376,7 +375,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 
 template <typename InputIteratorT,
@@ -411,7 +410,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
@@ -427,14 +426,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (num_items <= tile_items)
     {
-      return invoke_single_tile<PolicySelector,
-                                input_unwrapped_it_t,
-                                OutputIteratorT,
-                                OffsetT,
-                                deterministic_add_t,
-                                InitValueT,
-                                typename deterministic_add_t::DeterministicAcc,
-                                TransformOpT>(
+      return _CUB::detail::rfa::invoke_single_tile<
+        PolicySelector,
+        input_unwrapped_it_t,
+        OutputIteratorT,
+        OffsetT,
+        deterministic_add_t,
+        InitValueT,
+        typename deterministic_add_t::DeterministicAcc,
+        TransformOpT>(
         d_temp_storage,
         temp_storage_bytes,
         d_in_unwrapped,
@@ -449,14 +449,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
   }
 
-  return invoke_passes<PolicySelector,
-                       input_unwrapped_it_t,
-                       OutputIteratorT,
-                       OffsetT,
-                       deterministic_add_t,
-                       InitValueT,
-                       typename deterministic_add_t::DeterministicAcc,
-                       TransformOpT>(
+  return _CUB::detail::rfa::invoke_passes<
+    PolicySelector,
+    input_unwrapped_it_t,
+    OutputIteratorT,
+    OffsetT,
+    deterministic_add_t,
+    InitValueT,
+    typename deterministic_add_t::DeterministicAcc,
+    TransformOpT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in_unwrapped,

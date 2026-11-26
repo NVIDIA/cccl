@@ -4,9 +4,12 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/iterator>
 
+#include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 // this functor clamps a value to the range [lo, hi]
@@ -26,14 +29,12 @@ struct clamp
     {
       return lo;
     }
-    else if (x < hi)
+    if (x < hi)
     {
       return x;
     }
-    else
-    {
-      return hi;
-    }
+
+    return hi;
   }
 };
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,11 +32,11 @@
     A value is stored as a non-overlapping pair (hi, lo) of the underlying IEEE-754 FpType. The
     reported characteristics are therefore derived from numeric_limits<FpType>:
 
-    - digits (mantissa bits) = 2 * digits(FpType) - 2
-        fp32mp2 -> 2*24 - 2 =  46 bits   (epsilon = 2^-45)
-        fp64mp2 -> 2*53 - 2 = 104 bits   (epsilon = 2^-103)
-      The "-2" reflects the guaranteed contiguous precision of a normalized double-word (the two
-      halves must stay non-overlapping), matching the library's published mantissa bit counts.
+    - digits (significand bits) = 2 * digits(FpType)
+        fp32mp2 -> 2*24 =  48 bits   (epsilon = 2^-47)
+        fp64mp2 -> 2*53 = 106 bits   (epsilon = 2^-105)
+      Both components contribute their implicit leading bit. This is the contiguous precision
+      where the high component does not overflow and the low component remains normal.
 
     - Exponent range follows the double-double model: the maximum exponent matches FpType (the hi
       component caps at FpType's max), while the minimum normalized exponent is raised by digits(FpType)
@@ -84,19 +84,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed = true;
-  // A non-overlapping double-word carries 2*p - 2 contiguous mantissa bits.
-  static constexpr int digits = 2 * __base::digits - 2;
+  // Any number with contiguous 2*p mantissa digits can be represented with ::cuda::fpmp2 type
+  // Given exponent is in the range where both high and low parts are not denormals
+  static constexpr int digits = 2 * __base::digits;
 
   // Both decimal-digit counts convert `digits` via log10(2), approximated by 30103/100000 (as CCCL's
   // float/double specializations do); the `l` suffix promotes to long so the product can't overflow int.
   //
   // digits10 = floor((digits-1)*log10(2)): most decimal digits that round-trip decimal->type->decimal.
-  //     fp32mp2: floor(45*0.30103) = 13      fp64mp2: floor(103*0.30103) = 31
+  //     fp32mp2: floor(47*0.30103) = 14      fp64mp2: floor(105*0.30103) = 31
   static constexpr int digits10 = (digits - 1) * 30103l / 100000l;
 
   // max_digits10 = ceil(digits*log10(2))+1: fewest decimal digits to print any value back bit-for-bit.
   // Since digits*log10(2) is never integral, ceil(x)+1 == floor(x)+2, hence the "2 +" closed form.
-  //     fp32mp2: 2 + floor(46*0.30103) = 15  fp64mp2: 2 + floor(104*0.30103) = 33
+  //     fp32mp2: 2 + floor(48*0.30103) = 16  fp64mp2: 2 + floor(106*0.30103) = 33
   static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
 
   // Smallest all-normal value: hi = FpType_min scaled up by p so that lo is still normal.

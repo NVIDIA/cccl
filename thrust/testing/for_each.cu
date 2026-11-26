@@ -1,11 +1,17 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/std/iterator>
+
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -314,7 +320,7 @@ struct only_set_when_expected
   unsigned long long expected;
   bool* flag;
 
-  _CCCL_DEVICE void operator()(unsigned long long x)
+  _CCCL_DEVICE void operator()(unsigned long long x) const
   {
     if (x == expected)
     {

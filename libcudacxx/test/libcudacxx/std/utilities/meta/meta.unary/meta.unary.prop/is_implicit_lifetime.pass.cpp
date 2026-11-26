@@ -174,7 +174,7 @@ _CCCL_DIAG_POP
 template <typename T, bool Expected>
 TEST_FUNC constexpr void test_is_implicit_lifetime()
 {
-#if defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)
+#ifdef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
   assert(cuda::std::is_implicit_lifetime<T>::value == Expected);
   assert(cuda::std::is_implicit_lifetime_v<T> == Expected);
 #endif // defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)

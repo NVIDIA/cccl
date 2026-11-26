@@ -28,16 +28,16 @@ using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid < n)
   {
     ptr[tid] = value + tid;
   }
 }
 
-__global__ void check_kernel(int* ptr, int n, int value, int* result)
+__global__ void check_kernel(const int* ptr, int n, int value, int* result)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid < n)
   {
     if (ptr[tid] != value + tid)
@@ -190,7 +190,7 @@ void test_locality_domain_ordinal_wrap_rejected()
   cudaStream_t stream;
   cuda_try(cudaStreamCreate(&stream));
 
-  for (int domain_id : {256, -1})
+  for (const int domain_id : {256, -1})
   {
     auto place = data_place::locality_domain(0, domain_id);
 

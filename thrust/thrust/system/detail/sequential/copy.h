@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,7 +33,7 @@ namespace copy_detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(InputIterator first,
      InputIterator last,
      OutputIterator result,
@@ -48,7 +48,7 @@ copy(InputIterator first,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(InputIterator first,
      InputIterator last,
      OutputIterator result,
@@ -59,7 +59,7 @@ copy(InputIterator first,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator copy_n(
   InputIterator first,
   Size n,
   OutputIterator result,
@@ -71,7 +71,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator copy_n(
   InputIterator first,
   Size n,
   OutputIterator result,
@@ -83,7 +83,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, OutputIterator result)
 {
   return thrust::system::detail::sequential::copy_detail::copy(
@@ -95,7 +95,7 @@ copy(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIte
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, OutputIterator result)
 {
   return thrust::system::detail::sequential::copy_detail::copy_n(

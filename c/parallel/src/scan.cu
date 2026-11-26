@@ -371,18 +371,12 @@ try
     const auto input_type   = input_it.value_type.type;
     const auto input_type_t = cccl_type_enum_to_cub_type(input_type);
 
-    const auto output_type = output_it.value_type.type;
-    const bool types_match = input_type == output_type && input_type == accum_t.type;
-
     const bool input_contiguous             = input_it.type == cccl_iterator_kind_t::CCCL_POINTER;
     const bool output_contiguous            = output_it.type == cccl_iterator_kind_t::CCCL_POINTER;
     const bool input_trivially_copyable     = is_trivial_type(input_it.value_type.type);
     const bool output_trivially_copyable    = is_trivial_type(output_it.value_type.type);
     const bool output_default_constructible = output_trivially_copyable;
     const bool accum_is_primitive_or_trivially_copy_constructible = true;
-
-    const bool benchmark_match =
-      operation_t != cub::detail::op_kind_t::other && types_match && input_type != CCCL_STORAGE;
 
     return policy_selector{
       static_cast<int>(input_it.value_type.size),
@@ -400,8 +394,7 @@ try
       input_trivially_copyable,
       output_trivially_copyable,
       output_default_constructible,
-      accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match};
+      accum_is_primitive_or_trivially_copy_constructible};
   }();
 
   const auto active_policy = scan::select_policy_for_jit(policy_sel, cc);

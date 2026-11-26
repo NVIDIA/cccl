@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,6 @@
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/memory_resource.h>
 
-#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -36,7 +35,7 @@ namespace detail
 //     WAR the problem by using adl to call cpp::malloc, which requires it to depend
 //     on a template parameter
 template <typename Tag>
-pointer<void> malloc_workaround(Tag t, std::size_t n)
+_CCCL_HOST_API pointer<void> malloc_workaround(Tag t, std::size_t n)
 {
   return pointer<void>(malloc(t, n));
 } // end malloc_workaround()
@@ -46,7 +45,7 @@ pointer<void> malloc_workaround(Tag t, std::size_t n)
 //     WAR the problem by using adl to call cpp::free, which requires it to depend
 //     on a template parameter
 template <typename Tag>
-void free_workaround(Tag t, pointer<void> ptr)
+_CCCL_HOST_API void free_workaround(Tag t, pointer<void> ptr)
 {
   free(t, ptr.get());
 } // end free_workaround()
@@ -62,7 +61,7 @@ void free_workaround(Tag t, pointer<void> ptr)
  *  \see tbb::free
  *  \see std::malloc
  */
-inline pointer<void> malloc(std::size_t n)
+_CCCL_HOST_API inline pointer<void> malloc(std::size_t n)
 {
   // XXX this is how we'd like to implement this function,
   //     if not for circular #inclusion problems:
@@ -83,7 +82,7 @@ inline pointer<void> malloc(std::size_t n)
  *  \see std::malloc
  */
 template <typename T>
-inline pointer<T> malloc(std::size_t n)
+_CCCL_HOST_API inline pointer<T> malloc(std::size_t n)
 {
   pointer<void> raw_ptr = thrust::system::tbb::malloc(sizeof(T) * n);
   return pointer<T>(reinterpret_cast<T*>(raw_ptr.get()));
@@ -95,7 +94,7 @@ inline pointer<T> malloc(std::size_t n)
  *  \see tbb::malloc
  *  \see std::free
  */
-inline void free(pointer<void> ptr)
+_CCCL_HOST_API inline void free(pointer<void> ptr)
 {
   // XXX this is how we'd like to implement this function,
   //     if not for circular #inclusion problems:

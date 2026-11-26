@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -47,6 +47,13 @@
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -102,7 +109,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
   _Hp __value_;
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
@@ -202,7 +209,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
 {
   _Hp __value_;
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
@@ -241,9 +248,9 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(__tuple_leaf&& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t) = default;
 
   // Do not use = default here. The value type may be a reference, in which case the defaulted
   // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
@@ -508,6 +515,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -13,13 +13,13 @@
 
 // [simd.reductions], scalar reduce, reduce_min, and reduce_max
 
-#include <cuda/simd>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/concepts>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -92,7 +92,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_type<wchar_t>();
   test_type<char16_t>();
   test_type<char32_t>();
-#if defined(__cccl_lib_char8_t)
+#ifdef __cccl_lib_char8_t
   test_type<char8_t>();
 #endif // defined(__cccl_lib_char8_t)
 

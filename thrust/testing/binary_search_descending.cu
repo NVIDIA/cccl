@@ -3,6 +3,8 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/functional>
+
 #include <unittest/unittest.h>
 
 //////////////////////

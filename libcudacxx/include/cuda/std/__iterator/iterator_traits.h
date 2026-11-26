@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,9 +54,9 @@
 #    include <iterator> // for ::std::input_iterator_tag
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#  ifdef _GLIBCXX_DEBUG
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
 #    include <debug/safe_iterator.h>
-#  endif // _GLIBCXX_DEBUG
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
@@ -146,12 +146,15 @@ template <class _Iter>
 using _ITER_TRAITS _CCCL_NODEBUG = typename __iter_traits_cache<_Iter>::type;
 
 #if _CCCL_HOSTED()
-#  if defined(_GLIBCXX_DEBUG)
-_CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
-_CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>)
-_CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && defined(_GLIBCXX_DEBUG)
+// The debug containers wrap the iterators of the normal ones
+_CCCL_TEMPLATE(class _Iter, class _Ty, class _Container, class _Sequence)
+_CCCL_REQUIRES(
+  is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Ty*, _Container>, _Sequence>>)
+_CCCL_API inline auto __iter_concept_fn(
+  ::__gnu_debug::_Safe_iterator<::__gnu_cxx::__normal_iterator<_Ty*, _Container>, _Sequence>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#  endif // _GLIBCXX_DEBUG
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_DEBUG
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>)
@@ -535,6 +538,11 @@ inline constexpr bool __has_random_access_traversal =
   __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
+// in C++17 the standard does not yet know about the contiguous iterator concept, so we need to check for it explicitly
+template <class _Iter>
+_CCCL_CONCEPT __is_cpp17_contiguous_iterator = _CCCL_REQUIRES_EXPR((_Iter)) //
+  (typename(_ITER_CONCEPT<_Iter>), requires(is_convertible_v<_ITER_CONCEPT<_Iter>, contiguous_iterator_tag>));
+
 // __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
@@ -545,7 +553,7 @@ inline constexpr bool __has_random_access_traversal =
 template <class _Iter>
 inline constexpr bool __has_contiguous_traversal =
   __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
-  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
+  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag> || __is_cpp17_contiguous_iterator<_Iter>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Tp>

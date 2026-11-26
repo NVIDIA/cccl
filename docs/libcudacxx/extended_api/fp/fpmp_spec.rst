@@ -917,10 +917,10 @@ clk/ev    33.8         -0.37x  3.14x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      9
+fp32      8
 fp64      0
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-4:
@@ -1086,9 +1086,9 @@ clk/ev    658.6        -0.16x  -0.30x   65.0   -0.34x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      9
+fp64      8
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-5:
@@ -1635,10 +1635,10 @@ clk/ev    50.8         -0.26x  2.08x   51.2   -0.26x  -0.42x
 ========= ======
 Class     Count
 ========= ======
-fp32      13
+fp32      10
 fp64      0
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -1792,9 +1792,9 @@ clk/ev    914.8        -0.12x  -0.18x   99.4   -0.22x  1.66x
 Class     Count
 ========= ======
 fp32      0
-fp64      13
+fp64      10
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -2239,10 +2239,10 @@ clk/ev    79.0         -0.17x  1.40x   79.1   -0.17x  -0.28x
 ========= ======
 Class     Count
 ========= ======
-fp32      29
+fp32      28
 fp64      0
 other     0
-**total** **29**
+**total** **28**
 ========= ======
 
 .. _type-fp64mp2-6:
@@ -2358,9 +2358,9 @@ clk/ev    1926.5       -0.06x  -0.54x   155.6 -0.14x  6.75x
 Class     Count
 ========= ======
 fp32      0
-fp64      29
+fp64      28
 other     0
-**total** **29**
+**total** **28**
 ========= ======
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-mathematical-functions:
@@ -2421,25 +2421,25 @@ other     1
 
 **Special Values Table:**
 
-========= ========
+========= =======
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
+========= =======
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    +0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** nan
+**+maxD** nan
+**+minN** 1.1e-19
 **+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+maxN** 1.8e+19
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =======
 
 .. _type-fp64mp2-7:
 
@@ -2563,25 +2563,25 @@ other     0
 
 **Special Values Table:**
 
-========= ========
+========= =======
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+========= =======
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    nan
+**+0**    nan
+**+minD** nan
+**+maxD** nan
+**+minN** 9.2e+18
 **+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+maxN** 5.4e-20
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =======
 
 .. _type-fp64mp2-8:
 
@@ -2707,18 +2707,18 @@ other     27
 **Input** Value
 ========= ========
 **-INF**  -inf
-**-maxN** -3.4e+38
+**-maxN** -7e+12
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-minN** -2.3e-13
+**-maxD** -2.3e-13
+**-minD** -1.1e-15
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** 1.1e-15
+**+maxD** 2.3e-13
+**+minN** 2.3e-13
 **+1**    1
-**+maxN** 3.4e+38
+**+maxN** 7e+12
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -2784,20 +2784,20 @@ other     35
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
+**-INF**  -0
+**-maxN** -1.4e-13
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**-minN** -4.4e+12
+**-maxD** -4.4e+12
+**-minD** -8.9e+14
+**-0**    -inf
+**+0**    +inf
+**+minD** 8.9e+14
+**+maxD** 4.4e+12
+**+minN** 4.4e+12
 **+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+maxN** 1.4e-13
+**+INF**  +0
 **QNAN**  nan
 ========= ========
 
@@ -2962,25 +2962,25 @@ other     14
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  +0
+**-maxN** +0
+**-1**    0.37
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    2.7
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -3044,25 +3044,25 @@ other     21
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  +0
+**-maxN** +0
+**-1**    0.5
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    2
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -3125,25 +3125,25 @@ other     21
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  +0
+**-maxN** +0
+**-1**    0.1
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    10
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -3209,9 +3209,9 @@ other     28
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  -1
+**-maxN** -1
+**-1**    -0.63
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -3220,8 +3220,8 @@ other     28
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**+1**    1.7
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -3285,25 +3285,25 @@ other     20
 
 **Special Values Table:**
 
-========= ========
+========= ======
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= ======
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    -inf
+**+0**    -inf
+**+minD** -1e+02
+**+maxD** -87
+**+minN** -87
+**+1**    +0
+**+maxN** 89
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= ======
 
 ..
 
@@ -3367,19 +3367,19 @@ other     21
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    -inf
+**+0**    -inf
+**+minD** -1.5e+02
+**+maxD** -1.3e+02
+**+minN** -1.3e+02
+**+1**    +0
+**+maxN** 1.3e+02
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -3443,25 +3443,25 @@ other     21
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    -inf
+**+0**    -inf
+**+minD** -45
+**+maxD** -38
+**+minN** -38
+**+1**    +0
+**+maxN** 39
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -3524,9 +3524,9 @@ other     52
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  nan
+**-maxN** nan
+**-1**    -inf
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -3535,8 +3535,8 @@ other     52
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**+1**    0.69
+**+maxN** 89
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -3603,9 +3603,9 @@ other     227
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  nan
+**-maxN** 0.52
+**-1**    -0.84
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -3614,9 +3614,9 @@ other     227
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    0.84
+**+maxN** -0.52
+**+INF**  nan
 **QNAN**  nan
 ========= ========
 
@@ -3679,25 +3679,25 @@ other     230
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+========= =====
+**-INF**  nan
+**-maxN** 0.85
+**-1**    0.54
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    0.54
+**+maxN** 0.85
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -3761,9 +3761,9 @@ other     229
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  nan
+**-maxN** 0.61
+**-1**    -1.6
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -3772,9 +3772,9 @@ other     229
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    1.6
+**+maxN** -0.61
+**+INF**  nan
 **QNAN**  nan
 ========= ========
 
@@ -3842,20 +3842,20 @@ other     73
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-INF**  nan
+**-maxN** -0
+**-1**    -0
+**-minN** -3.7e-38
+**-maxD** -3.7e-38
+**-minD** -4.2e-45
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+minD** 4.2e-45
+**+maxD** 3.7e-38
+**+minN** 3.7e-38
+**+1**    +0
+**+maxN** +0
+**+INF**  nan
 **QNAN**  nan
 ========= ========
 
@@ -3913,25 +3913,25 @@ other     66
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
+========= =====
+**-INF**  nan
+**-maxN** 1
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    -1
+**+maxN** 1
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =====
 
 --------------
 
@@ -3989,9 +3989,9 @@ other     9
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  nan
+**-maxN** nan
+**-1**    -1.6
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4000,9 +4000,9 @@ other     9
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    1.6
+**+maxN** nan
+**+INF**  nan
 **QNAN**  nan
 ========= ========
 
@@ -4063,25 +4063,25 @@ other     10
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+========= =====
+**-INF**  nan
+**-maxN** nan
+**-1**    3.1
+**-minN** 1.6
+**-maxD** 1.6
+**-minD** 1.6
+**-0**    1.6
+**+0**    1.6
+**+minD** 1.6
+**+maxD** 1.6
+**+minN** 1.6
+**+1**    +0
+**+maxN** nan
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -4144,9 +4144,9 @@ other     6
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  -1.6
+**-maxN** -1.6
+**-1**    -0.79
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4155,9 +4155,9 @@ other     6
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    0.79
+**+maxN** 1.6
+**+INF**  1.6
 **QNAN**  nan
 ========= ========
 
@@ -4237,13 +4237,13 @@ other     46
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
 | **-maxD** | -3.1 | -3.1  | -3.1 | -2.4  | -2.4  | -1.6  | -1.6 | -1.6 | -1.6  | -0.79    | -0.79    | -1.2e-38 | -0       | -0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
-| **-minD** | -3.1 | -3.1  | -3.1 | -3.1  | -3.1  | nan   | nan  | nan  | nan   | -1.2e-07 | -1.2e-07 | -1.4e-45 | -0       | -0    | nan  |
+| **-minD** | -3.1 | -3.1  | -3.1 | -3.1  | -3.1  | -2.4  | -1.6 | -1.6 | -0.79 | -1.2e-07 | -1.2e-07 | -1.4e-45 | -0       | -0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
-| **-0**    | 3.1  | 3.1   | 3.1  | 3.1   | 3.1   | nan   | +0   | +0   | nan   | +0       | +0       | +0       | +0       | +0    | nan  |
+| **-0**    | -3.1 | -3.1  | -3.1 | -3.1  | -3.1  | -3.1  | -3.1 | -0   | -0    | -0       | -0       | -0       | -0       | -0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
-| **+0**    | 3.1  | 3.1   | 3.1  | 3.1   | 3.1   | nan   | +0   | +0   | nan   | +0       | +0       | +0       | +0       | +0    | nan  |
+| **+0**    | 3.1  | 3.1   | 3.1  | 3.1   | 3.1   | 3.1   | 3.1  | +0   | +0    | +0       | +0       | +0       | +0       | +0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
-| **+minD** | 3.1  | 3.1   | 3.1  | 3.1   | 3.1   | nan   | nan  | nan  | nan   | 1.2e-07  | 1.2e-07  | 1.4e-45  | +0       | +0    | nan  |
+| **+minD** | 3.1  | 3.1   | 3.1  | 3.1   | 3.1   | 2.4   | 1.6  | 1.6  | 0.79  | 1.2e-07  | 1.2e-07  | 1.4e-45  | +0       | +0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
 | **+maxD** | 3.1  | 3.1   | 3.1  | 2.4   | 2.4   | 1.6   | 1.6  | 1.6  | 1.6   | 0.79     | 0.79     | 1.2e-38  | +0       | +0    | nan  |
 +-----------+------+-------+------+-------+-------+-------+------+------+-------+----------+----------+----------+----------+-------+------+
@@ -4322,8 +4322,8 @@ other     23
 **Input** Value
 ========= ========
 **-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-maxN** -inf
+**-1**    -1.2
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4332,8 +4332,8 @@ other     23
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**+1**    1.2
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -4398,25 +4398,25 @@ other     18
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  +inf
+**-maxN** +inf
+**-1**    1.5
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    1.5
+**+maxN** +inf
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -4478,9 +4478,9 @@ other     28
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  -1
+**-maxN** -1
+**-1**    -0.76
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4489,9 +4489,9 @@ other     28
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    0.76
+**+maxN** 1
+**+INF**  1
 **QNAN**  nan
 ========= ========
 
@@ -4557,8 +4557,8 @@ other     88
 **Input** Value
 ========= ========
 **-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-maxN** -89
+**-1**    -0.88
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4567,8 +4567,8 @@ other     88
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**+1**    0.88
+**+maxN** 89
 **+INF**  +inf
 **QNAN**  nan
 ========= ========
@@ -4631,25 +4631,25 @@ other     85
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+========= =====
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    nan
+**+0**    nan
+**+minD** nan
+**+maxD** nan
+**+minN** nan
+**+1**    +0
+**+maxN** 89
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -4712,9 +4712,9 @@ other     68
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
+**-INF**  nan
+**-maxN** nan
+**-1**    -inf
 **-minN** -1.2e-38
 **-maxD** -1.2e-38
 **-minD** -1.4e-45
@@ -4723,9 +4723,9 @@ other     68
 **+minD** 1.4e-45
 **+maxD** 1.2e-38
 **+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+1**    +inf
+**+maxN** nan
+**+INF**  nan
 **QNAN**  nan
 ========= ========
 
@@ -4792,20 +4792,20 @@ other     22
 ========= ========
 **Input** Value
 ========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
+**-INF**  -1
+**-maxN** -1
+**-1**    -0.84
+**-minN** -1.3e-38
+**-maxD** -1.3e-38
 **-minD** -1.4e-45
 **-0**    -0
 **+0**    +0
 **+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+**+maxD** 1.3e-38
+**+minN** 1.3e-38
+**+1**    0.84
+**+maxN** 1
+**+INF**  1
 **QNAN**  nan
 ========= ========
 
@@ -4870,25 +4870,25 @@ other     20
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+========= =====
+**-INF**  2
+**-maxN** 2
+**-1**    1.8
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    0.16
+**+maxN** +0
+**+INF**  +0
 **QNAN**  nan
-========= ========
+========= =====
 
 ..
 
@@ -4948,25 +4948,25 @@ other     36
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+========= =====
+**-INF**  nan
+**-maxN** nan
+**-1**    nan
+**-minN** nan
+**-maxD** nan
+**-minD** nan
+**-0**    -inf
+**+0**    -inf
+**+minD** -14
+**+maxD** -13
+**+minN** -13
+**+1**    +inf
+**+maxN** nan
+**+INF**  nan
 **QNAN**  nan
-========= ========
+========= =====
 
 --------------
 
@@ -5022,25 +5022,25 @@ other     11
 
 **Special Values Table:**
 
-========= ========
+========= =======
 **Input** Value
-========= ========
-**-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
-**-0**    -0
-**+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
-**+INF**  +inf
+========= =======
+**-INF**  +inf
+**-maxN** +inf
+**-1**    1.5
+**-minN** 1
+**-maxD** 1
+**-minD** 1
+**-0**    1
+**+0**    1
+**+minD** 1
+**+maxD** 1
+**+minN** 1
+**+1**    0.75
+**+maxN** 4.8e-20
+**+INF**  +0
 **QNAN**  nan
-========= ========
+========= =======
 
 ..
 
@@ -5105,14 +5105,14 @@ other     13
 **-INF**  -inf
 **-maxN** -3.4e+38
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-minN** -1
+**-maxD** -1
+**-minD** -1
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** +0
+**+maxD** +0
+**+minN** +0
 **+1**    1
 **+maxN** 3.4e+38
 **+INF**  +inf
@@ -5182,14 +5182,14 @@ other     13
 **-INF**  -inf
 **-maxN** -3.4e+38
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-minN** -0
+**-maxD** -0
+**-minD** -0
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** 1
+**+maxD** 1
+**+minN** 1
 **+1**    1
 **+maxN** 3.4e+38
 **+INF**  +inf
@@ -5259,14 +5259,14 @@ other     29
 **-INF**  -inf
 **-maxN** -3.4e+38
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-minN** -0
+**-maxD** -0
+**-minD** -0
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** +0
+**+maxD** +0
+**+minN** +0
 **+1**    1
 **+maxN** 3.4e+38
 **+INF**  +inf
@@ -5336,14 +5336,14 @@ other     23
 **-INF**  -inf
 **-maxN** -3.4e+38
 **-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-minN** -0
+**-maxD** -0
+**-minD** -0
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
+**+minD** +0
+**+maxD** +0
+**+minN** +0
 **+1**    1
 **+maxN** 3.4e+38
 **+INF**  +inf
@@ -5959,25 +5959,25 @@ other     25
 
 **Special Values Table:**
 
-========= ========
+========= =====
 **Input** Value
-========= ========
+========= =====
 **-INF**  -inf
-**-maxN** -3.4e+38
-**-1**    -1
-**-minN** -1.2e-38
-**-maxD** -1.2e-38
-**-minD** -1.4e-45
+**-maxN** -1
+**-1**    -0.5
+**-minN** -0.5
+**-maxD** -1
+**-minD** -0.5
 **-0**    -0
 **+0**    +0
-**+minD** 1.4e-45
-**+maxD** 1.2e-38
-**+minN** 1.2e-38
-**+1**    1
-**+maxN** 3.4e+38
+**+minD** 0.5
+**+maxD** 1
+**+minN** 0.5
+**+1**    0.5
+**+maxN** 1
 **+INF**  +inf
 **QNAN**  nan
-========= ========
+========= =====
 
 .. _type-fp64mp2-10:
 
@@ -8637,11 +8637,11 @@ Per-function instruction counts (NOPs excluded) for every ``(type, method)`` com
    <tbody>
    <tr><td><code>add</code></td><td align="right">8</td><td align="right">0</td><td align="right">1</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">8</td><td align="right">4</td><td align="right">0</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td></tr>
    <tr><td><code>sub</code></td><td align="right">8</td><td align="right">0</td><td align="right">1</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">8</td><td align="right">4</td><td align="right">0</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td></tr>
-   <tr><td><code>mul</code></td><td align="right">5</td><td align="right">0</td><td align="right">1</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">5</td><td align="right">2</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td></tr>
+   <tr><td><code>mul</code></td><td align="right">5</td><td align="right">0</td><td align="right">1</td><td align="right">8</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">5</td><td align="right">2</td><td align="right">0</td><td align="right">8</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td></tr>
    <tr><td><code>div</code></td><td align="right">6</td><td align="right">0</td><td align="right">1</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">23</td><td align="right">0</td><td align="right">23</td><td align="right">1</td><td align="right">11</td><td align="right">27</td><td align="right">1</td><td align="right">18</td><td align="right">25</td><td align="right">1</td><td align="right">28</td><td align="right">49</td></tr>
-   <tr><td><code>acc</code></td><td align="right">7</td><td align="right">0</td><td align="right">1</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">7</td><td align="right">2</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td></tr>
+   <tr><td><code>acc</code></td><td align="right">7</td><td align="right">0</td><td align="right">1</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">7</td><td align="right">2</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">10</td><td align="right">0</td></tr>
    <tr><td><code>fma</code></td><td align="right">16</td><td align="right">0</td><td align="right">1</td><td align="right">19</td><td align="right">0</td><td align="right">0</td><td align="right">37</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">2</td><td align="right">0</td><td align="right">19</td><td align="right">0</td><td align="right">0</td><td align="right">37</td><td align="right">0</td></tr>
-   <tr><td><code>mad</code></td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">29</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">29</td><td align="right">0</td></tr>
+   <tr><td><code>mad</code></td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">28</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">28</td><td align="right">0</td></tr>
    <tr><td><code>sqrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">18</td><td align="right">0</td><td align="right">1</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">0</td><td align="right">23</td><td align="right">25</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>
    <tr><td><code>rsqrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">17</td><td align="right">0</td><td align="right">0</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">0</td><td align="right">22</td><td align="right">23</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>
    <tr><td><code>cbrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">75</td><td align="right">0</td><td align="right">27</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>

@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
-// Adapted from python/cuda_coop/docs/fern/fern/components/CooperativeDataMotion.tsx
-// at cccl-mirror trentn/dev/cuda-coop 5dba3d36b6eaae48b967d6fa48f9d15e98136000.
 
 (() => {
   "use strict";
