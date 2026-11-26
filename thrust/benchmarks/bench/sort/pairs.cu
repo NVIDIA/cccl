@@ -4,6 +4,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 
+#include <cstddef>
+
 #include "nvbench_helper.cuh"
 
 template <class KeyT, class ValueT>

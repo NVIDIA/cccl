@@ -2,11 +2,18 @@
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cstdint>
 
