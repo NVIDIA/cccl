@@ -23,14 +23,11 @@
 
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
-#include <cuda/__memory/address_space.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/string_view>
-
-#include <string>
 
 #include <cuda.h>
 

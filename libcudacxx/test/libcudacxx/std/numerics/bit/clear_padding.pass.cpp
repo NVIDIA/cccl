@@ -18,7 +18,7 @@
 #include "clear_padding_test_helpers.h"
 #include "test_macros.h"
 
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
 
 template <class T>
 TEST_FUNC void check(const unsigned char* bytes)
@@ -95,7 +95,7 @@ TEST_FUNC void test_array()
 
 int main(int, char**)
 {
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
   test_scalar<WithPadding>();
   test_scalar<RelaxedWithPadding>();
   test_array<WithPadding>();

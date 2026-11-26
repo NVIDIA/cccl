@@ -11,12 +11,12 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.math], classification functions
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
@@ -42,7 +42,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_wrapper()
   check_math_values(simd::isinf(x), false);
   check_math_values(simd::isnan(x), false);
   check_math_values(simd::isnormal(x), true);
-#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+#ifndef _CCCL_BUILTIN_BIT_CAST // constexpr bit_cast used by signbit
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #endif // _CCCL_BUILTIN_BIT_CAST
   {
@@ -87,7 +87,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
   Mask nan       = cuda::std::simd::isnan(vec);
   Mask normal    = cuda::std::simd::isnormal(vec);
   [[maybe_unused]] Mask signs;
-#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+#ifndef _CCCL_BUILTIN_BIT_CAST // constexpr bit_cast used by signbit
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #endif // _CCCL_BUILTIN_BIT_CAST
   {
@@ -101,7 +101,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
     assert(inf[i] == cuda::std::isinf(vec[i]));
     assert(nan[i] == cuda::std::isnan(vec[i]));
     assert(normal[i] == cuda::std::isnormal(vec[i]));
-#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+#ifndef _CCCL_BUILTIN_BIT_CAST // constexpr bit_cast used by signbit
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #endif // _CCCL_BUILTIN_BIT_CAST
     {

@@ -202,7 +202,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iempty<>> a{42};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(int));
-    assert(a.interface() == _CCCL_TYPEID(iempty<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iempty<>));
     assert(cuda::__any_cast<int>(&a));
     assert(cuda::__any_cast<int>(&a) == cuda::__any_cast<void>(&a));
     assert(*cuda::__any_cast<int>(&a) == 42);
@@ -210,12 +210,12 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     a.emplace<immovable>();
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(immovable));
-    assert(a.interface() == _CCCL_TYPEID(iempty<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iempty<>));
 
     a.reset();
     assert(a.has_value() == false);
     assert(a.type() == _CCCL_TYPEID(void));
-    assert(a.interface() == _CCCL_TYPEID(iempty<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iempty<>));
   }
 
   TEST_HOST_DEVICE_FUNC void test_interface_with_one_member_function()
@@ -226,7 +226,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<ibase<>> a{::cuda::std::in_place_type<Foo<IsSmall>>, 42, this};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Foo<IsSmall>));
-    assert(a.interface() == _CCCL_TYPEID(ibase<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(ibase<>));
     assert(a.__in_situ() == IsSmall);
     assert(this->objects == 1);
     assert(a.foo(1) == 43);
@@ -238,7 +238,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     a.reset();
     assert(a.has_value() == false);
     assert(a.type() == _CCCL_TYPEID(void));
-    assert(a.interface() == _CCCL_TYPEID(ibase<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(ibase<>));
     assert(this->objects == 0);
   }
 
@@ -250,7 +250,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iderived<>> a{::cuda::std::in_place_type<Bar<IsSmall>>, 42, this};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(a.interface() == _CCCL_TYPEID(iderived<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(a.__in_situ() == IsSmall);
     assert(this->objects == 1);
     assert(a.foo(2) == 44);
@@ -261,7 +261,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<ibase<>> b{::cuda::std::move(a)};
     assert(b.has_value() == true);
     assert(b.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(b.interface() == _CCCL_TYPEID(iderived<>));
+    assert(b.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(b.__in_situ() == IsSmall);
     assert(this->objects == 1);
     assert(b.foo(1) == 43);
@@ -291,7 +291,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iempty<>*> a = &im;
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(immovable*));
-    assert(a.interface() == _CCCL_TYPEID(iempty<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iempty<>));
     assert(a.__in_situ() == true);
 
     [[maybe_unused]]
@@ -302,7 +302,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     int*& pi = a.emplace<int*>(&i);
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(int*));
-    assert(a.interface() == _CCCL_TYPEID(iempty<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iempty<>));
     assert(a.__in_situ() == true);
     assert(a == a);
     assert(a != nullptr);
@@ -335,7 +335,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<ibase<>*> a = &foo;
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Foo<IsSmall>*));
-    assert(a.interface() == _CCCL_TYPEID(ibase<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(ibase<>));
     assert(a.__in_situ() == true);
     assert(this->objects == 1);
     assert(a->foo(1) == 43);
@@ -348,7 +348,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     a.reset();
     assert(a.has_value() == false);
     assert(a.type() == _CCCL_TYPEID(void));
-    assert(a.interface() == _CCCL_TYPEID(ibase<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(ibase<>));
     assert(this->objects == 2);
   }
 
@@ -378,7 +378,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iderived<>*> a{&bar};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Bar<IsSmall>*));
-    assert(a.interface() == _CCCL_TYPEID(iderived<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(a.__in_situ() == true);
     assert(this->objects == 1);
     assert(a->foo(2) == 44);
@@ -390,7 +390,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<ibase<>*> b{a};
     assert(b.has_value() == true);
     assert(b.type() == _CCCL_TYPEID(Bar<IsSmall>*));
-    assert(b.interface() == _CCCL_TYPEID(iderived<>));
+    assert(b.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(b.__in_situ() == true);
     assert(this->objects == 1);
     assert(b->foo(1) == 43);
@@ -437,7 +437,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     a                                        = *pb3;
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(a.interface() == _CCCL_TYPEID(iderived<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(a.__in_situ() == IsSmall);
     assert(this->objects == 2);
     assert(a.foo(2) == 1);
@@ -465,7 +465,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iderived<>&> a{bar};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(a.interface() == _CCCL_TYPEID(iderived<>));
+    assert(a.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(a.__in_situ() == true);
     assert(cuda::__any_cast<Bar<IsSmall>>(&a) == &bar);
     assert(this->objects == 1);
@@ -473,7 +473,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<ibase<>&> b = a;
     assert(b.has_value() == true);
     assert(b.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(b.interface() == _CCCL_TYPEID(iderived<>));
+    assert(b.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(b.__in_situ() == true);
     assert(this->objects == 1);
 
@@ -483,7 +483,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iderived<>> c = a; // should copy the referenced object
     assert(c.has_value() == true);
     assert(c.type() == _CCCL_TYPEID(Bar<IsSmall>));
-    assert(c.interface() == _CCCL_TYPEID(iderived<>));
+    assert(c.__get_interface() == _CCCL_TYPEID(iderived<>));
     assert(c.__in_situ() == IsSmall);
     assert(this->objects == 2);
     assert(cuda::__any_cast<Bar<IsSmall>>(&c));

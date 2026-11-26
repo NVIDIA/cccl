@@ -21,17 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__execution/env.h>
+
 #include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/diagnostics.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/sndr_ref.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>
-#include <cuda/experimental/__execution/transform_sender.cuh>
+#include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
 

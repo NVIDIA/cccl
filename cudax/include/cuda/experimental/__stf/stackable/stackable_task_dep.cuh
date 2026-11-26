@@ -25,6 +25,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <type_traits>
+
 namespace cuda::experimental::stf
 {
 template <typename T, typename reduce_op, bool initialize>

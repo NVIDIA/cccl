@@ -20,10 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__container/buffer.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
 
 #include <cuda/experimental/__container/graph_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_buffer.cuh>
+// IWYU pragma: end_exports
 
 #endif //__CUDAX_CONTAINER__

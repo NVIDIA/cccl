@@ -40,7 +40,7 @@ Returns a ``cuda::std::simd::basic_vec<T, Abi>`` where each element contains the
 
 **Performance considerations**
 
-- Packed 8-bit and 16-bit integer vectors perform saturating addition using ``VIADD.S8x4.ISAT``, ``VIADD.U8x4.ISAT``, ``VIADD.S16x2.ISAT``, and ``VIADD.16x2.ISAT`` on ``SM120f``.
+- Packed 8-bit and 16-bit integer vectors perform saturating addition using ``VIADD.S8x4.ISAT``, ``VIADD.U8x4.ISAT``, ``VIADD.S16x2.ISAT``, and ``VIADD.16x2.ISAT`` on ``SM107f`` (CUDA 13.4 or later) and ``SM120f`` (CUDA 13.2 or later).
 
 Example
 -------

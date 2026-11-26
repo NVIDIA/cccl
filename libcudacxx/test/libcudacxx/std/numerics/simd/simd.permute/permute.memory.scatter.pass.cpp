@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.permute.memory] scatter
 //
@@ -31,9 +31,9 @@
 //                                     const typename basic_vec<I, IAbi>::mask_type& mask,
 //                                     const basic_vec<I, IAbi>& indices, flags<Flags...> f = {});
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

@@ -24,7 +24,7 @@
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
@@ -32,17 +32,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
 template <class _Group>
 _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
   // Member types.
-  typename(typename _Group::unit_type),
-  requires(__is_hierarchy_level_v<typename _Group::unit_type>),
-  typename(typename _Group::level_type),
-  requires(__is_hierarchy_level_v<typename _Group::level_type>),
+  typename(typename _Group::unit_level),
+  requires(__is_hierarchy_level_v<typename _Group::unit_level>),
+  typename(typename _Group::boundary_level),
+  requires(__is_hierarchy_level_v<typename _Group::boundary_level>),
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
 

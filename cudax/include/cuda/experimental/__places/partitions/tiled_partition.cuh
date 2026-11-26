@@ -26,6 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/places.cuh>
 
 namespace cuda::experimental::places

@@ -20,6 +20,7 @@
 
 #pragma once
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
@@ -35,3 +36,4 @@
 #include <cuda/experimental/__places/place_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__places/stream_pool.cuh>
+// IWYU pragma: end_exports

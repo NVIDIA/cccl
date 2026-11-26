@@ -48,7 +48,7 @@ Overview
 
 ``cuda::experimental::coop::barrier_synchronizer`` is a synchronizer that uses a ``cuda::barrier`` object to synchronize the group. The type is constructible from a viewable, sized, forward and borrowed range of uninitialized ``cuda::barrier`` objects. These barriers are initialized only once the ``make_instance(...)`` method is called.
 
-The barrier at position ``i`` in the range is assigned to the group with rank ``i`` in the mapping result. The range must provide at least as many barriers as there are groups. The barriers must be accessible to all participating threads, and their scope must be sufficient for the parent group's level.
+The barrier at position ``i`` in the range is assigned to the group with rank ``i`` in the mapping result. The range must provide at least as many barriers as there are groups. The barriers must be accessible to all participating threads, and their thread scope must be sufficient for the parent group's bound level.
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
 

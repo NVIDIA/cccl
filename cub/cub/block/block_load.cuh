@@ -20,23 +20,23 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/unit_word.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -491,9 +491,12 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if constexpr (Modifier != LOAD_DEFAULT)
     {
-      _CUB::LoadDirectBlocked(i * ThreadsPerBlock,
-                              CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
-                              reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < vec_size; j++)
+      {
+        dst_items[(i * vec_size) + j] =
+          _CUB::ThreadLoad<Modifier>(thread_src_ptr + ((i * ThreadsPerBlock * vec_size) + j));
+      }
     }
     else
     {
@@ -970,7 +973,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, BlockLoadAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }

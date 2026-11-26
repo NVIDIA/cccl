@@ -1,11 +1,14 @@
 #pragma once
 
+#include <thrust/detail/config.h>
+
 #include <thrust/execution_policy.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
 #include <limits>
 #include <ostream>
 

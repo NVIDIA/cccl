@@ -27,9 +27,21 @@
  * https://nosferalatu.com/SimpleGPUHashTable.html
  */
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/internal/hashtable_linearprobing.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+
+#include <cstring>
+#include <tuple>
 
 namespace cuda::experimental::stf
 {

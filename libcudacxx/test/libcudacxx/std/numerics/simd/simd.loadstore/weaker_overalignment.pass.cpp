@@ -13,9 +13,9 @@
 
 // [simd.loadstore], an overalignment request may be weaker than natural alignment.
 
-#include <cuda/simd>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

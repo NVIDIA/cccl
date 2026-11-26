@@ -9,6 +9,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
+// PTX 9.5 warns about fabric.wait.sync_restrict::reads and ptxas has no warning switch specific to it.
+// ADDITIONAL_COMPILE_OPTIONS_PTXAS: --disable-warnings
+
 // <cuda/ptxs/fabric_wait.h>
 
 #include <cuda/ptxs/fabric_wait.h>

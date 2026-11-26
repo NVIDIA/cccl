@@ -33,7 +33,7 @@ TEST_FUNC auto test(long) -> cuda::std::false_type;
 
 int main(int, char**)
 {
-#if defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK)
+#ifdef TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
   static_assert(!decltype(test(0))::value);
 #else
   static_assert(decltype(test(0))::value);

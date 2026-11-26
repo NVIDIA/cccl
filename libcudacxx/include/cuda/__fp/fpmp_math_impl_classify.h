@@ -32,7 +32,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 
 /*
  * ====================================================================
@@ -72,7 +72,12 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmax(
     *__res_lo = __x_lo;
     return;
   }
-  const bool __x_greater = (__x_hi > __y_hi) || (__x_hi == __y_hi && __x_lo > __y_lo);
+  // Of two zeros, +0 is the larger one (IEEE 754-2019 maximumNumber). The low limbs are compared
+  // first: a low-accuracy pair can carry a zero high limb over a nonzero low one.
+  const bool __x_greater =
+    (__x_hi > __y_hi)
+    || (__x_hi == __y_hi
+        && (__x_lo > __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__y_hi))));
   if (__x_greater)
   {
     *__res_hi = __x_hi;
@@ -120,7 +125,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmin(
     *__res_lo = __x_lo;
     return;
   }
-  const bool __x_less = (__x_hi < __y_hi) || (__x_hi == __y_hi && __x_lo < __y_lo);
+  // Of two zeros, -0 is the smaller one (IEEE 754-2019 minimumNumber); low limbs first, as in fmax.
+  const bool __x_less =
+    (__x_hi < __y_hi)
+    || (__x_hi == __y_hi
+        && (__x_lo < __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__x_hi))));
   if (__x_less)
   {
     *__res_hi = __x_hi;
@@ -213,64 +222,39 @@ _CCCL_FPMP_CORE_API void __fpmp2_min(
 
 /*
  * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp32mp2) - exact on the limb pair
+ * Positive difference fdim(x, y) (fp32mp2 and fp64mp2)
  * --------------------------------------------------------------------
- * fdim(x, y) = x - y when x > y, +0 otherwise, NaN when either is NaN.
- * The comparison is the lexicographic one on the renormalized pairs
- * (exact), the difference the accurate pair subtraction; a difference
- * that overflows (x = +inf or y = -inf) is +inf with a zero low limb,
- * which the subtraction would turn into (inf, NaN).  No FP64.
+ * x - y where x > y and +0 otherwise, the comparison being the lexicographic one of fmax.
+ * The difference is the accurate one (fpmp2_accuracy::high) whatever the accuracy of the
+ * type, since x and y may cancel. A NaN operand gives NaN; a difference that overflows,
+ * or that of unlike infinities, gives +inf with a zero low limb.
  */
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
-  const float __x_hi,
-  const float __x_lo,
-  const float __y_hi,
-  const float __y_lo,
-  float* __res_hi,
-  float* __res_lo) noexcept
+  const _FpType __x_hi,
+  const _FpType __x_lo,
+  const _FpType __y_hi,
+  const _FpType __y_lo,
+  _FpType* __res_hi,
+  _FpType* __res_lo) noexcept
 {
-  if ((__x_hi != __x_hi) || (__y_hi != __y_hi))
+  if (::cuda::__fpmp_internal_isnan(__x_hi) || ::cuda::__fpmp_internal_isnan(__y_hi))
   {
-    *__res_hi = ::cuda::std::__fp_nan<float>();
-    *__res_lo = ::cuda::std::__fp_nan<float>();
-    return;
+    *__res_hi = *__res_lo = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
   }
-  const bool __gt = (__x_hi > __y_hi) || ((__x_hi == __y_hi) && (__x_lo > __y_lo));
-  if (!__gt)
+  else if ((__x_hi > __y_hi) || (__x_hi == __y_hi && __x_lo > __y_lo))
   {
-    *__res_hi = 0.0f;
-    *__res_lo = 0.0f;
-    return;
+    ::cuda::__fpmp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+    if (!(*__res_hi <= (::cuda::std::numeric_limits<_FpType>::max)()))
+    {
+      *__res_hi = ::cuda::std::numeric_limits<_FpType>::infinity();
+      *__res_lo = _FpType(0);
+    }
   }
-  if ((__x_hi == ::cuda::std::__fp_inf<float>()) || (__y_hi == -::cuda::std::__fp_inf<float>()))
+  else
   {
-    *__res_hi = ::cuda::std::__fp_inf<float>();
-    *__res_lo = 0.0f;
-    return;
+    *__res_hi = *__res_lo = _FpType(0);
   }
-  ::cuda::__fpmp2_high_sub<float>(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
-  /* A finite difference beyond FLT_MAX (fdim(FLT_MAX, -FLT_MAX)) overflows the subtraction
-   * into (inf, NaN) or (NaN, NaN): it is +inf. */
-  const bool __finite = *__res_hi < ::cuda::std::__fp_inf<float>();
-  *__res_hi           = __finite ? *__res_hi : ::cuda::std::__fp_inf<float>();
-  *__res_lo           = __finite ? *__res_lo : 0.0f;
-}
-
-/*
- * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
-  const double __x_hi,
-  const double __x_lo,
-  const double __y_hi,
-  const double __y_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  ::cuda::__fpmp2_from_double(
-    ::fdim(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(fdim)

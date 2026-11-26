@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__device/physical_device.h>
 
 #include <cuda/experimental/__green_context/green_ctx.cuh>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

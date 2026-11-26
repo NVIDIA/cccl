@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__simd_> // IWYU pragma: keep
+#include <cuda/std/simd> // IWYU pragma: keep
 
 #if _CCCL_HAS_NVFP16()
 

@@ -33,6 +33,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/span>
 

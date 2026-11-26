@@ -26,7 +26,7 @@
 #include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__iterator/iterator_traits.h> // IWYU pragma: keep
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>

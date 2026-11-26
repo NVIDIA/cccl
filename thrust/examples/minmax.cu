@@ -5,6 +5,7 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cstddef>
 #include <iostream>
 
 // compute minimum and maximum values in a single reduction

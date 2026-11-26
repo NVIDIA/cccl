@@ -1,8 +1,6 @@
 #include <cuda_fp16.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/alignment.h>
-#include <thrust/detail/preprocessor.h>
 
 #include <unittest/unittest.h>
 

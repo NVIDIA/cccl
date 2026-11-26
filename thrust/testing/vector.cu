@@ -7,8 +7,11 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
 #include <thrust/device_malloc_allocator.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include <cstddef>
 #include <initializer_list>
 #include <limits>
 #include <list>

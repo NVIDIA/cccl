@@ -24,11 +24,9 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__exception/terminate.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

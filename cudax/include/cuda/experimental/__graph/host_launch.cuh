@@ -37,7 +37,7 @@
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
 
-#  include <memory>
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

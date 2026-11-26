@@ -56,7 +56,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_BUILTIN_POPCOUNTG)
+#ifndef _CCCL_BUILTIN_POPCOUNTG
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl_constexpr(_Tp __v) noexcept

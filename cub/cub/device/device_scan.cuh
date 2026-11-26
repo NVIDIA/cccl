@@ -45,6 +45,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
@@ -55,25 +56,6 @@
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
-
-namespace detail
-{
-template <typename T>
-inline constexpr bool is_single_value_wrapper_v = false;
-
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::immediate<ArgT, StaticBoundsT>> = true;
-
-template <auto Value, typename T>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::constant<Value, T>> = true;
-
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, StaticBoundsT>> = true;
-
-// Classify argument roles here; validate the wrapped count type after selecting the overload.
-template <typename NumItemsT>
-inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || is_single_value_wrapper_v<NumItemsT>;
-} // namespace detail
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a

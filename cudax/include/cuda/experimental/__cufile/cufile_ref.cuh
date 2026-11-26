@@ -23,6 +23,8 @@
 
 #include <cufile.h>
 
+#include <sys/types.h>
+
 namespace cuda::experimental
 {
 using __cufile_os_native_type = int;

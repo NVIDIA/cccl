@@ -20,7 +20,7 @@ namespace std::experimental
 #include "test_macros.h"
 #include "type_id.h"
 
-#if !defined(TEST_HAS_NO_RTTI)
+#ifndef TEST_HAS_NO_RTTI
 #  define RTTI_ASSERT(X) assert(X)
 #else
 #  define RTTI_ASSERT(X)
@@ -37,7 +37,7 @@ struct IsSmallObject
 template <class T>
 bool containsType(std::any const& a)
 {
-#if !defined(TEST_HAS_NO_RTTI)
+#ifndef TEST_HAS_NO_RTTI
   return a.type() == typeid(T);
 #else
   return a.has_value() && std::any_cast<T>(&a) != nullptr;

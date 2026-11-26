@@ -38,6 +38,7 @@
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN

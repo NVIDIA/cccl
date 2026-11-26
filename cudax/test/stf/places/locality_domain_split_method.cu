@@ -143,9 +143,11 @@ int main()
       // backfill sizes every group to an even share of the device (rounded
       // down to the required multiple of 2).
       const unsigned int share             = total.sm.smCount / ndomains;
-      const unsigned int expected_backfill = (share < 2) ? 2 : (share - share % 2);
+      const unsigned int expected_backfill = (share < 2) ? 2 : (share - (share % 2));
 
-      unsigned int sum_aligned = 0, sum_fine = 0, sum_backfill = 0;
+      unsigned int sum_aligned  = 0;
+      unsigned int sum_fine     = 0;
+      unsigned int sum_backfill = 0;
       for (unsigned int i = 0; i < ndomains; i++)
       {
         const auto bf =
