@@ -23,6 +23,7 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/gamma.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
 

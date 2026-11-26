@@ -16,7 +16,7 @@
 #include <cub/thread/thread_load.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cub/util_device.cuh>
@@ -46,7 +46,9 @@ struct FindIfPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindIfPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const FindIfPolicy& p)
   {
     return os
         << "FindIfPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "

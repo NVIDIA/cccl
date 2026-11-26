@@ -39,7 +39,16 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  include <cuda/std/__host_stdlib/memory>
+// <bits/stl_construct.h> of libstdc++ 9 and older is not self-contained and lacks std::construct_at
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 10)
+#    include <bits/stl_construct.h> // for ::std::construct_at
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/construct_at.h>)
+#    include <__memory/construct_at.h> // for ::std::construct_at
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <xutility> // for ::std::construct_at
+#  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
+#    include <cuda/std/__host_stdlib/memory>
+#  endif // ^^^ other host standard library ^^^
 
 #  if __cpp_lib_constexpr_dynamic_alloc < 201907L
 namespace std

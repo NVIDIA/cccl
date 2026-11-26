@@ -27,7 +27,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +56,9 @@ struct ReduceByKeyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReduceByKeyLookbackPolicy& p)
   {
     return os
         << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -86,7 +88,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, ReduceByKeyAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -112,7 +116,9 @@ struct ReduceByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReduceByKeyPolicy& p)
   {
     return os << "ReduceByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }

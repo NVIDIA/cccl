@@ -29,7 +29,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
@@ -216,7 +216,9 @@ public:
 
   /// ostream operator
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const self_type& /*itr*/)
   {
     return os;
   }

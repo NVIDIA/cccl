@@ -22,7 +22,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -59,7 +59,9 @@ struct HistogramPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const HistogramPolicy& p)
   {
     return os
         << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
