@@ -20,7 +20,7 @@
 #include <thrust/detail/malloc_and_free.h> // IWYU pragma: export
 #include <thrust/detail/pointer.h> // IWYU pragma: export
 #include <thrust/detail/raw_pointer_cast.h> // IWYU pragma: export
-#include <thrust/detail/raw_reference_cast.h>
+#include <thrust/detail/raw_reference_cast.h> // IWYU pragma: export
 #include <thrust/detail/reference.h> // IWYU pragma: export
 #include <thrust/detail/temporary_buffer.h> // IWYU pragma: export
 

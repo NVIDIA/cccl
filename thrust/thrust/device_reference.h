@@ -17,6 +17,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/raw_reference_cast.h> // IWYU pragma: export
 #include <thrust/detail/reference.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
