@@ -248,9 +248,9 @@ struct WarpReduceShfl
     if constexpr (has_16bit_member_v<T>)
     {
       // A captureless lambda avoids extra packing for 16-bit scan-by-key accumulators.
-      // See https://github.com/NVIDIA/cccl/pull/12736.
+      // See https://github.com/NVIDIA/cccl/pull/12736. Use explicit parameter types for NVRTC.
       ::cuda::static_for<steps>(
-        [](auto step, WarpReduceShfl& self, T& input, auto reduction_op, const int last_lane) {
+        [](const int step, WarpReduceShfl& self, T& input, ReductionOp reduction_op, const int last_lane) {
           input = self.ReduceStep(input, reduction_op, last_lane, 1 << step);
         },
         *this,
