@@ -22,7 +22,8 @@
 
 constexpr int block_threads = 32;
 
-[[maybe_unused]] __device__ void check_phase_barriers(int* matches)
+template <int BlockThreads>
+__device__ void check_phase_barriers(int* matches)
 {
   using Barrier          = cuda::std::uint64_t;
   constexpr int a_stages = 19;
@@ -54,7 +55,7 @@ constexpr int block_threads = 32;
   handler.registerPhase(b, 5, storage.b);
   handler.registerPhase(empty, 7, &storage.guard);
   handler.registerPhase(a, 9, storage.second_a);
-  handler.clusterInitSync<block_threads>(cub::detail::warpspeed::getSpecialRegisters());
+  handler.clusterInitSync<BlockThreads>(cub::detail::warpspeed::getSpecialRegisters());
 
   // One non-completing arrival exposes the original count without waiting for any other threads.
   const auto has_count = [&](auto& barriers, unsigned expected) {
@@ -71,7 +72,7 @@ constexpr int block_threads = 32;
 
 __global__ void check_phase_barriers_kernel(int* matches)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (check_phase_barriers(matches);))
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (check_phase_barriers<block_threads>(matches);))
 }
 #endif // __cccl_ptx_isa >= 800
 
