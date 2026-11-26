@@ -24,6 +24,8 @@
 #include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/iosfwd>
+#include <cuda/std/__optional/nullopt.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
 
@@ -389,6 +391,12 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   return (out_size > 0 && out_size <= 16 && ::cuda::is_power_of_two(out_size)) ? 16 / out_size : 1;
 }
 
+struct bulk_copy_tuning
+{
+  int min_bytes_in_flight;
+  TransformAsyncCopyPolicy async;
+};
+
 template <int InputCount>
 struct policy_selector
 {
@@ -396,6 +404,58 @@ struct policy_selector
   bool dense_output;
   ::cuda::std::array<iterator_info, InputCount> inputs;
   iterator_info output;
+
+  // tunings from cub/benchmarks/bench/transform/babelstream.ublkcp.cu
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto find_bulk_copy_tuning(::cuda::compute_capability cc) const
+    -> ::cuda::std::optional<bulk_copy_tuning>
+  {
+    // the value type size shared by all inputs and the output, or 0 if they differ
+    int common_value_type_size = output.value_type_size;
+    for (const auto& input : inputs)
+    {
+      if (input.value_type_size != common_value_type_size)
+      {
+        common_value_type_size = 0;
+      }
+    }
+
+    // Rubin
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (common_value_type_size == 1) // I8
+      {
+        // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
+        auto async           = TransformAsyncCopyPolicy{128};
+        async.unroll_factor  = 4;
+        async.store_vec_size = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
+        return bulk_copy_tuning{_CUB::detail::transform::cc_to_min_bytes_in_flight(cc), async};
+      }
+    }
+
+    // B200 + B300
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{10, 7})
+    {
+      if (common_value_type_size == 1) // I8
+      {
+        // kbif_48.tpb_256.unrl_2.svsp_3: mul 1.080, add 1.017, triad 1.057, nstream 1.069
+        auto async           = TransformAsyncCopyPolicy{256};
+        async.unroll_factor  = 2;
+        async.store_vec_size = 8;
+        return bulk_copy_tuning{112 * 1024, async};
+      }
+      if (common_value_type_size == 2) // I16
+      {
+        // kbif_28.tpb_256.unrl_2.svsp_1: mul 1.010, add 1.023, triad 1.024, nstream 1.028
+        auto async           = TransformAsyncCopyPolicy{256};
+        async.unroll_factor  = 2;
+        async.store_vec_size = 2;
+        return bulk_copy_tuning{92 * 1024, async};
+      }
+      // F32 and F64 tunings showed no measurable improvement
+    }
+
+    return ::cuda::std::nullopt;
+  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> TransformPolicy
   {
@@ -420,8 +480,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
     {
-      const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
-      const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
+      const int alignment = _CUB::detail::transform::bulk_copy_alignment(cc);
 
       auto prefetch = TransformPrefetchPolicy{256};
 #if __cccl_ptx_isa >= 940
@@ -430,21 +489,19 @@ struct policy_selector
 #endif // __cccl_ptx_isa >= 940
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
         cc, (::cuda::std::max) (1, output.value_type_size), no_input_streams);
-      auto async           = TransformAsyncCopyPolicy{async_block_size};
-      async.store_vec_size = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
 
-      // sm107 tuning from cub/benchmarks/bench/transform/babelstream.ublkcp.cu (1-byte value types)
-      bool all_value_types_are_one_byte = output.value_type_size == 1;
-      for (const auto& input : inputs)
+      // GCC 7 cannot constant-evaluate the policy when this conditional is inlined into the braced initializer
+      const int default_async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
+      auto async                         = TransformAsyncCopyPolicy{default_async_block_size};
+      async.store_vec_size               = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
+
+      // try to pick a bulk copy tuning, and override the async copy policy
+      const auto tuned_bulk_copy = find_bulk_copy_tuning(cc);
+      if (tuned_bulk_copy)
       {
-        all_value_types_are_one_byte &= input.value_type_size == 1;
+        async = tuned_bulk_copy->async;
       }
-      if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0}
-          && all_value_types_are_one_byte)
-      {
-        // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
-        async.unroll_factor = 4;
-      }
+      const int async_block_size = async.threads_per_block;
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
@@ -489,7 +546,9 @@ struct policy_selector
           : TransformAlgorithm::ublkcp;
 
       return TransformPolicy{
-        min_bytes_in_flight,
+        (algorithm == TransformAlgorithm::ublkcp && tuned_bulk_copy)
+          ? tuned_bulk_copy->min_bytes_in_flight
+          : min_bytes_in_flight,
         algorithm,
         prefetch,
         vectorized,
