@@ -384,9 +384,10 @@ argument and for NaN, and on the device both return NaN for a subnormal argument
 its accuracy down to a high limb of about ``2^-100``; below that its residual term is subnormal
 and the error grows (11 u² at ``2^-108``). Code that can meet such arguments should test for them
 before the call, and scale a subnormal or tiny argument by an even power of two ``2^(2k)`` around
-it: the result of ``sqrt`` is then scaled back by ``2^-k``, that of ``rsqrt`` by ``2^k``. In ``fp32mp2_high``, ``sqrt`` and ``rsqrt`` are a different
-kernel, which adds the second-order term of its Newton step: within ``1.3u²`` and ``2.9u²``,
-``4.2u²`` for ``rsqrt`` on the device, against
+it: the result of ``sqrt`` is then scaled back by ``2^-k``, that of ``rsqrt`` by ``2^k``. In the
+``high`` types (``fp32mp2_high``, ``fp64mp2_high``) ``sqrt`` and ``rsqrt`` are a different kernel,
+which adds the second-order term of its Newton step:
+for ``fp32mp2`` within ``1.3u²`` and ``2.9u²``, ``4.2u²`` for ``rsqrt`` on the device, against
 ``2.5u²`` and ``8u²``, ``13u²`` on the device. It takes the same arguments, returns the same
 values for the special ones, and costs about 12% (``sqrt``) and 5% (``rsqrt``) of the throughput
 of the short kernel on a GPU; a branch that returned the IEEE 754 values would cost another 10 to
@@ -401,15 +402,16 @@ renormalized, and the renormalization adds the two limbs, which turns a ``-0`` h
 ``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
 function carries whichever sign its evaluation happens to leave. The exceptions that do follow C99
 are the operations that act on the sign bit itself (unary negation, ``fabs``, ``copysign``,
-construction from a built-in ``-0.0``) and the rounding functions ``ceil``, ``floor``, ``trunc``,
+construction from a built-in ``-0.0``), the rounding functions ``ceil``, ``floor``, ``trunc``,
 ``round``, ``rint``, ``nearbyint`` and the fraction of ``modf``, whose zero result carries the sign
-of the argument on the host and the device alike. For ``fp32mp2`` they also include ``sin``,
+of the argument on the host and the device alike, and ``fmax`` and ``fmin``, which order ``-0``
+below ``+0``. For ``fp32mp2`` they also include ``sin``,
 ``tan`` and the sine of ``sincos``, ``sinpi`` and the sine of ``sincospi``, ``expm1``, ``log1p``,
 ``sinh``, ``tanh``, ``asinh``, ``atanh``, ``erf`` and ``erfinv``, which return a zero argument
 unchanged, ``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)``
 and ``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), ``sinpi`` at a
-nonzero integer, whose zero has the sign of the argument, ``cospi``, which is ``+0`` at every
-half-integer, and ``fmax`` and ``fmin``, which order ``-0`` below ``+0``. For ``fp64mp2``,
+nonzero integer, whose zero has the sign of the argument, and ``cospi``, which is ``+0`` at every
+half-integer. For ``fp64mp2``,
 ``sin(-0)`` and ``atan(-0)`` return ``+0`` where C99 Annex F has ``-0``, and ``atan2`` reads a zero
 argument as ``+0``, so ``atan2(-0, -1)`` is ``+pi``. ``signbit`` reports the high limb. Code that
 distinguishes ``-0`` from ``+0`` anywhere else has to take the sign from the operands, before the
@@ -432,7 +434,7 @@ hardware where FP64 is rationed:
 - **Powers and roots** — ``pow``, ``cbrt``, ``rcbrt``, alongside the ``sqrt`` and ``rsqrt``
   already named above
 - **Distances and norms** — ``hypot``, ``rhypot``, ``norm3d``, ``norm4d``, ``rnorm3d``,
-  ``rnorm4d`` (``fp32mp2_high`` computes
+  ``rnorm4d``, for ``fp64mp2`` as well, where they carry both limbs (``fp32mp2_high`` computes
   the four norms through ``double``, within ``0.6u²``, where the pair kernel of the other levels,
   with no FP64 operation, errs by up to ``5.1u²``, and ``8.1u²`` for the reciprocals)
 - **Trigonometric** — ``sin``, ``cos``, ``tan``, ``sincos``, ``asin``, ``acos``, ``atan``,

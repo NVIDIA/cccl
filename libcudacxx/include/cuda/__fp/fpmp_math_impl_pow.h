@@ -805,16 +805,16 @@ _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
  * ====================================================================
  * hypot, rhypot, norm3d, norm4d, rnorm3d, rnorm4d - Euclidean norms and their reciprocals
  * ====================================================================
- * For fp32mp2, rhypot and the 3- and 4-operand norms are the pair kernel below. The fp32mp2
- * hypot has a kernel of its own after it, which sums the two squares with one more error-free
- * step (2.9u^2 against 3.1u^2). In fp32mp2_high the norm3d, norm4d, rnorm3d and rnorm4d are
- * computed in double instead (the kernels of #12641, after the pair kernel). fp64mp2 keeps its
- * double fallbacks, which follow the fp32mp2 hypot.
+ * rhypot and the 3- and 4-operand norms are the pair kernel below for fp32mp2 and fp64mp2, and
+ * so is the fp64mp2 hypot. The fp32mp2 hypot has a kernel of its own after it, which sums the
+ * two squares with one more error-free step (2.9u^2 against 3.1u^2). In fp32mp2_high the
+ * fp32mp2 norm3d, norm4d, rnorm3d and rnorm4d are computed in double instead (the kernels of
+ * #12641, after the pair kernel).
  */
 
 /*
  * --------------------------------------------------------------------
- * Euclidean norm sqrt(x_1^2 + ... + x_n^2) and its reciprocal (fp32mp2)
+ * Euclidean norm sqrt(x_1^2 + ... + x_n^2) and its reciprocal (fp32mp2 and fp64mp2)
  * --------------------------------------------------------------------
  * The operands are scaled by a power of two chosen from the largest high limb, so that
  * no square overflows and the square of the largest one, with its rounding error, is a
@@ -834,31 +834,69 @@ _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
  * that overflows gives +inf, a reciprocal that overflows, +inf.
  * An operand with a zero high limb over a nonzero low limb, which a low-accuracy
  * cancellation leaves, counts with its low limb.
+ *
+ * The fp64mp2 kernel returns the same results with fewer FP64 instructions, which many GPUs
+ * run at a small fraction of their FP32 rate: it compares magnitudes on their bits, scales
+ * only where the scale is not 1, and sums the squares with a three-operation error-free sum
+ * of the larger and the smaller term. The fp32mp2 kernel is faster as it is.
  */
 template <typename _FpType, int _Np, bool _Reciprocal, bool _LowLimbs = false>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
   const _FpType (&__x_hi)[_Np], const _FpType (&__x_lo)[_Np], _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  constexpr _FpType __max = (::cuda::std::numeric_limits<_FpType>::max)();
-  constexpr _FpType __inf = ::cuda::std::numeric_limits<_FpType>::infinity();
-  constexpr _FpType __nan = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
+  [[maybe_unused]] constexpr _FpType __max = (::cuda::std::numeric_limits<_FpType>::max)();
+  constexpr _FpType __inf                  = ::cuda::std::numeric_limits<_FpType>::infinity();
+  constexpr _FpType __nan                  = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
 
-  // The largest magnitude; a NaN never enters it.
-  _FpType __m = _FpType(0);
-  for (int __k = 0; __k < _Np; ++__k)
+  // The scaled largest operand m lies in [2^-40, 2^60) (fp32mp2; [2^-49, 2^60) from a
+  // subnormal) or [2^-474, 2^500) (fp64mp2), where m^2 and the error of that product are
+  // normal numbers and four squares cannot overflow.
+  constexpr _FpType __big   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p60f) : _FpType(0x1.0p500);
+  constexpr _FpType __small = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-40f) : _FpType(0x1.0p-450);
+
+  // The largest magnitude m, in which a NaN never enters: whether it is zero or infinite, and
+  // which scale it takes.
+  bool __m_special;
+  bool __m_inf;
+  bool __is_big;
+  bool __is_small;
+  if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __a = ::cuda::__fpmp_internal_fabs(__x_hi[__k]);
-    __m               = (__a > __m) ? __a : __m;
+    _FpType __m = _FpType(0);
+    for (int __k = 0; __k < _Np; ++__k)
+    {
+      const _FpType __a = ::cuda::__fpmp_internal_fabs(__x_hi[__k]);
+      __m               = (__a > __m) ? __a : __m;
+    }
+    __m_special = !(__m > _FpType(0) && __m <= __max);
+    __m_inf     = __m > __max;
+    __is_big    = __m >= __big;
+    __is_small  = __m < __small;
   }
-  if (!(__m > _FpType(0) && __m <= __max))
+  else
   {
-    // __m is zero or infinite.
+    // The bits of |x|, which order like |x| and put NaN above infinity; a NaN is skipped.
+    constexpr uint64_t __inf_bits = uint64_t{0x7FF} << 52;
+    uint64_t __m_bits             = 0;
+    for (int __k = 0; __k < _Np; ++__k)
+    {
+      const uint64_t __a = ::cuda::std::bit_cast<uint64_t>(__x_hi[__k]) & 0x7FFFFFFFFFFFFFFFull;
+      __m_bits           = (__a > __m_bits && __a <= __inf_bits) ? __a : __m_bits;
+    }
+    __m_special = __m_bits == 0 || __m_bits == __inf_bits;
+    __m_inf     = __m_bits == __inf_bits;
+    __is_big    = __m_bits >= ::cuda::std::bit_cast<uint64_t>(__big);
+    __is_small  = __m_bits < ::cuda::std::bit_cast<uint64_t>(__small);
+  }
+  if (__m_special)
+  {
+    // m is zero or infinite.
     bool __has_nan = false;
     for (int __k = 0; __k < _Np; ++__k)
     {
       __has_nan = __has_nan || ::cuda::__fpmp_internal_isnan(__x_hi[__k]);
     }
-    if (__m > __max)
+    if (__m_inf)
     {
       *__res_hi = _Reciprocal ? _FpType(0) : __inf;
       *__res_lo = _FpType(0);
@@ -894,22 +932,35 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
     return;
   }
 
-  // The scaled largest operand m lies in [2^-40, 2^60) (fp32mp2; [2^-49, 2^60) from a
-  // subnormal) or [2^-474, 2^500) (fp64mp2), where m^2 and the error of that product are
-  // normal numbers and four squares cannot overflow.
-  constexpr _FpType __big       = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p60f) : _FpType(0x1.0p500);
-  constexpr _FpType __small     = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-40f) : _FpType(0x1.0p-450);
   constexpr _FpType __big_scl   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-80f) : _FpType(0x1.0p-600);
   constexpr _FpType __small_scl = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p100f) : _FpType(0x1.0p600);
-  const _FpType __scl           = (__m >= __big) ? __big_scl : (__m < __small) ? __small_scl : _FpType(1);
+  const _FpType __scl           = __is_big ? __big_scl : __is_small ? __small_scl : _FpType(1);
+  // fp64mp2 multiplies by the scale only where it is not 1.
+  const bool __scaled = __fpmp2_is_fp32_v<_FpType> || __is_big || __is_small;
+
+  _FpType __sx_hi[_Np];
+  _FpType __sx_lo[_Np];
+  for (int __k = 0; __k < _Np; ++__k)
+  {
+    __sx_hi[__k] = __x_hi[__k];
+    __sx_lo[__k] = __x_lo[__k];
+  }
+  if (__scaled)
+  {
+    for (int __k = 0; __k < _Np; ++__k)
+    {
+      __sx_hi[__k] = ::cuda::__fpmp_mul_rn(__sx_hi[__k], __scl);
+      __sx_lo[__k] = ::cuda::__fpmp_mul_rn(__sx_lo[__k], __scl);
+    }
+  }
 
   // s + c = sum of the squares, c holding the rounding errors and the low-limb terms.
   _FpType __s = _FpType(0);
   _FpType __c = _FpType(0);
   for (int __k = 0; __k < _Np; ++__k)
   {
-    const _FpType __h = ::cuda::__fpmp_mul_rn(__x_hi[__k], __scl);
-    const _FpType __l = ::cuda::__fpmp_mul_rn(__x_lo[__k], __scl);
+    const _FpType __h = __sx_hi[__k];
+    const _FpType __l = __sx_lo[__k];
     const _FpType __p = ::cuda::__fpmp_mul_rn(__h, __h);
     _FpType __e       = ::cuda::__fpmp_fma_rn(__h, __h, -__p);
     __e               = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_add_rn(__h, __h), __l, __e);
@@ -922,7 +973,19 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
     else
     {
       _FpType __t;
-      __s = ::cuda::__fpmp_two_sum(__s, __p, &__t);
+      if constexpr (__fpmp2_is_fp32_v<_FpType>)
+      {
+        __s = ::cuda::__fpmp_two_sum(__s, __p, &__t);
+      }
+      else
+      {
+        // s and p are not negative (or one is NaN, which the sum keeps), so their bits order like
+        // their values.
+        const bool __s_first    = ::cuda::std::bit_cast<uint64_t>(__s) >= ::cuda::std::bit_cast<uint64_t>(__p);
+        const _FpType __larger  = __s_first ? __s : __p;
+        const _FpType __smaller = __s_first ? __p : __s;
+        __s                     = ::cuda::__fpmp_fast_two_sum(__larger, __smaller, &__t);
+      }
       __c = ::cuda::__fpmp_add_rn(__c, ::cuda::__fpmp_add_rn(__t, __e));
     }
   }
@@ -933,23 +996,41 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm(
   if constexpr (_Reciprocal)
   {
     ::cuda::__fpmp2_rsqrt(__a_hi, __a_lo, &__r_hi, &__r_lo);
-    __r_hi = ::cuda::__fpmp_mul_rn(__r_hi, __scl);
-    __r_lo = ::cuda::__fpmp_mul_rn(__r_lo, __scl);
+    if (__scaled)
+    {
+      __r_hi = ::cuda::__fpmp_mul_rn(__r_hi, __scl);
+      __r_lo = ::cuda::__fpmp_mul_rn(__r_lo, __scl);
+    }
   }
   else
   {
     // The inverse of the scale.
     constexpr _FpType __big_inv   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p80f) : _FpType(0x1.0p600);
     constexpr _FpType __small_inv = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-100f) : _FpType(0x1.0p-600);
-    const _FpType __inv           = (__m >= __big) ? __big_inv : (__m < __small) ? __small_inv : _FpType(1);
+    const _FpType __inv           = __is_big ? __big_inv : __is_small ? __small_inv : _FpType(1);
     ::cuda::__fpmp2_sqrt(__a_hi, __a_lo, &__r_hi, &__r_lo);
-    __r_hi = ::cuda::__fpmp_mul_rn(__r_hi, __inv);
-    __r_lo = ::cuda::__fpmp_mul_rn(__r_lo, __inv);
+    if (__scaled)
+    {
+      __r_hi = ::cuda::__fpmp_mul_rn(__r_hi, __inv);
+      __r_lo = ::cuda::__fpmp_mul_rn(__r_lo, __inv);
+    }
   }
   // Overflow, or a NaN operand next to finite ones.
-  if (!(__r_hi <= __max))
+  if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    __r_lo = ::cuda::__fpmp_internal_isnan(__r_hi) ? __nan : _FpType(0);
+    if (!(__r_hi <= __max))
+    {
+      __r_lo = ::cuda::__fpmp_internal_isnan(__r_hi) ? __nan : _FpType(0);
+    }
+  }
+  else
+  {
+    constexpr uint64_t __inf_bits = uint64_t{0x7FF} << 52;
+    const uint64_t __r_bits       = ::cuda::std::bit_cast<uint64_t>(__r_hi) & 0x7FFFFFFFFFFFFFFFull;
+    if (__r_bits >= __inf_bits)
+    {
+      __r_lo = (__r_bits > __inf_bits) ? __nan : _FpType(0);
+    }
   }
   *__res_hi = __r_hi;
   *__res_lo = __r_lo;
@@ -1098,11 +1179,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   *__res_lo          = (*__res_hi < ::cuda::std::__fp_inf<float>()) ? __h_lo * __back : 0.0f; /* (inf, 0) on overflow */
 }
 
-/*
- * --------------------------------------------------------------------
- * Hypotenuse hypot(x, y) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
+/* fp64mp2 hypot: the pair kernel above */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   const double __x_hi,
   const double __x_lo,
@@ -1111,135 +1188,12 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  ::cuda::__fpmp2_from_double(
-    ::cuda::std::hypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
-    __res_hi,
-    __res_lo);
+  const double __hi[2] = {__x_hi, __y_hi};
+  const double __lo[2] = {__x_lo, __y_lo};
+  ::cuda::__internal_fpmp2_norm<double, 2, false>(__hi, __lo, __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(hypot)
-
-/*
- * --------------------------------------------------------------------
- * Reciprocal hypotenuse rhypot(x, y) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
-  const double __x_hi,
-  const double __x_lo,
-  const double __y_hi,
-  const double __y_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (::cuda::__fpmp2_from_double(
-       ::rhypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
-       __res_hi,
-       __res_lo);),
-    (::cuda::__fpmp2_from_double(
-       1.0 / ::cuda::std::hypot(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
-       __res_hi,
-       __res_lo);))
-}
-
-/*
- * --------------------------------------------------------------------
- * Vector norm norm3d(a, b, c) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_norm3d(
-  const double __a_hi,
-  const double __a_lo,
-  const double __b_hi,
-  const double __b_lo,
-  const double __c_hi,
-  const double __c_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
-         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo);
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (::cuda::__fpmp2_from_double(::norm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
-    (::cuda::__fpmp2_from_double(::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
-}
-
-/*
- * --------------------------------------------------------------------
- * Vector norm norm4d(a, b, c, d) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_norm4d(
-  const double __a_hi,
-  const double __a_lo,
-  const double __b_hi,
-  const double __b_lo,
-  const double __c_hi,
-  const double __c_lo,
-  const double __d_hi,
-  const double __d_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
-         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo), __dd = ::cuda::__fpmp2_to_double(__d_hi, __d_lo);
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (::cuda::__fpmp2_from_double(::norm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
-                    (::cuda::__fpmp2_from_double(
-                       ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
-}
-
-/*
- * --------------------------------------------------------------------
- * Reciprocal vector norm rnorm3d(a, b, c) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm3d(
-  const double __a_hi,
-  const double __a_lo,
-  const double __b_hi,
-  const double __b_lo,
-  const double __c_hi,
-  const double __c_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
-         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo);
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (::cuda::__fpmp2_from_double(::rnorm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
-    (::cuda::__fpmp2_from_double(1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
-}
-
-/*
- * --------------------------------------------------------------------
- * Reciprocal vector norm rnorm4d(a, b, c, d) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm4d(
-  const double __a_hi,
-  const double __a_lo,
-  const double __b_hi,
-  const double __b_lo,
-  const double __c_hi,
-  const double __c_lo,
-  const double __d_hi,
-  const double __d_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  double __ad = ::cuda::__fpmp2_to_double(__a_hi, __a_lo), __bd = ::cuda::__fpmp2_to_double(__b_hi, __b_lo),
-         __cd = ::cuda::__fpmp2_to_double(__c_hi, __c_lo), __dd = ::cuda::__fpmp2_to_double(__d_hi, __d_lo);
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (::cuda::__fpmp2_from_double(::rnorm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
-    (::cuda::__fpmp2_from_double(
-       1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
-}
 
 _CCCL_FPMP_NORM_2A(rhypot, true)
 _CCCL_FPMP_NORM_3A(norm3d, false)
@@ -1254,8 +1208,8 @@ _CCCL_FPMP_NORM_4A(rnorm4d, true)
  * The operands are converted to double, which holds a float pair exactly, and the norm is
  * taken in double (CUDA's norm3d etc. on the device), within 0.6u^2 of the norm and of its
  * reciprocal. The kernels of #12641; the other levels take the pair kernel above, which has
- * no FP64 operation and is the faster one wherever FP64 is rationed. fp64mp2 takes its double
- * fallback at every level.
+ * no FP64 operation and is the faster one wherever FP64 is rationed. fp64mp2 takes the pair
+ * kernel at every level, since a double would drop the low limb.
  *
  * Special cases are answered on entry, as by the pair kernel (C Annex F for hypot, extended
  * to n operands and to the reciprocal): an infinite operand gives +inf (+0 for the
