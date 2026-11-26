@@ -304,7 +304,13 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
   auto* __dst       = static_cast<char*>(__gmem_dst);
   const auto* __src = static_cast<const char*>(__smem_src);
 
-  const ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
+  ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+  // For some reason the optimizer propagates information from this computation to the masked bulk copies below and
+  // generates an unaligned access error. Making the value opaque prevents the propagation. It also solves the issue
+  // described in nvbug 5848313 by accident on nvcc 13.2+.
+  asm volatile("" : "+r"(__padded_bytes));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
   const ::cuda::std::uint32_t __tail_bytes   = __padded_bytes % 16; // bytes after the last 16-byte boundary
   const ::cuda::std::uint32_t __size         = __padded_bytes - __tail_bytes; // rounded down
   const bool __do_start                      = __head_padding > 0;
@@ -318,7 +324,8 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
 
   // stores a subset of 16 bytes at a 16-byte aligned position
   auto __store_masked =
-    [&](::cuda::std::uint32_t __offset,
+    [&](char* __block_dst,
+        const char* __block_src,
         ::cuda::std::uint16_t __mask,
         ::cuda::std::uint32_t __first,
         ::cuda::std::uint32_t __last) {
@@ -326,10 +333,10 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
         NV_PROVIDES_SM_100,
         (if (__elected) {
           ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global, ::cuda::ptx::space_shared, __dst + __offset, __src + __offset, 16, __mask);
+            ::cuda::ptx::space_global, ::cuda::ptx::space_shared, __block_dst, __block_src, 16, __mask);
         }),
         ((void) __mask; if (__first <= __thread_rank && __thread_rank < __last) {
-          __dst[__offset + __thread_rank] = __src[__offset + __thread_rank];
+          __block_dst[__thread_rank] = __block_src[__thread_rank];
         }));
     };
 
@@ -340,21 +347,40 @@ _CCCL_DEVICE_API inline void __bulk_store_unaligned(
     // if the data does not cover a full 16-byte block.
     if (__elected)
     {
-      ::cuda::device::__bulk_store(__dst + __middle_start, __src + __middle_start, __middle_bytes);
+      char* __middle_dst = __dst + __middle_start;
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
+      asm volatile("" : "+l"(__middle_dst));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      ::cuda::device::__bulk_store(__middle_dst, __src + __middle_start, __middle_bytes);
     }
     if (__do_start)
     {
-      __store_masked(0, __mask_start, __head_padding, 16);
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      // need to work around yet another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8838
+      asm volatile("" : "+l"(__dst));
+      asm volatile("" : "+l"(__src));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      __store_masked(__dst, __src, __mask_start, __head_padding, 16);
     }
     if (__do_end)
     {
-      __store_masked(__size, __mask_end, 0, __tail_bytes);
+      char* __end_dst = __dst + __size;
+#    if _CCCL_CUDA_COMPILER(NVHPC)
+      // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
+      // when printed, so let's shake the optimizer a bit.
+      asm volatile("" : "+l"(__end_dst));
+#    endif // _CCCL_CUDA_COMPILER(NVHPC)
+      __store_masked(__end_dst, __src + __size, __mask_end, 0, __tail_bytes);
     }
   }
   else
   {
     // everything sits within one 16-byte block
-    __store_masked(0,
+    // not __mask_start & __mask_end: `ptxas fatal   : (C7907) Internal compiler error` before nvcc 13.2, see nvbug
+    // 5848313
+    __store_masked(__dst,
+                   __src,
                    static_cast<::cuda::std::uint16_t>(__mask_start & (__full_mask >> (16 - __padded_bytes))),
                    __head_padding,
                    __padded_bytes);
