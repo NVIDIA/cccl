@@ -26,8 +26,9 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
-#  include <cuda/std/span>
-#  include <cuda/std/string_view>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__fwd/span.h>
+#  include <cuda/std/__fwd/string_view.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -39,7 +40,11 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
-::cuda::std::size_t __physical_devices_count();
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __physical_devices_count()
+{
+  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
+  return __device_count;
+}
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
