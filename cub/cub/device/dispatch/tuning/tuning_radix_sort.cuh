@@ -68,7 +68,7 @@ namespace detail
   switch (algo)
   {
     case RadixSortAlgorithm::__deprecated_multi_pass:
-      return "RadixSortAlgorithm::__deprecated_multi_pass";
+      return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
       return "RadixSortAlgorithm::onesweep";
   }
