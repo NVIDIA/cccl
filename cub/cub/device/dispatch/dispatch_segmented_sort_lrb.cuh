@@ -34,9 +34,9 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -296,6 +296,9 @@ _CCCL_HOST_API cudaError_t launch_radix_overflow(
 }
 
 // Host-launched keys-only backend. GroupMerge handles bounded bins and radix handles overflow.
+// num_items is the size of in and out and must cover every exclusive end offset because radix passes use the same
+// offsets in scratch. When overflow is possible, dispatch reads the overflow range back to the host and synchronizes
+// the stream, which prevents graph capture.
 template <SortOrder Order,
           typename Key,
           typename BeginIterator,
