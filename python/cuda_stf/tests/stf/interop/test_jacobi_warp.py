@@ -29,56 +29,11 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 wp = pytest.importorskip("warp")
 
-# ---------------------------------------------------------------------------
-# STF <-> Warp glue: wp.Stream adapter cache and CAI -> wp.array helpers.
-#
-# Double-registering the same raw cudaStream_t with Warp corrupts its
-# internal state, so we memoize one ``wp.Stream`` wrapper per (device, raw
-# ptr) pair. STF's stream pool is small, so the cache stays small.
-# ---------------------------------------------------------------------------
-
-
-_wp_stream_cache: dict[tuple[int | str, int], wp.Stream] = {}
-
-
-def _device_cache_key(device):
-    return getattr(device, "ordinal", str(device))
-
-
-def wrap_stream(raw_ptr: int, device) -> wp.Stream:
-    """Return a cached ``wp.Stream`` wrapping ``raw_ptr`` on ``device``."""
-    key = (_device_cache_key(device), int(raw_ptr))
-    s = _wp_stream_cache.get(key)
-    if s is None:
-        s = wp.Stream(device, cuda_stream=int(raw_ptr))
-        _wp_stream_cache[key] = s
-    return s
-
-
-def get_arg_warp(task, index: int, dtype, shape=None, device=None) -> wp.array:
-    """Alias a single task argument as a ``wp.array`` (no copy).
-
-    STF returns each argument as an ``stf_cai`` exposing ``ptr``, ``shape``
-    and ``dtype``. Warp's ``wp.array`` constructor is strict about its
-    ``data=`` path (rejects non-ndarray objects even if they expose
-    ``__cuda_array_interface__``), so we go through ``ptr=`` which maps
-    an external allocation without taking ownership. The returned array
-    is only valid for the duration of the enclosing ``with ctx.task(...)``
-    block.
-    """
-    cai = task.get_arg_cai(index)
-    cai_shape = tuple(cai.shape) if shape is None else tuple(shape)
-    return wp.array(
-        ptr=int(cai.ptr),
-        dtype=dtype,
-        shape=cai_shape,
-        device=device if device is not None else wp.get_device(),
-    )
-
+from cuda.stf._experimental.interop.warp import get_arg_warp, wrap_stream  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Warp kernels. Line-for-line equivalents of the Numba versions in
@@ -335,17 +290,16 @@ def test_graph_scope_warp():
                 stream=s,
             )
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            s = wrap_stream(t.stream_ptr(), device)
-            dX = get_arg_warp(t, 0, wp.float32, (n,))
-            wp.launch(
-                scale_kernel,
-                dim=n,
-                inputs=[dX, wp.float32(3.0)],
-                device=device,
-                stream=s,
-            )
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        s = wrap_stream(t.stream_ptr(), device)
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        wp.launch(
+            scale_kernel,
+            dim=n,
+            inputs=[dX, wp.float32(3.0)],
+            device=device,
+            stream=s,
+        )
 
     ctx.finalize()
 
@@ -363,17 +317,16 @@ def test_repeat_warp():
     ctx = stf.stackable_context()
     lX = ctx.logical_data(X_host, name="X")
 
-    with ctx.repeat(10):
-        with ctx.task(lX.rw()) as t:
-            s = wrap_stream(t.stream_ptr(), device)
-            dX = get_arg_warp(t, 0, wp.float32, (n,))
-            wp.launch(
-                add_kernel,
-                dim=n,
-                inputs=[dX, wp.float32(1.0)],
-                device=device,
-                stream=s,
-            )
+    with ctx.repeat(10), ctx.task(lX.rw()) as t:
+        s = wrap_stream(t.stream_ptr(), device)
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        wp.launch(
+            add_kernel,
+            dim=n,
+            inputs=[dX, wp.float32(1.0)],
+            device=device,
+            stream=s,
+        )
 
     ctx.finalize()
 
