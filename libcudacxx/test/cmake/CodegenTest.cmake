@@ -558,10 +558,45 @@ function(
   set(${out_check_prefixes} "${check_prefixes}" PARENT_SCOPE)
 endfunction()
 
+# Suites may select prefixes that only some sources use.
+function(libcudacxx_codegen_append_optional_prefixes out test_contents)
+  set(prefixes ${${out}})
+  string(TOUPPER "${test_contents}" uppercase_test_contents)
+  foreach (check_prefix IN LISTS ARGN)
+    string(TOUPPER "${check_prefix}" uppercase_check_prefix)
+    string(
+      REGEX MATCH
+      "; ${check_prefix}(:|-[A-Z]+:)"
+      has_check_prefix
+      "${test_contents}"
+    )
+    string(
+      REGEX MATCH
+      # The prefix may be the final component before the directive's line
+      # ending, not just a component followed by a comma.
+      "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|[\r\n])"
+      has_combined_check_prefix
+      "${uppercase_test_contents}"
+    )
+    if (has_check_prefix OR has_combined_check_prefix)
+      list(APPEND prefixes "${check_prefix}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES prefixes)
+  set(${out} "${prefixes}" PARENT_SCOPE)
+endfunction()
+
 function(libcudacxx_codegen_add_ptx_tests)
   set(options)
   set(one_value_args AGGREGATE_TARGET TARGET_PREFIX ARCH)
-  set(multi_value_args CHECK_PREFIXES TESTS COMPILE_DEFINITIONS)
+  set(
+    multi_value_args
+    CHECK_PREFIXES
+    OPTIONAL_CHECK_PREFIXES
+    CHECK_DEFINITIONS
+    TESTS
+    COMPILE_DEFINITIONS
+  )
   cmake_parse_arguments(
     arg
     "${options}"
@@ -577,12 +612,14 @@ function(libcudacxx_codegen_add_ptx_tests)
       PROPERTY CMAKE_CONFIGURE_DEPENDS "${test_path}"
     )
     file(READ "${test_path}" test_contents)
+    set(base_prefixes ${arg_CHECK_PREFIXES})
+    libcudacxx_codegen_append_optional_prefixes(base_prefixes "${test_contents}" ${arg_OPTIONAL_CHECK_PREFIXES})
     libcudacxx_codegen_get_arch_check_prefixes(
       check_prefixes
       unused_has_arch_specific_checks
       "${test_contents}"
       "${arg_ARCH}"
-      "${arg_CHECK_PREFIXES}"
+      "${base_prefixes}"
     )
 
     libcudacxx_codegen_add_test(
@@ -592,6 +629,7 @@ function(libcudacxx_codegen_add_ptx_tests)
       ARCH ${arg_ARCH}
       TEST "${test_path}"
       CHECK_PREFIXES "${check_prefixes}"
+      CHECK_DEFINITIONS ${arg_CHECK_DEFINITIONS}
       COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
     )
   endforeach()
@@ -685,28 +723,7 @@ function(libcudacxx_codegen_add_sass_tests)
         SMXX
       )
       string(REPLACE "," ";" common_check_prefixes "${check_prefixes}")
-      string(TOUPPER "${test_contents}" uppercase_test_contents)
-      foreach (check_prefix IN LISTS arg_CHECK_PREFIXES)
-        string(TOUPPER "${check_prefix}" uppercase_check_prefix)
-        string(
-          REGEX MATCH
-          "; ${check_prefix}(:|-[A-Z]+:)"
-          has_check_prefix
-          "${test_contents}"
-        )
-        string(
-          REGEX MATCH
-          # The prefix may be the final component before the directive's line
-          # ending, not just a component followed by a comma.
-          "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|[\r\n])"
-          has_combined_check_prefix
-          "${uppercase_test_contents}"
-        )
-        if (has_check_prefix OR has_combined_check_prefix)
-          list(APPEND common_check_prefixes "${check_prefix}")
-        endif()
-      endforeach()
-      list(REMOVE_DUPLICATES common_check_prefixes)
+      libcudacxx_codegen_append_optional_prefixes(common_check_prefixes "${test_contents}" ${arg_CHECK_PREFIXES})
 
       if (num_variants EQUAL 0)
         list(JOIN common_check_prefixes "," combined_check_prefixes)

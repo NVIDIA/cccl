@@ -45,27 +45,29 @@ Group Mapping Result Concept
     // Group within the parent group info.
     { T::static_group_count() } -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
     { t.group_count() } -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
-    { t.group_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
+    { T::static_group_rank() } -> cuda::std::same_as<cuda::std::size_t>;  // (3), must be constexpr
+    { t.group_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (4)
 
     // Unit within the group info.
-    { T::static_unit_count() } -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
-    { t.unit_count() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
-    { t.unit_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
+    { T::static_unit_count() } -> cuda::std::same_as<cuda::std::size_t>;  // (5), must be constexpr
+    { t.unit_count() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (6)
+    { t.unit_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;         // (7)
 
     // Properties of the mapping result.
-    { T::is_always_exhaustive() } -> cuda::std::same_as<bool>;            // (7), must be constexpr
-    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;            // (8), must be constexpr
-    { t.is_valid() } -> cuda::std::same_as<bool>;                         // (9)
+    { T::is_always_exhaustive() } -> cuda::std::same_as<bool>;            // (8), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;            // (9), must be constexpr
+    { t.is_valid() } -> cuda::std::same_as<bool>;                         // (10)
 
     // Other group-related info.
-    { t.lane_mask() } -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
+    { t.lane_mask() } -> cuda::std::same_as<cuda::device::lane_mask>;     // (11)
   };
 
 Where:
 
 #. The number of groups known at compile time. When it is equal to ``cuda::std::dynamic_extent``, the group count is known only at runtime.
 #. The number of groups known at runtime. It is equal to ``static_cast<cuda::std::uint32_t>(static_group_count())`` when ``static_group_count() != cuda::std::dynamic_extent``.
-#. The current unit's group rank.
+#. The current unit's group rank known at compile time. It is ``0`` for a single group and ``cuda::std::dynamic_extent`` when the rank is known only at runtime.
+#. The current unit's group rank. It is equal to ``static_cast<cuda::std::uint32_t>(static_group_rank())`` when ``static_group_rank() != cuda::std::dynamic_extent``.
 #. The number of units in every group known at compile time. When equal to ``cuda::std::dynamic_extent``, the number of units is known only at runtime and may differ between groups.
 #. The number of units within the unit's group known at runtime. It is equal to ``static_cast<cuda::std::uint32_t>(static_unit_count())`` when ``static_unit_count() != cuda::std::dynamic_extent``.
 #. The current unit's rank.

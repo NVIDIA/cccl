@@ -12,7 +12,7 @@
 // error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/__memory_>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/cassert>
@@ -28,7 +28,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
     assert(*p1 == 0);
   }
 
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
   {
     cuda::std::unique_ptr<cuda::std::string> p2 = cuda::std::make_unique<cuda::std::string>("Meow!");
     assert(*p2 == "Meow!");

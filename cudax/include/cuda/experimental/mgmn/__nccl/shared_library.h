@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
@@ -71,7 +70,7 @@ protected:
 
     if (__sym == nullptr && !__can_fail)
     {
-      _CCCL_THROW(::std::invalid_argument, "Failed to locate the symbol in the shared library");
+      _CCCL_THROW_STD(invalid_argument, "Failed to locate the symbol in the shared library");
     }
     return __sym;
   }
@@ -123,7 +122,7 @@ protected:
       }
       else
       {
-        _CCCL_THROW(::std::runtime_error, "Failed to locate the symbol in the shared library");
+        _CCCL_THROW_STD(runtime_error, "Failed to locate the symbol in the shared library");
       }
     }
     return __sym;
@@ -163,7 +162,7 @@ public:
   {
     if (!__handle_)
     {
-      _CCCL_THROW(::std::runtime_error, "Failed to load dynamic shared object");
+      _CCCL_THROW_STD(runtime_error, "Failed to load dynamic shared object");
     }
   }
 

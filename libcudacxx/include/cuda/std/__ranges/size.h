@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,13 +22,16 @@
 
 #include <cuda/std/__concepts/class_or_enum.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/cstddef>
 
@@ -43,12 +46,12 @@ inline constexpr bool disable_sized_range = false;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__size)
 
-#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
 // A deleted declaration suppresses ADL on these compilers.
 _CCCL_HOST_DEVICE void size();
-#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC) ^^^ / vvv deleted declaration vvv
 _CCCL_HOST_DEVICE void size() = delete;
-#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
 
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
@@ -194,6 +197,39 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
+
+// A declaration suffices: a static size must not depend on the object's value.
+template <class _Tp>
+extern _Tp __static_size_object;
+
+_CCCL_DIAG_PUSH
+// This probe intentionally uses a variable template without a definition.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-var-template")
+
+template <class _Tp, bool = __ssize::__can_ssize<_Tp>, class = void>
+inline constexpr size_t __static_size_impl_v = dynamic_extent;
+
+template <class _Tp>
+inline constexpr size_t __static_size_impl_v<
+  _Tp,
+  true,
+  void_t<typename integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::type>> =
+  integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::value;
+
+_CCCL_DIAG_POP
+
+// Views can have a known static cardinality without modeling sized_range, for example an empty filter_view.
+// Keep propagation separate from the ranges::size probe so such views can specialize it.
+//
+// Preserve cv-qualifiers: a view may refer to a const range with a different size() overload.
+template <class _Tp>
+inline constexpr size_t __static_size_v = __static_size_impl_v<_Tp>;
+
+template <class _Tp>
+inline constexpr size_t __static_size_v<_Tp&> = __static_size_v<_Tp>;
+
+template <class _Tp>
+inline constexpr size_t __static_size_v<_Tp&&> = __static_size_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

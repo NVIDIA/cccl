@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,13 +27,18 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/in_range.h>
 #include <cuda/__utility/no_init.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__cuco/detail/hyperloglog/default_policy.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hll_policies.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>
 
@@ -409,7 +414,7 @@ private:
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
-      _CCCL_THROW(::std::invalid_argument, __message);
+      _CCCL_THROW_STD(invalid_argument, __message);
     }
     return __precision;
   }

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,6 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning na
   _CCCL_UNREACHABLE();
 }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // Expose once atomic is universally available
 
 using terminate_handler = void (*)();

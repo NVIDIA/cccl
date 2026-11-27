@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,9 +23,15 @@
 #endif // no system header
 
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/projected.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/zip_view.h>

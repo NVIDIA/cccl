@@ -11,7 +11,7 @@
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config> // IWYU pragma: export
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,3 @@
 #include <cub/util_cpp_dialect.cuh> // IWYU pragma: export
 #include <cub/util_macro.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__nvtx/nvtx.h> // IWYU pragma: export
-#endif // !_CCCL_COMPILER(NVRTC)

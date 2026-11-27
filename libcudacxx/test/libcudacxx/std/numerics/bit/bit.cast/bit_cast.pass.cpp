@@ -13,15 +13,23 @@
 // template<class To, class From>
 //   constexpr To bit_cast(const From& from) noexcept;
 
-#include <cuda/std/array>
+#include "test_macros.h"
+
+// GCC emits -Wdeprecated-copy in bit_cast when it copies NoDefaultAggregate below.
+_CCCL_DIAG_PUSH
+#if TEST_COMPILER(GCC, >=, 9)
+_CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-copy")
+#endif // TEST_COMPILER(GCC, >=, 9)
 #include <cuda/std/bit>
+_CCCL_DIAG_POP
+
+#include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
-
-#include "test_macros.h"
+#include <cuda/std/type_traits>
 
 // cuda::std::bit_cast does not preserve padding bits, so if T has padding bits,
 // the results might not memcmp cleanly.
@@ -341,7 +349,63 @@ TEST_FUNC bool tests()
   return true;
 }
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
+
+// NOLINTBEGIN(misc-static-assert)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_same_type()
+{
+  constexpr int value = 123;
+
+  struct Aggregate
+  {
+    int data;
+  };
+  // a non-default-constructible is not supported in the memcpy path, but it is supported in the direct return path
+  struct NoDefaultConstructible
+  {
+    int data;
+    TEST_FUNC constexpr explicit NoDefaultConstructible(int v)
+        : data(v)
+    {}
+  };
+  // the direct return path is not supported for deleted copy constructor
+  struct MoveOnly
+  {
+    int data;
+    MoveOnly()           = default;
+    MoveOnly(MoveOnly&&) = default;
+  };
+  static_assert(!cuda::std::is_copy_constructible_v<MoveOnly>);
+
+  assert(cuda::std::bit_cast<int>(value) == value);
+  assert(cuda::std::bit_cast<const int>(value) == value);
+  assert(cuda::std::bit_cast<Aggregate>(Aggregate{value}).data == value);
+  assert(cuda::std::bit_cast<const NoDefaultConstructible>(NoDefaultConstructible(value)).data == value);
+
+  MoveOnly input{};
+  input.data = value;
+  assert(cuda::std::bit_cast<MoveOnly>(input).data == value);
+
+  // except for NVCC+MSVC C++17, the direct return path supports non-trivially copyable types
+#if !(TEST_CUDA_COMPILER(NVCC) && TEST_COMPILER(MSVC) && TEST_STD_VER == 2017)
+  struct NoDefaultAggregate
+  {
+    const int data;
+    TEST_FUNC NoDefaultAggregate& operator=(const NoDefaultAggregate&); // implicitly deleted copy ctr
+  };
+  // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
+  static_assert(!cuda::std::is_trivially_copyable_v<NoDefaultAggregate>);
+  assert(cuda::std::bit_cast<NoDefaultAggregate>(NoDefaultAggregate{value}).data == value);
+#endif // !(TEST_CUDA_COMPILER(NVCC) && TEST_COMPILER(MSVC) && TEST_STD_VER == 2017)
+
+  return true;
+}
+// NOLINTEND(misc-static-assert)
+
+_CCCL_DIAG_POP
+
+#ifdef _CCCL_BUILTIN_BIT_CAST
 TEST_FUNC constexpr bool basic_constexpr_test()
 {
   struct Nested
@@ -357,9 +421,11 @@ TEST_FUNC constexpr bool basic_constexpr_test()
 
 int main(int, char**)
 {
-  tests();
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+  assert(tests()); // NOLINT(misc-static-assert)
+  assert(test_same_type()); // NOLINT(misc-static-assert)
+#ifdef _CCCL_BUILTIN_BIT_CAST
   static_assert(basic_constexpr_test());
+  static_assert(test_same_type());
 #endif // _CCCL_BUILTIN_BIT_CAST
   return 0;
 }

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits copy_if
-#include <thrust/system/detail/sequential/copy_if.h>
+#include <thrust/system/detail/sequential/copy_if.h> // IWYU pragma: export

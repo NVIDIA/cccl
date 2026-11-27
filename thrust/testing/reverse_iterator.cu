@@ -1,9 +1,16 @@
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -18,7 +25,7 @@ TEST_CASE("TestReverseIteratorTraits", "[reverse_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, int&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
-inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
+_CCCL_HOST_API inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
 {
   // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
   // work.

@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // template<class T, class U = typename T::value_type>
 // struct alignment;
@@ -19,7 +19,7 @@
 // template<class T, class U = typename T::value_type>
 // constexpr size_t alignment_v = alignment<T, U>::value;
 
-#include <cuda/std/__simd_>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

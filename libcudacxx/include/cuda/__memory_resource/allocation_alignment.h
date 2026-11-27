@@ -23,7 +23,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,9 +36,8 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -83,7 +82,7 @@ struct allocation_alignment_t
 _CCCL_GLOBAL_CONSTANT auto allocation_alignment = allocation_alignment_t{};
 
 //! @brief Returns true if \p __alignment is a power of two and not less than \p __min_alignment.
-_CCCL_HOST_DEVICE constexpr bool
+_CCCL_HOST_DEVICE_API constexpr bool
 __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
 {
   return __alignment >= __min_alignment && __alignment != 0 && (__alignment & (__alignment - 1)) == 0;
@@ -96,9 +95,9 @@ __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "Invalid allocation alignment: must be a power of two and at least the "
-                "type's alignment.");
+    _CCCL_THROW_STD(invalid_argument,
+                    "Invalid allocation alignment: must be a power of two and at least the "
+                    "type's alignment.");
   }
 }
 

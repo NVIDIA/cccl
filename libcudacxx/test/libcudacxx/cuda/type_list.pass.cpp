@@ -78,7 +78,7 @@ TEST_FUNC constexpr bool test_call_indirect(long)
 }
 
 static_assert(test_call_indirect<Incomplete, Empty>(0));
-#if !defined(SKIP_SFINAE_TESTS)
+#ifndef SKIP_SFINAE_TESTS
 static_assert(!test_call_indirect<Incomplete>(0));
 static_assert(!test_call_indirect<Incomplete, Empty, int>(0));
 #endif

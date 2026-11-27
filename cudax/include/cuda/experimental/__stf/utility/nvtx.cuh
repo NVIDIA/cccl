@@ -20,7 +20,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,11 +31,8 @@
 #if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
                       && !defined(CCCL_DISABLE_NVTX)                                             \
                       && !defined(NVTX_DISABLE)
-#  include <nvtx3/nvToolsExt.h>
+#  include <nvtx3/nvToolsExt.h> // IWYU pragma: export
 #endif
-
-#include <type_traits>
-#include <utility>
 
 namespace cuda::experimental::stf
 {

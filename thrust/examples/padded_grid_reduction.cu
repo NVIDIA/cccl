@@ -2,12 +2,16 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/tuple>
+
 #include <cfloat>
 #include <cmath>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 
@@ -53,14 +57,12 @@ struct reduce_tuple
                    thrust::min(cuda::std::get<1>(t0), cuda::std::get<1>(t1)),
                    thrust::max(cuda::std::get<2>(t0), cuda::std::get<2>(t1)));
     }
-    else if (cuda::std::get<0>(t0))
+    if (cuda::std::get<0>(t0))
     {
       return t0;
     }
-    else
-    {
-      return t1; // if t0 is not valid, return t1 whether it is valid or not
-    }
+
+    return t1; // if t0 is not valid, return t1 whether it is valid or not
   }
 };
 
@@ -80,7 +82,7 @@ int main()
   {
     for (int j = 0; j < n; j++)
     {
-      data[static_cast<std::size_t>(i) * n_padded + j] = dist(rng);
+      data[(static_cast<std::size_t>(i) * n_padded) + j] = dist(rng);
     }
   }
 

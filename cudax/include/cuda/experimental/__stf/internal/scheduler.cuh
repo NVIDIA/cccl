@@ -24,7 +24,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,20 +33,30 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/cassert>
 
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/internal/task.cuh> // scheduler uses task
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <cstdlib> // rand()
 #include <filesystem> // ::std::filesystem::exists
 #include <fstream> // ::std::ifstream
 #include <iostream>
-#include <limits> // ::cuda::std::numeric_limits<double>::max()
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved
@@ -465,7 +475,7 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
     return ::std::make_unique<heft_scheduler>();
   }
 
-  _CCCL_THROW(::std::invalid_argument,
-              ::std::string("invalid CUDASTF_SCHEDULE value '").append(schedule_type_s).append("'"));
+  _CCCL_THROW_STD(invalid_argument,
+                  ::std::string("invalid CUDASTF_SCHEDULE value '").append(schedule_type_s).append("'").c_str());
 }
 } // namespace cuda::experimental::stf::reserved

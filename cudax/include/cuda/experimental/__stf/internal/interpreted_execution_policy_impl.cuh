@@ -24,7 +24,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/min.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,15 +32,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/internal/execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace cuda::experimental::stf
 {
@@ -133,12 +137,14 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l1_size) > kernel_limits.block_size_limit)
       {
-        _CCCL_THROW(::std::invalid_argument,
-                    ::std::string("unsatisfiable spec: maximum block size ")
-                      .append(::std::to_string(kernel_limits.block_size_limit))
-                      .append(" threads, requested ")
-                      .append(::std::to_string(l1_size))
-                      .append(" (level 1)"));
+        _CCCL_THROW_STD(
+          invalid_argument,
+          ::std::string("unsatisfiable spec: maximum block size ")
+            .append(::std::to_string(kernel_limits.block_size_limit))
+            .append(" threads, requested ")
+            .append(::std::to_string(l1_size))
+            .append(" (level 1)")
+            .c_str());
       }
     }
 
@@ -183,12 +189,14 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l2_size) > kernel_limits.block_size_limit)
       {
-        _CCCL_THROW(::std::invalid_argument,
-                    ::std::string("unsatisfiable spec: maximum block size ")
-                      .append(::std::to_string(kernel_limits.block_size_limit))
-                      .append(" threads, requested ")
-                      .append(::std::to_string(l2_size))
-                      .append(" (level 2)"));
+        _CCCL_THROW_STD(
+          invalid_argument,
+          ::std::string("unsatisfiable spec: maximum block size ")
+            .append(::std::to_string(kernel_limits.block_size_limit))
+            .append(" threads, requested ")
+            .append(::std::to_string(l2_size))
+            .append(" (level 2)")
+            .c_str());
       }
     }
 

@@ -6,8 +6,6 @@
 #include <clang-tidy/ClangTidyCheck.h>
 #include <clang-tidy/ClangTidyModule.h>
 #include <clang-tidy/FileExtensionsSet.h>
-#include <clang-tidy/utils/FileExtensionsUtils.h>
-#include <clang-tidy/utils/LexerUtils.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Decl.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
@@ -15,28 +13,16 @@
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Lex/Lexer.h>
+#include <common/lexer.h>
+#include <common/matchers.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/ErrorHandling.h>
-#include <llvm/Support/Path.h>
 
 namespace clang::tidy::cccl
 {
 namespace
 {
 using namespace ast_matchers; // NOLINT(google-build-using-namespace)
-
-AST_MATCHER_P(Decl, isExpansionInHeaderFile, const FileExtensionsSet*, extensions)
-{
-  static_cast<void>(Builder);
-  static_cast<void>(Finder);
-
-  const auto begin    = Node.getBeginLoc();
-  const auto& sm      = Finder->getASTContext().getSourceManager();
-  const auto filename = sm.getFilename(sm.getExpansionLoc(begin));
-  // LLVM's header utility rejects extensionless files even when the empty extension is configured.
-  return utils::isExpansionLocInHeaderFile(begin, sm, *extensions)
-      || (extensions->contains("") && !filename.empty() && llvm::sys::path::extension(filename).empty());
-}
 
 AST_MATCHER(VarDecl, isFileVarDecl)
 {
@@ -65,89 +51,6 @@ AST_MATCHER(Decl, hasExplicitGlobalAttr)
   return attr && !attr->isImplicit();
 }
 
-#if LLVM_VERSION_MAJOR >= 23
-[[nodiscard]] CharSourceRange findTokenTextInRange(
-  CharSourceRange Range,
-  const SourceManager& SM,
-  const LangOptions& LangOpts,
-  llvm::function_ref<bool(const Token&)> Pred)
-{
-  return utils::lexer::findTokenTextInRange(std::move(Range), SM, LangOpts, std::move(Pred));
-}
-#else
-// Word-for-word backport of findTokenTextInRange()
-[[nodiscard]] CharSourceRange findTokenTextInRange(
-  CharSourceRange Range,
-  const SourceManager& SM,
-  const LangOptions& LangOpts,
-  llvm::function_ref<bool(const Token&)> Pred)
-{
-  if (Range.isInvalid())
-  {
-    return {};
-  }
-
-  // Normalize to a file-based char range so raw lexing can operate on one
-  // contiguous buffer and reject unmappable (e.g. macro) ranges.
-  const CharSourceRange FileRange = Lexer::makeFileCharRange(Range, SM, LangOpts);
-
-  if (FileRange.isInvalid())
-  {
-    return {};
-  }
-
-  const auto [BeginFID, BeginOffset] = SM.getDecomposedLoc(FileRange.getBegin());
-  const auto [EndFID, EndOffset]     = SM.getDecomposedLoc(FileRange.getEnd());
-
-  if (BeginFID != EndFID || BeginOffset > EndOffset)
-  {
-    return {};
-  }
-
-  bool Invalid           = false;
-  const StringRef Buffer = SM.getBufferData(BeginFID, &Invalid);
-  if (Invalid)
-  {
-    return {};
-  }
-
-  const char* LexStart = Buffer.data() + BeginOffset;
-  // Re-lex raw tokens in the bounded file buffer while preserving comments so
-  // callers can match tokens regardless of interleaved comments.
-  Lexer TheLexer{SM.getLocForStartOfFile(BeginFID), LangOpts, Buffer.begin(), LexStart, Buffer.end()};
-  TheLexer.SetCommentRetentionState(true);
-
-  while (true)
-  {
-    Token Tok{};
-    if (TheLexer.LexFromRawLexer(Tok))
-    {
-      return {};
-    }
-
-    if (Tok.is(tok::eof) || Tok.getLocation() == FileRange.getEnd()
-        || SM.isBeforeInTranslationUnit(FileRange.getEnd(), Tok.getLocation()))
-    {
-      return {};
-    }
-
-    if (!Pred(Tok))
-    {
-      continue;
-    }
-
-    Token NextTok{};
-    if (TheLexer.LexFromRawLexer(NextTok))
-    {
-      return {};
-    }
-    // Return a char range ending at the next token start so trailing trivia of
-    // the matched token is included (useful for fix-it removals).
-    return CharSourceRange::getCharRange(Tok.getLocation(), NextTok.getLocation());
-  }
-}
-#endif
-
 class AvoidInternalLinkageInHeadersCheck final : public ClangTidyCheck
 {
   static constexpr StringRef FUNCTION_BIND{"f"};
@@ -171,7 +74,7 @@ public:
     // misc-anonymous-namespace-in-header already diagnoses anonymous namespaces.
     const auto header_decl =
       allOf(unless(isExpansionInSystemHeader()),
-            isExpansionInHeaderFile(header_extensions_),
+            util::isExpansionInHeaderFile(header_extensions_),
             unless(isInAnonymousNamespace()));
 
     finder->addMatcher(
@@ -250,7 +153,7 @@ private:
   {
     const auto& sm        = context.getSourceManager();
     const auto& lang_opts = context.getLangOpts();
-    const auto range      = findTokenTextInRange(
+    const auto range      = util::findTokenTextInRange(
       CharSourceRange::getTokenRange(declaration.getBeginLoc(), declaration.getLocation()),
       sm,
       lang_opts,

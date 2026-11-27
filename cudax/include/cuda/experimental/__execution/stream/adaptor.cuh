@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,16 +23,27 @@
 
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>

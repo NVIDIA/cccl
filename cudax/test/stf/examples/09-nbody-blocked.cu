@@ -56,7 +56,7 @@ void writeVTKFile(context& ctx,
       {
         for (size_t k = 0; k < 3; k++)
         {
-          dump[3 * (i + b * BLOCK_SIZE) + k] = p(i).pos[k];
+          dump[(3 * (i + (b * BLOCK_SIZE))) + k] = p(i).pos[k];
         }
       }
     };
@@ -64,7 +64,7 @@ void writeVTKFile(context& ctx,
 
   for (size_t p = 0; p < BODY_CNT; p++)
   {
-    outfile << dump[3 * p] << " " << dump[3 * p + 1] << " " << dump[3 * p + 2] << "\n";
+    outfile << dump[3 * p] << " " << dump[(3 * p) + 1] << " " << dump[(3 * p) + 2] << "\n";
   }
 
   outfile.close();
@@ -223,7 +223,7 @@ int main(int argc, char** argv)
                   {
                     for (size_t j = 0; j < p_other.extent(0); j++)
                     {
-                      if ((b * BLOCK_SIZE + i) != (b_other * BLOCK_SIZE + j))
+                      if (((b * BLOCK_SIZE) + i) != ((b_other * BLOCK_SIZE) + j))
                       {
                         double d[3];
                         for (size_t k = 0; k < 3; k++)
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
                           d[k] = p_other(j).pos[k] - p(i).pos[k];
                         }
 
-                        const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+                        const double dist     = (d[0] * d[0]) + (d[1] * d[1]) + (d[2] * d[2]) + kSofteningSquared;
                         const double dist_inv = 1.0 / sqrt(dist);
 
                         for (size_t k = 0; k < 3; k++)

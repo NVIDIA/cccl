@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 
 #if _CCCL_CTK_AT_LEAST(12, 2)
 
+#  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -31,6 +32,8 @@
 #  include <cuda/experimental/__driver/driver_api.cuh>
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
+
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

@@ -1,7 +1,19 @@
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/unique.h>
+
+#include <cuda/cmath>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
+#include <cstdint>
+#include <new>
 
 #include <unittest/unittest.h>
 

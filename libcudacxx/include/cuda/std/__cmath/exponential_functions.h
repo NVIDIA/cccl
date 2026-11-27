@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -56,7 +56,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float exp(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXPF)
+#ifdef _CCCL_BUILTIN_EXPF
   return _CCCL_BUILTIN_EXPF(__x);
 #else // ^^^ _CCCL_BUILTIN_EXPF ^^^ // vvv !_CCCL_BUILTIN_EXPF vvv
   return ::expf(__x);
@@ -65,7 +65,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float expf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXPF)
+#ifdef _CCCL_BUILTIN_EXPF
   return _CCCL_BUILTIN_EXPF(__x);
 #else // ^^^ _CCCL_BUILTIN_EXPF ^^^ // vvv !_CCCL_BUILTIN_EXPF vvv
   return ::expf(__x);
@@ -74,7 +74,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double exp(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXP)
+#ifdef _CCCL_BUILTIN_EXP
   return _CCCL_BUILTIN_EXP(__x);
 #else // ^^^ _CCCL_BUILTIN_EXP ^^^ // vvv !_CCCL_BUILTIN_EXP vvv
   return ::exp(__x);
@@ -84,7 +84,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double exp(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXPL)
+#  ifdef _CCCL_BUILTIN_EXPL
   return _CCCL_BUILTIN_EXPL(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXPL ^^^ // vvv !_CCCL_BUILTIN_EXPL vvv
   return ::expl(__x);
@@ -93,7 +93,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double expl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXPL)
+#  ifdef _CCCL_BUILTIN_EXPL
   return _CCCL_BUILTIN_EXPL(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXPL ^^^ // vvv !_CCCL_BUILTIN_EXPL vvv
   return ::expl(__x);
@@ -158,7 +158,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float frexp(float __x, int* __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_FREXPF)
+#ifdef _CCCL_BUILTIN_FREXPF
   return _CCCL_BUILTIN_FREXPF(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_FREXPF ^^^ // vvv !_CCCL_BUILTIN_FREXPF vvv
   return ::frexpf(__x, __e);
@@ -167,7 +167,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float frexpf(float __x, int* __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_FREXPF)
+#ifdef _CCCL_BUILTIN_FREXPF
   return _CCCL_BUILTIN_FREXPF(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_FREXPF ^^^ // vvv !_CCCL_BUILTIN_FREXPF vvv
   return ::frexpf(__x, __e);
@@ -176,7 +176,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double frexp(double __x, int* __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_FREXP)
+#ifdef _CCCL_BUILTIN_FREXP
   return _CCCL_BUILTIN_FREXP(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_FREXP ^^^ // vvv !_CCCL_BUILTIN_FREXP vvv
   return ::frexp(__x, __e);
@@ -186,7 +186,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double frexp(long double __x, int* __e) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FREXPL)
+#  ifdef _CCCL_BUILTIN_FREXPL
   return _CCCL_BUILTIN_FREXPL(__x, __e);
 #  else // ^^^ _CCCL_BUILTIN_FREXPL ^^^ // vvv !_CCCL_BUILTIN_FREXPL vvv
   return ::frexpl(__x, __e);
@@ -195,7 +195,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double frexpl(long double __x, int* __e) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FREXPL)
+#  ifdef _CCCL_BUILTIN_FREXPL
   return _CCCL_BUILTIN_FREXPL(__x, __e);
 #  else // ^^^ _CCCL_BUILTIN_FREXPL ^^^ // vvv !_CCCL_BUILTIN_FREXPL vvv
   return ::frexpl(__x, __e);
@@ -304,7 +304,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float ldexp(float __x, int __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_LDEXPF)
+#ifdef _CCCL_BUILTIN_LDEXPF
   return _CCCL_BUILTIN_LDEXPF(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_LDEXPF ^^^ // vvv !_CCCL_BUILTIN_LDEXPF vvv
   return ::ldexpf(__x, __e);
@@ -313,7 +313,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float ldexpf(float __x, int __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_LDEXPF)
+#ifdef _CCCL_BUILTIN_LDEXPF
   return _CCCL_BUILTIN_LDEXPF(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_LDEXPF ^^^ // vvv !_CCCL_BUILTIN_LDEXPF vvv
   return ::ldexpf(__x, __e);
@@ -322,7 +322,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double ldexp(double __x, int __e) noexcept
 {
-#if defined(_CCCL_BUILTIN_LDEXP)
+#ifdef _CCCL_BUILTIN_LDEXP
   return _CCCL_BUILTIN_LDEXP(__x, __e);
 #else // ^^^ _CCCL_BUILTIN_LDEXP ^^^ // vvv !_CCCL_BUILTIN_LDEXP vvv
   return ::ldexp(__x, __e);
@@ -332,7 +332,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double ldexp(long double __x, int __e) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LDEXPL)
+#  ifdef _CCCL_BUILTIN_LDEXPL
   return _CCCL_BUILTIN_LDEXPL(__x, __e);
 #  else // ^^^ _CCCL_BUILTIN_LDEXPL ^^^ // vvv !_CCCL_BUILTIN_LDEXPL vvv
   return ::ldexpl(__x, __e);
@@ -341,7 +341,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double ldexpl(long double __x, int __e) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LDEXPL)
+#  ifdef _CCCL_BUILTIN_LDEXPL
   return _CCCL_BUILTIN_LDEXPL(__x, __e);
 #  else // ^^^ _CCCL_BUILTIN_LDEXPL ^^^ // vvv !_CCCL_BUILTIN_LDEXPL vvv
   return ::ldexpl(__x, __e);
@@ -398,7 +398,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float exp2(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXP2F)
+#ifdef _CCCL_BUILTIN_EXP2F
   return _CCCL_BUILTIN_EXP2F(__x);
 #else // ^^^ _CCCL_BUILTIN_EXP2F ^^^ // vvv !_CCCL_BUILTIN_EXP2F vvv
   return ::exp2f(__x);
@@ -407,7 +407,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float exp2f(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXP2F)
+#ifdef _CCCL_BUILTIN_EXP2F
   return _CCCL_BUILTIN_EXP2F(__x);
 #else // ^^^ _CCCL_BUILTIN_EXP2F ^^^ // vvv !_CCCL_BUILTIN_EXP2F vvv
   return ::exp2f(__x);
@@ -416,7 +416,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double exp2(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXP2)
+#ifdef _CCCL_BUILTIN_EXP2
   return _CCCL_BUILTIN_EXP2(__x);
 #else // ^^^ _CCCL_BUILTIN_EXP2 ^^^ // vvv !_CCCL_BUILTIN_EXP2 vvv
   return ::exp2(__x);
@@ -426,7 +426,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double exp2(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXP2L)
+#  ifdef _CCCL_BUILTIN_EXP2L
   return _CCCL_BUILTIN_EXP2L(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXP2L ^^^ // vvv !_CCCL_BUILTIN_EXP2L vvv
   return ::exp2l(__x);
@@ -435,7 +435,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double exp2l(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXP2L)
+#  ifdef _CCCL_BUILTIN_EXP2L
   return _CCCL_BUILTIN_EXP2L(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXP2L ^^^ // vvv !_CCCL_BUILTIN_EXP2L vvv
   return ::exp2l(__x);
@@ -481,7 +481,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float expm1(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXPM1F)
+#ifdef _CCCL_BUILTIN_EXPM1F
   return _CCCL_BUILTIN_EXPM1F(__x);
 #else // ^^^ _CCCL_BUILTIN_EXPM1F ^^^ // vvv !_CCCL_BUILTIN_EXPM1F vvv
   return ::expm1f(__x);
@@ -490,7 +490,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float expm1f(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXPM1F)
+#ifdef _CCCL_BUILTIN_EXPM1F
   return _CCCL_BUILTIN_EXPM1F(__x);
 #else // ^^^ _CCCL_BUILTIN_EXPM1F ^^^ // vvv !_CCCL_BUILTIN_EXPM1F vvv
   return ::expm1f(__x);
@@ -499,7 +499,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double expm1(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_EXPM1)
+#ifdef _CCCL_BUILTIN_EXPM1
   return _CCCL_BUILTIN_EXPM1(__x);
 #else // ^^^ _CCCL_BUILTIN_EXPM1 ^^^ // vvv !_CCCL_BUILTIN_EXPM1 vvv
   return ::expm1(__x);
@@ -509,7 +509,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double expm1(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXPM1L)
+#  ifdef _CCCL_BUILTIN_EXPM1L
   return _CCCL_BUILTIN_EXPM1L(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXPM1L ^^^ // vvv !_CCCL_BUILTIN_EXPM1L vvv
   return ::expm1l(__x);
@@ -518,7 +518,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double expm1l(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_EXPM1L)
+#  ifdef _CCCL_BUILTIN_EXPM1L
   return _CCCL_BUILTIN_EXPM1L(__x);
 #  else // ^^^ _CCCL_BUILTIN_EXPM1L ^^^ // vvv !_CCCL_BUILTIN_EXPM1L vvv
   return ::expm1l(__x);
@@ -563,7 +563,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float scalbln(float __x, long __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBLNF)
+#ifdef _CCCL_BUILTIN_SCALBLNF
   return _CCCL_BUILTIN_SCALBLNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBLNF ^^^ // vvv !_CCCL_BUILTIN_SCALBLNF vvv
   return ::scalblnf(__x, __y);
@@ -572,7 +572,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float scalblnf(float __x, long __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBLNF)
+#ifdef _CCCL_BUILTIN_SCALBLNF
   return _CCCL_BUILTIN_SCALBLNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBLNF ^^^ // vvv !_CCCL_BUILTIN_SCALBLNF vvv
   return ::scalblnf(__x, __y);
@@ -581,7 +581,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double scalbln(double __x, long __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBLN)
+#ifdef _CCCL_BUILTIN_SCALBLN
   return _CCCL_BUILTIN_SCALBLN(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBLN ^^^ // vvv !_CCCL_BUILTIN_SCALBLN vvv
   return ::scalbln(__x, __y);
@@ -591,7 +591,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double scalbln(long double __x, long __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SCALBLNL)
+#  ifdef _CCCL_BUILTIN_SCALBLNL
   return _CCCL_BUILTIN_SCALBLNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBLNL ^^^ // vvv !_CCCL_BUILTIN_SCALBLNL vvv
   return ::scalblnl(__x, __y);
@@ -600,7 +600,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double scalblnl(long double __x, long __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SCALBLNL)
+#  ifdef _CCCL_BUILTIN_SCALBLNL
   return _CCCL_BUILTIN_SCALBLNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBLNL ^^^ // vvv !_CCCL_BUILTIN_SCALBLNL vvv
   return ::scalblnl(__x, __y);
@@ -645,7 +645,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float scalbn(float __x, int __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBNF)
+#ifdef _CCCL_BUILTIN_SCALBNF
   return _CCCL_BUILTIN_SCALBNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
   return ::scalbnf(__x, __y);
@@ -654,7 +654,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float scalbnf(float __x, int __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBNF)
+#ifdef _CCCL_BUILTIN_SCALBNF
   return _CCCL_BUILTIN_SCALBNF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBNF ^^^ // vvv !_CCCL_BUILTIN_SCALBNF vvv
   return ::scalbnf(__x, __y);
@@ -663,7 +663,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double scalbn(double __x, int __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_SCALBN)
+#ifdef _CCCL_BUILTIN_SCALBN
   return _CCCL_BUILTIN_SCALBN(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_SCALBN ^^^ // vvv !_CCCL_BUILTIN_SCALBN vvv
   return ::scalbn(__x, __y);
@@ -673,7 +673,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double scalbn(long double __x, int __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SCALBNL)
+#  ifdef _CCCL_BUILTIN_SCALBNL
   return _CCCL_BUILTIN_SCALBNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
   return ::scalbnl(__x, __y);
@@ -682,7 +682,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double scalbnl(long double __x, int __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SCALBNL)
+#  ifdef _CCCL_BUILTIN_SCALBNL
   return _CCCL_BUILTIN_SCALBNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_SCALBNL ^^^ // vvv !_CCCL_BUILTIN_SCALBNL vvv
   return ::scalbnl(__x, __y);
@@ -787,7 +787,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float pow(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_POWF)
+#ifdef _CCCL_BUILTIN_POWF
   return _CCCL_BUILTIN_POWF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_POWF ^^^ // vvv !_CCCL_BUILTIN_POWF vvv
   return ::powf(__x, __y);
@@ -796,7 +796,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float powf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_POWF)
+#ifdef _CCCL_BUILTIN_POWF
   return _CCCL_BUILTIN_POWF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_POWF ^^^ // vvv !_CCCL_BUILTIN_POWF vvv
   return ::powf(__x, __y);
@@ -805,7 +805,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double pow(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_POW)
+#ifdef _CCCL_BUILTIN_POW
   return _CCCL_BUILTIN_POW(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_POW ^^^ // vvv !_CCCL_BUILTIN_POW vvv
   return ::pow(__x, __y);
@@ -815,7 +815,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double pow(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_POWL)
+#  ifdef _CCCL_BUILTIN_POWL
   return _CCCL_BUILTIN_POWL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_POWL ^^^ // vvv !_CCCL_BUILTIN_POWL vvv
   return ::powl(__x, __y);
@@ -824,7 +824,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double powl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_POWL)
+#  ifdef _CCCL_BUILTIN_POWL
   return _CCCL_BUILTIN_POWL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_POWL ^^^ // vvv !_CCCL_BUILTIN_POWL vvv
   return ::powl(__x, __y);

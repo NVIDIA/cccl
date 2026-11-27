@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,17 +28,26 @@
 #  include <cuda/__numeric/overflow_cast.h>
 #  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
+#  include <cuda/std/__functional/unwrap_ref.h>
 #  include <cuda/std/__type_traits/conjunction.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
 #  include <cuda/std/__type_traits/rank.h>
+#  include <cuda/std/__type_traits/type_list.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#  ifdef empty_bases
+#    pragma push_macro("empty_bases")
+#    undef empty_bases
+#    define _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -305,12 +314,13 @@ public:
   }
 
   // Helper function to access private constructors
-  static constexpr dynamic_shared_memory_option __create(bool __non_portable = false) noexcept
+  _CCCL_HOST_API static constexpr dynamic_shared_memory_option __create(bool __non_portable = false) noexcept
   {
     return dynamic_shared_memory_option{__non_portable};
   }
 
-  static constexpr dynamic_shared_memory_option __create(::cuda::std::size_t __n, bool __non_portable = false) noexcept
+  _CCCL_HOST_API static constexpr dynamic_shared_memory_option
+  __create(::cuda::std::size_t __n, bool __non_portable = false) noexcept
   {
     return dynamic_shared_memory_option{__n, __non_portable};
   }
@@ -327,8 +337,8 @@ private:
 };
 
 template <class _Tp>
-[[nodiscard]] ::cudaError_t __apply_launch_option(
-  const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
+[[nodiscard]] _CCCL_HOST_API ::cudaError_t
+__apply_launch_option(const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel)
 {
   ::cudaError_t __status = ::cudaSuccess;
 
@@ -441,7 +451,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
   using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
   if (__n > __max_portable_dyn_smem_size / sizeof(value_type))
   {
-    _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
+    _CCCL_THROW_STD(invalid_argument, "portable dynamic shared memory limit exceeded");
   }
   return dynamic_shared_memory_option<_Tp>::__create(__n, false);
 }
@@ -477,7 +487,7 @@ struct launch_priority : public __detail::launch_option
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::launch_priority;
   int priority;
 
-  launch_priority(int p) noexcept
+  _CCCL_HOST_API launch_priority(int p) noexcept
       : priority(p)
   {}
 };
@@ -498,7 +508,7 @@ template <typename... _OptionsToFilter>
 struct __filter_options
 {
   template <bool _Pred, typename _Option>
-  [[nodiscard]] auto __option_or_empty(const _Option& __option)
+  [[nodiscard]] _CCCL_HOST_API auto __option_or_empty(const _Option& __option)
   {
     if constexpr (_Pred)
     {
@@ -511,7 +521,7 @@ struct __filter_options
   }
 
   template <typename... _Options>
-  [[nodiscard]] auto operator()(const _Options&... __options)
+  [[nodiscard]] _CCCL_HOST_API auto operator()(const _Options&... __options)
   {
     return ::cuda::std::tuple_cat(
       __option_or_empty<!__detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
@@ -519,7 +529,7 @@ struct __filter_options
 };
 
 template <typename _Dimensions, typename... _Options>
-auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
+_CCCL_HOST_API auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
 
 template <typename _Tp>
 inline constexpr bool __is_kernel_config = false;
@@ -550,15 +560,17 @@ struct kernel_config
   using hierarchy_type = _Hierarchy;
   using options_type   = ::cuda::std::tuple<_Options...>;
 
+  static constexpr unsigned int __num_attrs = (0u + ... + _Options::needs_attribute_space);
+
   static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, _Options>...>::value);
   static_assert(__detail::no_duplicate_options<_Options...>);
 
-  constexpr kernel_config(const _Hierarchy& hierarchy, const _Options&... opts)
+  _CCCL_HOST_API constexpr kernel_config(const _Hierarchy& hierarchy, const _Options&... opts)
       : __hierarchy(hierarchy)
-      , __options(opts...) {};
-  constexpr kernel_config(const _Hierarchy& hierarchy, const ::cuda::std::tuple<_Options...>& opts)
+      , __options(opts...){};
+  _CCCL_HOST_API constexpr kernel_config(const _Hierarchy& hierarchy, const ::cuda::std::tuple<_Options...>& opts)
       : __hierarchy(hierarchy)
-      , __options(opts) {};
+      , __options(opts){};
 
   [[nodiscard]] _CCCL_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
@@ -580,7 +592,7 @@ struct kernel_config
    * _Options to be added to the configuration
    */
   template <typename... _NewOptions>
-  [[nodiscard]] auto add(const _NewOptions&... new_options) const
+  [[nodiscard]] _CCCL_HOST_API auto add(const _NewOptions&... new_options) const
   {
     return kernel_config<_Hierarchy, _Options..., _NewOptions...>(
       __hierarchy, ::cuda::std::tuple_cat(__options, ::cuda::std::make_tuple(new_options...)));
@@ -605,7 +617,8 @@ struct kernel_config
    * Other configuration to combine with this configuration
    */
   template <typename _OtherDimensions, typename... _OtherOptions>
-  [[nodiscard]] auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
+  [[nodiscard]] _CCCL_HOST_API auto
+  combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
     // can't use fully qualified kernel_config name here because of nvcc bug,
     // TODO remove __make_config_from_tuple once fixed
@@ -630,7 +643,7 @@ struct kernel_config
    * Kernel functor to search for the default configuration
    */
   template <typename _Kernel>
-  [[nodiscard]] auto combine_with_default(const _Kernel& __kernel) const
+  [[nodiscard]] _CCCL_HOST_API auto combine_with_default(const _Kernel& __kernel) const
   {
     if constexpr (__kernel_has_default_config<_Kernel>)
     {
@@ -671,7 +684,7 @@ operator&(const hierarchy_level_desc<_L1, _Dims1>& l1, const hierarchy_level_des
 }
 
 template <typename _Dimensions, typename... _Options>
-auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
+_CCCL_HOST_API auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
 {
   return kernel_config(__dims, __opts);
 }
@@ -680,7 +693,7 @@ template <typename _Dimensions,
           typename... _Options,
           typename _Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, _Option>>>
-[[nodiscard]] constexpr auto
+[[nodiscard]] _CCCL_HOST_API constexpr auto
 operator&(const kernel_config<_Dimensions, _Options...>& config, const _Option& option) noexcept
 {
   return config.add(option);
@@ -689,7 +702,7 @@ operator&(const kernel_config<_Dimensions, _Options...>& config, const _Option& 
 template <typename... _Levels,
           typename _Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, _Option>>>
-[[nodiscard]] constexpr auto operator&(const hierarchy<_Levels...>& dims, const _Option& option) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr auto operator&(const hierarchy<_Levels...>& dims, const _Option& option) noexcept
 {
   return kernel_config(dims, option);
 }
@@ -711,7 +724,8 @@ template <typename... _Levels,
  * resulting kernel configuration object
  */
 template <typename _BottomUnit, typename... _Levels, typename... _Opts>
-[[nodiscard]] constexpr auto make_config(const hierarchy<_BottomUnit, _Levels...>& dims, const _Opts&... opts) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+make_config(const hierarchy<_BottomUnit, _Levels...>& dims, const _Opts&... opts) noexcept
 {
   return kernel_config<hierarchy<_BottomUnit, _Levels...>, _Opts...>(dims, opts...);
 }
@@ -736,67 +750,57 @@ template <typename _BottomUnit, typename... _Levels, typename... _Opts>
  * @endcode
  */
 template <int _ThreadsPerBlock>
-constexpr auto distribute(int numElements) noexcept
+_CCCL_HOST_API constexpr auto distribute(int numElements) noexcept
 {
   const int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
 }
 
-template <typename... _Prev>
-[[nodiscard]] constexpr auto __process_config_args(const ::cuda::std::tuple<_Prev...>& previous)
+template <class... _Levels, class... _Options>
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+__make_config_from_levels(const _Levels&... __levels, const _Options&... __options)
 {
-  if constexpr (sizeof...(_Prev) == 0)
+  if constexpr (!(::cuda::std::is_base_of_v<__detail::launch_option, _Options> && ...))
   {
-    return kernel_config<__empty_hierarchy>(__empty_hierarchy());
+    static_assert((::cuda::std::is_base_of_v<__detail::launch_option, _Options> && ...),
+                  "Hierarchy levels and launch options can't be mixed");
   }
   else
   {
-    constexpr auto fn = &make_hierarchy<void, const _Prev&...>;
-    return kernel_config(::cuda::std::apply(fn, previous));
+    constexpr auto __make_hierarchy = ::cuda::make_hierarchy<void, const ::cuda::std::unwrap_ref_decay_t<_Levels>&...>;
+    using _Hierarchy                = decltype(__make_hierarchy(__levels...));
+    return kernel_config<_Hierarchy, _Options...>{__make_hierarchy(__levels...), __options...};
   }
 }
 
-template <typename... _Prev, typename _Arg, typename... _Rest>
-[[nodiscard]] constexpr auto
-__process_config_args(const ::cuda::std::tuple<_Prev...>& previous, const _Arg& arg, const _Rest&... rest)
+template <::cuda::std::size_t... _LevelIndices, class... _Args>
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+__make_config(::cuda::std::index_sequence<_LevelIndices...>, const _Args&... __args)
 {
-  if constexpr (::cuda::std::is_base_of_v<__detail::launch_option, _Arg>)
-  {
-    static_assert((::cuda::std::is_base_of_v<__detail::launch_option, _Rest> && ...),
-                  "Hierarchy levels and launch options can't be mixed");
-    if constexpr (sizeof...(_Prev) == 0)
-    {
-      return kernel_config(__empty_hierarchy(), arg, rest...);
-    }
-    else
-    {
-      constexpr auto fn = make_hierarchy<void, const _Prev&...>;
-      return kernel_config(::cuda::std::apply(fn, previous), arg, rest...);
-    }
-  }
-  else
-  {
-    return __process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
-  }
+  // Specify the leading level types so only the trailing launch options need to be deduced.
+  return ::cuda::__make_config_from_levels<::cuda::std::__type_index_c<_LevelIndices, _Args...>...>(__args...);
 }
 
 template <typename... _Args>
-[[nodiscard]] constexpr auto make_config(const _Args&... args)
+[[nodiscard]] _CCCL_HOST_API constexpr auto make_config(const _Args&... __args)
 {
-  return __process_config_args(::cuda::std::make_tuple(), args...);
+  constexpr auto __num_levels = (0u + ... + !::cuda::std::is_base_of_v<__detail::launch_option, _Args>);
+  // NVCC 12.0 cannot call __make_config_from_levels with two empty packs for make_config().
+  if constexpr (__num_levels == 0)
+  {
+    return kernel_config<__empty_hierarchy, _Args...>{__empty_hierarchy{}, __args...};
+  }
+  else
+  {
+    return ::cuda::__make_config(::cuda::std::make_index_sequence<__num_levels>{}, __args...);
+  }
 }
 
 namespace __detail
 {
 template <typename _Dimensions, typename... _Options>
-unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
-{
-  return (0 + ... + _Options::needs_attribute_space);
-}
-
-template <typename _Dimensions, typename... _Options>
-[[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<_Dimensions, _Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
+[[nodiscard]] _CCCL_HOST_API cudaError_t apply_kernel_config(
+  const kernel_config<_Dimensions, _Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel)
 {
   return ::cuda::std::apply(
     [&](auto&... config_options) {
@@ -832,6 +836,11 @@ _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory(const kernel_config<_Dims,
 #  endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#    pragma pop_macro("empty_bases")
+#    undef _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #  include <cuda/std/__cccl/epilogue.h>
 

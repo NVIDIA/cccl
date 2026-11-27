@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,9 +31,8 @@
 #    include <cuda/__type_traits/is_vector_type.h>
 #    include <cuda/std/__cstddef/types.h>
 #    include <cuda/std/__exception/cuda_error.h>
-#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__exception/throw_error.h>
 #    include <cuda/std/__fwd/complex.h>
-#    include <cuda/std/__host_stdlib/stdexcept>
 #    include <cuda/std/__limits/numeric_limits.h>
 #    include <cuda/std/__type_traits/always_false.h>
 #    include <cuda/std/__type_traits/is_pointer.h>
@@ -109,6 +108,13 @@ template <typename _ElementType>
     return ::DLDataType{::kDLFloat4_e2m1fn, 4, 1};
   }
 #    endif // _CCCL_HAS_NVFP4_E2M1()
+#    if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_ue5m3>)
+  {
+    static_assert(::cuda::std::__always_false_v<_ElementType>, "DLPack has no data type code for __nv_fp8_ue5m3");
+    return ::DLDataType{};
+  }
+#    endif // _CCCL_HAS_NVFP8_UE5M3()
   //--------------------------------------------------------------------------------------------------------------------
   // Floating-point types (after specific types)
   else if constexpr (::cuda::is_floating_point_v<_ElementType>)
@@ -192,11 +198,11 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
     {
       if (::cuda::std::cmp_greater(__mdspan.extent(__i), __max_extent))
       {
-        _CCCL_THROW(::std::invalid_argument, "Extent is too large");
+        _CCCL_THROW_STD(invalid_argument, "Extent is too large");
       }
       if (::cuda::std::cmp_greater(__mdspan.stride(__i), __max_extent))
       {
-        _CCCL_THROW(::std::invalid_argument, "Stride is too large");
+        _CCCL_THROW_STD(invalid_argument, "Stride is too large");
       }
       __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
       __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));

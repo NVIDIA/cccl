@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,17 +13,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/reduce.h>
+
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
   using T = thrust::detail::it_value_t<InputIterator>;
@@ -33,7 +35,7 @@ reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Inp
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE_API T
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   // use plus<T> by default
@@ -41,14 +43,15 @@ reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Inp
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, T, BinaryFunction)
+_CCCL_HOST_DEVICE_API T
+reduce(thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, T, BinaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return T();
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output)
 {
   using T = thrust::detail::it_value_t<InputIterator>;
@@ -58,7 +61,7 @@ _CCCL_HOST_DEVICE void reduce_into(
 } // end reduce_into()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -70,7 +73,7 @@ _CCCL_HOST_DEVICE void reduce_into(
 } // end reduce_into()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,

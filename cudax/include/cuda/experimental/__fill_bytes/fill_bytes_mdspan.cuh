@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,8 +31,7 @@
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__mdspan/default_accessor.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
@@ -155,7 +154,7 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
 
   if (__stream.get() == nullptr)
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: stream must not be nullptr");
+    _CCCL_THROW_STD(invalid_argument, "cudax::fill_bytes: stream must not be nullptr");
   }
 
   const auto __tensor_size = __mdspan.size();
@@ -165,16 +164,17 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
   }
   if (__mdspan.data_handle() == nullptr)
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: mdspan data handle must not be nullptr");
+    _CCCL_THROW_STD(invalid_argument, "cudax::fill_bytes: mdspan data handle must not be nullptr");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_Tp)>(__mdspan.data_handle()))
   {
-    _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: destination mdspan must be sufficiently aligned");
+    _CCCL_THROW_STD(invalid_argument, "cudax::fill_bytes: destination mdspan must be sufficiently aligned");
   }
   if (::cuda::__has_interleaved_stride_order(__mdspan))
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "cudax::fill_bytes: destination mdspan must not have interleaved stride order");
+    _CCCL_THROW_STD(invalid_argument,
+                    "cudax::fill_bytes: destination mdspan must not have interleaved stride "
+                    "order");
   }
   if (__tensor_size == 1) // rank == 0 also falls into this case
   {

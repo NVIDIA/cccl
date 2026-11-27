@@ -46,13 +46,13 @@
  * static/shared libraries in .cpp files or headers private to those projects.
  */
 /* clang-format off */
-#if !defined(NVTX3_CPP_REQUIRE_EXPLICIT_VERSION)
+#ifndef NVTX3_CPP_REQUIRE_EXPLICIT_VERSION
   /* Define macro used by all definitions in this header to indicate the
    * unversioned symbols should be defined in addition to the versioned ones.
    */
   #define NVTX3_INLINE_THIS_VERSION
 
-  #if !defined(NVTX3_CPP_INLINED_VERSION_MAJOR)
+  #ifndef NVTX3_CPP_INLINED_VERSION_MAJOR
     /* First occurrence of this header in the translation unit.  Define macros
      * indicating which version shall be used for unversioned symbols.
      */
@@ -587,7 +587,7 @@
  * header, or you can add a check for your compiler version to this #if.
  * Also, please report the issue on the NVTX GitHub page.
  */
-#if !defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET)
+#ifndef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET
 #  if defined(_MSC_VER) && _MSC_VER < 1914 || defined(__GNUC__) && __GNUC__ == 8 && __GNUC_MINOR__ < 4
 #    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 0
 #  else
@@ -605,7 +605,7 @@
 /* Avoid duplicating #if defined(NVTX3_INLINE_THIS_VERSION) for namespaces
  * in each minor version by making a macro to use unconditionally, which
  * resolves to "inline" or nothing as appropriate. */
-#if defined(NVTX3_INLINE_THIS_VERSION)
+#ifdef NVTX3_INLINE_THIS_VERSION
 #  define NVTX3_INLINE_IF_REQUESTED inline
 #else
 #  define NVTX3_INLINE_IF_REQUESTED
@@ -628,7 +628,7 @@
 #endif
 
 // Macro wrappers for C++ attributes
-#if !defined(__has_cpp_attribute)
+#ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(x) 0
 #endif
 #if __has_cpp_attribute(maybe_unused)
@@ -647,7 +647,7 @@
  * #define NVTX3_STATIC_ASSERT(c, m) \
  *   do { if (!(c)) printf("static_assert would fail: %s\n", m); } while (0)
  */
-#if !defined(NVTX3_STATIC_ASSERT)
+#ifndef NVTX3_STATIC_ASSERT
 #  define NVTX3_STATIC_ASSERT(condition, message) static_assert(condition, message)
 #  define NVTX3_STATIC_ASSERT_DEFINED_HERE
 #endif
@@ -2913,7 +2913,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
 /* When inlining this version, versioned macros must have unversioned aliases.
  * For each NVTX3_Vx_ #define, make an NVTX3_ alias of it here.*/
-#  if defined(NVTX3_INLINE_THIS_VERSION)
+#  ifdef NVTX3_INLINE_THIS_VERSION
 /* clang format off */
 #    define NVTX3_FUNC_RANGE       NVTX3_V1_FUNC_RANGE
 #    define NVTX3_FUNC_RANGE_IF    NVTX3_V1_FUNC_RANGE_IF
@@ -2965,16 +2965,16 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #undef NVTX3_MAYBE_UNUSED
 #undef NVTX3_NO_DISCARD
 
-#if defined(NVTX3_INLINE_THIS_VERSION)
+#ifdef NVTX3_INLINE_THIS_VERSION
 #  undef NVTX3_INLINE_THIS_VERSION
 #endif
 
-#if defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE)
+#ifdef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #  undef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #  undef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET
 #endif
 
-#if defined(NVTX3_STATIC_ASSERT_DEFINED_HERE)
+#ifdef NVTX3_STATIC_ASSERT_DEFINED_HERE
 #  undef NVTX3_STATIC_ASSERT_DEFINED_HERE
 #  undef NVTX3_STATIC_ASSERT
 #endif

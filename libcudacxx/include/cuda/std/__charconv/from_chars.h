@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,18 +54,15 @@ __from_chars_char_to_value(char __c, int __base) noexcept
   {
     return {'0' <= __c && __c < '0' + __base, __c - '0'};
   }
-  else if ('0' <= __c && __c <= '9')
+  if ('0' <= __c && __c <= '9')
   {
     return {true, __c - '0'};
   }
-  else if ('a' <= __c && __c < 'a' + __base - 10)
+  if ('a' <= __c && __c < 'a' + __base - 10)
   {
     return {true, __c - 'a' + 10};
   }
-  else
-  {
-    return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
-  }
+  return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
 }
 
 template <class _Tp>

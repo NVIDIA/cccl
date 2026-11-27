@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,14 +17,14 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #if _CCCL_HOSTED()
-#  include <stdexcept>
-#  include <string>
+#  include <stdexcept> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
@@ -63,17 +63,17 @@ THRUST_NAMESPACE_END
     status                              = call arguments;                                 \
   }
 
-#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                          \
-  if (thrust::detail::is_negative(count))                                           \
-  {                                                                                 \
-    _CCCL_THROW(::std::runtime_error, "Invalid input range, passed negative size"); \
+#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                       \
+  if (thrust::detail::is_negative(count))                                        \
+  {                                                                              \
+    _CCCL_THROW_STD(runtime_error, "Invalid input range, passed negative size"); \
   }
 
 #define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2) \
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count1)                \
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count2)
 
-#if defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
+#ifdef THRUST_FORCE_64_BIT_OFFSET_TYPE
 //! @brief Always dispatches to 64 bit offset version of an algorithm
 #  define THRUST_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)               \
@@ -102,27 +102,29 @@ THRUST_NAMESPACE_END
 #elif defined(THRUST_FORCE_32_BIT_OFFSET_TYPE)
 
 //! @brief Ensures that the size of the input does not overflow the offset type
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                                 \
-    if (static_cast<std::uint64_t>(count)                                                               \
-        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))                   \
-    {                                                                                                   \
-      _CCCL_THROW(::std::runtime_error,                                                                 \
-                  "Input size exceeds the maximum allowable value for " #index_type                     \
-                  ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
-                  "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
-                  "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                       \
+    if (static_cast<std::uint64_t>(count)                                                     \
+        > static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))       \
+    {                                                                                         \
+      _CCCL_THROW_STD(                                                                        \
+        runtime_error,                                                                        \
+        "Input size exceeds the maximum allowable value for " #index_type                     \
+        ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
+        "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
+        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
     }
 
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)                       \
-    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)                         \
-        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))                   \
-    {                                                                                                   \
-      _CCCL_THROW(::std::runtime_error,                                                                 \
-                  "Input size exceeds the maximum allowable value for " #index_type                     \
-                  ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
-                  "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
-                  "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)             \
+    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)               \
+        > static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))       \
+    {                                                                                         \
+      _CCCL_THROW_STD(                                                                        \
+        runtime_error,                                                                        \
+        "Input size exceeds the maximum allowable value for " #index_type                     \
+        ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
+        "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
+        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
     }
 
 //! @brief Always dispatches to 32 bit offset version of an algorithm but throws if count would overflow
@@ -158,11 +160,11 @@ THRUST_NAMESPACE_END
 #else // ^^^ THRUST_FORCE_32_BIT_OFFSET_TYPE ^^^ / vvv !THRUST_FORCE_32_BIT_OFFSET_TYPE vvv
 
 #  define _THRUST_INDEX_TYPE_DISPATCH_SELECT(index_type, count) \
-    (static_cast<std::uint64_t>(count) <= static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))
+    (static_cast<std::uint64_t>(count) <= static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))
 
 #  define _THRUST_INDEX_TYPE_DISPATCH_SELECT2(index_type, count1, count2)    \
     (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2) \
-     <= static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))
+     <= static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))
 
 //! Dispatch between 32-bit and 64-bit index_type based versions of the same algorithm implementation. This version
 //! assumes that callables for both branches consist of the same tokens, and is intended to be used with Thrust-style

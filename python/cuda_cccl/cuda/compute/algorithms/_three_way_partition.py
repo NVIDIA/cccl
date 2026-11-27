@@ -22,7 +22,6 @@ class _ThreeWayPartition(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_cccl",
         "d_first_part_out_cccl",
         "d_second_part_out_cccl",
@@ -107,7 +106,7 @@ class _ThreeWayPartition(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -131,7 +130,7 @@ class _ThreeWayPartition(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.loaded_build_result.compute(
+        temp_storage_bytes = loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,

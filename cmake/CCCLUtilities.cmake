@@ -244,23 +244,26 @@ function(cccl_add_xfail_compile_target_test target_name)
     message(VERBOSE "CCCL:   with expected regex: '${regex}'")
   endif()
 
-  set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true)
+  set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL true)
 
   # The same target may be reused for multiple tests, and the output file
   # may exist if using a regex to check for warnings. Add a setup fixture to
   # delete the output file before each test run.
   if (NOT TEST ${target_name}.clean)
+    # TARGET_FILE would make CTest 4.5 require the executable before cleaning it.
+    # Its directory and filename can be queried without adding that dependency.
     add_test(
       NAME ${target_name}.clean
       # gersemi: off
       COMMAND
         "${CMAKE_COMMAND}" -E rm -f
-          "$<TARGET_FILE:${target_name}>"
+          "$<TARGET_FILE_DIR:${target_name}>/$<TARGET_FILE_NAME:${target_name}>"
           "$<TARGET_OBJECTS:${target_name}>"
       # gersemi: on
+      COMMAND_EXPAND_LISTS
     )
     set_tests_properties(
-      ${test_name}.clean
+      ${target_name}.clean
       PROPERTIES FIXTURES_SETUP ${target_name}.clean
     )
   endif()
@@ -271,13 +274,13 @@ function(cccl_add_xfail_compile_target_test target_name)
     COMMAND
       "${CMAKE_COMMAND}"
         --build "${CMAKE_BINARY_DIR}"
-        --target ${test_target}
+        --target ${target_name}
         --config $<CONFIGURATION>
     # gersemi: on
   )
   set_tests_properties(
     ${test_name}
-    PROPERTIES FIXTURES_CLEANUP ${target_name}.clean
+    PROPERTIES FIXTURES_REQUIRED ${target_name}.clean
   )
 
   # These tests invoke the build tool on the shared build tree. Serialize

@@ -7,7 +7,7 @@
 
 #include <cub/util_namespace.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -151,7 +151,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {
@@ -176,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
+        return {workers_per_block, threads_per_block, (::cuda::std::min) (num_segments_per_worker, max_segments)};
       }
       default:
         _CCCL_UNREACHABLE();
@@ -190,7 +190,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const auto segments_per_block = num_segments_per_worker * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
-  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  static constexpr auto int32_max                       = (::cuda::std::numeric_limits<::cuda::std::int32_t>::max)();
   static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
 
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
@@ -199,7 +199,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
     const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
-    const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
+    const auto num_segments_per_invocation = (::cuda::std::min) (next_seg_offset, num_segments) - current_seg_offset;
 
     _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
                  "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
@@ -247,7 +247,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       output_begin_offsets += num_segments_per_invocation;
     }
 
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }

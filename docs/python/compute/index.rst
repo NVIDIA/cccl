@@ -52,7 +52,9 @@ API conventions
 
 * **Output semantics** — Algorithms write results into a user-provided array or iterator
   rather than returning them. This keeps memory ownership explicit and lifetimes under
-  your control.
+  your control. As with any asynchronous CUDA launch, ``cuda.compute`` does not keep
+  the arrays you pass alive: keep your own references until the work submitted on the
+  stream has completed.
 
 * **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
   :class:`OpKind <cuda.compute.op.OpKind>` value or a
@@ -410,20 +412,29 @@ The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
+Pass ``device_id`` to ``deserialize`` to bind the reconstructed executor directly,
+without an additional copy of host argument state:
+
+.. code-block:: python
+
+   bound_executor = cuda.compute.deserialize(blob, device_id=0)
+   unbound_executor = bound_executor.clone(device_id=None)
+
+Use ``clone`` on an executor to copy mutable host-side argument state while
+sharing compiled code. Its required keyword-only argument
+``device_id`` specifies the device to which the copy is bound. Before
+invoking a bound executor, make sure its associated device is set as the current
+device.
+
+Specifying ``device_id=None`` leaves the executor unbound, and it resolves the
+current device when called. This is the default for ``deserialize`` and can
+incur additional overhead.
+
 Blobs are versioned and self-describing, but they are not a long-term storage
 format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
 loading a blob produced by a different version may be rejected with a clear
 error. Persist the inputs needed to rebuild (or re-serialize) rather than
 relying on old blobs surviving an upgrade.
-
-The same threading rules also apply: like any other reusable algorithm object,
-a deserialized algorithm must be used by one thread at a time unless access is
-externally serialized (see :ref:`Free-threaded Python <cuda.compute.free_threading>`).
-For concurrent use, call :func:`deserialize <cuda.compute.algorithms.deserialize>`
-in each thread — reconstruction performs no recompilation, so per-thread
-deserialization from one shared blob is cheap. (Currently each deserialized
-object loads its native build state independently; a future release may share
-that state behind the scenes.)
 
 .. _cuda.compute.ahead_of_time_compilation:
 

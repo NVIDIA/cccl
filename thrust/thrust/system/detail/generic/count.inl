@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,7 +15,6 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/internal_functional.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/count.h>
@@ -29,28 +28,26 @@ namespace system::detail::generic
 template <typename InputType, typename Predicate, typename CountType>
 struct count_if_transform
 {
-  _CCCL_HOST_DEVICE count_if_transform(Predicate _pred)
+  _CCCL_HOST_DEVICE_API count_if_transform(Predicate _pred)
       : pred(_pred)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE CountType operator()(const InputType& val)
+  _CCCL_HOST_DEVICE_API CountType operator()(const InputType& val)
   {
     if (pred(val))
     {
       return 1;
     }
-    else
-    {
-      return 0;
-    }
+
+    return 0;
   } // end operator()
 
   Predicate pred;
 }; // end count_if_transform
 
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count(thrust::execution_policy<DerivedPolicy>& exec,
       InputIterator first,
       InputIterator last,
@@ -62,7 +59,7 @@ count(thrust::execution_policy<DerivedPolicy>& exec,
 } // end count()
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using InputType = thrust::detail::it_value_t<InputIterator>;

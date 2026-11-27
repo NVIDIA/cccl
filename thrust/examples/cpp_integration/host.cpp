@@ -1,7 +1,7 @@
+#include <thrust/copy.h>
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
 #include <thrust/random.h>
-#include <thrust/sort.h>
 
 #include <cstdlib>
 #include <iostream>
