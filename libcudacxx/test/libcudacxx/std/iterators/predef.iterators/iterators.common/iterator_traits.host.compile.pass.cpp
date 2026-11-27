@@ -23,7 +23,9 @@
 
 using common_iter = cuda::std::common_iterator<int*, cuda::std::unreachable_sentinel_t>;
 
+#  if !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 10)
 static_assert(sizeof(std::iterator_traits<common_iter>) > 0);
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 10)
 #endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
