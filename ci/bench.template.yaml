@@ -38,6 +38,7 @@ benchmarks:
       # - '^cub\.bench\.reduce\.(sum|min)\.'
       # - '^thrust\.bench\.reduce\.'
       # - '^libcudacxx\.bench\.'
+      # - '^libcudacxx\.bench\.fp\.fpmp\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:

@@ -311,6 +311,7 @@ ignore_regexes:
   - '^\.shellcheckrc$'
   - '^\.vscode/launch\.json$'
   - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
+  - "libcudacxx/benchmarks/fp/" # Python scripts for running the fp benchmarks, not used in tests.
   - 'cccl-version.json'
   - 'ci/bench/'
   - 'ci/bench.+yaml'

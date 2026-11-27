@@ -62,6 +62,15 @@ sass:
       preset: thrust-benchmark
       archs: all-major-cccl
       target_filters: ["^thrust\\.bench\\."]
+    # libcu++: the fpmp benchmarks, one __noinline__ function per (function, type, level) cell,
+    # so the diff names the function whose code changed.
+    - id: libcudacxx-fpmp-benchmarks
+      project: libcudacxx
+      ctk: '13.X'
+      cxx: 'gcc13'
+      preset: libcudacxx-benchmark
+      archs: all-major-cccl
+      target_filters: ["^libcudacxx\\.bench\\.fp\\.fpmp\\."]
 
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
