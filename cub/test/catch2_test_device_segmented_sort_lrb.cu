@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
+// Focused checks for capacity mapping, ID partitioning, and the internal segmented sorting path.
 
 #include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
@@ -158,7 +158,7 @@ static void check_kernel_retries(Args&&... args)
   check_kernel_retry<2, Order>(args...);
 }
 
-// Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
+// Exercise capacity boundaries and all launch groups, including repeated work and radix overflow.
 CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          "[segmented][sort][device]",
          CUB_SMALL,
@@ -218,10 +218,6 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   expected.assign(input.size(), key_type{-99});
   for (size_t segment = 0; segment < lengths.size(); ++segment)
   {
-    if (lengths[segment] > capacities::bounds.back())
-    {
-      continue; // Overflow is classified but its output must remain untouched.
-    }
     std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
     std::stable_sort(expected.begin() + begins[segment], expected.begin() + ends[segment], compare_op{});
   }
@@ -230,6 +226,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   c2h::device_vector<long long> d_begins = begins;
   c2h::device_vector<long long> d_ends   = ends;
   capacity::partition_result result;
+  unsigned num_segments     = static_cast<unsigned>(lengths.size());
   size_t bytes              = 0;
   const auto stream_owner   = c2h::make_current_device_stream();
   const cudaStream_t stream = stream_owner.get();
@@ -239,7 +236,8 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
       thrust::raw_pointer_cast(d_ends.data()),
-      static_cast<unsigned>(lengths.size()),
+      num_segments,
+      static_cast<cuda::std::int64_t>(input.size()),
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
       result,
@@ -288,6 +286,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       thrust::raw_pointer_cast(d_begins.data()),
       thrust::raw_pointer_cast(d_ends.data()),
       static_cast<unsigned>(lengths.size()),
+      static_cast<cuda::std::int64_t>(input.size()),
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
       result,
@@ -306,6 +305,12 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
   REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
+  num_segments = 0;
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+  REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
+  REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+          == cudaSuccess);
+  REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
 }
 
 // Check supported floating-point comparisons without imposing radix-sort signed-zero ordering.
@@ -338,6 +343,7 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
       offsets,
       offsets + 1,
       1,
+      static_cast<cuda::std::int64_t>(input.size()),
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
       result,
