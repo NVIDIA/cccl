@@ -49,8 +49,15 @@ CUB_NAMESPACE_BEGIN
 //! The algorithm to use for radix sorting.
 enum class RadixSortAlgorithm
 {
-  multi_pass, //!< Multi-pass radix sort (upsweep + scan + downsweep per digit)
-  onesweep //!< Single-pass radix sort using decoupled look-back
+  //! Multi-pass radix sort (upsweep + scan + downsweep per digit)
+  multi_pass
+  CCCL_DEPRECATED_BECAUSE("The multi-pass radix sort algorithm is deprecated and will be removed in CCCL 4.0. "
+                          "Use RadixSortAlgorithm::onesweep instead.") = 0,
+  //! Single-pass radix sort using decoupled look-back
+  onesweep = 1,
+  // Internal alias of multi_pass, so we can still use it for old architectures. Spelled by value, since
+  // `= multi_pass` would itself trigger the deprecation warning.
+  __deprecated_multi_pass = 0
 };
 
 #if _CCCL_HOSTED()
@@ -60,7 +67,7 @@ namespace detail
 {
   switch (algo)
   {
-    case RadixSortAlgorithm::multi_pass:
+    case RadixSortAlgorithm::__deprecated_multi_pass:
       return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
       return "RadixSortAlgorithm::onesweep";
@@ -1113,7 +1120,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> RadixSortPolicy
     _CUB::detail::radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 
   return RadixSortPolicy{
-    active_policy::ONESWEEP ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass,
+    active_policy::ONESWEEP ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::__deprecated_multi_pass,
     histogram,
     exclusive_sum,
     onesweep,
@@ -2185,7 +2192,8 @@ struct policy_selector
     {
       // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
       return make_sm70_policy(
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass, 4);
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::__deprecated_multi_pass,
+        4);
     }
 
     if (cc >= ::cuda::compute_capability{6, 2})
@@ -2193,7 +2201,7 @@ struct policy_selector
       const int primary_radix_bits = 5;
       const int alt_radix_bits     = primary_radix_bits - 1;
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::__deprecated_multi_pass;
       const int onesweep_radix_bits = 8;
 
       const auto histogram =
@@ -2278,7 +2286,7 @@ struct policy_selector
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       // 10.0B 32b keys/s (GP100, 64M random keys)
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::__deprecated_multi_pass;
       const int onesweep_radix_bits = 8;
 
       const auto histogram =
@@ -2360,7 +2368,7 @@ struct policy_selector
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       // 10.0B 32b keys/s (GP100, 64M random keys)
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::__deprecated_multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = (offset_size == 8);
 
@@ -2443,7 +2451,7 @@ struct policy_selector
     // SM50
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-    const auto use_onesweep          = RadixSortAlgorithm::multi_pass;
+    const auto use_onesweep          = RadixSortAlgorithm::__deprecated_multi_pass;
     const int onesweep_radix_bits    = 8;
 
     const auto histogram =
