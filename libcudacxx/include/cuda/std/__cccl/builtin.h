@@ -229,18 +229,6 @@
 #  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
 
-#if _CCCL_HAS_BUILTIN(__builtin_clear_padding)
-#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_clear_padding(__VA_ARGS__)
-#elif _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_zero_non_value_bits(__VA_ARGS__)
-#endif // ^^^ has _CCCL_BUILTIN_CLEAR_PADDING ^^^
-
-// nvcc fails to compile simple programs that use __builtin_clear_padding (nvbug 7150163) and crashes when
-// __builtin_zero_non_value_bits is used with arrays (nvbug 7043357).
-#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
-#  undef _CCCL_BUILTIN_CLEAR_PADDING
-#endif // (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
-
 #if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
