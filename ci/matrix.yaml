@@ -87,6 +87,8 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # TEMPORARY (revert before merge): the runners of the nightly jobs that failed on main, for every toolkit.
+    - {jobs: ['test'], project: 'libcudacxx', ctk: ['12.X', '13.0', '13.X'], std: 'max', cxx: 'gcc14', gpu: ['rtx2080', 'h100']}
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
