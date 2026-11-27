@@ -18,9 +18,27 @@
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
+#include <iomanip>
 #include <sstream>
 
 #include "test_macros.h"
+
+static int callback_events = 0;
+
+static void count_callback_events(std::ios_base::event, std::ios_base&, int)
+{
+  ++callback_events;
+}
+
+// Applying the width must not invoke the callbacks registered on the stream (as inserting a std::complex does not)
+void test_width_does_not_invoke_callbacks()
+{
+  std::ostringstream os;
+  os.register_callback(count_callback_events, 0);
+  os << std::setw(10) << std::setfill('*') << cuda::std::complex<double>(1, 2);
+  assert(os.str() == "*****(1,2)");
+  assert(callback_events == 0);
+}
 
 template <class T>
 void test()
@@ -47,6 +65,7 @@ void test()
 
 void test()
 {
+  test_width_does_not_invoke_callbacks();
   test<float>();
   test<double>();
 #if _LIBCUDACXX_HAS_NVFP16()

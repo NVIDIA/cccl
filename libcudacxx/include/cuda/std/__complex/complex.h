@@ -759,19 +759,22 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
   __os.width(0);
   if (__width <= 0)
   {
-    return __os << _CharT('(') << __x.real() << _CharT(',') << __x.imag() << _CharT(')');
+    return __os << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
   }
   // [complex.ops] applies the width to the whole "(re,im)" output, so determine its length first
   __complex_counting_streambuf<_CharT, _Traits> __buf;
   ::std::basic_ostream<_CharT, _Traits> __tmp(&__buf);
-  __tmp.copyfmt(__os);
-  __tmp << _CharT('(') << __x.real() << _CharT(',') << __x.imag() << _CharT(')');
+  // do not use copyfmt, it would invoke the callbacks registered on __os and copy its exception mask and tie
+  __tmp.flags(__os.flags());
+  __tmp.imbue(__os.getloc());
+  __tmp.precision(__os.precision());
+  __tmp << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
   const bool __left = (__os.flags() & __os.adjustfield) == __os.left;
   for (auto __pad = __width - __buf.__count_; !__left && __pad > 0; --__pad)
   {
     __os.put(__os.fill());
   }
-  __os << _CharT('(') << __x.real() << _CharT(',') << __x.imag() << _CharT(')');
+  __os << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
   for (auto __pad = __width - __buf.__count_; __left && __pad > 0; --__pad)
   {
     __os.put(__os.fill());
