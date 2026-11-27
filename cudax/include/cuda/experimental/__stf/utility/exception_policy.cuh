@@ -344,21 +344,21 @@ struct basic_sink
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief The sink applied from `__loc` rather than from the call site: `s.at(loc) ->* f`.
-  __sink_at<_Self> at(const ::cuda::std::source_location __loc) const
+  _CCCL_HOST_API __sink_at<_Self> at(const ::cuda::std::source_location __loc) const
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Self>)
   {
     return {static_cast<const _Self&>(*this), __loc};
   }
 
   template <class _X>
-  friend auto operator<<(__sink_at<_Self> __s, _X&& __x) noexcept(
+  _CCCL_HOST_API friend auto operator<<(__sink_at<_Self> __s, _X&& __x) noexcept(
     noexcept(__sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))
   {
     return __sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));
   }
 
   template <class _X>
-  friend decltype(auto) operator->*(__sink_at<_Self> __s, _X&& __x) noexcept(
+  _CCCL_HOST_API friend decltype(auto) operator->*(__sink_at<_Self> __s, _X&& __x) noexcept(
     noexcept(__sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))
   {
     return __sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));
@@ -502,9 +502,9 @@ struct effect_t : basic_sink<effect_t<_F>>
   // handles a status. Declared after on_returned: GCC 9 resolves a noexcept-specifier's names
   // at the point of declaration rather than in the complete class.
   template <class _Fn>
-  void on_thrown(const ::std::exception* __exception,
-                 const ::cuda::std::source_location __loc,
-                 _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
+  _CCCL_HOST_API void on_thrown(const ::std::exception* __exception,
+                                const ::cuda::std::source_location __loc,
+                                _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
   {
     on_returned(__exception, __loc, __fn);
   }
@@ -735,7 +735,7 @@ struct subst_t : basic_sink<subst_t<_V>>
   // noexcept-specifier at the point of declaration, where a call to a decltype(auto) member
   // needs that member's body.
   template <class _Fn>
-  decltype(auto)
+  _CCCL_HOST_API decltype(auto)
   on_thrown(const ::std::exception* __exception,
             const ::cuda::std::source_location __loc,
             _Fn& __fn) noexcept(!::cuda::std::is_invocable_v<_V&> || ::cuda::std::is_nothrow_invocable_v<_V&>)
