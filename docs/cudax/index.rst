@@ -11,6 +11,7 @@ CUDA Experimental
    container
    graph
    places
+   random
    stf
    coop/index
    API reference <api/index>
@@ -23,6 +24,7 @@ Specifically, ``cudax`` provides:
    - :ref:`mdspan byte fill <cudax-fill-bytes>`
    - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-async-buffer>`
    - :ref:`graph functionality <cudax-graph>`
+   - :ref:`multiply-with-carry random number engines <cudax-random-mwc>`
    - dimensions description functionality
    - :ref:`places <cudax-places>` for managing execution and data affinity across devices
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`

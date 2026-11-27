@@ -48,6 +48,11 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+cudax_add_catch2_test(test_target random
+    random/mwc.cu
+    random/mwc_io.cu
+)
+
 cudax_add_catch2_test(test_target launch
     launch/launch_smoke.cu
 )

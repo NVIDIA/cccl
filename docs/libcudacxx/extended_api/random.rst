@@ -22,3 +22,5 @@ Random
      - 128-bit state PCG engine with 64-bit output
      - CCCL 3.3.0
      - CUDA 13.3
+
+See also :ref:`cudax-random-mwc` in CUDA Experimental.

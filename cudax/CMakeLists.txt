@@ -7,6 +7,17 @@ cmake_minimum_required(VERSION 3.21)
 project(cudax LANGUAGES CXX CUDA)
 
 option(
+  cudax_RANDOM_CODEGEN_ONLY
+  "Build only the random engine code generation tests."
+  OFF
+)
+if (cudax_RANDOM_CODEGEN_ONLY)
+  cccl_get_cudax()
+  add_subdirectory(test/random_codegen)
+  return()
+endif()
+
+option(
   cudax_ENABLE_HEADER_TESTING
   "Test that CUDA Experimental's public headers compile."
   ON

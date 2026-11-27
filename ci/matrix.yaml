@@ -167,6 +167,10 @@ workflows:
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: 'gcc', codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: 'gcc14', sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: 'gcc15', sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: 'gcc', sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4', 'l4', 'h100']}
@@ -386,6 +390,10 @@ workflows:
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang'], codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: ['gcc', 'clang'], sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -533,6 +541,10 @@ workflows:
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'cmath-ptx'], sm: 75}
     - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang21'], codegen_target: 'simd-sass', sm: [103, '120f']}
+    # cudax random engine SASS checks.
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], sm: [80, 90, 100, 120]}
+    - {jobs: ['random_sass'], project: 'cudax', std: 'max', cxx: ['gcc', 'clang21'], sm: [80, 90, 100, 120]}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -808,6 +820,9 @@ jobs:
   nvrtc: { gpu: true, name: 'NVRTC' }
   verify_codegen: { gpu: false, name: 'VerifyCodegen' }
   codegen_filecheck: { gpu: false, name: 'libcu++ Codegen FileCheck' }
+
+  # cudax:
+  random_sass: { gpu: false, name: 'Random SASS FileCheck', invoke: { prefix: 'build', args: '-cmake-options "-Dcudax_RANDOM_CODEGEN_ONLY=ON -DCCCL_ENABLE_CUDA_SMOKE_TESTS=OFF"' } }
 
   # CUB:
   build_nolid: { name: 'BuildNoLaunch',     gpu: false, invoke: { prefix: 'build', args: '-no-lid'} }
