@@ -18,11 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
-
-#include <complex>
 
 #define THRUST_STD_COMPLEX_REAL(z) \
   reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
