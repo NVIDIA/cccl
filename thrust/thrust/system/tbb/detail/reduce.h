@@ -70,10 +70,10 @@ struct body
 
     OutputType temp = thrust::raw_reference_cast(*iter);
 
-    ++iter;
-
-    for (Size i = r.begin() + 1; i != r.end(); ++i, ++iter)
+    for (Size i = r.begin() + 1; i != r.end(); ++i)
     {
+      // MSVC 19.52 can drop this increment when it is in the loop's iteration expression.
+      ++iter;
       temp = binary_op(temp, *iter);
     }
 
