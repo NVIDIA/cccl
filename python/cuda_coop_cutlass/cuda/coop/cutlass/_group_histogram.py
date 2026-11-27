@@ -286,6 +286,8 @@ def histogram_init(
     """
     _require_block(group, "histogram_init")
     if counters is None:
+        if bins is None:
+            raise TypeError("histogram_init requires counters or bins")
         bins = normalize_positive_int("bins", bins)
     elif bins is not None or counter_dtype is not None:
         raise TypeError(

@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare static result types for ``cuda.coop.cutlass.histogram``.
+"""Declare the block histogram's per-thread and shared-counter interfaces.
 
-The counter type does not depend on the sample type. An omitted selector or
-Python int gives Int32 counters. An explicit NumPy or CuTe selector sets the
-counter type. Result extent follows bins_per_thread, not the sample count.
+Histogram returns striped per-thread counts with the selected counter type.
+Initialization returns a shared tensor. Composite adds a tile to that tensor.
 """
 
 from typing import Literal, TypeAlias, overload

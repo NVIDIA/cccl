@@ -105,12 +105,13 @@ def _plan_with_storage(group, launch, operation, temp_storage):
 
 @dataclass(frozen=True, eq=False)
 class _CubHistogramRequest:
-    """Describe one specialized CUB histogram wrapper call.
+    """Describe a fresh or cumulative CUB block histogram call.
 
-    The plan artifact key controls equality, hashing, and the wrapper symbol.
-    Block width, items per thread, sample and counter dtypes, bin count,
-    output extent, and algorithm select the C++ type, its scratch layout, and
-    the result contract.
+    The plan identifies the operation, the input tile, the counter type and
+    bin count, and the algorithm. A fresh histogram also specializes on the
+    number of counters each thread receives. Composite writes through the
+    shared counter address supplied at runtime. The artifact key determines
+    equality, hashing, and the wrapper symbol.
     """
 
     plan: GroupLoweringPlan
@@ -130,10 +131,9 @@ class _CubHistogramRequest:
     def __post_init__(self):
         """Check that the plan matches the CUB histogram wrapper contract.
 
-        Require a CUB block plan, supported sample and counter dtypes,
-        matching template arguments and method, exact scratch, and one counter
-        result of the planned extent. These checks cannot see runtime values.
-        Callers must keep each sample in [0, bins).
+        Check the sample and counter dtypes, CUB method, template arguments
+        and scratch layout. A fresh histogram has one striped counter result.
+        Composite has no return value. Samples must be in [0, bins) at runtime.
         """
 
         self.plan.require_supported()

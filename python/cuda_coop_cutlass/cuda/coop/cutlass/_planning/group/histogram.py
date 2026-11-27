@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan fresh block histograms with an independent counter result shape.
+"""Plan fresh and cumulative histograms for a complete block.
 
-The request records sample geometry and counting choices. Planning validates
-those choices against the exact block dimensions, then describes the new
-counter payload and the block's shared storage and synchronization. Frontends
-use the result contract instead of assuming that output matches the input.
+Both plans record the sample geometry, bin count, counter dtype, algorithm,
+and storage requirements. A fresh histogram returns a counter payload whose
+extent can differ from the input. Composite updates a caller-owned shared
+counter array in place.
 """
 
 from __future__ import annotations

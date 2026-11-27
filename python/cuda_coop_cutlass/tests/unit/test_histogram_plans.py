@@ -16,7 +16,12 @@ from types import SimpleNamespace
 import cutlass
 import pytest
 
-from cuda.coop.cutlass import TempStorage, ThreadData
+from cuda.coop.cutlass import (
+    TempStorage,
+    ThreadData,
+    histogram_composite,
+    histogram_init,
+)
 from cuda.coop.cutlass._compiler import _rendering, _state, _storage
 from cuda.coop.cutlass._lowering import _histogram
 from cuda.coop.cutlass._planning import (
@@ -80,6 +85,26 @@ def test_types_and_result(sample, counter, algorithm):
 def test_invalid_contract(options):
     with pytest.raises((TypeError, ValueError, NotImplementedError)):
         _request(**options)
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    [
+        ({"bins_per_thread": 0}, "bins_per_thread must be a positive integer"),
+        (
+            {"bins": 1 << 31},
+            "histogram bins_per_thread must provide capacity for every bin",
+        ),
+        (
+            {},
+            "histogram tile and output sizes must fit a signed 32-bit integer",
+        ),
+    ],
+)
+def test_one_shot_oversized_tile_diagnostics(options, message):
+    with pytest.raises(ValueError) as error:
+        _request(items=1 << 31, **options)
+    assert str(error.value) == message
 
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
@@ -217,3 +242,20 @@ def test_composite_sort_tile_limit():
     with pytest.raises(ValueError, match="65535"):
         _composite_request(items=1024, algorithm="sort")
     assert _composite_request(items=1024).plan.result is None
+
+
+def test_histogram_init_requires_one_source_of_counters():
+    block = this_block()
+    with pytest.raises(TypeError, match="requires counters or bins"):
+        histogram_init(block)
+    with pytest.raises(TypeError, match="either counters or bins"):
+        histogram_init(block, object(), bins=70)
+
+
+@pytest.mark.parametrize(
+    ("primitive", "args"),
+    [(histogram_init, ()), (histogram_composite, (object(), object()))],
+)
+def test_shared_histogram_requires_block(primitive, args):
+    with pytest.raises(NotImplementedError, match="requires a block group"):
+        primitive(this_warp(), *args)

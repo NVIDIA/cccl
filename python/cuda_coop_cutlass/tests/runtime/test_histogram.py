@@ -472,11 +472,11 @@ def test_histogram_init_separate_allocations():
     def kernel(destination: cute.Pointer, repeats: cutlass.Int32):
         block = coop.this_block()
         tid = block.rank()
-        first = coop.histogram_init(block, bins=64)
+        first = coop.histogram_init(block, bins=64, counter_dtype=int)
         first[tid] = tid + 10
         output = cute.make_tensor(destination, cute.make_layout(128))
         for iteration in cutlass.range(repeats):
-            second = coop.histogram_init(block, bins=64)
+            second = coop.histogram_init(block, bins=64, counter_dtype=np.int32)
             output[tid + 64] = second[(tid + 32) % 64]
             block.sync()
             second[tid] = iteration + 1
@@ -503,6 +503,7 @@ def test_histogram_init_separate_allocations():
         ("stride", False),
         ("dynamic", True),
         ("dtype", False),
+        ("block_shape", False),
     ],
 )
 def test_histogram_rejects_invalid_counter_tensor(invalid, composite):
@@ -515,7 +516,9 @@ def test_histogram_rejects_invalid_counter_tensor(invalid, composite):
         shared = SmemAllocator().allocate_tensor(
             cutlass.Int32, cute.make_layout(64), byte_alignment=4
         )
-        if cutlass.const_expr(invalid == "global"):
+        if cutlass.const_expr(invalid == "block_shape"):
+            counters = shared
+        elif cutlass.const_expr(invalid == "global"):
             counters = cute.make_tensor(source, cute.make_layout(64))
         elif cutlass.const_expr(invalid == "register"):
             counters = cute.make_rmem_tensor(
@@ -545,7 +548,10 @@ def test_histogram_rejects_invalid_counter_tensor(invalid, composite):
 
     @cute.jit
     def launch(source: cute.Pointer):
-        kernel(source).launch(grid=1, block=64)
+        if cutlass.const_expr(invalid == "block_shape"):
+            kernel(source).launch(grid=1, block=(8, 8, 1))
+        else:
+            kernel(source).launch(grid=1, block=64)
 
     with (
         device_array(np.zeros(64, dtype=np.int32)) as src,
@@ -562,6 +568,9 @@ def test_histogram_rejects_invalid_counter_tensor(invalid, composite):
 def test_histogram_mixed_algorithms(first, second):
     """Share counters and a scratch region across both algorithms."""
 
+    sample_type = cutlass.Uint8 if first == "sort" else cutlass.Uint64
+    sharing = "exclusive" if first == "sort" else "shared"
+
     @cute.kernel
     def kernel(destination: cute.Pointer):
         block = coop.this_block()
@@ -569,8 +578,8 @@ def test_histogram_mixed_algorithms(first, second):
         counters = coop.histogram_init(
             block, bins=1, counter_dtype=cutlass.Uint64
         )
-        samples = coop.ThreadData.from_values(cutlass.Int32(0))
-        scratch = coop.TempStorage(auto_sync=True)
+        samples = coop.ThreadData.from_values(sample_type(0))
+        scratch = coop.TempStorage(sharing=sharing, auto_sync=True)
         coop.histogram_composite(
             block, samples, counters, algorithm=first, temp_storage=scratch
         )

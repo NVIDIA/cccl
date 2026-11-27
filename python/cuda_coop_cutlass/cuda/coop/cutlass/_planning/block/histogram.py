@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe fresh CUB histograms with striped per-thread counters.
+"""Describe CUB's fresh and cumulative block histograms.
 
-The adapter copies samples because CUB's sort algorithm can reorder them. It
-computes a fresh histogram in shared storage, then waits for all updates
-before distributing the counters. That internal barrier makes the returned
-counts ready; scratch reuse after the call is a separate frontend concern.
-
-The wrapper uses threadIdx.x for bin ownership, so only one-dimensional blocks
-are supported. All C++ source remains a compilation description here;
-constructing a specialization does not compile or launch the operation.
+Both specializations use a one-dimensional block and mutable per-thread
+copies of the samples for CUB's sort algorithm. The fresh histogram adapter
+counts into private shared bins, waits for all updates, and distributes
+bins round-robin across the threads. Composite adds directly to the shared
+bins supplied by the caller and needs only CUB's scratch.
 """
 
 from __future__ import annotations
@@ -134,7 +131,7 @@ class BlockHistogramSpecialization:
     bins_per_thread: int
 
 
-def _histogram_geometry(block_dim, items_per_thread, bins):
+def _normalize_histogram_geometry(block_dim, items_per_thread, bins):
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("histogram supports only one-dimensional blocks")
@@ -142,10 +139,6 @@ def _histogram_geometry(block_dim, items_per_thread, bins):
         "items_per_thread", items_per_thread
     )
     bins = normalize_positive_int("bins", bins)
-    if max(bins, block_dim[0] * items_per_thread) > (1 << 31) - 1:
-        raise ValueError(
-            "histogram tile and bin count must fit a signed 32-bit integer"
-        )
     return block_dim, items_per_thread, bins
 
 
@@ -174,7 +167,7 @@ def make_block_histogram_specialization(
     writes zero into output slots beyond the bin count.
     """
 
-    block_dim, items_per_thread, bins = _histogram_geometry(
+    block_dim, items_per_thread, bins = _normalize_histogram_geometry(
         block_dim, items_per_thread, bins
     )
     bins_per_thread = normalize_positive_int("bins_per_thread", bins_per_thread)
@@ -182,7 +175,14 @@ def make_block_histogram_specialization(
         raise ValueError(
             "histogram bins_per_thread must provide capacity for every bin"
         )
-    if block_dim[0] * bins_per_thread > (1 << 31) - 1:
+    if (
+        max(
+            bins,
+            block_dim[0] * bins_per_thread,
+            block_dim[0] * items_per_thread,
+        )
+        > (1 << 31) - 1
+    ):
         raise ValueError(
             "histogram tile and output sizes must fit a signed 32-bit integer"
         )
@@ -253,9 +253,13 @@ def make_block_histogram_composite_specialization(
     *, sample_dtype, block_dim, items_per_thread, bins, counter_dtype, algorithm
 ) -> Algorithm:
     """Describe a CUB Composite into caller-owned, contiguous shared bins."""
-    block_dim, items_per_thread, bins = _histogram_geometry(
+    block_dim, items_per_thread, bins = _normalize_histogram_geometry(
         block_dim, items_per_thread, bins
     )
+    if max(bins, block_dim[0] * items_per_thread) > (1 << 31) - 1:
+        raise ValueError(
+            "histogram tile and bin count must fit a signed 32-bit integer"
+        )
     sample_dtype = validate_histogram_dtype(sample_dtype)
     counter_dtype = validate_histogram_dtype(counter_dtype, counter=True)
     algorithm = normalize_histogram_algorithm(algorithm)
