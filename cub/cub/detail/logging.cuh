@@ -18,13 +18,10 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/cstdarg>
 #include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/cstdlib>
 
 #include <nv/target>
-
-#if defined(CUB_DEBUG_LOG) || (_CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING))
-#  include <cuda/std/__host_stdlib/sstream> // IWYU pragma: keep
-#endif // defined(CUB_DEBUG_LOG) || (_CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING))
 
 #ifdef _CCCL_DOXYGEN_INVOKED
 //! When defined, disables all logging code in CCCL
@@ -88,33 +85,58 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 #endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
+#if defined(CUB_DEBUG_LOG) || (_CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING))
+//! Emits the dispatch log line with the already formatted tuning description
+_CCCL_HOST_DEVICE_API inline void
+log_dispatch_message(const char* device_alg, ::cuda::compute_capability cc, const char* tuning) noexcept
+{
+#  ifdef CUB_DEBUG_LOG
+  _CubLog(
+    "Dispatching %s on compute capability %d.%d with tuning: %s\n", device_alg, cc.major_cap(), cc.minor_cap(), tuning);
+#  else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+  _CUB::detail::log_always(
+    "Dispatching %s on compute capability %d.%d with tuning: %s\n", device_alg, cc.major_cap(), cc.minor_cap(), tuning);
+#  endif // !CUB_DEBUG_LOG
+}
+
+// CUB only relies on <iosfwd>, so ::std::basic_stringstream may be incomplete when this header is included. The
+// preferred overload below is only viable when the stringstream is complete at the point of instantiation (i.e. the
+// user included <sstream>). CharT is a template parameter so the check is dependent and deferred to instantiation.
+template <typename Policy, typename CharT = char>
+_CCCL_HOST_DEVICE_API auto
+log_dispatch_impl(const char* device_alg, ::cuda::compute_capability cc, const Policy& active_policy, int) noexcept
+  -> decltype(void(sizeof(::std::basic_stringstream<CharT>)))
+{
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::basic_stringstream<CharT> ss;
+                 ss << active_policy;
+                 _CUB::detail::log_dispatch_message(device_alg, cc, ss.str().c_str());
+               }))
+}
+
+// Fallback when <sstream> was not included by the user: still log the dispatch, but without the tuning details
+template <typename Policy>
+_CCCL_HOST_DEVICE_API void
+log_dispatch_impl(const char* device_alg, ::cuda::compute_capability cc, const Policy&, long) noexcept
+{
+  _CUB::detail::log_dispatch_message(device_alg, cc, "<unavailable, include <sstream> to log the tuning policy>");
+}
+#endif // CUB_DEBUG_LOG || (_CCCL_HOSTED() && !CCCL_DISABLE_LOGGING)
+
+//! Logs the dispatch of a device algorithm together with the active tuning policy. Printing the policy requires the
+//! user to include <sstream> (CUB itself only includes <iosfwd>); otherwise the tuning is reported as unavailable.
 template <typename Policy>
 _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                                         [[maybe_unused]] ::cuda::compute_capability cc,
                                         [[maybe_unused]] const Policy& active_policy) noexcept
 {
 #ifdef CUB_DEBUG_LOG
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching %s on compute capability %d.%d with tuning: %s\n",
-                         device_alg,
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
+  NV_IF_TARGET(NV_IS_HOST, ({ _CUB::detail::log_dispatch_impl(device_alg, cc, active_policy, 0); }))
 #elif _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
                  if (_CUB::detail::logging_enabled())
                  {
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CUB::detail::log_always(
-                     "Dispatching %s on compute capability %d.%d with tuning: %s\n",
-                     device_alg,
-                     cc.major_cap(),
-                     cc.minor_cap(),
-                     ss.str().c_str());
+                   _CUB::detail::log_dispatch_impl(device_alg, cc, active_policy, 0);
                  }
                }))
 #endif // !CUB_DEBUG_LOG && _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
