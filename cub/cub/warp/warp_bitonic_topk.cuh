@@ -31,7 +31,7 @@ namespace detail
 namespace warp_bitonic_topk
 {
 template <int Len, typename KeyT, typename ValueT, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 compare_and_replace(KeyT* keys1, ValueT* values1, const KeyT* keys2, const ValueT* values2, CompareOp compare_op)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -49,13 +49,13 @@ compare_and_replace(KeyT* keys1, ValueT* values1, const KeyT* keys2, const Value
 }
 
 template <int Len, int LogicalWarpThreads, typename KeyT, typename ValueT, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE void compare_and_replace(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void compare_and_replace(
   KeyT* keys1, ValueT* values1, const KeyT* keys2, const ValueT* values2, CompareOp compare_op, int num_items2, int lane)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < Len; ++i)
   {
-    if (i * LogicalWarpThreads + lane < num_items2 && compare_op(keys2[i], keys1[i]))
+    if ((i * LogicalWarpThreads) + lane < num_items2 && compare_op(keys2[i], keys1[i]))
     {
       keys1[i] = keys2[i];
       if constexpr (!::cuda::std::is_same_v<ValueT, NullType>)
@@ -68,7 +68,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void compare_and_replace(
 
 // reverse keys and values which are in striped arrangement
 template <int Len, int LogicalWarpThreads, typename KeyT, typename ValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, int lane, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, int lane, unsigned int member_mask)
 {
   // first reverse each lane's array
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -100,12 +100,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, in
 }
 
 template <int ItemsPerThread, int LogicalWarpThreads, typename KeyT, typename ValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void initialize_invalid_items(KeyT* keys, ValueT* values, int valid_items, int lane)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void initialize_invalid_items(KeyT* keys, ValueT* values, int valid_items, int lane)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    if (i * LogicalWarpThreads + lane >= valid_items)
+    if ((i * LogicalWarpThreads) + lane >= valid_items)
     {
       keys[i] = KeyT{};
       if constexpr (!::cuda::std::is_same_v<ValueT, NullType>)
@@ -119,7 +119,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void initialize_invalid_items(KeyT* keys, ValueT*
 // WarpBitonicSortNetwork::Sort(..., valid_items) requires all items to be initialized, including those beyond
 // valid_items. This wrapper handles that initialization.
 template <int ItemsPerThread, int LogicalWarpThreads, typename KeyT, typename ValueT, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items, int lane)
 {
   initialize_invalid_items<ItemsPerThread, LogicalWarpThreads>(keys, values, valid_items, lane);
@@ -399,7 +399,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i]   = oob_default;
         values[i] = ValueT{};
@@ -443,7 +443,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = max_k_per_thread; i <= ItemsPerThread - max_k_per_thread; i += max_k_per_thread)
     {
-      const int remain_items = valid_items - i * LogicalWarpThreads;
+      const int remain_items = valid_items - (i * LogicalWarpThreads);
       if (remain_items >= MaxK)
       {
         MaxKSortT{}.template Sort<CompareOp, false>(keys + i, values + i, compare_op);
@@ -466,7 +466,7 @@ public:
     if constexpr (constexpr int remain = ItemsPerThread % max_k_per_thread; remain != 0)
     {
       constexpr int offset   = ItemsPerThread / max_k_per_thread * max_k_per_thread;
-      const int remain_items = valid_items - offset * LogicalWarpThreads;
+      const int remain_items = valid_items - (offset * LogicalWarpThreads);
       if (remain_items > 0)
       {
         _CUB::detail::warp_bitonic_topk::sort_partial<remain, LogicalWarpThreads>(

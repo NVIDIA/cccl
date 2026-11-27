@@ -54,7 +54,7 @@ struct RunParams
 };
 
 template <BenchMode Mode>
-[[nodiscard]] constexpr RunParams calc_run_params()
+[[nodiscard]] _CCCL_HOST_API constexpr RunParams calc_run_params()
 {
   if constexpr (Mode == BenchMode::Latency)
   {
@@ -69,7 +69,7 @@ template <BenchMode Mode>
 }
 
 template <BenchMode Mode>
-[[nodiscard]] constexpr RunParams calc_topk_run_params(int items_per_warp)
+[[nodiscard]] _CCCL_HOST_API constexpr RunParams calc_topk_run_params(int items_per_warp)
 {
   RunParams result = calc_run_params<Mode>();
   if constexpr (Mode == BenchMode::Throughput)
@@ -80,7 +80,7 @@ template <BenchMode Mode>
   return result;
 }
 
-[[nodiscard]] constexpr std::size_t count_items(const RunParams& run_params, int items_per_warp)
+[[nodiscard]] _CCCL_HOST_API constexpr std::size_t count_items(const RunParams& run_params, int items_per_warp)
 {
   return static_cast<std::size_t>(run_params.grid_dim) * (run_params.block_dim / warp_threads) * items_per_warp
        * run_params.num_iterations;

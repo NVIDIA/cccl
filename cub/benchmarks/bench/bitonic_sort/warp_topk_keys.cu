@@ -18,7 +18,7 @@ using max_k_values = nvbench::enum_type_list<32, 64, 96>;
 // Choose k in the range (max_k - warp_threads, max_k] to reflect this.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr int calc_k(int max_k)
 {
-  return max_k - warp_threads / 3 * 2;
+  return max_k - (warp_threads / 3 * 2);
 }
 
 template <int WarpsPerBlock, int MaxK>

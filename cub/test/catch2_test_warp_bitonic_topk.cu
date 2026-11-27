@@ -59,13 +59,13 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
   // Load data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < num_items)
     {
-      keys[i] = keys_in[num_items * warp_id + idx];
+      keys[i] = keys_in[(num_items * warp_id) + idx];
       if constexpr (!keys_only)
       {
-        values[i] = values_in[num_items * warp_id + idx];
+        values[i] = values_in[(num_items * warp_id) + idx];
       }
     }
   }
@@ -83,13 +83,13 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < k)
     {
-      keys_out[k * warp_id + idx] = keys[i];
+      keys_out[(k * warp_id) + idx] = keys[i];
       if constexpr (!keys_only)
       {
-        values_out[k * warp_id + idx] = values[i];
+        values_out[(k * warp_id) + idx] = values[i];
       }
     }
   }
@@ -306,7 +306,7 @@ struct params_t
   // When the logical warp is smaller than the architectural warp, deliberately leaves the last architectural warp
   // partially occupied
   static constexpr int total_warps =
-    (logical_warp_threads == warp_threads) ? 2 : (2 * warp_threads / logical_warp_threads - 1);
+    (logical_warp_threads == warp_threads) ? 2 : ((2 * warp_threads / logical_warp_threads) - 1);
 };
 
 template <typename TestType, typename ActionT>
@@ -461,9 +461,9 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile with an OOB defau
     std::clamp(max_k - 1, k, max_items),
     max_k,
     std::clamp(max_k + 1, k, max_items),
-    std::clamp(2 * max_k - 1, k, max_items),
+    std::clamp((2 * max_k) - 1, k, max_items),
     std::clamp(2 * max_k, k, max_items),
-    std::clamp(2 * max_k + 1, k, max_items),
+    std::clamp((2 * max_k) + 1, k, max_items),
     std::clamp(max_items - 1, k, max_items),
     max_items,
     take(5, random(k, max_items)));
@@ -494,9 +494,9 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile works",
     std::clamp(max_k - 1, k, max_items),
     max_k,
     std::clamp(max_k + 1, k, max_items),
-    std::clamp(2 * max_k - 1, k, max_items),
+    std::clamp((2 * max_k) - 1, k, max_items),
     std::clamp(2 * max_k, k, max_items),
-    std::clamp(2 * max_k + 1, k, max_items),
+    std::clamp((2 * max_k) + 1, k, max_items),
     std::clamp(max_items - 1, k, max_items),
     max_items,
     take(5, random(k, max_items)));
