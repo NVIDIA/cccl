@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -15,6 +15,7 @@
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/std/cstdint>
 

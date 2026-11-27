@@ -2,12 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
-#include <cub/config.cuh>
+
+#include <cuda/__cccl_config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_load.cuh>
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>

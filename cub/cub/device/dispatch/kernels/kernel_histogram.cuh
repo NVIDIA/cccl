@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -20,6 +20,8 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>

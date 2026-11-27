@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -18,6 +18,8 @@
 #include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -39,6 +41,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cccl/ptx_isa.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>

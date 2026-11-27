@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
-
-#include <cub/util_namespace.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -16,6 +14,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
@@ -26,6 +25,8 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>

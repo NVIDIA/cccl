@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
@@ -25,10 +25,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>

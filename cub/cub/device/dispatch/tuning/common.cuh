@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -16,6 +16,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_size.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 

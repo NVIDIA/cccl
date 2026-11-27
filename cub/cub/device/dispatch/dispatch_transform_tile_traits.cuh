@@ -24,9 +24,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
-
-#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -36,7 +34,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
 #if _CCCL_CUB_HAS_TILE_TRANSFORM()
+
+#  include <cub/util_namespace.cuh>
 
 #  include <cuda/__functional/operator_properties.h>
 #  include <cuda/std/__cstddef/types.h>

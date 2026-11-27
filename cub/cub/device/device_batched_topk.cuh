@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -22,6 +22,7 @@
 #include <cub/detail/segmented_params.cuh> // detail::params::__validate_uniform{,_or_per_segment}_integral_param
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>

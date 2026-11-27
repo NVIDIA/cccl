@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -21,6 +21,7 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/readable_traits.h>

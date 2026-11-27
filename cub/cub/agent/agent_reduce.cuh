@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -27,6 +27,8 @@
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>

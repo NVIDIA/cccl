@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -24,9 +24,12 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN

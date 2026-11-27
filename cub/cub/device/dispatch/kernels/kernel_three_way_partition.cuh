@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -17,6 +17,8 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_macro.cuh> // suppresses kernel visibility warnings
+#include <cub/util_namespace.cuh>
 
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>

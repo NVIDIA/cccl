@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -21,6 +21,7 @@
 
 #include <cub/detail/unit_word.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -19,6 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 

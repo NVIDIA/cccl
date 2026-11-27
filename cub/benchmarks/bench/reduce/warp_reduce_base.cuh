@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>

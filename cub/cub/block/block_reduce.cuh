@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -23,6 +23,7 @@
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__functional/operations.h>

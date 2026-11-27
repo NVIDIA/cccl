@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -23,6 +23,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/iosfwd>

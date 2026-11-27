@@ -18,8 +18,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/config.cuh>
-
 #include <nv/target>
 
 /**

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -15,6 +15,7 @@
 
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/device_for.cuh>
@@ -22,6 +23,7 @@
 #include <cub/device/dispatch/dispatch_find.cuh>
 #include <cub/device/dispatch/dispatch_find_bound_sorted_values.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__iterator/zip_iterator.h>

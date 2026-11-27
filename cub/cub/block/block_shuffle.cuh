@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -19,6 +19,8 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__cstddef/types.h>

@@ -12,9 +12,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
-
-#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -24,19 +22,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
 #if _CCCL_CUB_HAS_TILE_TRANSFORM()
 
+#  include <cub/detail/detect_cuda_runtime.cuh>
 #  include <cub/device/dispatch/dispatch_transform_tile_traits.cuh>
 #  include <cub/device/dispatch/kernels/kernel_transform_tile.cuh>
 #  include <cub/device/dispatch/tuning/tuning_transform_tile.cuh>
 #  include <cub/util_debug.cuh>
 #  include <cub/util_device.cuh>
+#  include <cub/util_namespace.cuh>
 
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cuda/__cmath/ceil_div.h>
 #  include <cuda/__device/compute_capability.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>

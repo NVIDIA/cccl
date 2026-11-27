@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -19,6 +19,8 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/warp/warp_exchange.cuh>
 #include <cub/warp/warp_utils.cuh>
 

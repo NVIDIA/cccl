@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -16,6 +16,7 @@
 
 #include <cub/detail/future_value.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/util_namespace.cuh>
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

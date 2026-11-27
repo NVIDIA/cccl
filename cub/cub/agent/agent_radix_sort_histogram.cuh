@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -24,6 +24,7 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>

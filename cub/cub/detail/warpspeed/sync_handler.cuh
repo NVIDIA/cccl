@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -14,6 +14,7 @@
 
 #include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/ptx_helper_functions.h>

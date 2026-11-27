@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -22,6 +22,7 @@
 
 #include <cub/detail/binary_op_has_idx_param.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 CUB_NAMESPACE_BEGIN
