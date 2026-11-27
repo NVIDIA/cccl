@@ -99,9 +99,13 @@ log_dispatch_message(const char* device_alg, ::cuda::compute_capability cc, cons
 #  endif // !CUB_DEBUG_LOG
 }
 
+#  if _CCCL_HOSTED()
 // CUB only relies on <iosfwd>, so ::std::basic_stringstream may be incomplete when this header is included. The
 // preferred overload below is only viable when the stringstream is complete at the point of instantiation (i.e. the
-// user included <sstream>). CharT is a template parameter so the check is dependent and deferred to instantiation.
+// user included <sstream>). CharT is a template parameter so the check is dependent and deferred to instantiation. The
+// overload is guarded by _CCCL_HOSTED(), because the iosfwd wrapper declares nothing otherwise (e.g. NVRTC) and the
+// name
+// ::std::basic_stringstream is looked up when the template is defined.
 template <typename Policy, typename CharT = char>
 _CCCL_HOST_DEVICE_API auto
 log_dispatch_impl(const char* device_alg, ::cuda::compute_capability cc, const Policy& active_policy, int) noexcept
@@ -113,6 +117,7 @@ log_dispatch_impl(const char* device_alg, ::cuda::compute_capability cc, const P
                  _CUB::detail::log_dispatch_message(device_alg, cc, ss.str().c_str());
                }))
 }
+#  endif // _CCCL_HOSTED()
 
 // Fallback when <sstream> was not included by the user: still log the dispatch, but without the tuning details
 template <typename Policy>
