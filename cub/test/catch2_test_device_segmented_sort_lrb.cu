@@ -150,6 +150,14 @@ static void check_kernel_retry(
   REQUIRE(c2h::host_vector<Key>(d_out) == expected);
 }
 
+template <cub::SortOrder Order, typename... Args>
+static void check_kernel_retries(Args&&... args)
+{
+  check_kernel_retry<0, Order>(args...);
+  check_kernel_retry<1, Order>(args...);
+  check_kernel_retry<2, Order>(args...);
+}
+
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
 CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          "[segmented][sort][device]",
@@ -256,22 +264,16 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(offsets.back() - offsets[capacities::size] == 1);
   REQUIRE(c2h::host_vector<key_type>(d_in) == input);
   // Force scratch reuse and cross-bin work iterations independently in every sorting kernel.
-  for (auto retry_kernel :
-       {check_kernel_retry<0, order_t::value, key_type>,
-        check_kernel_retry<1, order_t::value, key_type>,
-        check_kernel_retry<2, order_t::value, key_type>})
-  {
-    retry_kernel(
-      result,
-      begins,
-      ends,
-      expected,
-      thrust::raw_pointer_cast(d_begins.data()),
-      thrust::raw_pointer_cast(d_ends.data()),
-      thrust::raw_pointer_cast(d_in.data()),
-      d_out,
-      stream);
-  }
+  check_kernel_retries<order_t::value>(
+    result,
+    begins,
+    ends,
+    expected,
+    thrust::raw_pointer_cast(d_begins.data()),
+    thrust::raw_pointer_cast(d_ends.data()),
+    thrust::raw_pointer_cast(d_in.data()),
+    d_out,
+    stream);
   // A different private aggregate must drive matching partition and sorting settings on both sides.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   const auto run_custom = [&](void* workspace) {
