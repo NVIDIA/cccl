@@ -26,6 +26,10 @@ TEST_FUNC constexpr void test()
   static_assert(cuda::is_vector_type_v<const volatile Vec> == Ref);
 }
 
+// CUDA 13 deprecated several four-component vector types that the trait still supports.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
 TEST_FUNC void test()
 {
   test<char1, true>();
@@ -158,6 +162,8 @@ TEST_FUNC void test()
   {};
   test<MyStruct, false>();
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 int main(int, char**)
 {

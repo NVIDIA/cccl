@@ -21,9 +21,11 @@
 #  include <cub/util_arch.cuh>
 #  include <cub/util_device.cuh>
 #  include <cub/util_macro.cuh>
+#  include <cub/warp/specializations/warp_redux.cuh>
 #  include <cub/warp/warp_scan.cuh>
 
 #  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__functional/maximum.h>
 #  include <cuda/__memory/ptr_rebind.h>
 #  include <cuda/ptx>
 #  include <cuda/std/__algorithm/max.h>
@@ -33,6 +35,7 @@
 #  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__bit/countl.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
@@ -367,7 +370,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   static_assert(ComputeWarps <= 32, "ComputeWarps must be less than 32!");
   const bool active        = lane_id < ComputeWarps;
   const int warp_run_count = active ? slot_warp_run_counts[lane_id] : 0;
-  const int run_count      = __reduce_add_sync(full_mask, warp_run_count);
+  const int run_count      = _CUB::detail::warp_redux_sm80(warp_run_count, full_mask, ::cuda::std::plus<>{});
   // last head = the highest-index warp that has any run (its last_head is the tile's last head)
   const unsigned warps_with_runs = __ballot_sync(full_mask, warp_run_count > 0);
   // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
@@ -552,10 +555,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
       }
     }
     // vote for the highest tile id with runs
-    const int last_packed = __reduce_max_sync(full_mask, lane_last_packed);
+    const int last_packed = _CUB::detail::warp_redux_sm80(lane_last_packed, full_mask, ::cuda::maximum<>{});
 
     // reduce across the warp, then roll this window into the running prefix
-    const int window_run_count = __reduce_add_sync(full_mask, lane_run_count);
+    const int window_run_count = _CUB::detail::warp_redux_sm80(lane_run_count, full_mask, ::cuda::std::plus<>{});
     // every folded tile is full, and run-less tiles publish open_len == tile_size, so the open length is the
     // last run-carrying tile's open_len plus tile_size for each tile after it
     const int window_open_length =
@@ -880,7 +883,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
             // ^^^ regressed case ^^^
           }
-          local_run_count = __reduce_add_sync(full_mask, __popc(my_flags));
+          local_run_count = _CUB::detail::warp_redux_sm80(__popc(my_flags), full_mask, ::cuda::std::plus<>{});
           // each lane in a warp now has a mask that tells which chunk is non empty
           const unsigned nonempty_chunk_mask = __ballot_sync(full_mask, my_flags != 0u);
           // if warptile is non empty (has heads), we get the location of warps first head and last head

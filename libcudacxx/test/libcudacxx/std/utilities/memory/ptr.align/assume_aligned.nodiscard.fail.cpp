@@ -17,6 +17,8 @@
 
 #include <cuda/std/memory>
 
+#include "test_macros.h"
+
 TEST_FUNC void f()
 {
   int* p = nullptr;

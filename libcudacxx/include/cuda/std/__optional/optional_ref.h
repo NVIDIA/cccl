@@ -50,6 +50,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 class optional<_Tp&>
 {
+  static_assert(!is_same_v<remove_cvref_t<_Tp>, in_place_t>, "instantiation of optional with in_place_t is ill-formed");
+  static_assert(!is_same_v<remove_cvref_t<_Tp>, nullopt_t>, "instantiation of optional with nullopt_t is ill-formed");
+
   using __raw_type _CCCL_NODEBUG = remove_reference_t<_Tp>;
   __raw_type* __value_           = nullptr;
 

@@ -424,7 +424,9 @@ class LibcxxTestFormat(object):
             # nodiscard before enabling it
             test_str_list = [b"ignoring return value", b"nodiscard", b"NODISCARD"]
             if any(test_str in contents for test_str in test_str_list):
-                if test_cxx.type != "nvc++":
+                if test_cxx.type == "clang":
+                    test_cxx.flags += ["-Werror=unused-result"]
+                elif test_cxx.type != "nvc++":
                     test_cxx.flags += [
                         "-Xcompiler",
                         "-Werror",

@@ -576,9 +576,11 @@ class Configuration(object):
         self.config.available_features.add(self.cxx_stdlib_under_test)
 
     def configure_use_clang_verify(self):
-        if self.cxx.type == "nvrtcc":
+        """Configure diagnostic matching for compile-fail tests."""
+        if self.cxx.type == "nvrtcc" or (
+            self.cxx.type == "clang" and self.cxx.source_lang == "cu"
+        ):
             return
-        """If set, run clang with -verify on failing tests."""
         self.use_clang_verify = self.get_lit_bool("use_clang_verify")
         if self.use_clang_verify is None:
             # NOTE: We do not test for the -verify flag directly because
