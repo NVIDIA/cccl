@@ -110,10 +110,10 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          c2h::type_list<int, double>,
          sort_orders)
 {
-  using key_type       = c2h::get<0, TestType>;
-  constexpr auto order = c2h::get<1, TestType>::value;
-  using compare_op     = std::conditional_t<order == cub::SortOrder::Ascending, std::less<>, std::greater<>>;
-  using kernels_t      = capacity::group_merge_sort_kernels_t<key_type>;
+  using key_type   = c2h::get<0, TestType>;
+  using order_t    = c2h::get<1, TestType>;
+  using compare_op = std::conditional_t<order_t::value == cub::SortOrder::Ascending, std::less<>, std::greater<>>;
+  using kernels_t  = capacity::group_merge_sort_kernels_t<key_type>;
   using capacities =
     typename kernels_t::template capacities_t<cub::detail::policy_getter<capacity::policy_selector<key_type>, sm90_cc>>;
   using warp_kernel_t        = typename kernels_t::template kernel_t<0>;
@@ -179,7 +179,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   const auto stream_owner   = c2h::make_current_device_stream();
   const cudaStream_t stream = stream_owner.get();
   const auto run            = [&](void* storage) {
-    return capacity::dispatch<order>(
+    return capacity::dispatch<order_t::value>(
       storage,
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
@@ -228,7 +228,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     }
     d_out = retry;
     REQUIRE(
-      capacity::launch_sort_kernel<kernel_t, order>(
+      capacity::launch_sort_kernel<kernel_t, order_t::value>(
         {result.bin_offsets + first_bin, result.segment_ids},
         thrust::raw_pointer_cast(d_begins.data()),
         thrust::raw_pointer_cast(d_ends.data()),
@@ -248,17 +248,21 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   // A different private aggregate must drive matching partition and sorting settings on both sides.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   const auto run_custom = [&](void* workspace) {
-    return capacity::
-      dispatch<order, key_type, long long*, long long*, cub::detail::TripleChevronFactory, test_policy_selector<key_type>>(
-        workspace,
-        bytes,
-        thrust::raw_pointer_cast(d_begins.data()),
-        thrust::raw_pointer_cast(d_ends.data()),
-        static_cast<unsigned>(lengths.size()),
-        thrust::raw_pointer_cast(d_in.data()),
-        thrust::raw_pointer_cast(d_out.data()),
-        result,
-        stream);
+    return capacity::dispatch<order_t::value,
+                              key_type,
+                              long long*,
+                              long long*,
+                              cub::detail::TripleChevronFactory,
+                              test_policy_selector<key_type>>(
+      workspace,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<unsigned>(lengths.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result,
+      stream);
   };
   REQUIRE(run_custom(nullptr) == cudaSuccess);
   storage.resize(bytes);
@@ -283,14 +287,13 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
          sort_orders)
 {
   using key_type          = c2h::get<0, TestType>;
-  constexpr auto order    = c2h::get<1, TestType>::value;
+  using order_t           = c2h::get<1, TestType>;
   const key_type infinity = std::numeric_limits<key_type>::infinity();
   const c2h::host_vector<key_type> input{infinity, -key_type{0}, 3, -infinity, key_type{0}, -7, -1, 1};
-  c2h::host_vector<key_type> expected{-infinity, -7, -1, 0, 0, 1, 3, infinity};
-  if constexpr (order == cub::SortOrder::Descending)
-  {
-    std::reverse(expected.begin(), expected.end());
-  }
+  const c2h::host_vector<key_type> expected =
+    order_t::value == cub::SortOrder::Ascending
+      ? c2h::host_vector<key_type>{-infinity, -7, -1, 0, 0, 1, 3, infinity}
+      : c2h::host_vector<key_type>{infinity, 3, 1, 0, 0, -1, -7, -infinity};
   c2h::device_vector<key_type> d_in = input;
   c2h::device_vector<key_type> d_out(input.size());
   c2h::device_vector<int> d_offsets = c2h::host_vector<int>{0, static_cast<int>(input.size())};
@@ -300,7 +303,7 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
   size_t bytes   = 0;
   const auto run = [&](void* storage) {
     const auto* offsets = thrust::raw_pointer_cast(d_offsets.data());
-    return capacity::dispatch<order>(
+    return capacity::dispatch<order_t::value>(
       storage,
       bytes,
       offsets,
