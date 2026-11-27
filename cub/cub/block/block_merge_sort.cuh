@@ -17,12 +17,12 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_sort.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -45,7 +45,9 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
   while (keys1_begin < keys1_end)
   {
-    const OffsetT mid = _CUB::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    // Help the compiler eliminate the descending case in midpoint
+    _CCCL_ASSUME(keys1_begin <= keys1_end);
+    const OffsetT mid = ::cuda::std::midpoint(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
     const detail::it_value_t<KeyIt1> key1 = keys1[mid];
     const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];

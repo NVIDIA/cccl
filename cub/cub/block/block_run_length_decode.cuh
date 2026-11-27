@@ -15,12 +15,12 @@
 
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -277,7 +277,9 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i <= log2_max_num_items; i++)
     {
-      OffsetT mid = _CUB::MidPoint<OffsetT>(lower_bound, upper_bound);
+      // Help the compiler eliminate the descending case in midpoint
+      _CCCL_ASSUME(lower_bound <= upper_bound);
+      OffsetT mid = ::cuda::std::midpoint(lower_bound, upper_bound);
       mid         = (::cuda::std::min) (mid, num_items - 1);
 
       if (val < input[mid])

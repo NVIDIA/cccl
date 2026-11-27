@@ -18,7 +18,6 @@
 
 #include <cub/detail/array_utils.cuh> // to_array()
 #include <cub/detail/type_traits.cuh> // are_same()
-#include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/thread/thread_load.cuh> // UnrolledCopy
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_simd.cuh>
@@ -26,6 +25,7 @@
 
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -349,7 +349,6 @@ ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int 
 template <typename Input, typename ReductionOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
-  using _CUB::detail::unsafe_bitcast;
   using T                       = ::cuda::std::iter_value_t<Input>;
   using SimdReduceOp            = cuda_operator_to_simd_x2_t<ReductionOp, T>;
   using SimdType                = vector_type_x2_t<T>;
@@ -359,24 +358,25 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Red
   using UnpackedType            = ::cuda::std::array<T, simd_ratio>;
   using SimdArray               = ::cuda::std::array<SimdType, length / simd_ratio>;
   static_assert(simd_ratio == 2, "Only SIMD size == 2 is supported");
-  T local_array[length_rounded];
-  _CUB::UnrolledCopy<length_rounded>(input, local_array);
-  auto simd_input      = _CUB::detail::unsafe_bitcast<SimdArray>(local_array);
+  // Use cuda::std::array to avoid an NVCC internal compiler error when bit_cast is applied to a raw array
+  // UnrolledCopy copy every element before the cast
+  ::cuda::std::array<T, length_rounded> local_array; // NOLINT(cppcoreguidelines-pro-type-member-init)
+  _CUB::UnrolledCopy<length_rounded>(input, local_array.data());
+  auto simd_input      = ::cuda::std::bit_cast<SimdArray>(local_array);
   auto simd_reduction  = _CUB::ThreadReduce(simd_input, SimdReduceOp{});
-  auto unpacked_values = _CUB::detail::unsafe_bitcast<UnpackedType>(simd_reduction);
+  auto unpacked_values = ::cuda::std::bit_cast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
   // This avoids redundant instructions for converting to and from 32-bit registers
-  const T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-  auto simd_reduction_rev       = _CUB::detail::unsafe_bitcast<SimdType>(unpacked_values_rev);
-  SimdType result               = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
+  const SimdType simd_reduction_rev{unpacked_values[1], unpacked_values[0]};
+  SimdType result = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
   // repeat the same optimization for the last element
   if constexpr (length % simd_ratio == 1)
   {
-    const T tail[] = {input[length - 1], T{}};
-    auto tail_simd = _CUB::detail::unsafe_bitcast<SimdType>(tail);
-    result         = SimdReduceOp{}(result, tail_simd);
+    const UnpackedType tail = {input[length - 1], T{}};
+    auto tail_simd          = ::cuda::std::bit_cast<SimdType>(tail);
+    result                  = SimdReduceOp{}(result, tail_simd);
   }
-  return _CUB::detail::unsafe_bitcast<UnpackedType>(result)[0];
+  return ::cuda::std::bit_cast<UnpackedType>(result)[0];
 }
 
 template <typename ReductionOp, typename T>

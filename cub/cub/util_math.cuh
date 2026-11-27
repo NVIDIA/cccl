@@ -91,7 +91,9 @@ _CCCL_HOST_DEVICE_API constexpr int Nominal8BItemsToItems(int nominal_items_per_
  * \return Half the sum of \p begin and \p end
  */
 template <typename T>
-_CCCL_HOST_DEVICE_API constexpr T MidPoint(T begin, T end)
+//! Deprecated [Since 3.7]
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::midpoint from <cuda/std/numeric>") _CCCL_HOST_DEVICE_API constexpr T
+MidPoint(T begin, T end)
 {
   return begin + ((end - begin) / 2);
 }

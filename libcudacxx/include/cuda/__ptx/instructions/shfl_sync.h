@@ -94,8 +94,12 @@ _CCCL_DEVICE_API void __shfl_sync_checks(
   {
     _CCCL_ASSERT(__lane_idx_offset < 32, "the lane index or offset must be less than the warp size");
   }
-  _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
-               "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
+  // A down-shuffle can receive a negative last-lane index for an empty warp
+  if (__shfl_mode != __dot_shfl_mode::__down || (__clamp_segmask & (1u << 31)) == 0)
+  {
+    _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
+                 "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
+  }
   _CCCL_ASSERT(::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
 }
