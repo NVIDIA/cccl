@@ -125,6 +125,7 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
 {
   if constexpr (__is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2)
   {
+    // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_CTK() && _CCCL_CTK_BELOW(12, 2)
     // Before CTK 12.2, __hlt is device-only and its bfloat16 overload is unavailable before SM80.
 #  if _CCCL_HAS_NVBF16()
@@ -142,8 +143,9 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
     }
 #else // ^^^ CTK below 12.2 ^^^ / vvv CTK 12.2 or newer vvv
     // Intentionally unqualified to avoid including <cuda_fp16.h> and <cuda_bf16.h>.
-    return ::__hlt(__lhs, __rhs);
+    return __hlt(__lhs, __rhs);
 #endif // CTK 12.2 or newer
+    // NOLINTEND(cccl-avoid-adl)
   }
   else
   {
