@@ -402,6 +402,15 @@ struct agent_batched_topk_worker_per_segment
         // Only the entries of queued segments hold a tile count. The entry after them is read as zero.
         const auto num_loaded_items =
           static_cast<int>((::cuda::std::min) (num_large_segments - large_segment_offset, epilogue_tile_items));
+        if (num_loaded_items == 0)
+        {
+          // Only the total is left to write, which is the running total. That needs no scan.
+          if (threadIdx.x == 0u)
+          {
+            d_large_segments_tile_offsets[large_segment_offset] = prefix_callback_op(LargeSegmentTileOffsetT{0});
+          }
+          break;
+        }
         const auto num_stored_items =
           static_cast<int>((::cuda::std::min) (num_tile_offsets - large_segment_offset, epilogue_tile_items));
         LargeSegmentTileOffsetT segment_tile_offsets[epilogue_items_per_thread];
