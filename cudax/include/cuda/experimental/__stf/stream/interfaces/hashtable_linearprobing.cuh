@@ -124,8 +124,7 @@ public:
       // Free the buffer if the initialization below throws.
       SCOPE(fail)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaFreeAsync>(base_ptr, stream);
         };
       };

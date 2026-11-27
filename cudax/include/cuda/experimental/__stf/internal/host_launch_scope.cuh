@@ -241,15 +241,13 @@ public:
     {
       if (start_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(start_event);
         };
       }
       if (end_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(end_event);
         };
       }
@@ -315,8 +313,7 @@ public:
       auto callback = [](void* raw) {
         // The CUDA runtime calls this back, so an exception thrown by the user code must not
         // leave it.
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           auto* w = static_cast<decltype(resolved.get())>(raw);
           SCOPE(exit)
           {
@@ -372,8 +369,7 @@ public:
       auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::cuda::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
           SCOPE(exit)
           {

@@ -719,15 +719,13 @@ public:
     {
       if (start_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(start_event);
         };
       }
       if (end_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(end_event);
         };
       }
@@ -1172,8 +1170,7 @@ public:
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         auto p = static_cast<args_t*>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);

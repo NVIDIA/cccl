@@ -185,8 +185,7 @@ _CCCL_HOST_API inline void deallocateHostMemory(
   }
   catch (...)
   {
-    ON_THROW(notify)
-    {
+    sump::notify->*[&]() {
       cuda_try<cudaFreeHost>(p);
     };
   }
@@ -228,8 +227,7 @@ _CCCL_HOST_API inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    ON_THROW(notify)
-    {
+    sump::notify->*[&]() {
       cuda_try<cudaFree>(p);
     };
   }
@@ -251,8 +249,7 @@ _CCCL_HOST_API inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t
   SCOPE(fail)
   {
     // In case of failure make sure we don't leak; a failing free is reported.
-    ON_THROW(notify)
-    {
+    sump::notify->*[&]() {
       cuda_try<cudaFreeHost>(p);
     };
   };
@@ -264,8 +261,7 @@ _CCCL_HOST_API inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t
     stream,
     [](void* vp) {
       // The CUDA runtime calls this back, so an exception must not leave it.
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateHostMemory(args->second, args->first);
         delete args;
@@ -289,8 +285,7 @@ _CCCL_HOST_API inline void deallocateManagedMemory(void* p, size_t sz, cudaStrea
   SCOPE(fail)
   {
     // In case of failure make sure we don't leak; a failing free is reported.
-    ON_THROW(notify)
-    {
+    sump::notify->*[&]() {
       cuda_try<cudaFree>(p);
     };
   };
@@ -298,8 +293,7 @@ _CCCL_HOST_API inline void deallocateManagedMemory(void* p, size_t sz, cudaStrea
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateManagedMemory(args->second, args->first);
         delete args;
@@ -330,8 +324,7 @@ _CCCL_HOST_API inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           auto args = static_cast<::std::pair<size_t, void*>*>(vp);
           deallocateHostMemory(args->second, args->first);
           delete args;

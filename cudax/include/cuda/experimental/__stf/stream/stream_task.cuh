@@ -227,8 +227,7 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -276,8 +275,7 @@ public:
   //! the context. Report and abort.
   stream_task<>& end_uncleared() noexcept
   {
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       assert(get_task_phase() == task::phase::running);
 
       event_list end_list;
@@ -333,15 +331,13 @@ public:
     {
       if (start_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(start_event);
         };
       }
       if (end_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(end_event);
         };
       }
@@ -459,8 +455,7 @@ private:
       {
         // Asynchronously destroy the event to avoid a memory leak. A failing destroy leaks it and
         // is reported; the guard is noexcept, so it cannot become a second exception.
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(sync_event);
         };
       };
@@ -579,15 +574,13 @@ public:
     {
       if (start_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(start_event);
         };
       }
       if (end_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(end_event);
         };
       }

@@ -150,8 +150,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
     {
       if (th_dev_tmp_ptr)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaFreeAsync>(th_dev_tmp_ptr, stream);
         };
       }
@@ -286,8 +285,7 @@ public:
         // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          ON_THROW(notify)
-          {
+          sump::notify->*[&]() {
             cuda_try<cudaFree>(hostMemoryArrivedList);
           };
         };
@@ -436,15 +434,13 @@ public:
     {
       if (start_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(start_event);
         };
       }
       if (end_event)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(end_event);
         };
       }
@@ -537,8 +533,7 @@ public:
         // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          ON_THROW(notify)
-          {
+          sump::notify->*[&]() {
             cuda_try<cudaFree>(hostMemoryArrivedList);
           };
         };
