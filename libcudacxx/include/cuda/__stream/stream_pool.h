@@ -35,7 +35,7 @@
 #  include <cuda/std/__atomic/platform.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 
@@ -124,7 +124,7 @@ public:
   {
     if (__size == 0)
     {
-      _CCCL_THROW(::std::invalid_argument, "cuda::__stream_pool requires at least one stream");
+      _CCCL_THROW_STD(invalid_argument, "cuda::__stream_pool requires at least one stream");
     }
     // No other thread can see the pool yet, so the slots are filled with plain stores.
     if (__mode == __stream_pool_creation::lazy)
@@ -237,7 +237,7 @@ public:
   {
     if (__index >= __size_)
     {
-      _CCCL_THROW(::std::out_of_range, "cuda::__stream_pool::at index out of range");
+      _CCCL_THROW_STD(out_of_range, "cuda::__stream_pool::at index out of range");
     }
     return (*this)[__index];
   }

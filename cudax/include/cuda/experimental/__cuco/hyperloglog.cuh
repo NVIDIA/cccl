@@ -32,8 +32,7 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
@@ -415,7 +414,7 @@ private:
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
-      _CCCL_THROW(::std::invalid_argument, __message);
+      _CCCL_THROW_STD(invalid_argument, __message);
     }
     return __precision;
   }

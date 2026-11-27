@@ -46,8 +46,7 @@
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -129,17 +128,17 @@ public:
     constexpr ::cuda::std::size_t __minimum_sketch_bytes = sizeof(__register_type) * (1ull << 4);
     if (__sketch_span.size() < __minimum_sketch_bytes)
     {
-      _CCCL_THROW(::std::invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
+      _CCCL_THROW_STD(invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
     }
 
     if (!::cuda::is_aligned(__sketch_span.data(), __sketch_alignment()))
     {
-      _CCCL_THROW(::std::invalid_argument, "Sketch storage has insufficient alignment");
+      _CCCL_THROW_STD(invalid_argument, "Sketch storage has insufficient alignment");
     }
 
     if (!::cuda::in_range(__precision, 4, 18))
     {
-      _CCCL_THROW(::std::invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
+      _CCCL_THROW_STD(invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
     }
   }
 
@@ -364,7 +363,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
+      _CCCL_THROW_STD(invalid_argument, "Cannot merge estimators with different sketch sizes");
     }
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
@@ -388,7 +387,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
+      _CCCL_THROW_STD(invalid_argument, "Cannot merge estimators with different sketch sizes");
     }
 
     ::cuda::launch(

@@ -96,6 +96,7 @@
 #include <cuda/__memory_pool/memory_pool_base.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
@@ -525,10 +526,12 @@ inline unsigned int locality_domain_fake_get_count(int dev_id)
   const size_t made    = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
   if (made < static_cast<size_t>(n))
   {
-    _CCCL_THROW(::std::runtime_error,
-                "CUDASTF_FAKE_LOCALITY_DOMAINS=" + ::std::to_string(n) + " cannot be fulfilled on device "
-                  + ::std::to_string(dev_id) + ": the SM budget/granularity yields only " + ::std::to_string(made)
-                  + " green-context domain(s); reduce the requested count or unset the variable.");
+    _CCCL_THROW_STD(
+      runtime_error,
+      ("CUDASTF_FAKE_LOCALITY_DOMAINS=" + ::std::to_string(n) + " cannot be fulfilled on device "
+       + ::std::to_string(dev_id) + ": the SM budget/granularity yields only " + ::std::to_string(made)
+       + " green-context domain(s); reduce the requested count or unset the variable.")
+        .c_str());
   }
   return n;
 }

@@ -28,6 +28,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
@@ -302,9 +303,9 @@ public:
       const auto& partition = cute_place->get_partition();
       if (!(data_dims == partition.true_dims()))
       {
-        _CCCL_THROW(::std::invalid_argument,
-                    "cute composite data_place: requested extents do not match the partition's true "
-                    "extents");
+        _CCCL_THROW_STD(invalid_argument,
+                        "cute composite data_place: requested extents do not match the partition's true "
+                        "extents");
       }
 
       // The cute tier does not take the delinearize callable: the partition

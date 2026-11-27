@@ -30,8 +30,7 @@
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/cstdint>
@@ -79,7 +78,7 @@ _CCCL_HOST_API graph_node_ref __fill_bytes_graph_impl(
 {
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
+    _CCCL_THROW_STD(invalid_argument, "fill_bytes supports only exhaustive mdspans");
   }
 
   return __fill_bytes_graph_impl(

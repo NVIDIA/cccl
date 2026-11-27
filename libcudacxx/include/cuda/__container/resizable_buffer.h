@@ -25,7 +25,7 @@
 
 #  include <cuda/__container/allocation_info.h>
 #  include <cuda/__container/buffer.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -220,8 +220,9 @@ public:
     if ((this->size() * sizeof(_Tp)) % sizeof(_Up) != 0 || capacity_bytes() % sizeof(_Up) != 0
         || this->alignment() < alignof(_Up))
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "cuda::__resizable_buffer::as_type: size, capacity or alignment is incompatible with _Up");
+      _CCCL_THROW_STD(invalid_argument,
+                      "cuda::__resizable_buffer::as_type: size, capacity or alignment is "
+                      "incompatible with _Up");
     }
     return ::cuda::std::move(*this).template __as_type<_Up>();
   }
@@ -247,8 +248,9 @@ public:
   {
     if (__new_size > __capacity_)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "cuda::__resizable_buffer::resize_unsynchronized cannot grow beyond capacity");
+      _CCCL_THROW_STD(invalid_argument,
+                      "cuda::__resizable_buffer::resize_unsynchronized cannot grow beyond "
+                      "capacity");
     }
     __base_t::__set_size_unsynchronized(__new_size);
   }
@@ -320,7 +322,7 @@ template <class _Tp, class... _Properties>
 {
   if (__info.size > __info.capacity)
   {
-    _CCCL_THROW(::std::invalid_argument, "cuda::__acquire_resizable_buffer: size must not exceed capacity");
+    _CCCL_THROW_STD(invalid_argument, "cuda::__acquire_resizable_buffer: size must not exceed capacity");
   }
   ::cuda::__resizable_buffer<_Tp, _Properties...> __ret{::cuda::__acquire_buffer<_Tp, _Properties...>(
     {__info.stream, ::cuda::std::move(__info.mr), __info.ptr, __info.capacity, __info.capacity, __info.alignment})};

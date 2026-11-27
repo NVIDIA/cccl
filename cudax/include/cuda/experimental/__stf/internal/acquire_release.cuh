@@ -28,6 +28,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/new>
 #include <cuda/std/cassert>
 
@@ -180,9 +181,9 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
         }
         if (!(it->get_dplace() == gdp))
         {
-          _CCCL_THROW(::std::invalid_argument,
-                      "conflicting data places for merged dependencies on the same logical data (one "
-                      "of them is replicated)");
+          _CCCL_THROW_STD(invalid_argument,
+                          "conflicting data places for merged dependencies on the same logical data (one "
+                          "of them is replicated)");
         }
       }
       if (g == it)

@@ -34,9 +34,8 @@
  */
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/memory>
-#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -266,8 +265,8 @@ public:
     const data_place& dp = d.get_dplace();
     if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
     {
-      _CCCL_THROW(
-        ::std::invalid_argument,
+      _CCCL_THROW_STD(
+        invalid_argument,
         "replicated data places only support read access (mutate the data at another place; the next replicated "
         "read re-broadcasts)");
     }
