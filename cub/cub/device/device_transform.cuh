@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,6 +32,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_function.h>
 #include <cuda/__iterator/zip_iterator.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -61,7 +62,7 @@ struct __return_constant
   T value;
 
   template <typename... Args>
-  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
+  _CCCL_HOST_DEVICE_API auto operator()(Args&&...) const -> T
   {
     return value;
   }
@@ -100,8 +101,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceTransform that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
+//! All algorithms in DeviceTransform can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>`
+//! that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
 //!      :language: c++

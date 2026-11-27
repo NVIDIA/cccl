@@ -121,7 +121,7 @@ int main(int, char**)
   static_assert(test());
 #endif // !TEST_COMPILER(GCC, <, 11)
 #if TEST_STD_VER > 2017
-#  if defined(_CCCL_BUILTIN_ADDRESSOF)
+#  ifdef _CCCL_BUILTIN_ADDRESSOF
   static_assert(test_nontrivial());
 #  endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 #endif // TEST_STD_VER > 2017

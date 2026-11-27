@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.permute.mask]
 //
@@ -32,8 +32,8 @@
 // template<simd-mask-type V>
 // constexpr V expand(const V& v, const type_identity_t<V>& selector, const V& original = {});
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

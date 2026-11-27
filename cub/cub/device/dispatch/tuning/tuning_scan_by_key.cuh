@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,7 +32,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -63,7 +63,9 @@ struct ScanByKeyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanByKeyLookbackPolicy& p)
   {
     return os
         << "ScanByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -94,7 +96,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, ScanByKeyAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -107,7 +111,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::ScanByKeyAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::ScanByKeyAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::ScanByKeyAlgorithm& algo, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
@@ -136,7 +140,9 @@ struct ScanByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanByKeyPolicy& p)
   {
     return os << "ScanByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -175,19 +181,19 @@ enum class key_size
 };
 
 template <class AccumT>
-constexpr primitive_accum is_primitive_accum()
+_CCCL_HOST_API constexpr primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
-constexpr primitive_op is_primitive_op()
+_CCCL_HOST_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 template <class ValueT>
-constexpr val_size classify_val_size()
+_CCCL_HOST_API constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2
@@ -199,7 +205,7 @@ constexpr val_size classify_val_size()
 }
 
 template <class KeyT>
-constexpr key_size classify_key_size()
+_CCCL_HOST_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2

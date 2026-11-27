@@ -1,12 +1,16 @@
 #include <thrust/count.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 
 #include <cuda/functional>
+#include <cuda/std/tuple>
 
+#include <cstddef>
 #include <stdexcept>
 
 #include <unittest/unittest.h>

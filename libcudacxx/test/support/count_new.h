@@ -406,7 +406,7 @@ void operator delete[](void* p, cuda::std::size_t) noexcept
 }
 #  endif // TEST_COMPILER(GCC)
 
-#  if defined(_WIN32)
+#  ifdef _WIN32
 #    define USE_ALIGNED_ALLOC
 #  endif
 

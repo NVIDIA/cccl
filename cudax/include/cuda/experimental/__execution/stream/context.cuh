@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,7 +26,8 @@
 #include <cuda/__utility/immovable.h>
 
 #include <cuda/experimental/__execution/stream/scheduler.cuh>
-#include <cuda/experimental/stream.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

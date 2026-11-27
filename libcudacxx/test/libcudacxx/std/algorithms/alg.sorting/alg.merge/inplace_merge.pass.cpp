@@ -22,7 +22,7 @@
 #include <cuda/std/memory>
 #include <cuda/std/random>
 #include <cuda/std/span>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
+#ifdef _LIBCUDACXX_HAS_VECTOR
 #  include <cuda/std/vector>
 #endif // _LIBCUDACXX_HAS_VECTOR
 
@@ -158,8 +158,8 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>(arr, randomness);))
 #endif // TEST_CUDA_COMPILATION()
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  if !defined(TEST_HAS_NO_EXCEPTIONS)
+#ifdef _LIBCUDACXX_HAS_VECTOR
+#  ifndef TEST_HAS_NO_EXCEPTIONS
   {
     cuda::std::vector<int> vec(150, 3);
     getGlobalMemCounter()->throw_after = 0;

@@ -133,8 +133,9 @@ __device__ void check_partition(const Result& result, unsigned group_count, unsi
   {
     REQUIRE(result.group_count() == group_count);
     REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
-    REQUIRE(result.unit_count() == cuda::std::popcount(mask));
-    REQUIRE(result.unit_rank() == cuda::std::popcount(mask & cuda::device::lane_mask::all_less().value()));
+    REQUIRE(result.unit_count() == static_cast<unsigned>(cuda::std::popcount(mask)));
+    REQUIRE(result.unit_rank()
+            == static_cast<unsigned>(cuda::std::popcount(mask & cuda::device::lane_mask::all_less().value())));
     REQUIRE(rank < group_count);
   }
   for (int other_lane = 0; other_lane < 32; ++other_lane)
@@ -164,6 +165,7 @@ check_labeled_partition(Config config, Mapping& mapping, LabelFn label_fn, const
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
   static_assert(Result::is_always_exhaustive() == (Count == 32));
   static_assert(!Result::is_always_contiguous());

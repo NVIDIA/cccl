@@ -18,13 +18,16 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/min.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
 
 #include <cuda/experimental/__places/places.cuh>
 
@@ -40,14 +43,14 @@ class tiled_mdspan_shape
 {
 public:
   // parts id, nparts ?
-  tiled_mdspan_shape(const mdspan_shape_t& s, size_t part_id, size_t nparts)
+  _CCCL_HOST_API tiled_mdspan_shape(const mdspan_shape_t& s, size_t part_id, size_t nparts)
       : original_shape(s)
       , part_id(part_id)
       , nparts(nparts)
   {}
 
   /* The number of elements in this part */
-  size_t size() const
+  _CCCL_HOST_API size_t size() const
   {
     _CCCL_ASSERT(mdspan_shape_t::rank() == 1, "Tiled mdspan shape only implemented in 1D yet");
 
@@ -90,7 +93,7 @@ public:
 
   using coords_t = typename mdspan_shape_t::coords_t;
 
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE_API coords_t index_to_coords(size_t index) const
   {
     // First transform from nparts and part_id to one coordinate
     const size_t remain  = index % tile_size;
@@ -116,7 +119,7 @@ private:
  * function to implement tiled<tile_size> and have the other type deduced.
  */
 template <size_t tile_size, typename mdspan_shape_t>
-auto tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)
+_CCCL_HOST_API auto tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)
 {
   return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(s, part_id, nparts);
 }
@@ -127,10 +130,10 @@ class tiled_partition
   static_assert(tile_size > 0);
 
 public:
-  tiled_partition() = default;
+  _CCCL_HIDE_FROM_ABI tiled_partition() = default;
 
   template <typename mdspan_shape_t>
-  static reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>
+  _CCCL_HOST_API static reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>
   apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     // TODO assert 1D !
@@ -138,7 +141,7 @@ public:
     return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
-  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static void get_executor(pos4* result, pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
   {
     assert(grid_dims.x > 0);
     *result = pos4((data_coords.x / tile_size) % grid_dims.x);

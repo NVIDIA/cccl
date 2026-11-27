@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 
 CUB_NAMESPACE_BEGIN
@@ -55,7 +55,9 @@ struct UniqueByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const UniqueByKeyPolicy& p)
   {
     return os
         << "UniqueByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -97,19 +99,19 @@ enum class val_size
 };
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_val is_primitive_val()
+_CCCL_HOST_DEVICE_API constexpr primitive_val is_primitive_val()
 {
   return is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>
-_CCCL_HOST_DEVICE constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -121,7 +123,7 @@ _CCCL_HOST_DEVICE constexpr key_size classify_key_size()
 }
 
 template <class ValueT>
-_CCCL_HOST_DEVICE constexpr val_size classify_val_size()
+_CCCL_HOST_DEVICE_API constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2

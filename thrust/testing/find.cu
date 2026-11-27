@@ -1,9 +1,17 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/find.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

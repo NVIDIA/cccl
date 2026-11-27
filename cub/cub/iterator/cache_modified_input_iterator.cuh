@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
 
@@ -28,7 +29,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
@@ -124,12 +125,13 @@ public:
 
   /// Constructor
   template <typename QualifiedValueType>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to wrap
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to
+                                                                                              ///< wrap
       : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     ptr++;
@@ -137,21 +139,21 @@ public:
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++()
   {
     ptr++;
     return *this;
   }
 
   /// Indirection
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reference operator*() const
   {
     return _CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Addition
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator+(Distance n) const
   {
     self_type retval(ptr + n);
     return retval;
@@ -159,7 +161,7 @@ public:
 
   /// Addition assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator+=(Distance n)
   {
     ptr += n;
     return *this;
@@ -167,7 +169,7 @@ public:
 
   /// Subtraction
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator-(Distance n) const
   {
     self_type retval(ptr - n);
     return retval;
@@ -175,46 +177,48 @@ public:
 
   /// Subtraction assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator-=(Distance n)
   {
     ptr -= n;
     return *this;
   }
 
   /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE difference_type operator-(self_type other) const
   {
     return ptr - other.ptr;
   }
 
   /// Array subscript
   template <typename Distance>
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
     return _CUB::ThreadLoad<MODIFIER>(ptr + n);
   }
 
   /// Structure dereference
-  _CCCL_DEVICE _CCCL_FORCEINLINE pointer operator->()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE pointer operator->()
   {
     return &_CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
   {
     return (ptr == rhs.ptr);
   }
 
   /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
   {
     return (ptr != rhs.ptr);
   }
 
   /// ostream operator
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const self_type& /*itr*/)
   {
     return os;
   }
@@ -223,14 +227,8 @@ public:
 
 namespace detail
 {
-template <typename Iterator>
-inline constexpr bool is_CacheModifiedInputIterator = false;
-
-template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = true;
-
 template <CacheLoadModifier LoadModifier, typename Iterator>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iterator>)
   {

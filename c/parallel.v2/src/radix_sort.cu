@@ -90,7 +90,7 @@ try
   if (!is_null_op(decomposer))
   {
     fprintf(stderr,
-            "\nERROR in cccl_device_radix_sort_build(): custom radix decomposers are not supported "
+            "\nERROR in cccl_device_radix_sort_build_ex(): custom radix decomposers are not supported "
             "in the HostJIT path. Use standard integer/float key types.\n");
     return CUDA_ERROR_UNKNOWN;
   }
@@ -202,7 +202,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_radix_sort_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_radix_sort_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

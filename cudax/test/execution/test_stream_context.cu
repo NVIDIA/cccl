@@ -10,6 +10,7 @@
 
 // Include this first
 #include <cuda/experimental/execution.cuh>
+#include <cuda/experimental/stream.cuh>
 
 // Then include the test helpers
 #include <thrust/equal.h>

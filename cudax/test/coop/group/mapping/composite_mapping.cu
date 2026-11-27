@@ -68,6 +68,7 @@ __device__ void test_composite_mapping(
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
 
     static_assert(Result::static_group_count() == ExpectedGroupCount);
+    static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
     CHECK(result.group_count() == 16);
     CHECK(result.group_rank() == (rank_in_warp / 4 * 2 + (rank_in_warp % 4 > 0)));
 
@@ -163,6 +164,7 @@ __device__ void test_non_exhaustive_composite_mapping(Config config)
   using Result      = decltype(result);
 
   static_assert(Result::static_group_count() == 10);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == 2);
   static_assert(!Result::is_always_exhaustive());
   static_assert(Result::is_always_contiguous());

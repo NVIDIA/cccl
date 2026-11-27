@@ -5,22 +5,27 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/inner_product.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/system/detail/sequential/inner_product.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -34,7 +39,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -53,7 +58,7 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -75,7 +80,8 @@ _CCCL_HOST_DEVICE OutputType inner_product(
 } // end inner_product()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
+_CCCL_HOST_API OutputType
+inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::select_system;
@@ -94,7 +100,7 @@ template <typename InputIterator1,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-OutputType inner_product(
+_CCCL_HOST_API OutputType inner_product(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,

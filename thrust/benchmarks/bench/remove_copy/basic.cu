@@ -3,11 +3,10 @@
 
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/remove.h>
 
-#include <cuda/memory_pool>
-#include <cuda/std/complex>
-#include <cuda/stream>
+#include <cstddef>
 
 #include "nvbench_helper.cuh"
 

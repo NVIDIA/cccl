@@ -243,6 +243,7 @@ __device__ void test_range_input(Config config, Input&& input, const Range& coun
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
 
   static_assert(Result::is_always_exhaustive() == Exhaustive);
@@ -288,6 +289,7 @@ __device__ void test_runtime_composition(Config config, Range counts, const Prev
   using Result      = decltype(result);
 
   static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
   static_assert(Result::has_uniform_static_unit_count());
   static_assert(Result::is_always_exhaustive() == Exhaustive);
@@ -342,6 +344,7 @@ __device__ void test_static_group_as(Config config, Input input, cuda::std::inde
 
   // Check the static metadata for every subgroup, rather than only the current one.
   static_assert(Result::static_group_count() == sizeof...(Counts));
+  static_assert(Result::static_group_rank() == (sizeof...(Counts) == 1 ? 0 : cuda::std::dynamic_extent));
 
   static_assert([] {
     constexpr cuda::std::array expected_counts{Counts...};
@@ -357,7 +360,7 @@ __device__ void test_static_group_as(Config config, Input input, cuda::std::inde
     return true;
   }());
 
-  static_assert(!Result::has_uniform_static_unit_count());
+  static_assert(Result::has_uniform_static_unit_count() == ((Counts == Result::static_unit_count(0)) && ...));
   static_assert(Result::is_always_exhaustive() == Exhaustive);
   static_assert(Result::is_always_contiguous());
 
@@ -380,6 +383,7 @@ __device__ void test_static_composition(Config config)
   using Repeated      = decltype(repeated);
 
   static_assert(Repeated::static_group_count() == 4);
+  static_assert(Repeated::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Repeated::static_unit_count(0) == 4);
   static_assert(Repeated::static_unit_count(1) == 12);
   static_assert(Repeated::static_unit_count(2) == 4);
@@ -494,6 +498,12 @@ __device__ void test_compile_time_ranges(Config config)
   test_static_group_as<true>(config, cuda::std::integer_sequence<unsigned short, 4, 12, 16>{}, FullPartition{});
   test_static_group_as<true>(config, FullPartition{}, FullPartition{});
   test_static_group_as<false>(config, cuda::std::integer_sequence<unsigned, 4, 6, 8>{}, PartialPartition{});
+
+  // Consecutive empty groups share a boundary. Check the group index on both sides and in an all-empty partition.
+  using WithEmptyGroups = cuda::std::index_sequence<0, 0, 7, 0, 0, 0, 25, 0>;
+  using EmptyPartition  = cuda::std::index_sequence<0, 0, 0>;
+  test_static_group_as<true>(config, WithEmptyGroups{}, WithEmptyGroups{});
+  test_static_group_as<false>(config, EmptyPartition{}, EmptyPartition{});
 
 #if _CCCL_STD_VER >= 2020
   // Class-valued cw inputs include both arrays and a forward-only range.

@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -57,7 +57,7 @@ THRUST_NAMESPACE_BEGIN
 //! \see device_ptr
 //! \see device_free
 template <typename T = void>
-device_ptr<T> device_malloc(const std::size_t n)
+_CCCL_HOST_API device_ptr<T> device_malloc(const std::size_t n)
 {
   // using system::detail::generic::select_system;
   // XXX lower to select_system(system) here

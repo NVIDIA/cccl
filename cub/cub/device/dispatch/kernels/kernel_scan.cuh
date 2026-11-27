@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -48,56 +48,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-// Occupancy-sized batch grids may fall below the 500-CTA cutoff, which replaces nanosleeps with fences.
-// Keep these adapters to avoid that regression until deferred tuning selects the appropriate delay policy.
-// Backoff policies already wait independently of grid size.
-template <typename DelayConstructorT>
-struct batch_delay_constructor_t : DelayConstructorT
-{
-  using DelayConstructorT::DelayConstructorT;
-};
-
-// Persistent scans must retain positive waits even when the resident grid has fewer than 500 CTAs.
-template <unsigned int Delay, unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency>>
-{
-  struct delay_t
-  {
-    _CCCL_DEVICE_API void operator()()
-    {
-      if constexpr (Delay > 0)
-      {
-        _CUB::detail::always_delay_or_prevent_hoisting<Delay>();
-      }
-      else
-      {
-        default_no_delay_t{}();
-      }
-    }
-  };
-
-  _CCCL_DEVICE_API batch_delay_constructor_t(unsigned int /* seed */)
-  {
-    if constexpr (L2WriteLatency > 0)
-    {
-      _CUB::detail::always_delay<L2WriteLatency>();
-    }
-  }
-
-  _CCCL_DEVICE_API delay_t operator()()
-  {
-    return {};
-  }
-};
-
-template <unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<no_delay_constructor_t<L2WriteLatency>>
-    : batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>
-{
-  using base_type = batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>;
-  using base_type::base_type;
-};
-
 template <typename AccumT>
 struct scan_batch_state
 {
@@ -123,7 +73,7 @@ union tile_state_kernel_arg_t
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
   // https://eel.is/c++draft/class.union#general-note-3, tile_state_kernel_arg_t's special members are deleted. We work
   // around it by explicitly defining the ones we need.
-  _CCCL_HOST_DEVICE tile_state_kernel_arg_t() noexcept {}
+  _CCCL_HOST_DEVICE_API tile_state_kernel_arg_t() noexcept {}
 };
 
 /******************************************************************************
@@ -435,7 +385,7 @@ struct batch_completion_op
   // Called by all threads; only thread 0 reads tile_inclusive.
   _CCCL_DEVICE_API void operator()(const AccumT& tile_inclusive)
   {
-    static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
+    static_assert(tiles_per_batch <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)());
     // The final batch never reuses the tile state, so it needs no retirement tracking.
     if (((tile_idx / tiles_per_batch) + 1) * tiles_per_batch >= num_tiles)
     {
@@ -505,10 +455,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   constexpr ScanLookbackPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookback;
   constexpr int tiles_per_batch       = policy.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
-  // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
-  // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
-  using delay_constructor = batch_delay_constructor_t<
-    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  using delay_constructor =
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>;
   using scan_policy_t =
     agent_scan_policy<0,
                       0,

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/is_signed.h>
 
 #if __cpp_lib_format >= 201907L
@@ -202,7 +202,8 @@ enum class LookbackDelayAlgorithm
   exponential_backon_jitter_window,
   exponential_backon_jitter,
   exponential_backon,
-  __reduce_by_key //!< Internal
+  __reduce_by_key, //!< Internal
+  __fixed_delay_no_grid_threshold //!< Internal
 };
 
 namespace detail
@@ -229,13 +230,17 @@ namespace detail
       return "LookbackDelayAlgorithm::exponential_backon";
     case LookbackDelayAlgorithm::__reduce_by_key:
       return "LookbackDelayAlgorithm::__reduce_by_key";
+    case LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold:
+      return "LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold";
   }
   return "<unknown LookbackDelayAlgorithm>";
 }
 } // namespace detail
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, LookbackDelayAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -248,7 +253,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
@@ -277,7 +282,9 @@ struct LookbackDelayPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const LookbackDelayPolicy& p)
   {
     return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";

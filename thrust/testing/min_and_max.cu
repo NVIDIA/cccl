@@ -1,5 +1,7 @@
 #include <thrust/extrema.h>
 
+#include <cuda/std/functional>
+
 #include <unittest/unittest.h>
 
 template <typename T>

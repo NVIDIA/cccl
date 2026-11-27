@@ -15,11 +15,28 @@
 
 #pragma once
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
+
+#include <cuda/experimental/__stf/allocators/adapters.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
+#include <cstdlib>
 #include <map>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

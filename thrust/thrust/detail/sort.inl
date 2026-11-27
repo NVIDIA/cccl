@@ -5,22 +5,27 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/sort.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/sort.h>
 #include <thrust/system/detail/sequential/sort.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sort.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sort.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -34,9 +39,9 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                            RandomAccessIterator first,
-                            RandomAccessIterator last)
+_CCCL_HOST_DEVICE_API void sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                RandomAccessIterator first,
+                                RandomAccessIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sort");
   using thrust::system::detail::generic::sort;
@@ -45,7 +50,7 @@ _CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedP
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      RandomAccessIterator first,
      RandomAccessIterator last,
@@ -58,9 +63,9 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                                   RandomAccessIterator first,
-                                   RandomAccessIterator last)
+_CCCL_HOST_DEVICE_API void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                       RandomAccessIterator first,
+                                       RandomAccessIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_sort");
   using thrust::system::detail::generic::stable_sort;
@@ -69,7 +74,7 @@ _CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<D
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort(
+_CCCL_HOST_DEVICE_API void stable_sort(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
@@ -82,7 +87,7 @@ _CCCL_HOST_DEVICE void stable_sort(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -99,7 +104,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -114,7 +119,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -131,7 +136,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -146,7 +151,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted");
@@ -156,7 +161,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forw
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
           ForwardIterator first,
           ForwardIterator last,
@@ -169,7 +174,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
+_CCCL_HOST_DEVICE_API ForwardIterator is_sorted_until(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted_until");
@@ -179,7 +184,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
+_CCCL_HOST_DEVICE_API ForwardIterator is_sorted_until(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -195,7 +200,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
 ///////////////
 
 template <typename RandomAccessIterator>
-void sort(RandomAccessIterator first, RandomAccessIterator last)
+_CCCL_HOST_API void sort(RandomAccessIterator first, RandomAccessIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sort");
   using thrust::system::detail::generic::select_system;
@@ -208,7 +213,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last)
 } // end sort()
 
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+_CCCL_HOST_DEVICE_API void sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sort");
   using thrust::system::detail::generic::select_system;
@@ -221,7 +226,7 @@ _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator las
 } // end sort()
 
 template <typename RandomAccessIterator>
-void stable_sort(RandomAccessIterator first, RandomAccessIterator last)
+_CCCL_HOST_API void stable_sort(RandomAccessIterator first, RandomAccessIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_sort");
   using thrust::system::detail::generic::select_system;
@@ -234,7 +239,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last)
 } // end stable_sort()
 
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
-void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+_CCCL_HOST_API void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_sort");
   using thrust::system::detail::generic::select_system;
@@ -251,7 +256,8 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWe
 /////////////////////
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first)
+_CCCL_HOST_API void
+sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sort_by_key");
   using thrust::system::detail::generic::select_system;
@@ -266,10 +272,11 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
 } // end sort_by_key()
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-void sort_by_key(RandomAccessIterator1 keys_first,
-                 RandomAccessIterator1 keys_last,
-                 RandomAccessIterator2 values_first,
-                 StrictWeakOrdering comp)
+_CCCL_HOST_API void sort_by_key(
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first,
+  StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sort_by_key");
   using thrust::system::detail::generic::select_system;
@@ -284,7 +291,7 @@ void sort_by_key(RandomAccessIterator1 keys_first,
 } // end sort_by_key()
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-void stable_sort_by_key(
+_CCCL_HOST_API void stable_sort_by_key(
   RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_sort_by_key");
@@ -300,10 +307,11 @@ void stable_sort_by_key(
 } // end stable_sort_by_key()
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-void stable_sort_by_key(RandomAccessIterator1 keys_first,
-                        RandomAccessIterator1 keys_last,
-                        RandomAccessIterator2 values_first,
-                        StrictWeakOrdering comp)
+_CCCL_HOST_API void stable_sort_by_key(
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first,
+  StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_sort_by_key");
   using thrust::system::detail::generic::select_system;
@@ -318,7 +326,7 @@ void stable_sort_by_key(RandomAccessIterator1 keys_first,
 } // end stable_sort_by_key()
 
 template <typename ForwardIterator>
-bool is_sorted(ForwardIterator first, ForwardIterator last)
+_CCCL_HOST_API bool is_sorted(ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted");
   using thrust::system::detail::generic::select_system;
@@ -331,7 +339,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last)
 } // end is_sorted()
 
 template <typename ForwardIterator, typename Compare>
-bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp)
+_CCCL_HOST_API bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted");
   using thrust::system::detail::generic::select_system;
@@ -344,7 +352,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp)
 } // end is_sorted()
 
 template <typename ForwardIterator>
-ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last)
+_CCCL_HOST_API ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted_until");
   using thrust::system::detail::generic::select_system;
@@ -357,7 +365,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last)
 } // end is_sorted_until()
 
 template <typename ForwardIterator, typename Compare>
-ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp)
+_CCCL_HOST_API ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_sorted_until");
   using thrust::system::detail::generic::select_system;

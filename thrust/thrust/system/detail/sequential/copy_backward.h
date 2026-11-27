@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,22 +13,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/copy_backward.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename BidirectionalIterator1, typename BidirectionalIterator2>
-_CCCL_HOST_DEVICE BidirectionalIterator2
+_CCCL_HOST_DEVICE_API BidirectionalIterator2
 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
 {
-  while (first != last)
-  {
-    --last;
-    --result;
-    *result = *last;
-  }
-
-  return result;
+  return ::cuda::std::copy_backward(first, last, result);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

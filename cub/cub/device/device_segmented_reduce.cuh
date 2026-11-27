@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,6 +46,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__execution/env.h>
@@ -247,8 +248,8 @@ private:
       detail::segmented_reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
     constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
-    auto sentinel =
-      is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
+    auto sentinel         = is_min ? (::cuda::std::numeric_limits<input_value_t>::max)()
+                                   : ::cuda::std::numeric_limits<input_value_t>::lowest();
     const init_value_t initial_value{accum_t(1, sentinel)};
 
     return _CUB::detail::dispatch_with_env(
@@ -1351,7 +1352,7 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::minimum<>{},
-      ::cuda::std::numeric_limits<init_value_t>::max(),
+      (::cuda::std::numeric_limits<init_value_t>::max)(),
       env);
   }
 
@@ -1459,7 +1460,7 @@ public:
       d_begin_offsets,
       d_end_offsets,
       op_t{},
-      ::cuda::std::numeric_limits<init_value_t>::max(),
+      (::cuda::std::numeric_limits<init_value_t>::max)(),
       env);
   }
 
@@ -1537,7 +1538,7 @@ public:
       num_segments,
       segment_size,
       ::cuda::minimum<>{},
-      ::cuda::std::numeric_limits<input_t>::max(),
+      (::cuda::std::numeric_limits<input_t>::max)(),
       env);
   }
 
@@ -1623,7 +1624,7 @@ public:
       num_segments,
       static_cast<offset_t>(segment_size),
       op_t{},
-      ::cuda::std::numeric_limits<input_t>::max(),
+      (::cuda::std::numeric_limits<input_t>::max)(),
       env);
   }
 
@@ -1756,7 +1757,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{OverrideAccumT(1, (::cuda::std::numeric_limits<InputValueT>::max)())};
 
     return variable_size_two_phase<OverrideAccumT, OverrideOffsetT>(
       d_temp_storage,
@@ -1888,7 +1889,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{OverrideAccumT(1, (::cuda::std::numeric_limits<InputValueT>::max)())};
 
     return variable_size_single_phase<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMin{}, initial_value, env);

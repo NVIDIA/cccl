@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,7 @@ namespace system::detail
 class bad_alloc : public std::bad_alloc
 {
 public:
-  bad_alloc(const std::string& w)
+  _CCCL_HOST_API bad_alloc(const std::string& w)
       : std::bad_alloc()
       , m_what(std::bad_alloc::what())
   {
@@ -32,9 +32,9 @@ public:
     m_what += w;
   } // end bad_alloc()
 
-  ~bad_alloc() noexcept override = default;
+  _CCCL_HIDE_FROM_ABI ~bad_alloc() noexcept override = default;
 
-  const char* what() const noexcept override
+  _CCCL_HOST_API const char* what() const noexcept override
   {
     return m_what.c_str();
   } // end what()

@@ -56,7 +56,7 @@ using thrust::complex;
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> ccoshf(const complex<float>& z)
 {
   float x;
   float y;
@@ -135,20 +135,20 @@ _CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<float> ccosf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> ccosf(const complex<float>& z)
 {
   return (ccoshf(complex<float>(-z.imag(), z.real())));
 }
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> cos(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> cos(const complex<float>& z)
 {
   return detail::complex::ccosf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> cosh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> cosh(const complex<float>& z)
 {
   return detail::complex::ccoshf(z);
 }

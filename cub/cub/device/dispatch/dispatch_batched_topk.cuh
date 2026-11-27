@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -75,7 +75,7 @@ namespace detail::batched_topk
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
 template <detail::topk::select Dir, typename Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }
@@ -87,7 +87,7 @@ template <detail::topk::select Dir, typename Tp>
 // reach the algorithm through the min/max device entry points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}), which
 // construct the matching `constant<Dir>` internally, so `dispatch` is only ever invoked with a direction we create.
 template <typename SelectDirectionT>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(SelectDirectionT)
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto wrap_select_direction(SelectDirectionT)
 {
   static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
                 "DeviceBatchedTopK currently supports only compile-time selection directions: the min/max entry "
@@ -112,7 +112,7 @@ struct segment_size_to_tile_count_op
   int large_segment_agent_tile_size;
 
   template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
     return static_cast<TotalNumItemsValueType>(
       ::cuda::ceil_div(_CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id),
@@ -386,12 +386,12 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
     }
-    // `max_blocks_per_cluster == 0` -> the full hardware ceiling; a non-zero knob narrows it, clamped to that ceiling.
-    // A cap narrower than a segment needs pushes it into the oversize/streaming fallback below.
+    // The policy's own bound clamped to the hardware ceiling. A cap narrower than a segment needs pushes it into the
+    // oversize/streaming fallback below.
     const int eff_max_blocks_per_cluster =
-      (policy.max_blocks_per_cluster == 0)
-        ? *hw_cluster_ceiling
-        : (::cuda::std::min) (policy.max_blocks_per_cluster, *hw_cluster_ceiling);
+      (::cuda::std::min) (_CUB::detail::batched_topk_cluster::effective_max_cluster_blocks(
+                            policy.bits_per_pass, policy.max_blocks_per_cluster),
+                          *hw_cluster_ceiling);
 
     // Wave-aware selection: the free variable is the cluster block count (one cluster per segment), paired with the
     // smallest SMEM that keeps the segment fully resident (fewer blocks = more SMEM/fewer clusters-per-wave, more =
@@ -420,8 +420,7 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
       const auto min_candidate_blocks = (::cuda::std::max) (2, static_cast<int>(min_blocks_per_segment));
       const auto max_candidate_blocks =
         ::cuda::std::clamp(min_candidate_blocks, desired_cluster_blocks, eff_max_blocks_per_cluster);
-      auto best_waves =
-        (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)(); // NOLINT(readability-redundant-parentheses)
+      auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
         const auto num_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
@@ -654,7 +653,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   // stay the x-extent) and the CTA rank from cluster_ctarank (linearized across the cluster's dims), so this needs no
   // agent change.
   _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_seg_val, 0)
-                 && ::cuda::std::cmp_less_equal(+num_seg_val, ::cuda::std::numeric_limits<int>::max()),
+                 && ::cuda::std::cmp_less_equal(+num_seg_val, (::cuda::std::numeric_limits<int>::max)()),
                "num_segments must be non-negative and fit a signed 32-bit grid dimension");
   const dim3 grid_dim{static_cast<unsigned>(num_seg_val), static_cast<unsigned>(cluster_blocks), 1u};
   const dim3 cluster_dim{1u, static_cast<unsigned>(cluster_blocks), 1u};
@@ -821,7 +820,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
         // Query the temporary storage requirement of the segment-size transform-scan.
         _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
                        && ::cuda::std::cmp_less_equal(
-                         +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
+                         +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
                      "num_segments must be non-negative and fit the segment-size scan offset type");
         if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
               nullptr,
@@ -867,7 +866,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
         }
       }
       _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
-                     && ::cuda::std::cmp_less_equal(+num_segments_val, ::cuda::std::numeric_limits<int>::max()),
+                     && ::cuda::std::cmp_less_equal(+num_segments_val, (::cuda::std::numeric_limits<int>::max)()),
                    "num_segments must be non-negative and fit a signed 32-bit grid dimension");
       const int grid_dim      = static_cast<int>(num_segments_val);
       constexpr int block_dim = worker_per_segment_policy.threads_per_block;
@@ -909,7 +908,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
       // No small segments: compute the per-segment tile offsets directly via a transform-scan over all segment sizes.
       _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
                      && ::cuda::std::cmp_less_equal(
-                       +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
+                       +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
                    "num_segments must be non-negative and fit the segment-size scan offset type");
       if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
             allocations[1],
@@ -1261,7 +1260,7 @@ _CCCL_HOST_API cudaError_t dispatch(
     _CUB::detail::params::get_param(num_segments, num_segments_value_t{0});
   // Unary `+` integer-promotes the count to a standard integer type so the sign-safe `cmp_*` comparators accept it:
   // they are constrained to `__cccl_is_integer_v`, which excludes the character count types the public API permits.
-  if (::cuda::std::cmp_greater(+num_segments_value, ::cuda::std::numeric_limits<int>::max()))
+  if (::cuda::std::cmp_greater(+num_segments_value, (::cuda::std::numeric_limits<int>::max)()))
   {
     return cudaErrorInvalidValue;
   }
@@ -1329,14 +1328,14 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         const size_t num_segments_size = static_cast<size_t>(num_segments_value);
         const size_t max_out_size      = static_cast<size_t>(max_out);
-        if (num_segments_size > ::cuda::std::numeric_limits<size_t>::max() / max_out_size)
+        if (num_segments_size > (::cuda::std::numeric_limits<size_t>::max)() / max_out_size)
         {
           return cudaErrorInvalidValue;
         }
 
         scratch_elements = num_segments_size * max_out_size;
-        if (scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(key_t)
-            || (!is_keys_only && scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(value_t)))
+        if (scratch_elements > (::cuda::std::numeric_limits<size_t>::max)() / sizeof(key_t)
+            || (!is_keys_only && scratch_elements > (::cuda::std::numeric_limits<size_t>::max)() / sizeof(value_t)))
         {
           return cudaErrorInvalidValue;
         }
@@ -1417,7 +1416,7 @@ _CCCL_HOST_API cudaError_t dispatch(
 
       constexpr sort_policy sort = find_smallest_sort_policy<key_t, value_t, static_max_out>::policy;
       _CCCL_ASSERT(::cuda::std::cmp_greater(+num_segments_value, 0)
-                     && ::cuda::std::cmp_less_equal(+num_segments_value, ::cuda::std::numeric_limits<int>::max()),
+                     && ::cuda::std::cmp_less_equal(+num_segments_value, (::cuda::std::numeric_limits<int>::max)()),
                    "num_segments must be positive and fit a signed 32-bit grid dimension");
       const int grid_dim = static_cast<int>(num_segments_value);
       if (const auto error = CubDebug(

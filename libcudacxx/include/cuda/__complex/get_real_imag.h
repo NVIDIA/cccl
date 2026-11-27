@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -59,7 +59,7 @@ template <class _Tp>
 #if _CCCL_HOSTED()
 
 // Unless `--expt-relaxed-constexpr` is specified, obtaining values from std::complex is not constexpr :(
-#  if defined(__CUDACC_RELAXED_CONSTEXPR__)
+#  ifdef __CUDACC_RELAXED_CONSTEXPR__
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_real(const ::std::complex<_Tp>& __c) noexcept
 {

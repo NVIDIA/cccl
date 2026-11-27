@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,6 +20,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
@@ -36,7 +37,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -76,7 +77,9 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, ScanAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -89,7 +92,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::ScanAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::ScanAlgorithm& algo, FmtCtx& ctx) const
   {
     const auto str = _CUB::detail::to_string(algo);
     return formatter<const CharT*, CharT>::format(str, ctx);
@@ -132,7 +135,9 @@ struct ScanLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanLookbackPolicy& p)
   {
     return os
         << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -187,7 +192,9 @@ struct ScanLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanLookaheadPolicy& p)
   {
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
@@ -219,7 +226,9 @@ struct ScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ScanPolicy& p)
   {
     return os << "ScanPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";
@@ -277,21 +286,21 @@ enum class accum_size
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
+_CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ScanOpT>
-constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
+_CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ValueT>
-constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
+_CCCL_HOST_DEVICE_API constexpr value_size classify_value_size()
 {
   return sizeof(ValueT) == 1 ? value_size::_1
        : sizeof(ValueT) == 2 ? value_size::_2
@@ -304,7 +313,7 @@ constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -317,7 +326,7 @@ constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class OffsetT>
-constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -737,6 +746,31 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_batched_delay_policy(LookbackDelayPolicy policy)
+  -> LookbackDelayPolicy
+{
+  if (policy.kind == LookbackDelayAlgorithm::fixed_delay || policy.kind == LookbackDelayAlgorithm::no_delay)
+  {
+    // Occupancy-sized grids may have fewer than 500 CTAs. Retain nanosleeps to avoid serious lookback regressions.
+    policy.delay = policy.kind == LookbackDelayAlgorithm::no_delay ? 0 : policy.delay;
+    policy.kind  = LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold;
+  }
+  return policy;
+}
+
+// Only persistent batch grids need waits independent of grid size. Apply this after custom tuning so
+// single-grid scans retain their selected delay policy and custom batch policies preserve their wait behavior.
+template <typename PolicySelector>
+struct batch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = PolicySelector{}(cc);
+    policy.lookback.lookback_delay = _CUB::detail::scan::make_batched_delay_policy(policy.lookback.lookback_delay);
+    return policy;
+  }
+};
+
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
@@ -868,7 +902,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
 
-  const int align_inout = ::cuda::std::max({16, input_align, output_align});
+  const int align_inout = (::cuda::std::max) ({16, input_align, output_align});
   const int inout_bytes = (policy.tile_size() * input_size) + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
@@ -876,7 +910,9 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
   const int num_sum_exclusive_cta_stages =
-    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
+    policy.lookahead_stages > 0
+      ? policy.lookahead_stages
+      : (::cuda::std::max) (1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
   void* next_block_idx_base =
@@ -925,8 +961,6 @@ struct policy_selector
   bool output_trivially_copyable;
   bool output_default_constructible;
   bool accum_is_primitive_or_trivially_copy_constructible;
-  // TODO(griwes): remove this field before policy_selector is publicly exposed
-  bool benchmark_match;
   bool require_stable_reduction_order = false;
   bool is_deferred                    = false;
 
@@ -941,7 +975,7 @@ struct policy_selector
     // manual tuning based on cub.bench.scan.exclusive.sum.base
     // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
     // 2-byte types and double needed special handling
-    lookahead_policy.items_per_thread = ::cuda::std::max((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
+    lookahead_policy.items_per_thread = (::cuda::std::max) ((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
     // TODO(bgruber): the special handling of double below is a LOT faster on B200, but exceeds 48KiB SMEM
     // clang-format off
       // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
@@ -968,7 +1002,7 @@ struct policy_selector
       }
       else
       {
-        policy.items_per_thread = ::cuda::std::min(policy.items_per_thread, input_value_size <= 2 ? 63 : 127);
+        policy.items_per_thread = (::cuda::std::min) (policy.items_per_thread, input_value_size <= 2 ? 63 : 127);
       }
     }
     return policy;
@@ -1141,7 +1175,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
-      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
+      if (operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
       {
         if (offset_size == 4)
         {
@@ -1359,7 +1393,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{8, 0})
     {
       // separate tunings for deferred lookback scan
-      if (is_deferred && benchmark_match && operation_t == op_kind_t::plus)
+      if (is_deferred && operation_t == op_kind_t::plus)
       {
         switch (accum_type)
         {
@@ -1511,8 +1545,8 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{7, 5})
     {
-      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes
-          && offset_size == 8 && input_value_size == 4)
+      if (operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes && offset_size == 8
+          && input_value_size == 4)
       {
         // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
         return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
@@ -1591,25 +1625,6 @@ struct policy_selector
 static_assert(scan_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT, typename = void>
-struct benchmark_match_for_policy_selector
-{
-  static constexpr bool value = false;
-};
-
-template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT>
-struct benchmark_match_for_policy_selector<
-  ScanOpT,
-  InputValueT,
-  OutputValueT,
-  AccumT,
-  ::cuda::std::void_t<::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>>>
-{
-  static constexpr bool value =
-    sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>)
-    && sizeof(InputValueT) == sizeof(OutputValueT);
-};
-
 // stateless version which can be passed to kernels
 template <typename InputIteratorT,
           typename OutputIteratorT,
@@ -1623,10 +1638,7 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
     using InputValueT  = it_value_t<InputIteratorT>;
-    using OutputValueT = it_value_t<OutputIteratorT>;
-
-    constexpr bool benchmark_match =
-      benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
+    using OutputValueT = non_void_value_t<OutputIteratorT, AccumT>;
 
     constexpr bool accum_is_primitive_or_trivially_copy_constructible =
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
@@ -1648,7 +1660,6 @@ struct policy_selector_from_types
       ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match,
       StableReductionOrder,
       IsDeferred};
     return policies(cc);

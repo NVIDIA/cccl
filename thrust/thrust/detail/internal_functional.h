@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,10 +18,8 @@
 #endif // no system header
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
-#include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__iterator/discard_iterator.h>
@@ -33,7 +31,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -46,7 +43,7 @@ struct predicate_to_integral
   Predicate pred;
 
   template <typename T>
-  _CCCL_HOST_DEVICE IntegralType operator()(const T& x)
+  _CCCL_HOST_DEVICE_API IntegralType operator()(const T& x)
   {
     return pred(x) ? IntegralType(1) : IntegralType(0);
   }
@@ -56,7 +53,7 @@ template <typename Predicate>
 struct tuple_binary_predicate
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE bool operator()(const Tuple& t) const
+  _CCCL_HOST_DEVICE_API bool operator()(const Tuple& t) const
   {
     return pred(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
   }
@@ -119,7 +116,7 @@ struct unary_transform_functor
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     ::cuda::std::get<1>(t) = f(::cuda::std::get<0>(t));
   }
@@ -132,7 +129,7 @@ struct binary_transform_functor
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     ::cuda::std::get<2>(t) = f(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
   }
@@ -146,7 +143,7 @@ struct unary_transform_if_functor
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     if (pred(::cuda::std::get<0>(t)))
     {
@@ -163,7 +160,7 @@ struct unary_transform_if_with_stencil_functor
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     if (pred(::cuda::std::get<1>(t)))
     {
@@ -180,7 +177,7 @@ struct binary_transform_if_functor
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<3, Tuple>> = 0>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     if (pred(::cuda::std::get<2>(t)))
     {
@@ -196,20 +193,20 @@ struct fill_functor
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE fill_functor(const T& _exemplar)
+  _CCCL_HOST_DEVICE_API fill_functor(const T& _exemplar)
       : exemplar(_exemplar)
   {}
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  fill_functor(const fill_functor& other) = default;
+  _CCCL_HIDE_FROM_ABI fill_functor(const fill_functor& other) = default;
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  ~fill_functor() = default;
+  _CCCL_HIDE_FROM_ABI ~fill_functor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE T operator()() const
+  _CCCL_HOST_DEVICE_API T operator()() const
   {
     return exemplar;
   }
@@ -222,20 +219,20 @@ struct uninitialized_fill_functor
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE uninitialized_fill_functor(const T& x)
+  _CCCL_HOST_DEVICE_API uninitialized_fill_functor(const T& x)
       : exemplar(x)
   {}
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  uninitialized_fill_functor(const uninitialized_fill_functor& other) = default;
+  _CCCL_HIDE_FROM_ABI uninitialized_fill_functor(const uninitialized_fill_functor& other) = default;
 
   // explicit declaration is needed to avoid an exec check warning
   _CCCL_EXEC_CHECK_DISABLE
-  ~uninitialized_fill_functor() = default;
+  _CCCL_HIDE_FROM_ABI ~uninitialized_fill_functor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void operator()(T& x)
+  _CCCL_HOST_DEVICE_API void operator()(T& x)
   {
     ::new (static_cast<void*>(&x)) T(exemplar);
   } // end operator()()
@@ -247,7 +244,7 @@ struct compare_first
   Compare comp;
 
   template <typename Tuple1, typename Tuple2>
-  _CCCL_HOST_DEVICE bool operator()(const Tuple1& x, const Tuple2& y)
+  _CCCL_HOST_DEVICE_API bool operator()(const Tuple1& x, const Tuple2& y)
   {
     return comp(thrust::raw_reference_cast(::cuda::std::get<0>(x)), thrust::raw_reference_cast(::cuda::std::get<0>(y)));
   }

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,7 +34,7 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__type_traits/num_bits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/to_underlying.h>
@@ -45,7 +45,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -73,7 +73,7 @@ template <class _Callable, class _Unit, class _ParentGroup, class _PrevMappingRe
   _Callable& __fn, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
 {
   static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "labeled_partition can only group threads");
-  static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
+  static_assert(::cuda::std::is_same_v<typename _ParentGroup::boundary_level, warp_level>,
                 "labeled_partition can be only used within warp_level");
 
   using ::cuda::std::uint32_t;
