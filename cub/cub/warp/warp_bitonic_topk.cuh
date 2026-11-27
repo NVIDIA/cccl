@@ -145,6 +145,9 @@ sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items, 
 //!
 //!   TopK operates on per-thread arrays. Input and output items use a striped arrangement across logical warp lanes.
 //!
+//!   The template parameter ``MaxK`` specifies the largest ``k`` supported by this instantiation. The amount of work
+//!   depends on ``MaxK``, so choose the smallest ``MaxK`` that covers the largest ``k`` needed.
+//!
 //! Simple Examples
 //! ++++++++++++++++
 //!
@@ -254,6 +257,10 @@ public:
 
   //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp. An out-of-bound key
   //! ordered after any valid key must be provided.
+  //!
+  //! @par
+  //! - Prefer this overload to the overload without ``oob_default`` when a suitable sentinel is available, because
+  //!   using sentinel avoids validity checks.
   //!
   //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
@@ -374,6 +381,10 @@ public:
   //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp. An out-of-bound
   //! key ordered after any valid key must be provided.
   //!
+  //! @par
+  //! - Prefer this overload to the overload without ``oob_default`` when a suitable sentinel is available, because
+  //!   using sentinel avoids validity checks.
+  //!
   //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
   //! MaxK.
   //! @tparam CompareOp Comparison functor type.
@@ -429,6 +440,7 @@ public:
        int valid_items) const
   {
     _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
+    _CCCL_ASSERT(valid_items <= ItemsPerThread * LogicalWarpThreads, "valid_items exceeds the number of items");
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
     if (valid_items <= MaxK)
