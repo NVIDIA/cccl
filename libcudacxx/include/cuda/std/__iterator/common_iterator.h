@@ -427,12 +427,6 @@ struct incrementable_traits<common_iterator<_Iter, _Sent>>
   using difference_type = iter_difference_t<_Iter>;
 };
 
-#if _CCCL_COMPILER(GCC) // GCC breaks with a circular definition here
-template <class _Iter, class _Sent>
-struct __is_primary_std_template<common_iterator<_Iter, _Sent>> : true_type
-{};
-#endif // _CCCL_COMPILER(GCC)
-
 template <class _Iter, class _Sent>
 struct iterator_traits<common_iterator<_Iter, _Sent>, enable_if_t<input_iterator<_Iter>>>
 {
