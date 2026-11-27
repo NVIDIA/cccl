@@ -145,19 +145,17 @@ void do_large_offset_test(std::size_t num_items)
     double_buffer_sort_t action(is_descending);
     action.initialize();
     const NumItemsT typed_num_items = static_cast<NumItemsT>(num_items);
-    launch(
-      action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>(), stream);
+    auto& keys_buffer               = arrays.key_double_buffer();
+    auto& values_buffer             = arrays.value_double_buffer();
+    launch(action, keys_buffer, values_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>(), stream);
 
     TIME(timer.print_elapsed_seconds_and_reset("Device sort"));
 
-    arrays.keys_buffer.selector   = action.selector();
-    arrays.values_buffer.selector = action.selector();
+    keys_buffer.selector   = action.selector();
+    values_buffer.selector = action.selector();
     action.finalize();
 
-    auto& keys   = arrays.keys_buffer.selector == 0 ? arrays.keys_in : arrays.keys_out;
-    auto& values = arrays.values_buffer.selector == 0 ? arrays.values_in : arrays.values_out;
-
-    arrays.verify_stable_pair_sort(num_items, is_descending, keys, values);
+    arrays.verify_stable_pair_sort(num_items, is_descending);
   }
   catch (...)
   {

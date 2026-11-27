@@ -435,16 +435,15 @@ void do_large_offset_test(std::size_t num_items)
     double_buffer_sort_t action(is_descending);
     action.initialize();
     const NumItemsT typed_num_items = static_cast<NumItemsT>(num_items);
-    launch(action, arrays.keys_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>(), stream);
+    auto& keys_buffer               = arrays.key_double_buffer();
+    launch(action, keys_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>(), stream);
 
-    arrays.keys_buffer.selector = action.selector();
+    keys_buffer.selector = action.selector();
     action.finalize();
-
-    auto& sorted_keys = arrays.keys_buffer.selector == 0 ? arrays.keys_in : arrays.keys_out;
 
     TIME(timer.print_elapsed_seconds_and_reset("Device sort"));
 
-    arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
+    arrays.verify_unstable_key_sort(num_items, is_descending);
   }
   catch (...)
   {

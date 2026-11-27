@@ -478,10 +478,10 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       arrays.deallocate_outputs();
 
       // Perform sort
-      stable_sort_keys(arrays.keys_in.data(), num_items, custom_less_op_t{}, stream);
+      stable_sort_keys(arrays.input_keys_data(), num_items, custom_less_op_t{}, stream);
 
       // Verify results
-      arrays.verify_unstable_key_sort(num_items, is_descending, arrays.keys_in);
+      arrays.verify_unstable_key_sort(num_items, is_descending);
     }
     catch (...)
     {

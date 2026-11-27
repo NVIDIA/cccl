@@ -140,10 +140,18 @@ struct index_to_value
 } // namespace detail
 
 template <typename KeyType, typename ValueType = cub::NullType>
-struct large_array_sort_helper
+class large_array_sort_helper
 {
-private:
   cuda::stream_ref stream;
+  cuda::host_buffer<ValueType> values_ref;
+  cuda::device_buffer<KeyType> keys_in;
+  cuda::device_buffer<ValueType> values_in;
+  cuda::device_buffer<KeyType> keys_out;
+  cuda::device_buffer<ValueType> values_out;
+
+  // Double buffers alias the input and output allocations.
+  cub::DoubleBuffer<KeyType> keys_buffer;
+  cub::DoubleBuffer<ValueType> values_buffer;
 
 public:
   explicit large_array_sort_helper(cuda::stream_ref stream)
@@ -155,15 +163,20 @@ public:
       , values_out(c2h::make_device_buffer<ValueType>(stream, 0, cuda::no_init))
   {}
 
-  cuda::host_buffer<ValueType> values_ref;
-  cuda::device_buffer<KeyType> keys_in;
-  cuda::device_buffer<ValueType> values_in;
-  cuda::device_buffer<KeyType> keys_out;
-  cuda::device_buffer<ValueType> values_out;
+  [[nodiscard]] KeyType* input_keys_data() noexcept
+  {
+    return keys_in.data();
+  }
 
-  // Double buffers alias the input and output allocations.
-  cub::DoubleBuffer<KeyType> keys_buffer;
-  cub::DoubleBuffer<ValueType> values_buffer;
+  [[nodiscard]] cub::DoubleBuffer<KeyType>& key_double_buffer() noexcept
+  {
+    return keys_buffer;
+  }
+
+  [[nodiscard]] cub::DoubleBuffer<ValueType>& value_double_buffer() noexcept
+  {
+    return values_buffer;
+  }
 
   // Release the output allocations when the sort only needs input buffers.
   void deallocate_outputs()
@@ -213,9 +226,11 @@ public:
     TIME(timer.print_elapsed_seconds_and_reset("Reset Output"));
   }
 
-  // Verify the results of sorting the keys_in produced by initialize_for_unstable_key_sort.
-  void verify_unstable_key_sort(std::size_t num_items, bool is_descending, const cuda::device_buffer<KeyType>& keys)
+  // Verify the selected result after sorting the generated keys.
+  void verify_unstable_key_sort(std::size_t num_items, bool is_descending) const
   {
+    const auto& keys = keys_buffer.selector == 0 ? keys_in : keys_out;
+
     TIME(c2h::cpu_timer timer);
     auto key_iter = cuda::make_transform_iterator(
       cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
@@ -306,14 +321,13 @@ public:
     values_buffer = cub::DoubleBuffer<ValueType>(values_in.data(), values_out.data());
   }
 
-  // Verify the results of sorting the keys_in produced by initialize_for_stable_pair_sort.
-  void verify_stable_pair_sort(
-    std::size_t num_items,
-    bool is_descending,
-    const cuda::device_buffer<KeyType>& keys,
-    const cuda::device_buffer<ValueType>& values)
+  // Verify the selected results after sorting the generated key-value pairs.
+  void verify_stable_pair_sort(std::size_t num_items, bool is_descending) const
   {
     static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
+
+    const auto& keys   = keys_buffer.selector == 0 ? keys_in : keys_out;
+    const auto& values = values_buffer.selector == 0 ? values_in : values_out;
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
     const std::size_t num_summaries = this->compute_num_summaries(num_items, max_summaries);
