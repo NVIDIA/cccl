@@ -899,7 +899,10 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
 _CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
 _CCCL_DIAG_SUPPRESS_MSVC(4455)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506) // a user-provided literal suffix must begin with "_"
+// NVRTC 13.3 does not honor nv_diag_suppress when it is emitted in the same macro expansion as nv_diagnostic push, so
+// the push and the suppression are separate macro invocations. See https://github.com/NVIDIA/cccl/issues/9170
+_CCCL_NV_DIAG_PUSH()
+_CCCL_DIAG_SUPPRESS_NVCC(2506) // a user-provided literal suffix must begin with "_"
 
 inline namespace literals
 {
@@ -936,7 +939,7 @@ _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __s
 } // namespace string_view_literals
 } // namespace literals
 
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_NV_DIAG_POP()
 _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD
