@@ -41,6 +41,13 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _CUDAX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 // This file contains a simplified implementation of a shared_ptr-like type
 // for use in CUDA C++ code. It supports basic shared ownership semantics,
 // but not advanced features like weak_ptr or aliasing constructors.
@@ -363,6 +370,11 @@ private:
   _Ty* __val_ptr_ = nullptr;
 };
 } // namespace cuda::experimental
+
+#ifdef _CUDAX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _CUDAX_POP_MACRO_empty_bases
+#endif // defined(_CUDAX_POP_MACRO_empty_bases)
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

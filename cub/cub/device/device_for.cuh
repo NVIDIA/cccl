@@ -34,6 +34,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>

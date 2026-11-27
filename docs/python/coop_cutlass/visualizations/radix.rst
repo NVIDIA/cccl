@@ -6,56 +6,59 @@
 Radix Sort and Rank
 ===================
 
-:func:`cuda.coop.cutlass.radix_sort_keys` and :func:`cuda.coop.cutlass.radix_sort_pairs`
-order a block's keys by selected bits. Sort processes digits from the
-least significant selected bits upward, moving keys after each stable pass.
-The pairs operation moves associated values with their keys.
+A radix sort orders a block's keys by their bits, one digit at a time. A
+digit is a run of neighboring bits of a key.
+:func:`~cuda.coop.cutlass.radix_sort_keys` returns the keys in sorted order,
+and :func:`~cuda.coop.cutlass.radix_sort_pairs` moves a value with each key.
+:func:`~cuda.coop.cutlass.radix_rank_keys` looks at one digit and returns
+the position each key would take in a sort by that digit.
 
-:func:`cuda.coop.cutlass.radix_rank_keys` computes destinations for **one digit**. It
-returns an ``int32`` rank in each key's original slot. The input keys stay
-where they were; ranking does not perform a scatter. All three operations
-preserve their input payloads.
-
-The explorer uses eight teaching threads with unsigned ``uint32`` keys.
-Only their low eight bits are shown. The examples below the explorer use
-complete, executable blocks of 64 threads.
+The explorer shows one block of eight teaching threads with unsigned keys
+below 256, and its controls cover the low eight bits. The kernel at the end
+of this page runs on a block of 64 threads.
 
 .. coop-visualization:: radix
 
    .. only:: html
 
       .. figure:: radix-sort.svg
-         :alt: Keys 35, 18, 33, 2, 35, 17, 1, 18 sort by their low four bits and then their next four bits. Associated original positions move with each key, preserving the order of equal keys.
+         :alt: Three rows of eight threads with one key and one value each.
+               The input keys are 35, 18, 33, 2, 35, 17, 1, 18 with the
+               values 0 to 7. After the pass on bits 0 to 3 the keys are
+               33, 17, 1, 18, 2, 18, 35, 35. After the pass on bits 4 to 7
+               they are 1, 2, 17, 18, 18, 33, 35, 35.
          :width: 100%
 
-         Two stable digit passes sort eight unsigned keys. Values identify
-         the original positions of the keys.
+         A pair sort with ``end_bit=8`` takes two passes. Each value is the
+         input position of its key.
 
-   For ``begin_bit=0, end_bit=8``, the low digit orders bits zero through
-   three. The next pass orders bits four through seven, keeping the order
-   established by the low digit within each equal high digit.
+   With ``begin_bit=0`` and ``end_bit=8``, the first pass orders the keys by
+   bits 0 to 3. The second pass orders them by bits 4 to 7. Keys that are
+   equal in bits 4 to 7 keep the order the first pass gave them.
 
    .. code-block:: text
 
       Original keys       35  18  33   2  35  17   1  18
       Original values      0   1   2   3   4   5   6   7
-      After bits [0, 4)    33  17   1  18   2  18  35  35
+      After bits [0, 4)   33  17   1  18   2  18  35  35
       Associated values    2   5   6   1   3   7   0   4
-      After bits [4, 8)     1   2  17  18  18  33  35  35
+      After bits [4, 8)    1   2  17  18  18  33  35  35
       Associated values    6   3   5   1   7   2   0   4
 
    .. only:: html
 
       .. figure:: radix-rank.svg
-         :alt: Ranking the low four bits of the same keys returns ranks 6, 3, 0, 4, 7, 1, 2, 5 in the original input slots. The keys remain unchanged.
+         :alt: The same eight keys with their low four bits under them, 3,
+               2, 1, 2, 3, 1, 1, 2, and under those the ranks 6, 3, 0, 4, 7,
+               1, 2, 5. The keys are where they were.
          :width: 100%
 
-         One digit's ranks describe destinations without moving the keys.
+         The ranks of the same keys by their low four bits.
 
-   For ``radix_rank_keys(..., begin_bit=0, end_bit=4)``, digits one, two, and
-   three occur three, three, and two times. Their ascending bin starts
-   are zero, three, and six. Add the number of earlier keys with the
-   same digit to obtain each destination.
+   With ``radix_rank_keys(block, keys, radix_bits=4)``, the digits 1, 2 and
+   3 occur three, three and two times, so their keys begin at ranks 0, 3
+   and 6. A key's rank is where its digit begins plus the number of earlier
+   keys with the same digit.
 
    .. code-block:: text
 
@@ -67,89 +70,61 @@ complete, executable blocks of 64 threads.
 Reading the stages
 ------------------
 
-Input order is :ref:`blocked <coop-glossary-layouts>`: all of thread zero's
-items, then all of thread one's items, and so on. For ``K`` items per
-thread, item ``i`` of thread ``t`` has input position ``t * K + i``. This
-order also determines which equal-digit key comes first.
+The input is in :ref:`blocked <coop-glossary-layouts>` order: all of thread
+0's items, then all of thread 1's, and so on. With ``K`` items per thread,
+item ``i`` of thread ``t`` is at position ``t * K + i``. This order decides
+which of two keys with equal digits comes first.
 
-For ascending Rank, each result is the number of keys with smaller digits
-plus the number of earlier input keys with the same digit. For descending
-Rank, count greater digits instead. The rank is a unique destination in the
-block tile, but it is returned at the key's original blocked position.
-The counts and bin starts in the picture explain the calculation; the
-function returns per-key ranks and can fill an explicit bin-prefix payload.
+In the Radix Rank view, the count row says how often each digit occurs, and
+the bin start row says how many keys have a smaller digit. A key's rank is
+the bin start of its digit plus the number of earlier keys with the same
+digit. In descending order, a bin start counts the keys with a greater
+digit. Each rank appears under its own key, and the keys stay where they
+were. ``exclusive_digit_prefix`` receives the bin starts. The explorer
+draws them for the digits that occur.
 
-Sort uses those destinations to move a working copy of the keys, and any
-associated values, before examining the next digit. Equal digits retain
-their order at each pass. That stability lets the more significant pass
-retain the ordering already established by less significant bits.
-``descending=True`` reverses digit ordering while preserving the input
-order of ties; it does not reverse a finished ascending array.
+In the Radix Sort view, each pass ranks a working copy of the keys by one
+digit and moves the keys to those ranks. In a pair sort, each value moves
+with its key. The passes start at ``begin_bit`` and move up four bits at a
+time. The sort functions have no argument for that width. The last pass is
+narrower when the range is not a multiple of four bits. Keys with equal
+digits keep their order in every pass, so a later pass keeps the order of
+the earlier passes among the keys that are equal in its own digit. In
+descending order, each pass puts the largest digit first and still keeps
+tied keys in their order.
 
-The provider uses the CUB ``BlockRadixSort`` specialization
-with four bits per pass. A final pass may use fewer bits. This is an
-implementation choice, not an argument to ``radix_sort_keys`` or
-``radix_sort_pairs``. The picture shows ranks and ownership changes, not
-the exact CUB instruction sequence or shared-memory layout.
+With striped output, the last pass returns sorted position ``p`` to thread
+``p % G``, item ``p // G``, on a block of ``G`` threads. The passes before
+it use blocked order.
 
-Sort returns blocked output by default and also accepts
-``blocked_to_striped=True``. With ``T`` block threads, sorted position ``p``
-then belongs to thread ``p % T``, slot ``p // T``. Intermediate digit passes
-still use blocked ownership. Keys and values use the same output layout;
-select a matching layout when storing them. Rank has no striped-output or
-pairs option.
+Bit ranges
+----------
 
-Bit intervals and key types
----------------------------
+``[begin_bit, end_bit)`` names the bits from ``begin_bit`` to
+``end_bit - 1``. The explorer's keys are unsigned, so these are the bits of
+the key itself. A sort on some of the bits orders the keys by those bits.
+With one item per thread, ``begin_bit=0`` and ``end_bit=4``, an ascending
+sort puts the keys 33, 17 and 1 first because their low four bits are 1.
+Keys that are equal in those bits keep their input order, whatever their
+other bits are.
 
-``[begin_bit, end_bit)`` is a half-open interval in CUB's ordered key
-representation. Unsigned keys use their bits directly, which is why the
-explorer uses unsigned keys. Sorting a subset of bits orders that bit field;
-the full numeric keys need not be increasing. Bits outside the field do not
-break ties.
+:ref:`Radix sorting and ranking <coop-cutlass-radix>` in the API reference
+has the rules for signed and floating-point keys and for each control.
 
-For signed integers, the sign bit is inverted before digit extraction.
-Sort also accepts ``float32`` and ``float64`` keys:
-CUB inverts all bits for negative floating-point keys and the sign bit for
-nonnegative keys before selecting the interval. Returned keys retain their
-original representations. Negative and positive zero compare equally and
-preserve their input order; NaNs follow CUB's transformed-bit ordering.
-The unsigned explorer does not model these floating-point cases.
+Using Radix Sort and Rank in a kernel
+-------------------------------------
 
-Calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
-``int64``, or ``uint64`` dtype. Associated values may use the supported
-numeric dtypes and must have the same extent as the keys. Scalars,
-CuTe register tensors, and ``TensorSSA`` are also supported.
-Floating-point keys are supported for Sort, while Rank requires integral keys.
+This kernel runs on one block of 64 threads, and the full example passes it
+``Int32`` keys. It sorts the keys by all their bits. It then sorts the keys
+by their top four bits, largest first, with striped output. Each key's value
+is its position in the tile. Last, it ranks the keys by the same digit in the
+same direction and stores the sixteen bin starts that
+``exclusive_digit_prefix`` receives. The two sorts share one ``TempStorage``.
+``_BLOCK`` is ``(8, 4, 2)`` and ``_BINS`` is 16. The full example checks all
+six outputs on the host.
 
-Sort's bit bounds may be block-uniform runtime integers and must satisfy
-``0 <= begin_bit < end_bit <= key_width``. Omitting ``end_bit`` selects the
-key width. Rank requires compile-time bounds selecting one through eight
-bits. Its omitted end is ``begin_bit + radix_bits``, with four bits when
-``radix_bits`` is also omitted. If both ``radix_bits`` and ``end_bit`` are
-supplied, they must describe the same digit width. The explorer limits its
-controls to the low eight bits of its small example keys.
-
-All threads in the complete physical block must participate with matching
-controls and payload extents. These operations do not accept warp groups
-or a ``valid_items`` argument. Sort can use explicit ``temp_storage``;
-its size and alignment must cover the specialization. Explicit descriptors
-default to ``auto_sync=False``, so the caller must synchronize before reuse or
-request ``auto_sync=True``. Rank allocates and synchronizes its scratch
-automatically.
-
-Rank can additionally write ``exclusive_digit_prefix``.
-That side output describes digit bins and has its own per-thread extent,
-separate from the returned per-key ranks. See
-:func:`cuda.coop.cutlass.radix_rank_keys` for the supported output containers,
-layout, and undefined tail slots. The explorer's bin rows are mathematical
-explanations, not an invocation of that optional output.
-
-Sorting key/value pairs in a kernel
------------------------------------
-
-This example checks key order, associated values, striped output, and
-Radix Rank bin prefixes against independent references.
+`View the full example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/radix.py>`__
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/examples/radix.py
    :language: python
@@ -157,10 +132,10 @@ Radix Rank bin prefixes against independent references.
    :end-before: # docs: end cutlass-radix
    :dedent: 4
 
-Ranking one unsigned digit
---------------------------
+The keys are signed, so the top four bits are those of the key with its
+sign bit flipped: negative keys have the digits 0 to 7, and the other keys
+have the digits 8 to 15.
 
-The Rank part of the example selects a digit's bit interval and returns
-ranks with the same per-thread extent. A bin-prefix payload records exclusive
-digit prefixes. See :ref:`the Programming Guide <coop-cutlass-radix>` and
-:doc:`../api` for dtype, bit-range, and output constraints.
+:ref:`Radix sorting and ranking <coop-cutlass-radix>` in the API reference
+covers key types, bit ranges, the order of the result and
+``exclusive_digit_prefix``.

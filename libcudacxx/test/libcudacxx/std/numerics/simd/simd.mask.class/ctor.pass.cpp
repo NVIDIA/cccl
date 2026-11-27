@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.mask.ctor], basic_mask constructors
 //
@@ -22,11 +22,11 @@
 // constexpr explicit basic_mask(unsigned-integer) noexcept;                    // unsigned integer
 
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__simd_>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

@@ -16,8 +16,7 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/normal_distribution.h>
 
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 

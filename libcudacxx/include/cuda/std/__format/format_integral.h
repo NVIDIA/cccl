@@ -41,6 +41,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE_DEVICE.
+#ifdef noinline
+#  pragma push_macro("noinline")
+#  undef noinline
+#  define _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(noinline)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _CharT, class _OutIt>
@@ -61,8 +68,9 @@ __fmt_format_char(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __spec
   return ::cuda::std::__fmt_write(__buffer, __buffer + 1, ::cuda::std::move(__out_it), __specs);
 }
 
+// Share the digit conversion and its scratch buffer across signed and unsigned formatters on device.
 template <class _Tp, class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE _OutIt
 __fmt_format_int_impl(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs, bool __negative)
 {
   // Binary digits need the most space. Leave room for the sign and the two-character base prefix.
@@ -169,6 +177,11 @@ __fmt_format_bool(bool __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __spe
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noinline
+#  pragma pop_macro("noinline")
+#  undef _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 #include <cuda/std/__cccl/epilogue.h>
 

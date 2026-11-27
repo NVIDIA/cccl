@@ -3,7 +3,7 @@
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-handoffs-classes-title cutlass-handoffs-classes-desc" viewBox="0 0 1024 3241">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-handoffs-classes-title cutlass-handoffs-classes-desc" viewBox="0 0 1024 3503">
   <title id="cutlass-handoffs-classes-title">Compilation handoffs: classes</title>
   <desc id="cutlass-handoffs-classes-desc">Read from top to bottom. Provider symbols and link inputs are available before the final cubin and kernel handle.</desc>
   <defs>
@@ -11,17 +11,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
       <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
     </marker>
   </defs>
-  <rect width="1024" height="3241" fill="#ffffff"/>
-  <rect x="4" y="0" width="254" height="3240.7000000000003" fill="#e9f2fb" fill-opacity="0.34"/>
+  <rect width="1024" height="3503" fill="#ffffff"/>
+  <rect x="4" y="0" width="254" height="3501.6" fill="#e9f2fb" fill-opacity="0.34"/>
   <text x="131" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">CuTe compiler</text>
-  <rect x="258" y="0" width="254" height="3240.7000000000003" fill="#e5f1d7" fill-opacity="0.34"/>
-  <line x1="258" x2="258" y1="0" y2="3240.7000000000003" stroke="#d2dbe5" stroke-width="1"/>
+  <rect x="258" y="0" width="254" height="3501.6" fill="#e5f1d7" fill-opacity="0.34"/>
+  <line x1="258" x2="258" y1="0" y2="3501.6" stroke="#d2dbe5" stroke-width="1"/>
   <text x="385" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">cuda.coop.cutlass</text>
-  <rect x="512" y="0" width="254" height="3240.7000000000003" fill="#fff0c9" fill-opacity="0.34"/>
-  <line x1="512" x2="512" y1="0" y2="3240.7000000000003" stroke="#d2dbe5" stroke-width="1"/>
+  <rect x="512" y="0" width="254" height="3501.6" fill="#fff0c9" fill-opacity="0.34"/>
+  <line x1="512" x2="512" y1="0" y2="3501.6" stroke="#d2dbe5" stroke-width="1"/>
   <text x="639" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">NVRTC</text>
-  <rect x="766" y="0" width="254" height="3240.7000000000003" fill="#e7dff4" fill-opacity="0.34"/>
-  <line x1="766" x2="766" y1="0" y2="3240.7000000000003" stroke="#d2dbe5" stroke-width="1"/>
+  <rect x="766" y="0" width="254" height="3501.6" fill="#e7dff4" fill-opacity="0.34"/>
+  <line x1="766" x2="766" y1="0" y2="3501.6" stroke="#d2dbe5" stroke-width="1"/>
   <text x="893" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
   <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class. CuTeDSL. Trace Python with symbolic values.">
     <rect x="12" y="76" width="238" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
@@ -125,44 +125,55 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="278" y="2298.1000000000013" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Replace address and size</text>
     <text x="278" y="2326.9000000000015" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">placeholders.</text>
   </g>
-  <path d="M385 2343.9V2392.9H131V2404.9" marker-end="url(#cutlass-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="160.45668029785156" y="2365.9" width="195.08663940429688" height="27" fill="#ffffff"/>
-  <text x="258" y="2383.9" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Final IR + link-libraries path</text>
+  <path d="M385 2343.9V2377.9" marker-end="url(#cutlass-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <g data-node="lower_convergent_provider_calls()" role="group" aria-label="cuda.coop.cutlass. Convergence function. lower_convergent_provider_calls(). Replace each provider declaration and func.call with convergent llvm.func and llvm.call.">
+    <rect x="266" y="2380.9" width="238" height="220.9" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="2415" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Convergence function</text>
+    <text x="278" y="2443.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">lower_convergent_</text>
+    <text x="278" y="2472.6" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">provider_calls()</text>
+    <text x="278" y="2501.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Replace each provider</text>
+    <text x="278" y="2530.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">declaration and func.call</text>
+    <text x="278" y="2559" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">with convergent llvm.func</text>
+    <text x="278" y="2587.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">and llvm.call.</text>
+  </g>
+  <path d="M385 2604.8V2653.8H131V2665.8" marker-end="url(#cutlass-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="160.45668029785156" y="2626.8" width="195.08663940429688" height="27" fill="#ffffff"/>
+  <text x="258" y="2644.8" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Final IR + link-libraries path</text>
   <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class; inherited methods. CuTeDSL. generate_original_ir(): hash and build after the hook.. _merge_gpu_link_libraries(): copy paths into LinkLibraries.. compile_and_cache(): compile the kernel.">
-    <rect x="12" y="2407.9" width="238" height="333.40000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="2442" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler class; inherited</text>
-    <text x="24" y="2468.1" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">methods</text>
-    <text x="24" y="2496.9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CuTeDSL</text>
-    <text x="24" y="2525.7000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">generate_original_ir():</text>
-    <text x="24" y="2554.5000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">hash and build after the</text>
-    <text x="24" y="2583.3000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">hook.</text>
-    <text x="24" y="2612.100000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_merge_gpu_link_</text>
-    <text x="24" y="2640.900000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">libraries(): copy paths into</text>
-    <text x="24" y="2669.700000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">LinkLibraries.</text>
-    <text x="24" y="2698.5000000000014" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">compile_and_cache():</text>
-    <text x="24" y="2727.3000000000015" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">compile the kernel.</text>
+    <rect x="12" y="2668.8" width="238" height="333.40000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="2702.9" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler class; inherited</text>
+    <text x="24" y="2729" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">methods</text>
+    <text x="24" y="2757.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CuTeDSL</text>
+    <text x="24" y="2786.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">generate_original_ir():</text>
+    <text x="24" y="2815.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">hash and build after the</text>
+    <text x="24" y="2844.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">hook.</text>
+    <text x="24" y="2873" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_merge_gpu_link_</text>
+    <text x="24" y="2901.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">libraries(): copy paths into</text>
+    <text x="24" y="2930.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">LinkLibraries.</text>
+    <text x="24" y="2959.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">compile_and_cache():</text>
+    <text x="24" y="2988.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">compile the kernel.</text>
   </g>
-  <path d="M131 2744.3V2793.3H893V2805.3" marker-end="url(#cutlass-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="422.44629669189453" y="2766.3" width="179.10740661621094" height="27" fill="#ffffff"/>
-  <text x="512" y="2784.3" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Kernel + provider LTO-IR</text>
+  <path d="M131 3005.2V3054.2H893V3066.2" marker-end="url(#cutlass-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="422.44629669189453" y="3027.2" width="179.10740661621094" height="27" fill="#ffffff"/>
+  <text x="512" y="3045.2" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Kernel + provider LTO-IR</text>
   <g data-node="nvJitLink" role="group" aria-label="nvJitLink. External linker. nvJitLink. Resolve or inline provider symbols.. Return the linked cubin.">
-    <rect x="774" y="2808.3" width="238" height="163.3" rx="7" fill="#e7dff4" stroke="#68798b" stroke-width="1"/>
-    <text x="786" y="2842.4" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">External linker</text>
-    <text x="786" y="2871.2000000000003" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
-    <text x="786" y="2900.0000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve or inline provider</text>
-    <text x="786" y="2928.8000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbols.</text>
-    <text x="786" y="2957.600000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Return the linked cubin.</text>
+    <rect x="774" y="3069.2" width="238" height="163.3" rx="7" fill="#e7dff4" stroke="#68798b" stroke-width="1"/>
+    <text x="786" y="3103.3" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">External linker</text>
+    <text x="786" y="3132.1" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
+    <text x="786" y="3160.9" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve or inline provider</text>
+    <text x="786" y="3189.7" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbols.</text>
+    <text x="786" y="3218.5" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Return the linked cubin.</text>
   </g>
-  <path d="M893 2974.6000000000004V3023.6000000000004H131V3035.6000000000004" marker-end="url(#cutlass-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="464.7451477050781" y="2996.6000000000004" width="94.50970458984375" height="27" fill="#ffffff"/>
-  <text x="512" y="3014.6000000000004" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Linked cubin</text>
+  <path d="M893 3235.5V3284.5H131V3296.5" marker-end="url(#cutlass-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="464.7451477050781" y="3257.5" width="94.50970458984375" height="27" fill="#ffffff"/>
+  <text x="512" y="3275.5" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Linked cubin</text>
   <g data-node="JitCompiledFunction" role="group" aria-label="CuTe compiler. Compiled-function class. JitCompiledFunction. CudaModuleAndKernel retains the loaded kernel.. Launch the compiled kernel.">
-    <rect x="12" y="3038.6000000000004" width="238" height="192.10000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="3072.7000000000003" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiled-function class</text>
-    <text x="24" y="3101.5000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">JitCompiledFunction</text>
-    <text x="24" y="3130.3000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CudaModuleAndKernel</text>
-    <text x="24" y="3159.100000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">retains the loaded kernel.</text>
-    <text x="24" y="3187.900000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Launch the compiled</text>
-    <text x="24" y="3216.700000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">kernel.</text>
+    <rect x="12" y="3299.5" width="238" height="192.10000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="3333.6" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiled-function class</text>
+    <text x="24" y="3362.4" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">JitCompiledFunction</text>
+    <text x="24" y="3391.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CudaModuleAndKernel</text>
+    <text x="24" y="3420" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">retains the loaded kernel.</text>
+    <text x="24" y="3448.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Launch the compiled</text>
+    <text x="24" y="3477.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">kernel.</text>
   </g>
 </svg>

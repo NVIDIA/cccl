@@ -221,8 +221,8 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>,
   static_assert(((_StaticUnitCounts != ::cuda::std::dynamic_extent) && ...),
                 "per-group unit counts must be statically known");
 
-  ::cuda::std::uint32_t __group_rank_;
-  ::cuda::std::uint32_t __unit_rank_;
+  ::cuda::std::uint32_t __group_rank_{};
+  ::cuda::std::uint32_t __unit_rank_{};
   ::cuda::device::lane_mask __lane_mask_;
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid()
@@ -294,13 +294,10 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>,
       constexpr ::cuda::std::size_t __counts[]{_StaticUnitCounts...};
       return __counts[__i];
     }
-    else
-    {
-      ::cuda::std::size_t __index  = 0;
-      ::cuda::std::size_t __result = 0;
-      ((__result = (__i == __index++) ? _StaticUnitCounts : __result), ...);
-      return __result;
-    }
+    ::cuda::std::size_t __index  = 0;
+    ::cuda::std::size_t __result = 0;
+    ((__result = (__i == __index++) ? _StaticUnitCounts : __result), ...);
+    return __result;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
@@ -362,12 +359,13 @@ __lane_mask_prefix(::cuda::std::uint32_t __mask, ::cuda::std::uint32_t __rank)
   for (int __shift = 16; __shift != 0; __shift /= 2)
   {
     const auto __candidate = __prefix >> __shift;
-    __prefix               = (::cuda::std::popcount(__mask & __candidate) > __rank) ? __candidate : __prefix;
+    const auto __count     = static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__mask & __candidate));
+    __prefix               = (__count > __rank) ? __candidate : __prefix;
   }
   return __prefix;
 }
 
-template <class _Unit, class _Level, bool _IsAlwaysContiguous>
+template <class _Unit, class _Bound, bool _IsAlwaysContiguous>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask __make_lane_mask_for_n(
   ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank)
 {
@@ -380,7 +378,7 @@ template <class _Unit, class _Level, bool _IsAlwaysContiguous>
       return lane_mask::this_lane();
     }
 
-    if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+    if constexpr (::cuda::std::is_same_v<_Bound, warp_level>)
     {
       if constexpr (_IsAlwaysContiguous)
       {

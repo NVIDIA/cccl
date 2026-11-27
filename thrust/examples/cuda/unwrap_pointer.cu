@@ -5,6 +5,8 @@
 
 #include <cuda/__runtime/api_wrapper.h>
 
+#include <cstddef>
+
 #include <cuda.h>
 
 int main()

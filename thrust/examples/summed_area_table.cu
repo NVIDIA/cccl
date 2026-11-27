@@ -6,6 +6,7 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 

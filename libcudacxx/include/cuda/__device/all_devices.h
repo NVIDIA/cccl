@@ -25,7 +25,6 @@
 
 #  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
-#  include <cuda/__device/physical_device.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
@@ -41,8 +40,9 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
-  ::cuda::__simple_vector<device_ref> __ret{::cuda::__physical_devices().size(), ::cuda::no_init};
-  for (::cuda::std::size_t __i = 0; __i < ::cuda::__physical_devices().size(); ++__i)
+  const auto __count = ::cuda::__physical_devices_count();
+  ::cuda::__simple_vector<device_ref> __ret{__count, ::cuda::no_init};
+  for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
   {
     __ret.emplace_back(static_cast<int>(__i));
   }
@@ -75,12 +75,12 @@ public:
     {
       _CCCL_THROW(::std::out_of_range, "device index out of range");
     }
-    return ::cuda::__devices()[__i];
+    return device_ref{static_cast<int>(__i)};
   }
 
   [[nodiscard]] _CCCL_HOST_API size_type size() const
   {
-    return ::cuda::__devices().size();
+    return ::cuda::__physical_devices_count();
   }
 
   [[nodiscard]] _CCCL_HOST_API iterator begin() const

@@ -265,7 +265,7 @@ public:
 
   static constexpr __simd_size_constant<__simd_size_v<value_type, abi_type>> size{};
 
-  static constexpr auto __usize = size_t{size};
+  static constexpr auto __usize = static_cast<size_t>(size);
   static constexpr auto __size  = __simd_size_type{size};
 
   _CCCL_HIDE_FROM_ABI basic_vec() noexcept = default;

@@ -30,7 +30,7 @@ def run_example(items_per_thread=3):
     Five output buffers expose ascending keys, descending key/value pairs,
     and both original inputs. Unique values identify their associated keys;
     the pair check permits any order among equal keys. Outputs start as -999;
-    unchanged tails show that no Store wrote past the valid prefix.
+    unchanged tails show that no Store wrote at or past ``valid_items``.
     """
     tile_size = 64 * items_per_thread
     valid_items = tile_size - 7

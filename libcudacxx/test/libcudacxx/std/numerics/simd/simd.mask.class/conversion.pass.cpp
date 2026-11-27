@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.mask.conv], basic_mask conversions
 //
@@ -20,9 +20,9 @@
 // constexpr bitset<size()> to_bitset() const noexcept;
 // constexpr unsigned long long to_ullong() const;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

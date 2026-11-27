@@ -6,6 +6,7 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cstddef>
 #include <iostream>
 
 // This example shows how to perform a lexicographical sort on multiple keys.

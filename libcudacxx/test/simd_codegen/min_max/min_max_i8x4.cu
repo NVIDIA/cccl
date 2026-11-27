@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__simd_> // IWYU pragma: keep
+#include <cuda/std/simd> // IWYU pragma: keep
 
 namespace simd = cuda::std::simd;
 
@@ -38,15 +38,19 @@ __device__ Vec_s8_x4 test_max_s8_x4(Vec_s8_x4 lhs, Vec_s8_x4 rhs)
 /*
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_max_s8_x4.*}}
+; SM107f: {{.*VIMNMX.S8x4.*!PT.*}}
 ; SM120f: {{.*VIMNMX.S8x4.*!PT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_max_u8_x4.*}}
+; SM107f: {{.*VIMNMX.U8x4.*!PT.*}}
 ; SM120f: {{.*VIMNMX.U8x4.*!PT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_min_s8_x4.*}}
+; SM107f: {{.*VIMNMX.S8x4.*PT.*}}
 ; SM120f: {{.*VIMNMX.S8x4.*PT.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_min_u8_x4.*}}
+; SM107f: {{.*VIMNMX.U8x4.*PT.*}}
 ; SM120f: {{.*VIMNMX.U8x4.*PT.*}}
 
 */

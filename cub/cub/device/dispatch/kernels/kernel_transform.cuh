@@ -82,7 +82,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch(const T* addr)
 #if __cccl_ptx_isa >= 940
   NV_IF_TARGET(NV_PROVIDES_SM_90, (::cuda::ptx::prefetch_L1_32B(addr); return;))
 #endif // __cccl_ptx_isa >= 940
-  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
+  ::cuda::ptx::prefetch_L2(addr);
 }
 
 template <int BlockDim, int PrefetchStride, typename It>

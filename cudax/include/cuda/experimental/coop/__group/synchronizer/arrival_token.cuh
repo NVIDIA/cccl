@@ -38,7 +38,7 @@ class __int_arrival_token
 public:
   __int_arrival_token() = delete;
 
-  _CCCL_DEVICE constexpr __int_arrival_token(_Tp __v)
+  _CCCL_DEVICE_API constexpr __int_arrival_token(_Tp __v)
       : __value_{__v}
   {}
 
@@ -84,7 +84,7 @@ public:
     return *this;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr bool __valid() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool __is_valid() const
   {
     return __value_ == ::cuda::std::uint32_t{__valid_value};
   }
@@ -93,7 +93,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr __dummy_arrival_token& operator=(__dummy_arrival_token&&) = default;
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr bool __valid() const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool __is_valid() const
   {
     return true;
   }

@@ -1,7 +1,9 @@
 #include <thrust/host_vector.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/remove.h>
 
+#include <cstddef>
 #include <iostream>
 
 // This example generates random points in the

@@ -156,7 +156,7 @@
         "The input run tile and output window can have different per-thread extents. All block members participate, including those holding only zero-length padding.",
         bulk ? "Bulk decoding prepares CUB once inside this call. The table remains live while the provider loops over windows, then scratch can be reused with the normal TempStorage synchronization." : "Each separate window call prepares its own table. decoded_window_offset is an explicit stream index; a previous call does not advance a hidden cursor.",
         "The bulk operation returns a Uint32 total to every block member; the window operation returns decoded values.",
-        bulk ? "destination_offset shifts where the full stream is written. The destination must not overlap the run inputs. A partial final window writes only valid items; other destination cells keep their original contents." : "An empty stream or a window starting at or beyond the total returns zero values. These tail values are defined by the wrapper.",
+        bulk ? "destination_offset shifts where the full stream is written. A partial final window writes only valid items; other destination cells keep their original contents." : "An empty stream or a window starting at or beyond the total returns zero values. These tail values are defined by the wrapper.",
         "Negative lengths, interior zero lengths followed by positive runs, and total-size overflow are rejected before CUB decoding. Uniform group controls are a caller precondition.",
       ],
       summary: capacity_error ? "Insufficient capacity: trap before writes; the destination stays untouched."

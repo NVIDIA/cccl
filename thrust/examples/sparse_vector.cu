@@ -4,7 +4,10 @@
 #include <thrust/merge.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/functional>
+
 #include <cassert>
+#include <cstddef>
 #include <iostream>
 
 template <typename IndexVector, typename ValueVector>

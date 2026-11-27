@@ -67,9 +67,9 @@ Having statically known information about the launched hierarchy has another gre
 Group Queries
 ^^^^^^^^^^^^^
 
-The original cooperative groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. CCCL Cooperative Groups could do the same thing; however, these queries would be good enough only for groups with a thread-level unit type. When the unit type of a group is, for example, warp-level, we'd like to query the warp rank/count of the current warp within the group.
+The original cooperative groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. These queries suit groups of threads. For groups of warps, we also need the current warp's rank and the number of warps in the group.
 
-For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit type. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-level* queries.
+For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit level. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-bound* queries.
 
 See :ref:`cudax-coop-group-group-queries` the API description.
 
@@ -91,8 +91,8 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   concept group = requires (T& t, const T& ct)
   {
     // Member types.
-    requires /*is-hierarchy-level*/<typename T::unit_type>;     // (1)
-    requires /*is-hierarchy-level*/<typename T::level_type>;    // (2)
+    requires /*is-hierarchy-level*/<typename T::unit_level>;    // (1)
+    requires /*is-hierarchy-level*/<typename T::boundary_level>;   // (2)
     requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
 
     // Getters.
@@ -111,8 +111,8 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
 
 Where:
 
-#. The unit level type that defines what units are being grouped.
-#. The upper level bound type that defines the level within which the units are grouped.
+#. ``unit_level`` identifies the hierarchy level of the units being grouped.
+#. ``boundary_level`` identifies the hierarchy level within which those units are grouped.
 #. The hierarchy type within which the group is operating.
 #. Returns a reference to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.
@@ -124,12 +124,12 @@ Where:
 Group Queries
 -------------
 
-Group queries can be used to study group-related information. They are similar to hierarchy queries; however, only a subset of the hierarchy queries is supported. There are 2 types of group queries - the sub-unit and the super-level queries.
+Group queries can be used to study group-related information. They are similar to hierarchy queries; however, only a subset of the hierarchy queries is supported. There are 2 types of group queries - the sub-unit and the super-bound queries.
 
 Sub-Unit Queries
 ^^^^^^^^^^^^^^^^
 
-Sub-unit queries can be used to query information about levels that are below the group's unit type. They look like:
+Sub-unit queries can be used to query information about levels that are below the group's unit level. They look like:
 
 .. code:: cpp
 
@@ -137,7 +137,7 @@ Sub-unit queries can be used to query information about levels that are below th
 
 Where:
 
-- ``qunit`` is the query unit, which must be below or the same as the group's unit type.
+- ``qunit`` is the query unit, which must be below or the same as the group's unit level.
 - ``query`` is one of the supported query kinds.
 - ``group`` is the group the query is done for.
 
@@ -196,12 +196,12 @@ Example:
     return cuda::std::to_array(smem_scratch);
   }
 
-Super-Level Queries
+Super-Bound Queries
 ^^^^^^^^^^^^^^^^^^^
 
-Super-level queries can be used to query a group's information within the group's parent group or a hierarchy level when the group is one of the special group types. When it's a hierarchy level, it must be the same as or above the group's level type. See the concrete group's documentation for more information.
+Super-bound queries can be used to query a group's information within the group's parent group or a hierarchy level when the group is one of the special group types. When it's a hierarchy level, it must be the same as or above the group's bound level. See the concrete group's documentation for more information.
 
-Super-level queries look like:
+Super-bound queries look like:
 
 .. code:: cpp
 
@@ -217,7 +217,7 @@ The supported query kinds are:
 
 .. code:: cpp
 
-  // Super-level queries.
+  // Super-bound queries.
   constexpr auto a = group.static_count(/*parent-group-or-qlevel*/); // (1), always constexpr
   constexpr auto f = group.static_rank(/*parent-group-or-qlevel*/);  // (2), always constexpr
   const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (3)
@@ -256,7 +256,7 @@ Group Types
 Implicit Groups
 ^^^^^^^^^^^^^^^
 
-Implicit groups are essential building blocks for other groups. They don't have a parent group and always use a hierarchy level in super-level queries.
+Implicit groups are essential building blocks for other groups. They don't have a parent group and always use a hierarchy level in super-bound queries.
 
 - :ref:`cudax-coop-group-this-group` -- abstraction over a whole hierarchy level
 - :ref:`cudax-coop-group-coalesced-group` -- a group containing all currently active threads within a warp

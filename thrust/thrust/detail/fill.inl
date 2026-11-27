@@ -19,6 +19,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
 // IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/fill.h>

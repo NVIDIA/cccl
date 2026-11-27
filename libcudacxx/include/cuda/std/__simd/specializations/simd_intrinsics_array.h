@@ -48,10 +48,10 @@ inline constexpr size_t __simd_storage_size_u32<__simd_storage<_Tp, __fixed_size
   ::cuda::ceil_div(_Np, sizeof(uint32_t) / sizeof(_Tp));
 
 template <size_t _Np>
-using __array_u32_t = array<uint32_t, _Np>;
+using __array_u32_t _CCCL_NODEBUG = array<uint32_t, _Np>;
 
 template <typename _SimdStorage>
-using __simd_storage_u32_t = __array_u32_t<__simd_storage_size_u32<_SimdStorage>>;
+using __simd_storage_u32_t _CCCL_NODEBUG = __array_u32_t<__simd_storage_size_u32<_SimdStorage>>;
 
 template <typename _SimdStorage>
 inline constexpr size_t __simd_storage_copy_size_u32 = 0;
@@ -63,7 +63,7 @@ template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SimdStorageU32 __to_unsigned_storage(const _SimdStorage& __s) noexcept
 {
   _SimdStorageU32 __tmp{};
-  const auto __input_data = ::cuda::std::assume_aligned<alignof(uint32_t)>(__s.__data);
+  const auto __input_data = ::cuda::std::assume_aligned<alignof(_SimdStorage)>(__s.__data);
   ::cuda::std::memcpy(__tmp.data(), __input_data, __simd_storage_copy_size_u32<_SimdStorage>);
   return __tmp;
 }
@@ -73,7 +73,7 @@ template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t
 __copy_from_unsigned_storage(const _SimdStorageU32& __tmp) noexcept
 {
   _SimdStorage __result{};
-  const auto __result_ptr = ::cuda::std::assume_aligned<alignof(uint32_t)>(__result.__data);
+  const auto __result_ptr = ::cuda::std::assume_aligned<alignof(_SimdStorage)>(__result.__data);
   ::cuda::std::memcpy(__result_ptr, __tmp.data(), __simd_storage_copy_size_u32<_SimdStorage>);
   return __result;
 }

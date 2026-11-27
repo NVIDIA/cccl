@@ -32,9 +32,9 @@
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/dispatch.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
-#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
 
@@ -45,7 +45,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
-using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer&>().make_instance(
+using __group_synchronizer_instance_t _CCCL_NODEBUG = decltype(::cuda::std::declval<_Synchronizer&>().make_instance(
   ::cuda::std::declval<const _Unit&>(),
   ::cuda::std::declval<const _ParentGroup&>(),
   ::cuda::std::declval<const _MappingResult&>()));
@@ -57,8 +57,8 @@ class generic_group
   static_assert(group<_ParentGroup>);
   static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
                 "the parent group must not be a group_view");
-  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
-                "unit_type must be same as or below _ParentGroup's unit_type");
+  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>,
+                "unit_level must be same as or below _ParentGroup's unit_level");
 
   using _Hierarchy _CCCL_NODEBUG           = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult _CCCL_NODEBUG = typename _ParentGroup::__mapping_result_type;
@@ -69,12 +69,12 @@ class generic_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type                    = _Unit;
-  using level_type                   = typename _ParentGroup::level_type;
-  using hierarchy_type               = _Hierarchy;
-  using __mapping_result_type        = _MappingResult;
-  using __synchronizer_instance_type = _SynchronizerInstance;
-  using arrival_token                = typename _SynchronizerInstance::arrival_token;
+  using unit_level                                 = _Unit;
+  using boundary_level                             = typename _ParentGroup::boundary_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping, class _Synchronizer)
   _CCCL_REQUIRES(
@@ -116,7 +116,7 @@ public:
   // internal constructor used by make_group(non_exhaustive_t, ...)
   _CCCL_DEVICE_API explicit generic_group(
     const non_exhaustive_t&,
-    const _Unit& __unit,
+    const _Unit&,
     const _ParentGroup& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
     const ::cuda::std::type_identity_t<_SynchronizerInstance>& __synchronizer_instance)
@@ -128,7 +128,7 @@ public:
   template <class _ParentUnit, class _ParentMappingResult>
   _CCCL_DEVICE_API explicit generic_group(
     const non_exhaustive_t&,
-    const _Unit& __unit,
+    const _Unit&,
     const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
     const ::cuda::std::type_identity_t<_SynchronizerInstance>& __synchronizer_instance)
@@ -148,12 +148,16 @@ public:
     __synchronizer_instance_.deinit(__mapping_result_, __hier_);
   }
 
-  //! @brief Invokes the callable with a view specialized for this group's static unit count.
-  //! Counts that are only known at runtime remain dynamic.
   template <class _Fn>
-  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_group_rank_t& __tag, _Fn&& __fn) const
   {
-    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
+  }
+
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_unit_count_t& __tag, _Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
@@ -236,7 +240,7 @@ public:
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __parent) const
   {
-    return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __count_as_impl<typename boundary_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
   //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
@@ -264,9 +268,9 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename boundary_level::__product_type rank(const _Arg& __parent) const
   {
-    return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+    return __rank_as_impl<typename boundary_level::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 
@@ -278,7 +282,7 @@ _CCCL_TEMPLATE(
   class _MappingResult        = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>,
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
-                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES generic_group(const _Unit&, const _ParentGroup&, _Mapping&&, _Synchronizer&&)
   -> generic_group<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>;
 

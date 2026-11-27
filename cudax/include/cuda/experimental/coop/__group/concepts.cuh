@@ -39,10 +39,10 @@ namespace cuda::experimental::coop
 template <class _Group>
 _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
   // Member types.
-  typename(typename _Group::unit_type),
-  requires(__is_hierarchy_level_v<typename _Group::unit_type>),
-  typename(typename _Group::level_type),
-  requires(__is_hierarchy_level_v<typename _Group::level_type>),
+  typename(typename _Group::unit_level),
+  requires(__is_hierarchy_level_v<typename _Group::unit_level>),
+  typename(typename _Group::boundary_level),
+  requires(__is_hierarchy_level_v<typename _Group::boundary_level>),
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
 

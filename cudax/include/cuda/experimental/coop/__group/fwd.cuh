@@ -138,6 +138,8 @@ inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
 // tags
 
+struct by_group_rank_t;
+struct by_unit_count_t;
 struct non_exhaustive_t;
 struct parent_group_t;
 

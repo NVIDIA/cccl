@@ -31,7 +31,6 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -57,13 +56,12 @@ template <::cuda::std::size_t _StaticUnitCount, class _PrevMappingResult>
     }
     return __count;
   }
-  else if constexpr (_PrevMappingResult::static_unit_count() != dynamic_extent)
-  {
-    return _PrevMappingResult::static_group_count() * (_PrevMappingResult::static_unit_count() / _StaticUnitCount);
-  }
   else
   {
-    return dynamic_extent;
+    constexpr auto __count = _PrevMappingResult::static_unit_count();
+    return __count == dynamic_extent
+           ? dynamic_extent
+           : _PrevMappingResult::static_group_count() * (__count / _StaticUnitCount);
   }
 }
 
@@ -93,7 +91,7 @@ template <::cuda::std::size_t _StaticUnitCount, class _PrevMappingResult>
   }
 }
 
-template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, class _Level, class _PrevMappingResult>
+template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, class _Bound, class _PrevMappingResult>
 [[nodiscard]] _CCCL_DEVICE_API auto
 __group_by_partition(::cuda::std::uint32_t __unit_count, const _PrevMappingResult& __prev)
 {
@@ -178,7 +176,7 @@ __group_by_partition(::cuda::std::uint32_t __unit_count, const _PrevMappingResul
 
   const auto __unit_rank = __prev_unit_rank % __unit_count;
   const auto __lane_mask =
-    ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Level, _PrevMappingResult::is_always_contiguous()>(
+    ::cuda::experimental::coop::__make_lane_mask_for_n<_Unit, _Bound, _PrevMappingResult::is_always_contiguous()>(
       __prev.lane_mask(), __unit_count, __unit_rank);
   return _MappingResult{__group_count, __group_offset + __local_group_rank, __unit_count, __unit_rank, __lane_mask};
 }
@@ -187,17 +185,17 @@ template <::cuda::std::size_t _StaticUnitCount, bool _Exhaustive, class _Unit, c
 [[nodiscard]] _CCCL_DEVICE_API auto __group_by_map(
   ::cuda::std::uint32_t __unit_count, const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev)
 {
-  using _Level = typename _ParentGroup::level_type;
+  using _Bound = typename _ParentGroup::boundary_level;
   using ::cuda::std::uint32_t;
 
-  auto __result = ::cuda::experimental::coop::__group_by_partition<_StaticUnitCount, _Exhaustive, _Unit, _Level>(
+  auto __result = ::cuda::experimental::coop::__group_by_partition<_StaticUnitCount, _Exhaustive, _Unit, _Bound>(
     __unit_count, __prev);
 
   if constexpr (_PrevMappingResult::has_uniform_static_unit_count()
                 && _PrevMappingResult::static_unit_count() == ::cuda::std::dynamic_extent
                 && _PrevMappingResult::static_group_count() != 1)
   {
-    static_assert(::cuda::std::is_same_v<_Unit, thread_level> && ::cuda::std::is_same_v<_Level, warp_level>,
+    static_assert(::cuda::std::is_same_v<_Unit, thread_level> && ::cuda::std::is_same_v<_Bound, warp_level>,
                   "group_by with multiple runtime-sized groups requires threads within a warp");
 
     // Excluded threads must also participate in the parent-wide ballot.

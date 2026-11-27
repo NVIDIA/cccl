@@ -22,7 +22,7 @@
 namespace
 {
 template <class Level, class Config>
-__device__ void test_level_synchronizer(const Level& level, Config config)
+__device__ void test_level_synchronizer(const Level&, Config config)
 {
   const auto& hierarchy = config.hierarchy();
 

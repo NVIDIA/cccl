@@ -190,7 +190,7 @@ void test_locality_domain_ordinal_wrap_rejected()
   cudaStream_t stream;
   cuda_try(cudaStreamCreate(&stream));
 
-  for (int domain_id : {256, -1})
+  for (const int domain_id : {256, -1})
   {
     auto place = data_place::locality_domain(0, domain_id);
 
