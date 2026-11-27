@@ -735,7 +735,7 @@ public:
   ::std::streamsize __count_ = 0;
 
 protected:
-  typename _Traits::int_type overflow(typename _Traits::int_type __c) override
+  _CCCL_HOST_API typename _Traits::int_type overflow(typename _Traits::int_type __c) override
   {
     if (!_Traits::eq_int_type(__c, _Traits::eof()))
     {
@@ -744,7 +744,7 @@ protected:
     return _Traits::not_eof(__c);
   }
 
-  ::std::streamsize xsputn(const _CharT*, ::std::streamsize __n) override
+  _CCCL_HOST_API ::std::streamsize xsputn(const _CharT*, ::std::streamsize __n) override
   {
     __count_ += __n;
     return __n;
