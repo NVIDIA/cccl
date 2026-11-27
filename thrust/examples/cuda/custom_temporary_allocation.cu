@@ -25,9 +25,9 @@
 // caching allocator, you ought to use that. This example is still useful
 // as a demonstration of how to use a Thrust custom allocator.
 
-// Note: this implementation cached_allocator is not thread-safe. If multiple
-// (host) threads use the same cached_allocator then they should gain exclusive
-// access to the allocator before accessing its methods.
+// Note: this implementation of block_cache is not thread-safe. If multiple
+// (host) threads use the same block_cache then they should gain exclusive
+// access to the cache before accessing its methods.
 
 struct not_my_pointer_exception : std::exception
 {
@@ -47,20 +47,22 @@ private:
   std::string message;
 };
 
-// A simple allocator for caching cudaMalloc allocations.
-// A minimum allocator needs to provide at least `value_type`, `allocate` and `deallocate`.
-struct cached_allocator
+// A simple cache of cudaMalloc allocations.
+struct block_cache
 {
-  using value_type = char;
+  block_cache() = default;
 
-  ~cached_allocator()
+  block_cache(const block_cache&)            = delete;
+  block_cache& operator=(const block_cache&) = delete;
+
+  ~block_cache()
   {
     free_all();
   }
 
   char* allocate(std::ptrdiff_t num_bytes)
   {
-    std::cout << "cached_allocator::allocate(): num_bytes == " << num_bytes << '\n';
+    std::cout << "block_cache::allocate(): num_bytes == " << num_bytes << '\n';
 
     char* result = nullptr;
 
@@ -68,14 +70,14 @@ struct cached_allocator
     auto free_block_it = free_blocks.find(num_bytes);
     if (free_block_it != free_blocks.end())
     {
-      std::cout << "cached_allocator::allocate(): found a free block" << '\n';
+      std::cout << "block_cache::allocate(): found a free block" << '\n';
       result = free_block_it->second;
       free_blocks.erase(free_block_it);
     }
     else
     {
       // No allocation of the right size exists, so create a new one with `thrust::cuda::malloc`.
-      std::cout << "cached_allocator::allocate(): allocating new block" << '\n';
+      std::cout << "block_cache::allocate(): allocating new block" << '\n';
       // Allocate memory and convert the resulting `thrust::cuda::pointer` to a raw pointer.
       result = thrust::cuda::malloc<char>(num_bytes).get();
     }
@@ -86,9 +88,9 @@ struct cached_allocator
     return result;
   }
 
-  void deallocate(char* ptr, size_t)
+  void deallocate(char* ptr)
   {
-    std::cout << "cached_allocator::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << '\n';
+    std::cout << "block_cache::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << '\n';
 
     // Erase the allocated block from the allocated blocks map.
     auto it = allocated_blocks.find(ptr);
@@ -110,7 +112,7 @@ private:
 
   void free_all()
   {
-    std::cout << "cached_allocator::free_all()" << '\n';
+    std::cout << "block_cache::free_all()" << '\n';
 
     // Deallocate all outstanding blocks in both lists.
     for (auto [bytes, ptr] : free_blocks)
@@ -123,6 +125,36 @@ private:
       thrust::cuda::free(thrust::cuda::pointer<char>(ptr));
     }
   }
+};
+
+// A minimum allocator needs to provide at least `value_type`, `allocate` and `deallocate`.
+// Thrust rebinds the allocator to the type it allocates, so it is a template and
+// can be constructed from an allocator of another type. All copies share one cache.
+template <typename T>
+struct cached_allocator
+{
+  using value_type = T;
+
+  explicit cached_allocator(block_cache& c)
+      : cache(&c)
+  {}
+
+  template <typename U>
+  cached_allocator(const cached_allocator<U>& other)
+      : cache(other.cache)
+  {}
+
+  T* allocate(std::ptrdiff_t n)
+  {
+    return reinterpret_cast<T*>(cache->allocate(n * static_cast<std::ptrdiff_t>(sizeof(T))));
+  }
+
+  void deallocate(T* ptr, size_t)
+  {
+    cache->deallocate(reinterpret_cast<char*>(ptr));
+  }
+
+  block_cache* cache;
 };
 
 int main()
@@ -139,7 +171,8 @@ int main()
 
   const std::size_t num_trials = 5;
 
-  cached_allocator alloc;
+  block_cache cache;
+  cached_allocator<char> alloc(cache);
 
   for (std::size_t i = 0; i < num_trials; ++i)
   {

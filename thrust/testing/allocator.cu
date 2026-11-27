@@ -1,8 +1,14 @@
 #include <thrust/detail/config.h>
 
+#include <thrust/device_allocator.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/functional.h>
 #include <thrust/host_vector.h>
+#include <thrust/reduce.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
 #include <thrust/system/cpp/execution_policy.h>
 #include <thrust/system/cpp/vector.h>
 
@@ -219,4 +225,17 @@ TEST_CASE("TestAllocatorTraitsRebindCpp11", "[allocator]")
   REQUIRE(::cuda::std::is_same_v<
           typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
           typename cuda::std::allocator_traits<my_minimal_allocator<float>>>);
+}
+
+TEST_CASE("TestPolicyWithVoidAllocator", "[allocator]")
+{
+  thrust::device_vector<int> v(1000);
+  thrust::sequence(v.begin(), v.end());
+
+  const thrust::device_allocator<void> alloc;
+  REQUIRE(thrust::reduce(thrust::device(alloc), v.begin(), v.end()) == 499500);
+
+  thrust::sort(thrust::device(alloc), v.begin(), v.end(), ::cuda::std::greater<int>());
+  REQUIRE(v[0] == 999);
+  REQUIRE(v[999] == 0);
 }
