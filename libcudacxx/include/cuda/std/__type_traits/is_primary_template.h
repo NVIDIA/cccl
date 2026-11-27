@@ -99,8 +99,10 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
 using __test_for_primary_std_template = enable_if_t<is_same_v<_Traits, typename _Traits::__primary_template>>;
+// This must be a class template and not an alias template, because we need to specialize it for `common_iterator`
 template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
+struct __is_primary_std_template : _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>
+{};
 
 #  elif _CCCL_HOST_STD_LIB(STL)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20
@@ -117,25 +119,11 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 {};
 #  endif // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^
 
-// Ask whether `cuda::std::iterator_traits` is specialized first, so that we never query `::std::iterator_traits` of
-// types that CCCL specializes itself, e.g. `common_iterator`. That query instantiates `::std::iterator_traits<_Iter>`,
-// which can be the very instantiation that is asking for this selection (circular definition). The selection must be
-// lazy, because the arguments of a `conditional_t` are always instantiated.
-template <class _Iter, class _OtherTraits, bool = __is_primary_cccl_template<_Iter>::value>
-struct __select_traits_impl
-{
-  using type _CCCL_NODEBUG = iterator_traits<_Iter>;
-};
-
 template <class _Iter, class _OtherTraits>
-struct __select_traits_impl<_Iter, _OtherTraits, true>
-{
-  using type _CCCL_NODEBUG =
-    conditional_t<__is_primary_std_template<_Iter>::value, _OtherTraits, ::std::iterator_traits<_Iter>>;
-};
-
-template <class _Iter, class _OtherTraits>
-using __select_traits _CCCL_NODEBUG = typename __select_traits_impl<_Iter, _OtherTraits>::type;
+using __select_traits _CCCL_NODEBUG =
+  conditional_t<__is_primary_std_template<_Iter>::value,
+                conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>,
+                ::std::iterator_traits<_Iter>>;
 
 #endif // _CCCL_HOSTED()
 

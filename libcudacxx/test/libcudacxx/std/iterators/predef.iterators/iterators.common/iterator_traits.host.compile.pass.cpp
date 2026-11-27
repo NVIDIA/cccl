@@ -10,7 +10,9 @@
 
 // The host `std::iterator_traits` of a `cuda::std::common_iterator` must be instantiable. With a host standard library
 // that constrains `std::iterator_traits` on the iterator concepts (libstdc++ in C++20), instantiating it evaluates
-// `cuda::std::iter_difference_t`, which must not query `std::iterator_traits` of the same iterator again.
+// `cuda::std::iter_difference_t`, which must not query `std::iterator_traits` of the same iterator again. This is
+// avoided by specializing `__is_primary_std_template` for `common_iterator`, which requires that trait to be a class
+// template with every host standard library (it was an alias template with libc++).
 
 #include <cuda/std/iterator>
 
