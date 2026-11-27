@@ -26,6 +26,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
