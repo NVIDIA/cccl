@@ -56,6 +56,8 @@
 #    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward.h>)
 #    include <__utility/forward.h>
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <type_traits> // for ::std::forward
 #  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif // _CCCL_HOSTED()
