@@ -62,9 +62,9 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                                "Invalid alignment passed to "
-                                "legacy_pinned_memory_resource::allocate_sync.");
+      _CCCL_THROW_STD(invalid_argument,
+                      "Invalid alignment passed to "
+                      "legacy_pinned_memory_resource::allocate_sync.");
     }
 
     const ::cuda::__ensure_current_context __guard(__device_);

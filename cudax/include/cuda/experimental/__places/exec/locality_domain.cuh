@@ -526,7 +526,7 @@ inline unsigned int locality_domain_fake_get_count(int dev_id)
   const size_t made    = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
   if (made < static_cast<size_t>(n))
   {
-    _CCCL_THROW_STD_EXCEPTION(
+    _CCCL_THROW_STD(
       runtime_error,
       ("CUDASTF_FAKE_LOCALITY_DOMAINS=" + ::std::to_string(n) + " cannot be fulfilled on device "
        + ::std::to_string(dev_id) + ": the SM budget/granularity yields only " + ::std::to_string(made)

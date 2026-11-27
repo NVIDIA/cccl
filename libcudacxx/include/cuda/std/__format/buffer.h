@@ -487,7 +487,7 @@ class __fmt_direct_iterator_buffer : public __fmt_output_buffer<_CharT>
   _CCCL_HOST_DEVICE_API static constexpr void
   __prepare_write([[maybe_unused]] __fmt_output_buffer<_CharT>& __buffer, [[maybe_unused]] size_t __size_hint)
   {
-    _CCCL_THROW_STD_EXCEPTION(length_error, "cuda::std::__fmt_direct_iterator_buffer");
+    _CCCL_THROW_STD(length_error, "cuda::std::__fmt_direct_iterator_buffer");
   }
 
 public:

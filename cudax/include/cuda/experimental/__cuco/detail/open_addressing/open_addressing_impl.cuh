@@ -254,8 +254,7 @@ public:
   {
     if (empty_key_sentinel() == erased_key_sentinel())
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                                "The empty key sentinel and erased key sentinel cannot be the same value.");
+      _CCCL_THROW_STD(invalid_argument, "The empty key sentinel and erased key sentinel cannot be the same value.");
     }
     clear_async(__stream);
   }

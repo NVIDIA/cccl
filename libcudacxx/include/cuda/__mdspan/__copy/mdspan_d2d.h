@@ -161,12 +161,11 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
 
   if (__src.size() != __dst.size())
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "mdspans must have the same size");
+    _CCCL_THROW_STD(invalid_argument, "mdspans must have the same size");
   }
   if (!::cuda::__same_non_singleton_extents(__src.extents(), __dst.extents()))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                              "mdspans must have the same extents (after removing singleton dimensions)");
+    _CCCL_THROW_STD(invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
   }
   const auto __tensor_size = __src.size();
   if (__tensor_size == 0)
@@ -175,23 +174,23 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   }
   if (__src.data_handle() == nullptr || __dst.data_handle() == nullptr)
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "mdspan data handle must not be nullptr");
+    _CCCL_THROW_STD(invalid_argument, "mdspan data handle must not be nullptr");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpIn)>(__src.data_handle()))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "source mdspan must be sufficiently aligned");
+    _CCCL_THROW_STD(invalid_argument, "source mdspan must be sufficiently aligned");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpOut)>(__dst.data_handle()))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "destination mdspan must be sufficiently aligned");
+    _CCCL_THROW_STD(invalid_argument, "destination mdspan must be sufficiently aligned");
   }
   if (::cuda::__has_interleaved_stride_order(__dst))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "destination mdspan must not have interleaved stride order");
+    _CCCL_THROW_STD(invalid_argument, "destination mdspan must not have interleaved stride order");
   }
   if (::cuda::__may_overlap(__src, __dst))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "mdspans must not overlap in memory");
+    _CCCL_THROW_STD(invalid_argument, "mdspans must not overlap in memory");
   }
 
   using __default_accessor_in _CCCL_NODEBUG  = ::cuda::std::default_accessor<_TpIn>;

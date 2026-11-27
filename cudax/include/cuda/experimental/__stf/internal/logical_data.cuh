@@ -2323,7 +2323,7 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   }
 
   // This task does not have d among its dependencies
-  _CCCL_THROW_STD_EXCEPTION(
+  _CCCL_THROW_STD(
     invalid_argument,
     ::std::string("logical data '").append(d.get_symbol()).append("' is not a dependency of this task").c_str());
 }

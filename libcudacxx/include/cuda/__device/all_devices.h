@@ -72,7 +72,7 @@ public:
   {
     if (__i >= size())
     {
-      _CCCL_THROW_STD_EXCEPTION(out_of_range, "device index out of range");
+      _CCCL_THROW_STD(out_of_range, "device index out of range");
     }
     return device_ref{static_cast<int>(__i)};
   }

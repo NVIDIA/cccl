@@ -123,7 +123,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
 #if _CCCL_HOSTED()
         if (input.extents() != output.extents())
         {
-          _CCCL_THROW_STD_EXCEPTION(invalid_argument, "mdspan extents must be equal");
+          _CCCL_THROW_STD(invalid_argument, "mdspan extents must be equal");
         }
         if (input.size() == 0)
         {

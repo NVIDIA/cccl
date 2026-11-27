@@ -915,7 +915,7 @@ public:
   {
     if ((size() * sizeof(_Tp)) % sizeof(_Up) != 0 || alignment() < alignof(_Up))
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
+      _CCCL_THROW_STD(invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
     return ::cuda::std::move(*this).template __as_type<_Up>();
   }
@@ -1439,7 +1439,7 @@ __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
 
   if (__info.capacity != __info.size)
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::__acquire_buffer: capacity must match size");
+    _CCCL_THROW_STD(invalid_argument, "cuda::__acquire_buffer: capacity must match size");
   }
   return __buffer_type{__buffer_type::__buffer_t::__adopt_allocation(::cuda::std::move(__info))};
 }

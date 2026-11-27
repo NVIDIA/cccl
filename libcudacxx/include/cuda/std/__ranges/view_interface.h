@@ -182,13 +182,13 @@ public:
   {
     if (__index >= ::cuda::std::ranges::distance(__derived()))
     {
-      _CCCL_THROW_STD_EXCEPTION(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      _CCCL_THROW_STD(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
     }
     if constexpr (is_signed_v<range_difference_t<_RARange>>)
     {
       if (__index < 0)
       {
-        _CCCL_THROW_STD_EXCEPTION(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+        _CCCL_THROW_STD(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
       }
     }
     return ::cuda::std::ranges::begin(__derived())[__index];
@@ -200,13 +200,13 @@ public:
   {
     if (__index >= ::cuda::std::ranges::distance(__derived()))
     {
-      _CCCL_THROW_STD_EXCEPTION(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      _CCCL_THROW_STD(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
     }
     if constexpr (is_signed_v<range_difference_t<_RARange>>)
     {
       if (__index < 0)
       {
-        _CCCL_THROW_STD_EXCEPTION(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+        _CCCL_THROW_STD(out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
       }
     }
     return ::cuda::std::ranges::begin(__derived())[__index];

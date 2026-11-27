@@ -388,7 +388,7 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
     return ::std::make_unique<post_mortem_reorderer>(order_file);
   }
 
-  _CCCL_THROW_STD_EXCEPTION(
-    invalid_argument, ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'").c_str());
+  _CCCL_THROW_STD(invalid_argument,
+                  ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'").c_str());
 }
 } // namespace cuda::experimental::stf::reserved

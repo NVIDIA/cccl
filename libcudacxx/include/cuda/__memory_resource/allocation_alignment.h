@@ -95,9 +95,9 @@ __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))
   {
-    _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                              "Invalid allocation alignment: must be a power of two and at least the "
-                              "type's alignment.");
+    _CCCL_THROW_STD(invalid_argument,
+                    "Invalid allocation alignment: must be a power of two and at least the "
+                    "type's alignment.");
   }
 }
 

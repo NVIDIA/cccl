@@ -53,13 +53,13 @@
 #  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX) ^^^ / vvv _CCCL_HOST_STD_LIB(STL) vvv
 #    define _CCCL_THROW_HOST_STD_EXCEPTION(_TYPE, ...) ::std::_X##_TYPE(__VA_ARGS__)
 #  endif // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^
-#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, ...)                                                                         \
+#  define _CCCL_THROW_STD(_TYPE, ...)                                                                                   \
     do                                                                                                                  \
     {                                                                                                                   \
       NV_IF_ELSE_TARGET(NV_IS_HOST, (_CCCL_THROW_HOST_STD_EXCEPTION(_TYPE, __VA_ARGS__);), (::cuda::std::terminate();)) \
     } while (0)
 #else // ^^^ throw through the host standard library ^^^ / vvv _CCCL_THROW vvv
-#  define _CCCL_THROW_STD_EXCEPTION(_TYPE, ...) _CCCL_THROW(::std::_TYPE, __VA_ARGS__)
+#  define _CCCL_THROW_STD(_TYPE, ...) _CCCL_THROW(::std::_TYPE, __VA_ARGS__)
 #endif // ^^^ _CCCL_THROW ^^^
 
 #include <cuda/std/__cccl/epilogue.h>

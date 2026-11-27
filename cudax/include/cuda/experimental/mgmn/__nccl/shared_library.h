@@ -70,7 +70,7 @@ protected:
 
     if (__sym == nullptr && !__can_fail)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Failed to locate the symbol in the shared library");
+      _CCCL_THROW_STD(invalid_argument, "Failed to locate the symbol in the shared library");
     }
     return __sym;
   }
@@ -122,7 +122,7 @@ protected:
       }
       else
       {
-        _CCCL_THROW_STD_EXCEPTION(runtime_error, "Failed to locate the symbol in the shared library");
+        _CCCL_THROW_STD(runtime_error, "Failed to locate the symbol in the shared library");
       }
     }
     return __sym;
@@ -162,7 +162,7 @@ public:
   {
     if (!__handle_)
     {
-      _CCCL_THROW_STD_EXCEPTION(runtime_error, "Failed to load dynamic shared object");
+      _CCCL_THROW_STD(runtime_error, "Failed to load dynamic shared object");
     }
   }
 

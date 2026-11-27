@@ -217,7 +217,7 @@ struct __logical_endpoint_id_range_state
       : __count_([__count] {
         if (__count == 0)
         {
-          _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Cannot reserve an empty logical endpoint ID range");
+          _CCCL_THROW_STD(invalid_argument, "Cannot reserve an empty logical endpoint ID range");
         }
         return __count;
       }())
@@ -347,7 +347,7 @@ public:
   {
     if (__index >= size())
     {
-      _CCCL_THROW_STD_EXCEPTION(out_of_range, "logical endpoint ID range index is out of bounds");
+      _CCCL_THROW_STD(out_of_range, "logical endpoint ID range index is out of bounds");
     }
     return (*this)[__index];
   }
@@ -605,7 +605,7 @@ public:
   {
     if (__ptr == nullptr)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Cannot bind a null pointer to a logical endpoint");
+      _CCCL_THROW_STD(invalid_argument, "Cannot bind a null pointer to a logical endpoint");
     }
     ::cuda::__driver::__logicalEndpointBindAddr(
       native_handle(), ::cuda::__driver::__deviceGet(__device.get()), __endpoint_offset, __ptr, __bytes);
@@ -681,7 +681,7 @@ protected:
     _CCCL_ASSERT(__id != ::cuda::invalid_logical_endpoint_id, "Cannot create a logical endpoint with an invalid ID");
     if (static_cast<__logical_endpoint_type>(__prop.type) != _Type)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Logical endpoint property type does not match the endpoint type");
+      _CCCL_THROW_STD(invalid_argument, "Logical endpoint property type does not match the endpoint type");
     }
 
     const auto __status = ::cuda::__driver::__logicalEndpointCreateNoThrow(__id.native_handle(), &__prop);
@@ -724,7 +724,7 @@ protected:
     _CCCL_ASSERT(__id != ::cuda::invalid_logical_endpoint_id, "Cannot import a logical endpoint with an invalid ID");
     if (__handle.__type_ != _Type)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Logical endpoint handle type does not match the endpoint type");
+      _CCCL_THROW_STD(invalid_argument, "Logical endpoint handle type does not match the endpoint type");
     }
 
     constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;
@@ -796,7 +796,7 @@ public:
   {
     if (__ptr == nullptr)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Cannot bind a null pointer to a logical endpoint");
+      _CCCL_THROW_STD(invalid_argument, "Cannot bind a null pointer to a logical endpoint");
     }
     const auto __status = ::cuda::__driver::__logicalEndpointBindAddrNoThrow(
       this->native_handle(), ::cuda::__driver::__deviceGet(__device.get()), __endpoint_offset, __ptr, __bytes);
@@ -863,8 +863,7 @@ public:
     _CCCL_ASSERT(__is_engaged(), "Cannot export an empty logical endpoint");
     if (__ipc_handle_type_ != logical_endpoint_ipc_handle_type::fabric)
     {
-      _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                                "Cannot export a logical endpoint that was not created with fabric IPC");
+      _CCCL_THROW_STD(invalid_argument, "Cannot export a logical endpoint that was not created with fabric IPC");
     }
 
     constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;

@@ -63,10 +63,10 @@ THRUST_NAMESPACE_END
     status                              = call arguments;                                 \
   }
 
-#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                                 \
-  if (thrust::detail::is_negative(count))                                                  \
-  {                                                                                        \
-    _CCCL_THROW_STD_EXCEPTION(runtime_error, "Invalid input range, passed negative size"); \
+#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                       \
+  if (thrust::detail::is_negative(count))                                        \
+  {                                                                              \
+    _CCCL_THROW_STD(runtime_error, "Invalid input range, passed negative size"); \
   }
 
 #define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2) \
@@ -106,7 +106,7 @@ THRUST_NAMESPACE_END
     if (static_cast<std::uint64_t>(count)                                                     \
         > static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))       \
     {                                                                                         \
-      _CCCL_THROW_STD_EXCEPTION(                                                              \
+      _CCCL_THROW_STD(                                                                        \
         runtime_error,                                                                        \
         "Input size exceeds the maximum allowable value for " #index_type                     \
         ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
@@ -119,7 +119,7 @@ THRUST_NAMESPACE_END
     if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)               \
         > static_cast<std::uint64_t>((::cuda::std::numeric_limits<index_type>::max)()))       \
     {                                                                                         \
-      _CCCL_THROW_STD_EXCEPTION(                                                              \
+      _CCCL_THROW_STD(                                                                        \
         runtime_error,                                                                        \
         "Input size exceeds the maximum allowable value for " #index_type                     \
         ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \

@@ -65,8 +65,8 @@ inline ::std::string default_allocator_from_env()
   ::std::string kind(env ? env : "cached");
   if (kind != "cached" && kind != "uncached" && kind != "cached_fifo" && kind != "pooled")
   {
-    _CCCL_THROW_STD_EXCEPTION(
-      invalid_argument, ::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'").c_str());
+    _CCCL_THROW_STD(invalid_argument,
+                    ::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'").c_str());
   }
   return kind;
 }

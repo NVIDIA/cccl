@@ -773,7 +773,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::copy_insert(iterator position, Forwar
 
       if (new_capacity > max_size())
       {
-        _CCCL_THROW_STD_EXCEPTION(length_error, "insert(): insertion exceeds max_size().");
+        _CCCL_THROW_STD(length_error, "insert(): insertion exceeds max_size().");
       } // end if
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -1103,7 +1103,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::allocate_and_copy(
 
   if (requested_size > allocated_size)
   {
-    _CCCL_THROW_STD_EXCEPTION(length_error, "assignment exceeds max_size().");
+    _CCCL_THROW_STD(length_error, "assignment exceeds max_size().");
   } // end if
 
   new_storage.allocate(allocated_size);

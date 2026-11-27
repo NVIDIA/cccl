@@ -1076,7 +1076,7 @@ public:
     {
       return *ctx;
     }
-    _CCCL_THROW_STD_EXCEPTION(runtime_error, "Payload does not hold graph_ctx");
+    _CCCL_THROW_STD(runtime_error, "Payload does not hold graph_ctx");
   }
 
   /**

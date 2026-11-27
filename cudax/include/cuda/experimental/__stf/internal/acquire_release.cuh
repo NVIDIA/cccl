@@ -181,9 +181,9 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
         }
         if (!(it->get_dplace() == gdp))
         {
-          _CCCL_THROW_STD_EXCEPTION(invalid_argument,
-                                    "conflicting data places for merged dependencies on the same logical data (one "
-                                    "of them is replicated)");
+          _CCCL_THROW_STD(invalid_argument,
+                          "conflicting data places for merged dependencies on the same logical data (one "
+                          "of them is replicated)");
         }
       }
       if (g == it)

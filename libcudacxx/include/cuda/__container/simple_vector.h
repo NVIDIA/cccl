@@ -53,7 +53,7 @@ class __simple_vector
     }
     if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
     {
-      _CCCL_THROW_STD_EXCEPTION(bad_alloc);
+      _CCCL_THROW_STD(bad_alloc);
     }
 
     return reinterpret_cast<_Tp*>(::cuda::std::__cccl_allocate(__count * sizeof(_Tp), alignof(_Tp)));
