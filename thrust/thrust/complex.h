@@ -22,6 +22,8 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
 
+#include <complex>
+
 #define THRUST_STD_COMPLEX_REAL(z) \
   reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
 #define THRUST_STD_COMPLEX_IMAG(z) \
