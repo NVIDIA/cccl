@@ -21,6 +21,7 @@
 #include <exception>
 #include <format>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits> // std::is_same_v

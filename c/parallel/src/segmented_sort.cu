@@ -24,6 +24,7 @@
 #include <exception> // std::exception
 #include <format> // std::format
 #include <mutex>
+#include <sstream>
 #include <string> // std::string
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
