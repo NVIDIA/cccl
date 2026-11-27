@@ -207,7 +207,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_API inline __float128 sqrt(__float128 __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SQRTF128)
+#  ifdef _CCCL_BUILTIN_SQRTF128
   return _CCCL_BUILTIN_SQRTF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_SQRTF128 ^^^ / vvv !_CCCL_BUILTIN_SQRTF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_sqrt(__x);))
