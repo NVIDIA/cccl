@@ -23,13 +23,14 @@
 
 using common_iter = cuda::std::common_iterator<int*, cuda::std::unreachable_sentinel_t>;
 
-#  if TEST_STD_VER >= 2020 && defined(__GLIBCXX__)
-// Naming a member forces the primary template of the host `std::iterator_traits` to be evaluated
+#  if TEST_STD_VER >= 2020 && defined(__GLIBCXX__) && TEST_COMPILER(GCC)
+// Naming a member forces the primary template of the host `std::iterator_traits` to be evaluated. Only GCC needs the
+// `common_iterator` workaround and with other compilers the host `std::iterator_traits` may legitimately be empty.
 using host_difference_type = typename std::iterator_traits<common_iter>::difference_type;
 static_assert(sizeof(host_difference_type*) > 0);
-#  else // ^^^ libstdc++ in C++20 ^^^ / vvv other host standard library or C++17 vvv
+#  else // ^^^ libstdc++ in C++20 with GCC ^^^ / vvv otherwise vvv
 static_assert(sizeof(std::iterator_traits<common_iter>) > 0);
-#  endif // ^^^ other host standard library or C++17 ^^^
+#  endif // ^^^ otherwise ^^^
 #endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
