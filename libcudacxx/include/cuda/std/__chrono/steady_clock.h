@@ -26,10 +26,6 @@
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__chrono/time_point.h>
 
-#  if _CCCL_HOSTED()
-#    include <chrono>
-#  endif // _CCCL_HOSTED()
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
