@@ -1,6 +1,13 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/utility>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -10,11 +17,14 @@ void test_set_intersection_by_key_descending_simple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a_key{4, 2, 0}, b_key{4, 3, 3, 0};
+  Vector a_key{4, 2, 0};
+  Vector b_key{4, 3, 3, 0};
   Vector a_val(3, 0);
 
-  Vector ref_key{4, 0}, ref_val{0, 0};
-  Vector result_key(2), result_val(2);
+  Vector ref_key{4, 0};
+  Vector ref_val{0, 0};
+  Vector result_key(2);
+  Vector result_val(2);
 
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(),
@@ -50,8 +60,10 @@ void test_set_intersection_by_key_descending(const size_t n)
 
   thrust::device_vector<T> d_a_val = h_a_val;
 
-  thrust::host_vector<T> h_result_key(n), h_result_val(n);
-  thrust::device_vector<T> d_result_key(n), d_result_val(n);
+  thrust::host_vector<T> h_result_key(n);
+  thrust::host_vector<T> h_result_val(n);
+  thrust::device_vector<T> d_result_key(n);
+  thrust::device_vector<T> d_result_val(n);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 

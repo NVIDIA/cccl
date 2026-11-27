@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,9 @@
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__atomic/functions/host.h>
 #include <cuda/std/__atomic/order.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/copy_cv.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cassert>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -239,7 +241,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_load_dispatch(
   using __proxy_pointee              = __copy_cv_t<_Type, __proxy_t>;
   using __proxy_tag                  = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   const __proxy_pointee* __ptr_proxy = reinterpret_cast<const __proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy             = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __dst_proxy             = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -286,7 +288,7 @@ __cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory
   using __proxy_tag            = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __value_type __store         = __val;
-  const __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__store);
+  const __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__store));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -334,7 +336,7 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   using __proxy_tag            = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __exp_proxy       = reinterpret_cast<__proxy_t*>(__exp);
-  const __proxy_t* __des_proxy = reinterpret_cast<__proxy_t*>(&__des);
+  const __proxy_t* __des_proxy = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__des));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -374,8 +376,9 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   using __proxy_pointee _CCCL_NODEBUG = __copy_cv_t<_Type, __proxy_t>;
   using __proxy_tag _CCCL_NODEBUG     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy        = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __old_proxy              = reinterpret_cast<__proxy_t*>(&__old);
-  __proxy_t* __new_proxy              = reinterpret_cast<__proxy_t*>(&__new); // NOLINT(misc-const-correctness)
+  __proxy_t* __old_proxy              = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__old));
+  // NOLINTNEXTLINE(misc-const-correctness)
+  __proxy_t* __new_proxy = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__new));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -418,15 +421,18 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type>
 __cuda_atomic_fetch_add_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
-  __op                  = __op * __atomic_ptr_skip_t<_Type>::__skip;
+  if constexpr (is_pointer_v<__unv<_Type>>)
+  {
+    __op = __op * __atomic_ptr_skip_t<_Type>::__skip;
+  }
   using __value_type    = __unv<_Type>;
   using __proxy_t       = __cuda_atomic_deduce_arithmetic_t<__value_type>;
   using __proxy_pointee = __copy_cv_t<_Type, __proxy_t>;
   using __proxy_tag     = __cuda_atomic_deduce_arithmetic_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -465,8 +471,8 @@ __cuda_atomic_fetch_and_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   using __proxy_tag     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -505,8 +511,8 @@ __cuda_atomic_fetch_max_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   using __proxy_tag     = __cuda_atomic_deduce_minmax_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -545,8 +551,8 @@ __cuda_atomic_fetch_min_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   using __proxy_tag     = __cuda_atomic_deduce_minmax_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -585,8 +591,8 @@ __cuda_atomic_fetch_or_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memo
   using __proxy_tag     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -625,8 +631,8 @@ __cuda_atomic_fetch_xor_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   using __proxy_tag     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__dst));
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -660,16 +666,18 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type>
 __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
-  using __value_type    = __unv<_Type>;
-  constexpr auto __skip = __atomic_ptr_skip_t<__value_type>::__skip;
-  __op                  = __op * __skip;
+  using __value_type = __unv<_Type>;
+  if constexpr (is_pointer_v<__value_type>)
+  {
+    __op = __op * __atomic_ptr_skip_t<__value_type>::__skip;
+  }
   using __proxy_type    = __cuda_atomic_deduce_arithmetic_t<__value_type>;
   using __proxy_pointee = __copy_cv_t<_Type, __proxy_type>;
   using __proxy_operand = __cuda_atomic_deduce_arithmetic_tag_t<__value_type>;
   __value_type __dst{};
   auto* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  auto* __dst_proxy = reinterpret_cast<__proxy_type*>(&__dst);
-  auto* __op_proxy  = reinterpret_cast<__proxy_type*>(&__op);
+  auto* __dst_proxy = reinterpret_cast<__proxy_type*>(::cuda::std::addressof(__dst));
+  auto* __op_proxy  = reinterpret_cast<__proxy_type*>(::cuda::std::addressof(__op));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {

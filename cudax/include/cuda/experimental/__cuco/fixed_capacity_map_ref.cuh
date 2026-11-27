@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
@@ -35,6 +37,7 @@
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/types.cuh>
 
@@ -625,7 +628,7 @@ private:
     {
       if (const auto __slot = find(__value.first); __slot != end())
       {
-        ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+        detail::__atomic_store(&__slot->second, __value.second);
         return;
       }
     }
@@ -641,8 +644,7 @@ private:
           __value.first, __slots[__i].first);
         if (__state == detail::__equal_result::__equal)
         {
-          ::cuda::atomic_ref<mapped_type, _Scope>{__slots[__i].second}.store(
-            __value.second, ::cuda::memory_order_relaxed);
+          detail::__atomic_store(&__slots[__i].second, __value.second);
           return;
         }
         if (__state == detail::__equal_result::__available
@@ -666,7 +668,7 @@ private:
       {
         if (__group.thread_rank() == 0)
         {
-          ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+          detail::__atomic_store(&__slot->second, __value.second);
         }
         __group.sync();
         return;
@@ -687,7 +689,7 @@ private:
         if (__group.thread_rank() == __lane)
         {
           auto* __slot = __impl.__get_slot_ptr(*__iter, __index);
-          ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+          detail::__atomic_store(&__slot->second, __value.second);
         }
         __group.sync();
         return;
@@ -722,17 +724,16 @@ private:
   [[nodiscard]] _CCCL_DEVICE_API bool __attempt_insert_or_assign(value_type* __slot, value_type __value) noexcept
   {
     auto __expected = empty_key_sentinel();
-    const ::cuda::atomic_ref<key_type, _Scope> __key_ref{__slot->first};
-    bool __inserted = __key_ref.compare_exchange_strong(__expected, __value.first, ::cuda::memory_order_relaxed);
+    bool __inserted = detail::__atomic_compare_exchange<_Scope>(&__slot->first, __expected, __value.first);
     if (_SupportsErase && !__inserted && detail::__bitwise_compare(__expected, erased_key_sentinel()))
     {
-      __inserted = __key_ref.compare_exchange_strong(__expected, __value.first, ::cuda::memory_order_relaxed);
+      __inserted = detail::__atomic_compare_exchange<_Scope>(&__slot->first, __expected, __value.first);
     }
     if (__inserted
         || __impl.predicate().template operator()<detail::__is_insert::__no>(__value.first, __expected)
              == detail::__equal_result::__equal)
     {
-      ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+      detail::__atomic_store(&__slot->second, __value.second);
       return true;
     }
     return false;

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator adjacent_difference(
+_CCCL_HOST_API OutputIterator adjacent_difference(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,

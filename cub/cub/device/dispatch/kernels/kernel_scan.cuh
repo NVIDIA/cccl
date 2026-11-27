@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,8 +33,6 @@
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
-
-#  include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <cuda/__atomic/atomic.h>
@@ -50,56 +48,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-// Occupancy-sized batch grids may fall below the 500-CTA cutoff, which replaces nanosleeps with fences.
-// Keep these adapters to avoid that regression until deferred tuning selects the appropriate delay policy.
-// Backoff policies already wait independently of grid size.
-template <typename DelayConstructorT>
-struct batch_delay_constructor_t : DelayConstructorT
-{
-  using DelayConstructorT::DelayConstructorT;
-};
-
-// Persistent scans must retain positive waits even when the resident grid has fewer than 500 CTAs.
-template <unsigned int Delay, unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency>>
-{
-  struct delay_t
-  {
-    _CCCL_DEVICE_API void operator()()
-    {
-      if constexpr (Delay > 0)
-      {
-        always_delay_or_prevent_hoisting<Delay>();
-      }
-      else
-      {
-        default_no_delay_t{}();
-      }
-    }
-  };
-
-  _CCCL_DEVICE_API batch_delay_constructor_t(unsigned int /* seed */)
-  {
-    if constexpr (L2WriteLatency > 0)
-    {
-      always_delay<L2WriteLatency>();
-    }
-  }
-
-  _CCCL_DEVICE_API delay_t operator()()
-  {
-    return {};
-  }
-};
-
-template <unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<no_delay_constructor_t<L2WriteLatency>>
-    : batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>
-{
-  using base_type = batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>;
-  using base_type::base_type;
-};
-
 template <typename AccumT>
 struct scan_batch_state
 {
@@ -125,7 +73,7 @@ union tile_state_kernel_arg_t
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
   // https://eel.is/c++draft/class.union#general-note-3, tile_state_kernel_arg_t's special members are deleted. We work
   // around it by explicitly defining the ones we need.
-  _CCCL_HOST_DEVICE tile_state_kernel_arg_t() noexcept {}
+  _CCCL_HOST_DEVICE_API tile_state_kernel_arg_t() noexcept {}
 };
 
 /******************************************************************************
@@ -153,10 +101,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
+  constexpr ScanPolicy policy = _CUB::detail::current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_lookahead_body(tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
+    _CUB::detail::scan::device_scan_init_lookahead_body(
+      tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -173,7 +122,7 @@ template <typename PolicySelector, typename ScanTileState, typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
 {
-  constexpr int tiles_per_batch = current_policy<PolicySelector>().lookback.tiles_per_batch;
+  constexpr int tiles_per_batch = _CUB::detail::current_policy<PolicySelector>().lookback.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -224,7 +173,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr ScanPolicy policy = current_policy<PolicySelector>();
+  constexpr ScanPolicy policy = _CUB::detail::current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
@@ -234,7 +183,7 @@ template <typename PolicySelector>
                   "CUB DeviceScan warpspeed/lookahead scan is unsupported with nvcc -G and RDC. Compile without -G, "
                   "disable RDC/separable compilation, or define CCCL_DISABLE_WARPSPEED_SCAN.");
 #  endif // _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_DEBUG__) && _CCCL_HAS_RDC()
-    return num_total_threads(policy.lookahead);
+    return _CUB::detail::scan::num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.threads_per_block;
@@ -243,7 +192,7 @@ template <typename PolicySelector>
 // need a variable template for clang in CUDA mode to avoid:
 // error: 'launch_bounds' attribute requires parameter 0 to be an integer constant
 template <typename PolicySelector>
-inline constexpr int device_scan_launch_bounds = get_device_scan_launch_bounds<PolicySelector>();
+inline constexpr int device_scan_launch_bounds = _CUB::detail::scan::get_device_scan_launch_bounds<PolicySelector>();
 
 /**
  * @brief Scan kernel entry point (multi-block)
@@ -313,10 +262,10 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const KernelNumItemsT kernel_num_items,
   const int num_stages)
 {
-  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
+  static constexpr ScanPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
-    const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    const OffsetT num_items = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
     // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
     constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
                                        && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
@@ -333,8 +282,9 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
-        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
-          scan_params, scan_op, init_value);
+        _CUB::detail::scan::
+          device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+            scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,
@@ -378,7 +328,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     // state). So the BlockLoad in this kernel could even overlap with the previous tile init kernel. To be save, we
     // retain it here before the first read.
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    const OffsetT num_items        = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    const OffsetT num_items        = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
     RealInitValueT real_init_value = init_value;
 
     if constexpr (IsDeferred)
@@ -435,9 +385,9 @@ struct batch_completion_op
   // Called by all threads; only thread 0 reads tile_inclusive.
   _CCCL_DEVICE_API void operator()(const AccumT& tile_inclusive)
   {
-    static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
+    static_assert(tiles_per_batch <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)());
     // The final batch never reuses the tile state, so it needs no retirement tracking.
-    if ((tile_idx / tiles_per_batch + 1) * tiles_per_batch >= num_tiles)
+    if (((tile_idx / tiles_per_batch) + 1) * tiles_per_batch >= num_tiles)
     {
       return;
     }
@@ -502,13 +452,11 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const InitValueT init_value,
   const KernelNumItemsT kernel_num_items)
 {
-  constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
+  constexpr ScanLookbackPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookback;
   constexpr int tiles_per_batch       = policy.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
-  // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
-  // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
-  using delay_constructor = batch_delay_constructor_t<
-    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  using delay_constructor =
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>;
   using scan_policy_t =
     agent_scan_policy<0,
                       0,
@@ -536,12 +484,12 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   static_assert(::cuda::std::is_unsigned_v<OffsetT>, "the batched scan expects an unsigned offset type");
 
   __shared__ typename agent_t::TempStorage temp_storage;
-  __shared__ ::cuda::std::uint64_t tile_idx;
+  __shared__::cuda::std::uint64_t tile_idx;
 
   ::cuda::std::uint64_t current_batch_idx = 0;
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+  const OffsetT num_items = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
   const auto num_tiles =
     static_cast<::cuda::std::uint64_t>(::cuda::ceil_div(num_items, static_cast<OffsetT>(agent_t::TILE_ITEMS)));
   RealInitValueT real_init_value = init_value;
@@ -551,7 +499,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   {
     if (threadIdx.x == 0)
     {
-      tile_idx = claim_batch_tile<tiles_per_batch>(batch_state, num_tiles, current_batch_idx);
+      tile_idx = _CUB::detail::scan::claim_batch_tile<tiles_per_batch>(batch_state, num_tiles, current_batch_idx);
     }
     // Separate consecutive uses of the shared tile index.
     __syncthreads();

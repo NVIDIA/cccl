@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -87,9 +87,9 @@ template <class _Result, class _Lhs, class _Rhs>
     const auto __urhs        = __cccl_uintmax_t{::cuda::uabs(__rhs)};
     const auto __uresult_lo  = __ulhs * __urhs;
     const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
-    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs((__negative_result) ? __min : __max)};
+    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs(__negative_result ? __min : __max)};
 
-    const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+    const auto __result = static_cast<_Result>(__negative_result ? ::cuda::neg(__uresult_lo) : __uresult_lo);
     return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
   }
   else
@@ -190,7 +190,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   // We want to use __builtin_mul_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
   // file, we can use it all the time.
-#if defined(_CCCL_BUILTIN_MUL_OVERFLOW)
+#ifdef _CCCL_BUILTIN_MUL_OVERFLOW
 #  if _CCCL_CUDA_COMPILATION()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()

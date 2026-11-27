@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <thrust/copy.h>
-#include <thrust/count.h>
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+
+#include <cstddef>
 
 #include <nvbench_helper.cuh>
 

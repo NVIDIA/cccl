@@ -2,6 +2,8 @@
 
 #include <thrust/detail/caching_allocator.h>
 
+#include <cuda/std/__memory/allocator_traits.h>
+
 #include <unittest/unittest.h>
 
 template <typename Allocator>

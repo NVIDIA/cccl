@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,7 +44,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 #if _CCCL_HAS_SIMD_MIN_MAX_RELU()
 
 // Before CUDA 13.4, ptxas can generate incorrect SM90 and SM103 code for dependent VIMNMX.RELU instructions.
-// The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+// The workaround consists in adding an identity instruction to break the dependency. CTK 13.4 fixes the issue.
+// Use PRMT on SM103: identity LOP3 can crash ptxas when its result controls a branch.
 template <typename _Tp>
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline _Tp __workaround_vimnmx_relu_dep(_Tp __value) noexcept
 {
@@ -56,7 +57,7 @@ template <typename _Tp>
                }))
   NV_IF_TARGET(NV_IS_EXACTLY_SM_103, ({
                  _Tp __result;
-                 asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
+                 asm volatile("prmt.b32 %0, %1, 0, 0x3210;" : "=r"(__result) : "r"(__value));
                  return __result;
                }))
 #  endif // _CCCL_CTK_BELOW(13, 4)
@@ -228,12 +229,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_signed_integer_v<_Tp>)
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});)) // ADL
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});)) // ADL
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(
+        return __simd_min_max_relu_impl(__lhs, __rhs, __max_relu_operation<_Tp, _Abi>{});) // ADL
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -264,12 +261,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_signed_integer_v<_Tp>)
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});)) // ADL
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-                   (return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});)) // ADL
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(
+        return __simd_min_max_relu_impl(__lhs, __rhs, __min_relu_operation<_Tp, _Abi>{});) // ADL
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -303,10 +296,7 @@ max_relu(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __a,
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, (return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);))
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);))
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::cuda::simd::max_relu(::cuda::simd::max_relu(__a, __b), __c);)
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
@@ -340,10 +330,7 @@ min_relu(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __a,
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
-#    if (__cccl_ptx_isa >= 940ULL)
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, (return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);))
-#    endif // __cccl_ptx_isa >= 940ULL
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);))
+      _CCCL_DISPATCH_SIMD_8BIT_TARGET(return ::cuda::simd::min_relu(::cuda::simd::min_relu(__a, __b), __c);)
     }
     else
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()

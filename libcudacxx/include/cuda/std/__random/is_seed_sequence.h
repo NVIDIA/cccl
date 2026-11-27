@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Sseq, class _Engine>
 inline constexpr bool __is_seed_sequence =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   !is_convertible_v<_Sseq, typename _Engine::result_type> && !is_same_v<remove_cv_t<_Sseq>, _Engine>;
 
 _CCCL_END_NAMESPACE_CUDA_STD

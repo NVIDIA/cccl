@@ -15,34 +15,38 @@ Here is a generic example:
 .. code-block:: c++
 
     struct DeviceAlgorithm {
-      // two step API
-      template <typename ...>
-      static cudaError_t Algorithm(void *d_temp_storage, size_t &temp_storage_bytes, ..., cudaStream_t stream = 0) {
+      // two-phase API
+      template <typename ..., typename Env = cuda::std::execution::env<>>
+      static cudaError_t Algorithm(void *d_temp_storage, size_t &temp_storage_bytes, ..., const Env& env = {}) {
         // optional: minimal argument checking or setup to call dispatch layer
-        return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ..., stream);
+        using default_policy_selector = detail::algorithm::policy_selector_from_types<...>;
+        return dispatch_with_env_and_tuning<default_policy_selector>(
+          d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+            return detail::algorithm::dispatch(storage, bytes, ..., stream, policy_selector);
+          });
       }
 
-      // environment API
+      // single-phase API
       template <typename ..., typename Env = cuda::std::execution::env<>>
       static cudaError_t Algorithm(..., const Env& env = {}) {
         // optional: minimal argument checking or setup to call dispatch layer
         using default_policy_selector = detail::algorithm::policy_selector_from_types<...>;
         return dispatch_with_env_and_tuning<default_policy_selector>(
           env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-            return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ..., stream, policy_selector);
+            return detail::algorithm::dispatch(storage, bytes, ..., stream, policy_selector);
           });
       }
     };
 
-Device-scope APIs come in two flavors, two step APIs and environment APIs,
-both return ``cudaError_t`` and take algorithm specific arguments.
-The two step API accepts a ``stream`` as the last parameter (``NULL`` stream by default)
-and the first two parameters are always ``void *d_temp_storage, size_t &temp_storage_bytes``.
-The environment API just takes an environment as the last parameter (empty environment by default).
+Device-scope APIs come in two flavors, two-phase APIs and single-phase APIs,
+both return ``cudaError_t``, take algorithm specific arguments,
+and take an environment as the last parameter (empty environment by default).
+The first two parameters of the two-phase API are always ``void *d_temp_storage, size_t &temp_storage_bytes``.
+Since the caller provides the temporary storage, the two-phase API ignores any memory resource in the environment.
 The implementation may consist of some minimal argument checking, but should forward as soon as possible to the dispatch layer.
 Device-scope algorithms are implemented in files located in `cub/device/device_***.cuh`.
 
-The two step API is called in two phases:
+The two-phase API is called in two phases:
 
   1. Temporary storage size is calculated and returned in ``size_t &temp_storage_bytes``.
   2. ``temp_storage_bytes`` of memory is expected to be allocated and ``d_temp_storage`` is expected to be the pointer to this memory.
@@ -66,7 +70,7 @@ The following example illustrates this pattern:
     the overload with ``void *d_temp_storage, size_t &temp_storage_bytes``
     still requires one byte of memory to be allocated.
 
-The environment overloads just require a single call, but setting up the environment may be more complex:
+The single-phase overloads just require a single call, but setting up the environment may be more complex:
 
 .. code-block:: c++
 
@@ -91,9 +95,16 @@ The device layer handles the extraction of the:
 
 from the environment argument, or provide default values in case the environment does not contain them.
 They typically use helper functions like ``dispatch_with_env`` and ``dispatch_with_env_and_tuning``.
+Both have an overload taking ``d_temp_storage`` and ``temp_storage_bytes`` for the two-phase API,
+which skips the memory resource and invokes the algorithm only once with the user-provided temporary storage.
+The corresponding ``dispatch_with_env_validation`` and
+``dispatch_with_env_validation_and_tuning`` helpers additionally validate advertised query
+metadata without excluding callable queries that are not advertised. ``DeviceReduce`` is the
+initial consumer of the validating helpers; other device-wide algorithms continue to use the
+helpers without advertised-query validation.
 
 Some CUB APIs require no temporary storage and may omit the ``void *d_temp_storage, size_t &temp_storage_bytes`` parameters.
-Their environment overloads will also ignore any passed memory resource.
+Their overloads will also ignore any passed memory resource.
 
 Dispatch layer
 ====================================
@@ -407,9 +418,11 @@ and with designated initializers:
 
       friend constexpr bool operator==(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
       friend constexpr bool operator!=(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
-      friend std::ostream& operator<<(std::ostream& os, const AlgorithmPolicy& p) { ... }
+      template <class CharT, class Traits>
+      friend std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const AlgorithmPolicy& p) { ... }
     };
 
+The stream operator is a template over the stream type, so that declaring it only requires ``<iosfwd>``.
 Tuning policies can have various complexities and contain nested structures.
 Policies are defined in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -159,6 +159,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES reverse_view(_Range&&) -> reverse_view<::cuda::
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<reverse_view<_Tp>> = enable_borrowed_range<_Tp>;
+
+// This view preserves the size of its underlying range.
+template <class _View>
+inline constexpr size_t __static_size_v<reverse_view<_View>> = __static_size_v<_View>;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const reverse_view<_View>> =
+  (range<const reverse_view<_View>>) ? __static_size_v<const _View> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

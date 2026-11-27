@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,6 +26,13 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -104,8 +111,6 @@ inline constexpr size_t __default_small_object_align = alignof(::cuda::std::max_
 
 using __make_type_list _CCCL_NODEBUG = ::cuda::std::__type_quote<::cuda::std::__type_list>;
 
-[[noreturn]] _CCCL_HOST_DEVICE_API void __throw_bad_any_cast();
-
 enum class __vtable_kind : uint8_t
 {
   __normal,
@@ -121,6 +126,11 @@ template <class _Interface>
 using __remove_ireference_t _CCCL_NODEBUG = decltype(__remove_ireference_v<_Interface>);
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

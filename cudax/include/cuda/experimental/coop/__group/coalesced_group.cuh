@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__hierarchy/queries/count.h>
+#include <cuda/__hierarchy/queries/rank.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__bit/popcount.h>
@@ -29,17 +31,20 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/coop/__group/dispatch.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -50,54 +55,75 @@ class __coalesced_mapping_result
   ::cuda::std::uint32_t __unit_rank_;
 
 public:
-  _CCCL_DEVICE_API __coalesced_mapping_result() noexcept
+  _CCCL_DEVICE_API __coalesced_mapping_result()
       : __lane_mask_{::cuda::device::lane_mask::all_active()}
       , __unit_count_{static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__lane_mask_.value()))}
       , __unit_rank_{static_cast<::cuda::std::uint32_t>(
           ::cuda::std::popcount((__lane_mask_ & ::cuda::device::lane_mask::all_less()).value()))}
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
   {
     return 0;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
-    return ::cuda::std::dynamic_extent;
+    return 0;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
-  {
-    return __unit_count_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
-  {
-    return __unit_rank_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
-  {
-    return __lane_mask_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
   {
     return true;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
+  {
+    return ::cuda::std::dynamic_extent;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < static_group_count(), "__i out of range");
+    return ::cuda::std::dynamic_extent;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
+  {
+    return __unit_count_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
+  {
+    return __unit_rank_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
+  {
+    return __lane_mask_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return false;
   }
@@ -111,18 +137,19 @@ class coalesced_group
 
   _Hierarchy __hier_;
   _MappingResult __mapping_result_{};
-  _SynchronizerInstance __synchronizer_instance_{};
+  _SynchronizerInstance __synchronizer_instance_{__mapping_result_.lane_mask()};
 
 public:
-  using unit_type             = thread_level;
-  using level_type            = warp_level;
-  using hierarchy_type        = _Hierarchy;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _SynchronizerInstance::arrival_token;
+  using unit_level                                 = thread_level;
+  using boundary_level                             = warp_level;
+  using hierarchy_type                             = _Hierarchy;
+  using __mapping_result_type _CCCL_NODEBUG        = _MappingResult;
+  using __synchronizer_instance_type _CCCL_NODEBUG = _SynchronizerInstance;
+  using arrival_token                              = _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API explicit coalesced_group(const _HierarchyLike& __hier_like) noexcept
+  _CCCL_DEVICE_API explicit coalesced_group(const _HierarchyLike& __hier_like)
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
 
@@ -132,124 +159,144 @@ public:
   coalesced_group& operator=(const coalesced_group&) = delete;
   coalesced_group& operator=(coalesced_group&&)      = delete;
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_group_rank_t& __tag, _Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
+  }
+
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) dispatch(const by_unit_count_t& __tag, _Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__dispatch(*this, __tag, ::cuda::std::forward<_Fn>(__fn));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const _CCCL_LIFETIMEBOUND
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const _MappingResult& __mapping_result() const _CCCL_LIFETIMEBOUND
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const _CCCL_LIFETIMEBOUND
   {
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return _MappingResult::is_always_contiguous();
   }
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
-  _CCCL_DEVICE_API void sync() const noexcept
+  _CCCL_DEVICE_API void sync() const
   {
-    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync(__hier_);
   }
 
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
+  _CCCL_DEVICE_API void sync_aligned() const
   {
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__hier_);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const
   {
-    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive(__hier_);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const
   {
-    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive_aligned(__hier_);
   }
 
-  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait(__hier_, ::cuda::std::move(__tok));
   }
 
-  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait_aligned(__hier_, ::cuda::std::move(__tok));
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, boundary_level>)
     {
       return 1;
     }
     else
     {
-      return ::cuda::__static_count_query<level_type, _InLevel, _Hierarchy>();
+      return ::cuda::__static_count_query<boundary_level, _InLevel, _Hierarchy>();
     }
   }
 
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
-  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
+  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, boundary_level>)
     {
       return _Tp{1};
     }
     else
     {
-      return __count_query<level_type, _InLevel>::template __call<_Tp>(__hier);
+      return __count_query<boundary_level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const
   {
     return __count_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const
   {
     return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
 
+  //! @brief Returns the group rank within the level known at compile time, or @c cuda::std::dynamic_extent.
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _InLevel&)
+  {
+    return static_count(_InLevel{}) == 1 ? 0 : ::cuda::std::dynamic_extent;
+  }
+
   template <class _Tp, class _MappingResult, class _InLevel>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp
-  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
+  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel&)
   {
-    if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
+    if constexpr (::cuda::std::is_same_v<_InLevel, boundary_level>)
     {
       return _Tp{0};
     }
     else
     {
-      return __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier);
+      return __rank_query<boundary_level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const
   {
     return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const
   {
     return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }

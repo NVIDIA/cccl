@@ -16,21 +16,23 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
 #include <cuda/std/optional>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
 
-#include <cooperative_groups.h>
+#include <nv/target>
 
 #include "group_testing.cuh"
 
 namespace
 {
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(const cudax::coop::this_thread<Hierarchy>& group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::coop::this_thread<Hierarchy>&, T (&array)[N])
 {
   return {cub::ThreadReduce(array, cuda::std::plus<T>{})};
 }
@@ -96,7 +98,7 @@ __device__ cuda::std::optional<T> sum(const cudax::coop::this_cluster<Hierarchy>
                  }
                  group.sync_aligned();
 
-                 cudax::coop::this_block this_block{group.hierarchy()};
+                 const cudax::coop::this_block this_block{group.hierarchy()};
                  if (cuda::gpu_thread.is_root_rank(this_block) && !cuda::gpu_thread.is_root_rank(group))
                  {
                    [[maybe_unused]] unsigned old;
@@ -120,7 +122,7 @@ __device__ cuda::std::optional<T> sum(const cudax::coop::this_cluster<Hierarchy>
 template <class Group, class T, cuda::std::size_t N>
 __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 {
-  using Unit          = typename Group::unit_type;
+  using Unit          = typename Group::unit_level;
   using MappingResult = typename Group::__mapping_result_type;
 
   constexpr auto ngroups = MappingResult::static_group_count();
@@ -156,8 +158,6 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 template <class Group>
 __device__ void test_cooperative_algorithm(Group group)
 {
-  using Level = typename Group::level_type;
-
   unsigned array[]{1, 2, 3};
   const auto result = sum(group, array);
 

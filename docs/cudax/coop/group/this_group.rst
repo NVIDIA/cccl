@@ -11,15 +11,15 @@
   class /*this-group*/ : public /*group-interface-for*/</*this-group*/>
   {
   public:
-    using unit_type       = Level;
-    using level_type      = Level;
+    using unit_level      = Level;
+    using boundary_level     = Level;
     using hierarchy_type  = Hierarchy;
 
     /*this-group*/() = delete;
 
     template <typename HierarchyLike>
       requires cuda::std::same_as<Hierarchy, /*hierarchy-type-of*/<HierarchyLike>>
-    __device__ /*this-group*/(const HierarchyLike& hierarchy_like) noexcept;
+    __device__ /*this-group*/(const HierarchyLike& hierarchy_like);
 
     /*this-group*/(const /*this-group*/&) = delete;
 
@@ -43,7 +43,7 @@
 
   template </*hierarchy-level-type*/ Level, /*hierarchy-like-type*/ HierarchyLike>
   [[nodiscard]] __device__
-  auto make_this_group(const Level& level, const HierarchyLike& hierarchy_like) noexcept;
+  auto make_this_group(const Level& level, const HierarchyLike& hierarchy_like);
 
   } // namespace cuda::experimental::coop
 
@@ -61,7 +61,7 @@ Because every this group is a separate type, the ``cuda::experimental::coop::mak
 Queries
 -------
 
-Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-level queries as the upper bound. For example, ``cuda::experimental::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
+Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-bound queries as the upper bound. For example, ``cuda::experimental::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
 
 Examples
 --------

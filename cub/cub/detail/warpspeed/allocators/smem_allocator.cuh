@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -68,7 +68,7 @@ struct SmemAllocator
           // Convert allocated smem address to generic pointer
           const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
-          return optimizeSmemPtr(mPtrAllocation);))
+          return _CUB::detail::warpspeed::optimizeSmemPtr(mPtrAllocation);))
     }
     return nullptr;
   }

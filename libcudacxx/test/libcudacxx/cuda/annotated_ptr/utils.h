@@ -17,7 +17,7 @@ TEST_DIAG_SUPPRESS_MSVC(4505)
 
 #include <nv/target>
 
-#if defined(DEBUG)
+#ifdef DEBUG
 #  define DPRINTF(...)     \
     {                      \
       printf(__VA_ARGS__); \

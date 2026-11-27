@@ -9,6 +9,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 #endif // _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
 
 #include <thrust/device_vector.h>
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/strided_iterator.h>
 
 #include <cuda/std/array>

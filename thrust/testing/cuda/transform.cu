@@ -1,8 +1,18 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <unittest/unittest.h>
 
@@ -423,7 +433,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <>
 class zip_function<sum_five>
 {
-private:
   sum_five fun;
 
 public:

@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/functional>
+
 #include <iostream>
 
 int my_rand()

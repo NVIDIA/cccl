@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,7 +44,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Fn, class _Index>
 class __tabulate_proxy
 {
-private:
   template <class, class>
   friend class tabulate_output_iterator;
 
@@ -111,7 +110,6 @@ public:
 template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
-private:
   // Not a base because then the friend operators would be ambiguous
   ::cuda::std::__compressed_movable_box<_Index, _Fn> __store_;
 

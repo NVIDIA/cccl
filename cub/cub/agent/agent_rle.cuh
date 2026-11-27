@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -173,7 +173,7 @@ struct AgentRle
   /// among block-warps during any store-related data transpositions (versus each warp having
   /// its own storage)
   static constexpr bool STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING;
-  static constexpr int ACTIVE_EXCHANGE_WARPS    = (STORE_WARP_TIME_SLICING) ? 1 : WARPS;
+  static constexpr int ACTIVE_EXCHANGE_WARPS    = STORE_WARP_TIME_SLICING ? 1 : WARPS;
 
   /**
    * Special operator that signals all out-of-bounds items are not equal to everything else,
@@ -186,22 +186,20 @@ struct AgentRle
     OffsetT num_remaining;
     EqualityOpT equality_op;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE OobInequalityOp(OffsetT num_remaining, EqualityOpT equality_op)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE OobInequalityOp(OffsetT num_remaining, EqualityOpT equality_op)
         : num_remaining(num_remaining)
         , equality_op(equality_op)
     {}
 
     template <typename Index>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
     {
       if (!LastTile || (idx < num_remaining))
       {
         return !equality_op(first, second);
       }
-      else
-      {
-        return true;
-      }
+
+      return true;
     }
   };
 
@@ -327,7 +325,7 @@ struct AgentRle
    *   Streaming context providing context about this partition for streaming invocations
    */
   template <typename StreamingContext>
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRle(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRle(
     TempStorage& temp_storage,
     InputIteratorT d_in,
     OffsetsOutputIteratorT d_offsets_out,
@@ -350,7 +348,7 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   template <bool FirstTile, bool LastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_remaining,
     T (&items)[ITEMS_PER_THREAD],
@@ -438,7 +436,7 @@ struct AgentRle
   /**
    * Scan of allocations
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpScanAllocations(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpScanAllocations(
     LengthOffsetPair& tile_aggregate,
     LengthOffsetPair& warp_aggregate,
     LengthOffsetPair& warp_exclusive_in_tile,
@@ -464,7 +462,7 @@ struct AgentRle
     //      number of non-trivial runs starts in this thread
     // `thread_aggregate.val`:
     //      number of items in the last non-trivial run in this thread
-    const LengthOffsetPair thread_aggregate = cub::ThreadReduce(lengths_and_num_runs, scan_op);
+    const LengthOffsetPair thread_aggregate = _CUB::ThreadReduce(lengths_and_num_runs, scan_op);
     WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id])
       .Scan(thread_aggregate, thread_inclusive, thread_exclusive_in_warp, identity, scan_op);
 
@@ -523,7 +521,7 @@ struct AgentRle
   /**
    * Two-phase scatter, specialized for warp time-slicing
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -593,7 +591,7 @@ struct AgentRle
   /**
    * Two-phase scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -659,7 +657,7 @@ struct AgentRle
   /**
    * Direct scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterDirect(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -704,7 +702,7 @@ struct AgentRle
   /**
    * Scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     OffsetT tile_num_runs_aggregate,
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
@@ -760,7 +758,7 @@ struct AgentRle
    *   Global list of tile status
    */
   template <bool LastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE LengthOffsetPair
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE LengthOffsetPair
   ConsumeTile(OffsetT num_items, OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_status)
   {
     if (tile_idx == 0)
@@ -855,7 +853,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_num_runs2[ITEMS_PER_THREAD];
 
       // Downsweep scan through lengths_and_num_runs
-      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -884,7 +882,7 @@ struct AgentRle
       // Return running total (inclusive of this tile)
       return tile_aggregate;
     }
-    else
+
     {
       // Not first tile
 
@@ -975,7 +973,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_offsets[ITEMS_PER_THREAD];
       OffsetT thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
 
-      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -1022,7 +1020,7 @@ struct AgentRle
    *   Output iterator type for recording number of items selected
    */
   template <typename NumRunsIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_status, NumRunsIteratorT d_num_runs_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block

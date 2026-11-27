@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,6 +38,9 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+// The device cache and its elements have a different representation from CCCL 3.5.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 struct __physical_devices_view
 {
@@ -93,7 +96,7 @@ class __physical_device
 
   _CCCL_HOST_API void __set_peers()
   {
-    const auto __count = static_cast<int>(::cuda::__physical_devices().size());
+    const auto __count = static_cast<int>(::cuda::__physical_devices_count());
     const auto __id    = ::cuda::__driver::__cudevice_to_ordinal(__device_);
 
     // This overallocates, but given that we are talking about `device_ref` this is fine
@@ -277,12 +280,6 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   return __devices;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __physical_devices_count()
-{
-  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
-  return __device_count;
-}
-
 [[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices()
 {
   static const auto __device_count = __physical_devices_count();
@@ -290,6 +287,8 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   static auto __devices = ::cuda::__make_physical_devices(__device_count);
   return {__devices.data(), __device_count};
 }
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 // device_ref methods dependent on __physical_device
 

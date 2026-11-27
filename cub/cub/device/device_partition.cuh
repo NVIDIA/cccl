@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,9 +29,11 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -63,9 +65,9 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DevicePartition, except @p If with three partitions, that accept an environment can be tuned by
-//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::PartitionPolicy`, as
-//! shown in the example below:
+//! All algorithms in DevicePartition, except @p If with three partitions, can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::PartitionPolicy`, as shown in the
+//! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
 //!      :language: c++
@@ -79,8 +81,7 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin partition-if-tuning
 //!      :end-before: example-end partition-if-tuning
 //!
-//! The environment overload of the three-way @p If algorithm can be tuned using a
-//! :cpp:struct:`cub::ThreeWayPartitionPolicy` instead:
+//! The three-way @p If algorithm can be tuned using a :cpp:struct:`cub::ThreeWayPartitionPolicy` instead:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
 //!      :language: c++
@@ -112,6 +113,26 @@ struct DevicePartition
       const auto policy = PolicySelector{}(cc);
       return SelectPolicy{
         SelectAlgorithm::lookback,
+        {policy.lookback.threads_per_block,
+         policy.lookback.items_per_thread,
+         policy.lookback.load_algorithm,
+         policy.lookback.load_modifier,
+         policy.lookback.scan_algorithm,
+         policy.lookback.lookback_delay}};
+    }
+  };
+
+  // Converts the SelectPolicy returned by the default policy selector into a PartitionPolicy, so policy transformers
+  // for PartitionPolicy receive the policy type they are keyed on
+  template <typename DefaultPolicySelector>
+  struct __default_partition_policy_selector
+  {
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+      -> PartitionPolicy
+    {
+      const SelectPolicy policy = DefaultPolicySelector{}(cc);
+      return PartitionPolicy{
+        PartitionAlgorithm::lookback,
         {policy.lookback.threads_per_block,
          policy.lookback.items_per_thread,
          policy.lookback.load_algorithm,
@@ -247,7 +268,7 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -255,8 +276,10 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
+                                                    PartitionPolicy,
+                                                    __default_partition_policy_selector<default_policy_selector>>;
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -368,13 +391,15 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
+                                                    PartitionPolicy,
+                                                    __default_partition_policy_selector<default_policy_selector>>;
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -526,7 +551,7 @@ struct DevicePartition
       return error;
     }
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -534,8 +559,10 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
+                                                    PartitionPolicy,
+                                                    __default_partition_policy_selector<default_policy_selector>>;
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -644,13 +671,15 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
+                                                    PartitionPolicy,
+                                                    __default_partition_policy_selector<default_policy_selector>>;
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -886,9 +915,9 @@ struct DevicePartition
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
                                                               detail::three_way_partition::per_partition_offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::three_way_partition::dispatch(
+        return _CUB::detail::three_way_partition::dispatch(
           storage,
           bytes,
           d_in,
@@ -1040,9 +1069,9 @@ struct DevicePartition
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
                                                               detail::three_way_partition::per_partition_offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::three_way_partition::dispatch(
+        return _CUB::detail::three_way_partition::dispatch(
           storage,
           bytes,
           d_in,

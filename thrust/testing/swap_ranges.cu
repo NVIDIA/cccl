@@ -1,7 +1,14 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/swap.h>
+#include <thrust/system/cpp/execution_policy.h>
 #include <thrust/system/cpp/memory.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -97,24 +104,24 @@ TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")
 
 struct type_with_swap
 {
-  inline _CCCL_HOST_DEVICE type_with_swap()
+  _CCCL_HOST_DEVICE type_with_swap()
       : m_x()
       , m_swapped(false)
   {}
 
-  inline _CCCL_HOST_DEVICE type_with_swap(int x)
+  _CCCL_HOST_DEVICE type_with_swap(int x)
       : m_x(x)
       , m_swapped(false)
   {}
 
-  inline _CCCL_HOST_DEVICE type_with_swap(int x, bool s)
+  _CCCL_HOST_DEVICE type_with_swap(int x, bool s)
       : m_x(x)
       , m_swapped(s)
   {}
 
-  inline type_with_swap(const type_with_swap& other) = default;
+  type_with_swap(const type_with_swap& other) = default;
 
-  inline _CCCL_HOST_DEVICE bool operator==(const type_with_swap& other) const
+  _CCCL_HOST_DEVICE bool operator==(const type_with_swap& other) const
   {
     return m_x == other.m_x && m_swapped == other.m_swapped;
   }

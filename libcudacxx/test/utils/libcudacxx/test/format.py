@@ -77,6 +77,9 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_OPTIONS_PTXAS:", ParserKind.LIST, initial_value=[]
+            ),
             IntegratedTestKeywordParser("CONSTEXPR_STEPS:", ParserKind.INTEGER),
         ]
 
@@ -208,6 +211,13 @@ class LibcxxTestFormat(object):
             for flag in extra_compile_options_host:
                 if test_cxx.addCompileFlagIfSupported(flag.strip()):
                     test_cxx.warning_flags += [flag.strip()]
+
+        if test_cxx.source_lang == "cu" and test_cxx.type in ("nvcc", "clang"):
+            forward_to_ptxas = "-Xptxas" if test_cxx.type == "nvcc" else "-Xcuda-ptxas"
+            for flag in self._get_parser(
+                "ADDITIONAL_COMPILE_OPTIONS_PTXAS:", parsers
+            ).getValue():
+                test_cxx.compile_flags += [forward_to_ptxas, flag.strip()]
 
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:

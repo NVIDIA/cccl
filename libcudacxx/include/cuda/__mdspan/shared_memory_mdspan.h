@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -108,7 +108,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES shared_memory_mdspan(_ElementType*, const _Mapp
 
 template <typename _MappingType, typename _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-shared_memory_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+shared_memory_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> shared_memory_mdspan<typename _AccessorType::element_type,
                           typename _MappingType::extents_type,
                           typename _MappingType::layout_type,

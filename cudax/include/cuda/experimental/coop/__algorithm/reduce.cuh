@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,22 +29,28 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_down.cuh>
-#include <cuda/experimental/coop/__group/queries.cuh>
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
+#include <cuda/experimental/coop/__group/this_group.cuh>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo(dabayer): We share the temporary storage in shared/global memory for all reduce invocations. This is a temporary
 // state before we make it a parameter.
@@ -99,7 +105,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _N
   }
   else
   {
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 
@@ -147,7 +153,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   else
   {
     __group.sync_aligned();
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 
@@ -212,7 +218,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
 
                    if (warp.is_root_rank(__group))
                    {
-                     this_warp __warp{__group.hierarchy()};
+                     const this_warp __warp{__group.hierarchy()};
                      const auto __value = (gpu_thread.rank(__warp) < __nblocks_in_cluster)
                                           ? __scratch.__root_.__partials_[gpu_thread.rank(__warp)]
                                           : ::cuda::identity_element<_RedFn, _Tp>();
@@ -240,7 +246,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
     else
     {
       __group.sync_aligned();
-      return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+      return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
     }
   }
 }
@@ -262,7 +268,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   constexpr auto __nclusters_in_grid =
     _GridExts::static_extent(0) * _GridExts::static_extent(1) * _GridExts::static_extent(2);
 
-  this_cluster __cluster{__group.hierarchy()};
+  const this_cluster __cluster{__group.hierarchy()};
   const auto __partial =
     ::cuda::experimental::coop::__reduce_impl(::cuda::std::false_type{}, __cluster, __thread_data, __red_fn);
 
@@ -275,7 +281,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   ::cuda::std::optional<_Tp> __result;
   if (block.is_root_rank(__group))
   {
-    this_block __block{__group.hierarchy()};
+    const this_block __block{__group.hierarchy()};
 
     constexpr auto __npartials_per_thread = ::cuda::ceil_div(__nclusters_in_grid, gpu_thread.static_count(__block));
     _Tp __thread_partials[__npartials_per_thread];
@@ -315,16 +321,14 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
-_CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
-                 _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::level_type>)
+_CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_level>
+                 _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::boundary_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
   ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
 
   const auto __lane_mask = __mapping_result.lane_mask();
-  const auto __lane      = ::cuda::ptx::get_sreg_laneid();
   auto __result          = ::cub::ThreadReduce(__thread_data, __red_fn);
 
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -349,8 +353,8 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
-_CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
-                 _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::level_type>)
+_CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_level>
+                 _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::boundary_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
   ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
@@ -384,7 +388,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   };
   __shared__ _Scratch __scratch;
 
-  this_warp __warp{__group.hierarchy()};
+  const this_warp __warp{__group.hierarchy()};
   const auto __warp_rank_in_block = __warp.rank(block);
   const auto __warp_rank_in_group = warp.rank(__group);
   // This relies on contiguous mappings assigning unit ranks in ascending
@@ -429,7 +433,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   else
   {
     __group.sync_aligned();
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 

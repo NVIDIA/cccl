@@ -14,7 +14,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,15 +22,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 
+#include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
-#include <cuda/experimental/__stf/internal/interpreted_execution_policy_impl.cuh>
+#include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
+#include <cuda/experimental/__stf/internal/interpreted_execution_policy_impl.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh> // graph_launch_impl() uses SCOPE
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <array>
+#include <cstring>
+#include <string>
+#include <tuple>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

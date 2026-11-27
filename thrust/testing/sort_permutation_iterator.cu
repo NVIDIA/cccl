@@ -1,5 +1,6 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
@@ -47,7 +48,7 @@ public:
 
   iterator end() const
   {
-    return begin() + ((last - first) + (stride - 1)) / stride;
+    return begin() + (((last - first) + (stride - 1)) / stride);
   }
 
 private:

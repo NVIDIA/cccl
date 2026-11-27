@@ -30,7 +30,8 @@ int main(int argc, char** argv)
     iter_cnt = ::std::stoi(argv[1]);
   }
 
-  std::chrono::steady_clock::time_point start, stop;
+  std::chrono::steady_clock::time_point start;
+  std::chrono::steady_clock::time_point stop;
   start = std::chrono::steady_clock::now();
   for (int iter = 0; iter < iter_cnt; iter++)
   {

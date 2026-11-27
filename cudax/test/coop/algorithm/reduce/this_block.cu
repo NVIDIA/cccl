@@ -12,7 +12,10 @@
 #include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/algorithm>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -90,7 +93,7 @@ struct RepeatedReduceKernel
       if constexpr (Broadcasted)
       {
         const auto result = cudax::coop::reduce(cudax::broadcasted, block, thread_data, cuda::std::plus<>{});
-        d_out[repeat * stride + thread_rank] = result;
+        d_out[(repeat * stride) + thread_rank] = result;
       }
       else
       {
@@ -192,7 +195,7 @@ void run_repeated_reduce_kernel(cuda::stream_ref stream)
     {
       for (int rank = 0; rank < reuse_block_size; ++rank)
       {
-        REQUIRE(h_out[repeat * stride + rank] == expected);
+        REQUIRE(h_out[(repeat * stride) + rank] == expected);
       }
     }
     else

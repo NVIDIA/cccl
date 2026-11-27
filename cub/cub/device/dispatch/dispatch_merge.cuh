@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,6 +18,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
@@ -31,7 +32,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -115,7 +115,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    choose_merge_agent<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                        KeyIt1,
                        ValueIt1,
                        KeyIt2,
@@ -125,11 +125,11 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        Offset,
                        CompareOp>::type::items_per_tile;
   const Offset diagonal_idx =
-    static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+    static_cast<Offset>((blockDim.x * blockIdx.x) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
-    key1_beg_offsets[diagonal_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
+    key1_beg_offsets[diagonal_idx] = _CUB::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
   }
 }
 
@@ -143,7 +143,7 @@ template <typename PolicySelector,
           typename Offset,
           typename CompareOp>
 __launch_bounds__(
-  choose_merge_agent<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+  choose_merge_agent<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                      KeyIt1,
                      ValueIt1,
                      KeyIt2,
@@ -171,7 +171,7 @@ __launch_bounds__(
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeyIt1,
     ValueIt1,
     KeyIt2,
@@ -226,8 +226,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KernelLauncherFactory launcher_factory = {})
 {
   using default_policy_selector_t = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>;
-  using policy_selector_t =
-    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, MergePolicy, default_policy_selector_t>>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, MergePolicy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(merge_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
@@ -238,8 +237,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceMerge", cc, policy_getter());
+  return _CUB::detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
+    _CUB::detail::log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<
@@ -259,8 +258,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const size_t key1_beg_offsets_size      = (1 + num_tiles) * sizeof(Offset);
       const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<AgentT>::vsmem_per_block;
       const size_t allocation_sizes[2]        = {key1_beg_offsets_size, virtual_shared_memory_size};
-      if (const auto error =
-            CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+      if (const auto error = CubDebug(
+            _CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
       {
         return error;
       }
@@ -301,7 +300,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -327,7 +326,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }

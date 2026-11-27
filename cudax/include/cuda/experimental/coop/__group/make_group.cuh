@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,26 +23,31 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/optional>
+#include <cuda/std/__utility/in_place.h>
 
 #include <cuda/experimental/coop/__group/coalesced_group.cuh>
 #include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
-#include <cuda/experimental/coop/__group/mapping/common.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
+#include <cuda/experimental/coop/__group/tags.cuh>
 #include <cuda/experimental/coop/__group/this_group.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -57,8 +62,7 @@ _CCCL_TEMPLATE(template <class...> class _GroupTempl,
                class... _Args,
                class _Group = decltype(_GroupTempl{::cuda::std::declval<_Args>()...}))
 _CCCL_REQUIRES(group<_Group>)
-[[nodiscard]] _CCCL_DEVICE_API _Group
-make_group(_Args&&... __args) noexcept(::cuda::std::is_nothrow_constructible_v<_Group, _Args...>)
+[[nodiscard]] _CCCL_DEVICE_API _Group make_group(_Args&&... __args)
 {
   return _Group{::cuda::std::forward<_Args>(__args)...};
 }
@@ -75,24 +79,52 @@ _CCCL_TEMPLATE(
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>,
   class _Group                = _GroupTempl<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>)
 _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hierarchy_level_v<_Unit> _CCCL_AND
-                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
+                 group<_ParentGroup> _CCCL_AND __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Group> make_group(
   const non_exhaustive_t& __non_exhaustive,
   const _Unit& __unit,
   const _ParentGroup& __parent,
   _Mapping&& __mapping,
-  _Synchronizer&& __synchronizer) noexcept
+  _Synchronizer&& __synchronizer)
 {
   const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
     __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
+  const auto __synchronizer_instance =
+    ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
   using _Ret = ::cuda::std::optional<_Group>;
   return (__mapping_result.is_valid())
-         ? _Ret{::cuda::std::in_place,
-                __non_exhaustive,
-                __unit,
-                __parent,
-                __mapping_result,
-                ::cuda::std::forward<_Synchronizer>(__synchronizer)}
+         ? _Ret{::cuda::std::in_place, __private_tag{}, __unit, __parent, __mapping_result, __synchronizer_instance}
+         : _Ret{};
+}
+
+_CCCL_TEMPLATE(
+  template <class...> class _GroupTempl,
+  class _Unit,
+  class _ParentUnit,
+  class _ParentGroup,
+  class _ParentMappingResult,
+  class _Mapping,
+  class _Synchronizer,
+  class _ParentView           = group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>,
+  class _MappingResult        = __group_mapping_result_t<non_exhaustive_t, _Unit, _ParentView, _Mapping>,
+  class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentView, _MappingResult, _Synchronizer>,
+  class _Group                = _GroupTempl<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>)
+_CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hierarchy_level_v<_Unit> _CCCL_AND
+                 __unit_same_as_or_below_v<_Unit, _ParentUnit>)
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Group> make_group(
+  const non_exhaustive_t& __non_exhaustive,
+  const _Unit& __unit,
+  const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
+  _Mapping&& __mapping,
+  _Synchronizer&& __synchronizer)
+{
+  const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
+    __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
+  const auto __synchronizer_instance =
+    ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
+  using _Ret = ::cuda::std::optional<_Group>;
+  return (__mapping_result.is_valid())
+         ? _Ret{::cuda::std::in_place, __private_tag{}, __unit, __parent, __mapping_result, __synchronizer_instance}
          : _Ret{};
 }
 
@@ -107,16 +139,16 @@ auto make_group(const non_exhaustive_t&, _Args&&... __args) = delete;
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier_like)
 {
   return this_grid{__hier_like};
 }
 
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __hier_like)
 {
   return this_cluster{__hier_like};
 }
@@ -125,7 +157,7 @@ make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __h
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hier_like)
 {
   return this_block{__hier_like};
 }
@@ -133,7 +165,7 @@ make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hi
 _CCCL_TEMPLATE(class _HierarchyLike, class _CgGroup = ::cooperative_groups::coalesced_group)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _HierarchyLike& __hier_like)
 {
   // todo(dabayer): CG's coalesced_group may be dynamically tiled, thus it's not exactly equivalent to CG's
   // coalesced_group. We should probably just return an ordinary generic_group that would be able to handle this.
@@ -145,9 +177,9 @@ make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _Hier
 _CCCL_TEMPLATE(unsigned _Size, class _ParentT, class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like)
 {
-  if constexpr (_Size == 1 && ::cuda::std::is_same_v<_ParentT, void>)
+  if constexpr (_Size == 1 && ::cuda::std::is_void_v<_ParentT>)
   {
     return this_thread{__hier_like};
   }

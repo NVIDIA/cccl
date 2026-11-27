@@ -1,5 +1,10 @@
+#include <thrust/device_vector.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

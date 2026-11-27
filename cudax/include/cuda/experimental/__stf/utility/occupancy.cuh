@@ -18,7 +18,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,8 +26,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <unordered_map>
+#include <utility>
+
+#include <cuda.h>
 
 namespace cuda::experimental::stf::reserved
 {

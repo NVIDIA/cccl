@@ -265,7 +265,7 @@ CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size"
   const auto total_elements = GENERATE(offset_t{0}, 8);
   const std::array<offset_t, N> expected{0, 2, 4, 6, 8};
   const auto num_elements      = static_cast<std::size_t>(total_elements);
-  const auto expected_size     = num_elements / 2 + 1;
+  const auto expected_size     = (num_elements / 2) + 1;
   const auto expected_capacity = num_elements + 2;
 
   REQUIRE(1 <= expected_size);

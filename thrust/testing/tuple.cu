@@ -1,4 +1,7 @@
+#include <thrust/device_vector.h>
 #include <thrust/generate.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
 
@@ -278,7 +281,8 @@ struct TestTupleComparison
   {
     using namespace thrust;
 
-    tuple<T, T, T, T, T> lhs(0, 0, 0, 0, 0), rhs(0, 0, 0, 0, 0);
+    tuple<T, T, T, T, T> lhs(0, 0, 0, 0, 0);
+    tuple<T, T, T, T, T> rhs(0, 0, 0, 0, 0);
 
     // equality
     REQUIRE(lhs == rhs);
@@ -481,8 +485,10 @@ TEST_CASE("TestTupleSwap", "[tuple]")
 
   using swappable_tuple = thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable>;
 
-  thrust::host_vector<swappable_tuple> h_v1(1), h_v2(1);
-  thrust::device_vector<swappable_tuple> d_v1(1), d_v2(1);
+  thrust::host_vector<swappable_tuple> h_v1(1);
+  thrust::host_vector<swappable_tuple> h_v2(1);
+  thrust::device_vector<swappable_tuple> d_v1(1);
+  thrust::device_vector<swappable_tuple> d_v2(1);
 
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());

@@ -23,7 +23,8 @@ __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_o
   // Get warp index
   const int warp_id = tid / LogicalWarpThreads;
 
-  T inc_out, exc_out;
+  T inc_out;
+  T exc_out;
   T thread_data = in[tid];
 
   warp_scan_t scan(storage[warp_id]);

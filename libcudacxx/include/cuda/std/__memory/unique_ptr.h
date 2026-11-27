@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -124,7 +124,7 @@ struct __unique_ptr_deleter_sfinae<_Deleter&>
   using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
-#if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
+#ifdef _LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI
 #  define _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI __attribute__((__trivial_abi__))
 #else
 #  define _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI
@@ -444,7 +444,6 @@ public:
     return *this;
   }
 
-public:
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
   {
     reset();

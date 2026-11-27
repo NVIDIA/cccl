@@ -5,6 +5,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/detail/preprocessor.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
@@ -294,7 +295,7 @@ __global__ void test_max_potential_dynamic_smem_bytes_kernel()
   asm volatile(".shared .align 1 .b8 static_smem[4096];");
 }
 
-#if defined(CUB_RDC_ENABLED)
+#ifdef CUB_RDC_ENABLED
 __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 {
   // Just compile on device.

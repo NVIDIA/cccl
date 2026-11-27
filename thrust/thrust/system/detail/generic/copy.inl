@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,9 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/for_each.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
@@ -27,14 +27,14 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   return thrust::transform(exec, first, last, result, ::cuda::std::identity{});
 } // end copy()
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
   using xfrm_type = ::cuda::std::identity;

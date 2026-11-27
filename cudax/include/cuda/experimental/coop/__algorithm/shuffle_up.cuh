@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,14 +25,16 @@
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/optional>
 
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/concepts.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -43,12 +45,11 @@ template <bool _Dummy = false>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
-_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
-                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_level, thread_level>
+                 _CCCL_AND ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-__shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
+__shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset)
 {
-  using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
 
   const auto __lane_mask               = __mapping_result.lane_mask();
@@ -57,18 +58,18 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
 
   if constexpr (_Group::is_always_contiguous())
   {
-    const auto __real_offset = (__offset_is_valid) ? __offset : 0u;
+    const auto __real_offset = __offset_is_valid ? __offset : 0u;
     const auto __result =
       ::cuda::device::warp_shuffle_up(__value, static_cast<int>(__real_offset), __lane_mask.value());
-    return (__offset_is_valid) ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
+    return __offset_is_valid ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
   }
   else
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     const auto __src_lane =
-      (__offset_is_valid) ? ::cuda::bit_fns(__lane_mask.value(), static_cast<int>(__src_rank)) : __lane;
+      __offset_is_valid ? ::cuda::bit_fns(__lane_mask.value(), static_cast<int>(__src_rank)) : __lane;
     const auto __result = ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
-    return (__offset_is_valid) ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
+    return __offset_is_valid ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
   }
 }
 
@@ -79,7 +80,7 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
 //! @return The source's value or empty optional if no such rank exists.
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-shuffle_up(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
+shuffle_up(const _Group& __group, const _Tp& __value, unsigned __offset)
 {
   return ::cuda::experimental::coop::__shuffle_up_impl(__group, __value, __offset);
 }

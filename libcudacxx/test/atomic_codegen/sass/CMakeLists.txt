@@ -61,21 +61,6 @@ check_source_compiles(
   ]]
   libcudacxx_atomic_codegen_has_int128
 )
-check_source_compiles(
-  CUDA
-  [[
-    #include <cuda/std/detail/__config>
-
-    #if defined(__CUDA_ARCH__) \
-      && (!_CCCL_CTK_AT_LEAST(13, 5) || !_CCCL_HAS_NV_ATOMIC_BUILTINS())
-    #  error "the NVVM atomic backend is unavailable"
-    #endif
-
-    __global__ void test() {}
-    int main() { test<<<1, 1>>>(); }
-  ]]
-  libcudacxx_atomic_codegen_uses_nvvm_backend
-)
 cmake_pop_check_state()
 
 set(atomic_codegen_sass_cas_subword_bitwise_archs)

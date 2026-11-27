@@ -6,7 +6,10 @@
 #include <thrust/sort.h>
 
 #include <cuda/functional>
-#include <cuda/stream>
+#include <cuda/std/__algorithm/clamp.h>
+
+#include <cstddef>
+#include <vector>
 
 #include "nvbench_helper.cuh"
 

@@ -5,25 +5,30 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/sequence.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/sequence.h>
 #include <thrust/system/detail/sequential/sequence.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sequence.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sequence.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/sequence.h>
 #  include <thrust/system/cuda/detail/sequence.h>
 #  include <thrust/system/omp/detail/sequence.h>
@@ -34,7 +39,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
@@ -44,7 +49,7 @@ sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forwa
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
@@ -54,7 +59,7 @@ _CCCL_HOST_DEVICE void sequence(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -67,7 +72,7 @@ _CCCL_HOST_DEVICE void sequence(
 } // end sequence()
 
 template <typename ForwardIterator>
-void sequence(ForwardIterator first, ForwardIterator last)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
@@ -80,7 +85,7 @@ void sequence(ForwardIterator first, ForwardIterator last)
 } // end sequence()
 
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
@@ -93,7 +98,7 @@ void sequence(ForwardIterator first, ForwardIterator last, T init)
 } // end sequence()
 
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init, T step)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init, T step)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;

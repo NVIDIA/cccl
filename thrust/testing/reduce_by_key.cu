@@ -1,7 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/reduce.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/utility>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -123,9 +130,9 @@ struct TestReduceByKey
     thrust::device_vector<V> d_vals_output(n);
 
     using HostKeyIterator   = typename thrust::host_vector<K>::iterator;
-    using HostValIterator   = typename thrust::host_vector<V>::iterator;
+    using HostValIterator   = thrust::host_vector<V>::iterator;
     using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
-    using DeviceValIterator = typename thrust::device_vector<V>::iterator;
+    using DeviceValIterator = thrust::device_vector<V>::iterator;
 
     using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
     using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;

@@ -1,7 +1,12 @@
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
+
+#include <cuda/std/type_traits>
 
 #include <vector>
 

@@ -12,6 +12,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -29,15 +30,19 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
   static_assert(cudax::coop::group<Group>);
+  using Bound = typename Group::boundary_level;
+  static_assert(Group::static_rank(Bound{}) == 0);
+  static_assert(
+    Group::static_rank(cuda::grid) == (Group::static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
   // Test types
-  static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
-  static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
+  static_assert(cuda::std::is_same_v<Level, typename Group::unit_level>);
+  static_assert(cuda::std::is_same_v<Level, typename Group::boundary_level>);
 
   // Test Group::arrival_token.
   using ArrivalToken = typename Group::arrival_token;
-  static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
-  static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+  static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+  static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
   static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
   // Test that the group can be queried for it's hierarchy.
@@ -51,8 +56,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test that the group can be synchronized using .sync() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>);
-    static_assert(noexcept(group.sync()));
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
@@ -74,9 +78,8 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test that the group can be synchronized using .arrive() + .wait() methods.
   {
     static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(group.wait(cuda::std::declval<ArrivalToken&&>()))>);
-    static_assert(noexcept(group.arrive()));
-    static_assert(noexcept(group.wait(cuda::std::declval<ArrivalToken&&>())));
 
     // Unaligned variants method must support calls from different branches. Add some dummy work to make sure the
     // branches are not collided.
@@ -99,8 +102,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test that the group can be synchronized using .sync_aligned() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>);
-    static_assert(noexcept(group.sync_aligned()));
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync_aligned() method must be called by all threads in the group uniformly in one place.
     group.sync_aligned();
@@ -109,9 +111,8 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test that the group can be synchronized using .arrive_aligned() + .wait_aligned() methods.
   {
     static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive_aligned())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(group.wait_aligned(cuda::std::declval<ArrivalToken&&>()))>);
-    static_assert(noexcept(group.arrive_aligned()));
-    static_assert(noexcept(group.wait_aligned(cuda::std::declval<ArrivalToken&&>())));
 
     group.wait_aligned(group.arrive_aligned());
   }
@@ -258,13 +259,13 @@ __device__ void test_this_queries(const cudax::coop::this_grid<Hierarchy>& group
 }
 
 template <template <class> class GroupTempl, class Level, class Config>
-__device__ void test_this_group(const Level& level, const Config& config)
+__device__ void test_this_group(const Level&, const Config& config)
 {
   GroupTempl group{config};
   // nvcc 12.0 doesn't evaluate these static asserts correctly
 #if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
-  static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
+  static_assert(cuda::std::is_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
 
   test_common_properties<Level>(config.hierarchy(), group);

@@ -20,7 +20,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,6 +31,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -49,6 +50,13 @@
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -322,8 +330,8 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 
   template <class _To, class _From>
   inline constexpr bool __potentially_narrowing =
-    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+    static_cast<make_unsigned_t<_To>>(numeric_limits<_To>::max())
+    < static_cast<make_unsigned_t<_From>>(numeric_limits<_From>::max());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false
@@ -657,7 +665,7 @@ template <class _Extents>
     __index_type __prod = __ext.extent(0);
     for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
     {
-      if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+      if (__mul_overflow(__prod, __ext.extent(__r), ::cuda::std::addressof(__prod)))
       {
         return false;
       }
@@ -714,6 +722,11 @@ template <class _Extents, class... _From>
 } // namespace __mdspan_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

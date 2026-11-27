@@ -24,7 +24,7 @@ int main()
 
   ctx.parallel_for(box(16), lh.rw())->*[] _CCCL_DEVICE(size_t i, auto h) {
     const uint32_t key   = 10 * i;
-    const uint32_t value = 17 + i * 14;
+    const uint32_t value = 17 + (i * 14);
     h.insert(key, value);
   };
 
@@ -33,6 +33,6 @@ int main()
   // Thanks to the write-back mechanism on lh, h has been updated
   for (size_t i = 0; i < 16; i++)
   {
-    assert(h.get(i * 10) == 17 + i * 14);
+    assert(h.get(i * 10) == 17 + (i * 14));
   }
 }

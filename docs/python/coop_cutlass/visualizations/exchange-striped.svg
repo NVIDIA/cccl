@@ -1,0 +1,82 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 410" role="img" aria-labelledby="title desc">
+<title id="title">Striped-to-blocked exchange preserves logical value order</title>
+<desc id="desc">Eight illustrative threads own two values each. Blocked pairs are zero and one, two and three, and so on. Striped pairs are zero and eight, one and nine, and so on. Shared scratch connects the two layouts.</desc>
+<rect width="1000" height="410" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#172b3a">
+<text x="24" y="30" font-size="15">STRIPED INPUT</text>
+<text x="976" y="30" text-anchor="end" font-size="14">8 teaching threads / 2 items each</text>
+<text x="70" y="68" text-anchor="middle" font-size="13">T0</text>
+<rect x="24" y="80" width="92" height="44" rx="6" fill="#e2f0cb" stroke="#68798b"/>
+<text x="70" y="108" text-anchor="middle" font-size="18">0   8</text>
+<path d="M 70 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="192" y="68" text-anchor="middle" font-size="13">T1</text>
+<rect x="146" y="80" width="92" height="44" rx="6" fill="#d3eff6" stroke="#68798b"/>
+<text x="192" y="108" text-anchor="middle" font-size="18">1   9</text>
+<path d="M 192 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="314" y="68" text-anchor="middle" font-size="13">T2</text>
+<rect x="268" y="80" width="92" height="44" rx="6" fill="#fff0c9" stroke="#68798b"/>
+<text x="314" y="108" text-anchor="middle" font-size="18">2   10</text>
+<path d="M 314 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="436" y="68" text-anchor="middle" font-size="13">T3</text>
+<rect x="390" y="80" width="92" height="44" rx="6" fill="#f8d9e7" stroke="#68798b"/>
+<text x="436" y="108" text-anchor="middle" font-size="18">3   11</text>
+<path d="M 436 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="558" y="68" text-anchor="middle" font-size="13">T4</text>
+<rect x="512" y="80" width="92" height="44" rx="6" fill="#e7dff4" stroke="#68798b"/>
+<text x="558" y="108" text-anchor="middle" font-size="18">4   12</text>
+<path d="M 558 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="680" y="68" text-anchor="middle" font-size="13">T5</text>
+<rect x="634" y="80" width="92" height="44" rx="6" fill="#ffe3cf" stroke="#68798b"/>
+<text x="680" y="108" text-anchor="middle" font-size="18">5   13</text>
+<path d="M 680 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="802" y="68" text-anchor="middle" font-size="13">T6</text>
+<rect x="756" y="80" width="92" height="44" rx="6" fill="#d0eee8" stroke="#68798b"/>
+<text x="802" y="108" text-anchor="middle" font-size="18">6   14</text>
+<path d="M 802 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="924" y="68" text-anchor="middle" font-size="13">T7</text>
+<rect x="878" y="80" width="92" height="44" rx="6" fill="#e0e7ef" stroke="#68798b"/>
+<text x="924" y="108" text-anchor="middle" font-size="18">7   15</text>
+<path d="M 924 124 V 172" stroke="#68798b" stroke-width="1.5"/>
+<text x="70" y="283" text-anchor="middle" font-size="13">T0</text>
+<rect x="24" y="295" width="92" height="44" rx="6" fill="#e2f0cb" stroke="#68798b"/>
+<text x="70" y="323" text-anchor="middle" font-size="18">0   1</text>
+<path d="M 70 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="192" y="283" text-anchor="middle" font-size="13">T1</text>
+<rect x="146" y="295" width="92" height="44" rx="6" fill="#d3eff6" stroke="#68798b"/>
+<text x="192" y="323" text-anchor="middle" font-size="18">2   3</text>
+<path d="M 192 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="314" y="283" text-anchor="middle" font-size="13">T2</text>
+<rect x="268" y="295" width="92" height="44" rx="6" fill="#fff0c9" stroke="#68798b"/>
+<text x="314" y="323" text-anchor="middle" font-size="18">4   5</text>
+<path d="M 314 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="436" y="283" text-anchor="middle" font-size="13">T3</text>
+<rect x="390" y="295" width="92" height="44" rx="6" fill="#f8d9e7" stroke="#68798b"/>
+<text x="436" y="323" text-anchor="middle" font-size="18">6   7</text>
+<path d="M 436 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="558" y="283" text-anchor="middle" font-size="13">T4</text>
+<rect x="512" y="295" width="92" height="44" rx="6" fill="#e7dff4" stroke="#68798b"/>
+<text x="558" y="323" text-anchor="middle" font-size="18">8   9</text>
+<path d="M 558 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="680" y="283" text-anchor="middle" font-size="13">T5</text>
+<rect x="634" y="295" width="92" height="44" rx="6" fill="#ffe3cf" stroke="#68798b"/>
+<text x="680" y="323" text-anchor="middle" font-size="18">10   11</text>
+<path d="M 680 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="802" y="283" text-anchor="middle" font-size="13">T6</text>
+<rect x="756" y="295" width="92" height="44" rx="6" fill="#d0eee8" stroke="#68798b"/>
+<text x="802" y="323" text-anchor="middle" font-size="18">12   13</text>
+<path d="M 802 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<text x="924" y="283" text-anchor="middle" font-size="13">T7</text>
+<rect x="878" y="295" width="92" height="44" rx="6" fill="#e0e7ef" stroke="#68798b"/>
+<text x="924" y="323" text-anchor="middle" font-size="18">14   15</text>
+<path d="M 924 224 V 273" stroke="#68798b" stroke-width="1.5"/>
+<rect x="24" y="172" width="946" height="52" rx="8" fill="#e8edf5" stroke="#68798b"/>
+<text x="497" y="194" text-anchor="middle" font-size="15">SHARED SCRATCH</text>
+<text x="497" y="214" text-anchor="middle" font-size="13">Logical positions connect source threads to destination slots; padding omitted.</text>
+<text x="24" y="376" font-size="15">BLOCKED RESULT</text>
+</g>
+</svg>

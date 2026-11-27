@@ -1,8 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
 #include <cuda/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -78,7 +84,7 @@ struct test_less_than
 {
   long long expected;
 
-  _CCCL_DEVICE bool operator()(long long y)
+  _CCCL_DEVICE bool operator()(long long y) const
   {
     return y < expected;
   }

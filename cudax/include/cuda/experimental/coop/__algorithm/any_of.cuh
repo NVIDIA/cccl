@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
@@ -30,11 +31,12 @@
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__utility/result_policy.cuh>
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo: Can we make any_of be implemented as reduce(group, data, cuda::std::logical_or{})?
 
@@ -61,9 +63,9 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const this_thread<_Hiera
 }
 
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group)
-_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::boundary_level, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-__any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, bool __thread_data) noexcept
+__any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, bool __thread_data)
 {
   const auto& __mapping_result = __group.__mapping_result();
   const auto __result          = static_cast<bool>(::__any_sync(__mapping_result.lane_mask().value(), __thread_data));
@@ -73,7 +75,7 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, b
   }
   else
   {
-    return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return gpu_thread.is_root_rank(__group) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,7 +34,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
-#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#  ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 #    include <cuda/experimental/coop/__group/concepts.cuh>
 #    include <cuda/experimental/coop/__group/fwd.cuh>
 #    include <cuda/experimental/coop/__group/queries.cuh>
@@ -168,7 +168,7 @@ struct hierarchy_level_base
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#  ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 #    if _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Group)
@@ -182,14 +182,14 @@ struct hierarchy_level_base
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr auto count(const _Group& __group) noexcept
   {
-    return count_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
+    return count_as<__default_1d_query_type<typename _Group::unit_level>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
   [[nodiscard]] _CCCL_API static auto rank(const _Group& __group) noexcept
   {
-    return rank_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
+    return rank_as<__default_1d_query_type<typename _Group::unit_level>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)

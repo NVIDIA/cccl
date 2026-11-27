@@ -290,7 +290,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_ADDRESSOF)
+#ifdef _CCCL_ADDRESSOF
   static_assert(test());
 #endif // _CCCL_ADDRESSOF
 

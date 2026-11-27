@@ -19,6 +19,10 @@
 
 #include "test_macros.h"
 
+#if TEST_HAS_EXCEPTIONS()
+#  include <stdexcept>
+#endif // TEST_HAS_EXCEPTIONS()
+
 TEST_NV_DIAG_SUPPRESS(186)
 
 #if TEST_HAS_EXCEPTIONS()

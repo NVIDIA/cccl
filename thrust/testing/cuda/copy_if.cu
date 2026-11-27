@@ -1,8 +1,16 @@
 #include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
@@ -22,7 +30,7 @@ struct mod_n
   T mod;
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
-    return (x % mod == 0) ? true : false;
+    return static_cast<bool>(x % mod == 0);
   }
 };
 

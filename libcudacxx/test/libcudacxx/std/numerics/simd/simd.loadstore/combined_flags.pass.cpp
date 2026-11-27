@@ -13,10 +13,10 @@
 
 // [simd.loadstore], conversion and alignment across the complete flag pack
 
-#include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 
 #include "test_macros.h"
 

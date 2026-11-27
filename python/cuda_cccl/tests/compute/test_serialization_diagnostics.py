@@ -28,16 +28,11 @@ try:
 except ImportError:
     USING_V2 = False
 
-pytestmark = pytest.mark.skipif(
-    USING_V2,
-    reason="this module checks v1's exact C blob byte layout (CCCLSER1 magic, "
-    "field offsets); v2 serialization works (see test_reduce.py etc.) but uses "
-    "a different blob format (CCCLSEV2) with no diagnostics-validation API yet",
-)
-
-_C_MAGIC = b"CCCLSER1"
-# Field offsets within the C build_result header, past the 8-byte magic:
-#   algo_tag u32 | payload_kind u32 | cc u32
+# Magic of the C-level build_result blob embedded in the serialized object. The
+# header that follows the magic starts algo_tag u32 | (payload_kind | os_arch_tag)
+# u32 | cc u32 on both backends, so the cc field sits at the same offset.
+_C_MAGIC = b"CCCLSEV2" if USING_V2 else b"CCCLSER1"
+# Field offsets within the C build_result header, past the 8-byte magic.
 _OFF_CC = 4 + 4
 
 

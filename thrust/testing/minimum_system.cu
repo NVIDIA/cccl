@@ -1,4 +1,6 @@
+#include <thrust/execution_policy.h>
 #include <thrust/iterator/detail/minimum_system.h>
+#include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/type_traits>
 
