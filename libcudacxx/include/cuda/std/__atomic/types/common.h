@@ -59,11 +59,14 @@ struct __atomic_adl_float
 template <class _Tp>
 _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                      (return ::__hadd(__lhs, __rhs);),
+                      (return __hadd(__lhs, __rhs);),
                       (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) + __half2float(__rhs)});))
   }
   else
@@ -76,8 +79,8 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
       (return __hadd(__lhs, __rhs);),
       NV_IS_DEVICE,
       ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
-        return ::__float2bfloat16(__atomic_adl_float<_Tp>{
-          ::__fmaf_ieee_rn(::__bfloat162float(__lhs), 1.0f, ::__bfloat162float(__rhs))});),
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__lhs), 1.0f, __bfloat162float(__rhs))});),
       NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) + __bfloat162float(__rhs)});))
   }
@@ -86,16 +89,20 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
   {
     return __lhs + __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                      (return ::__hsub(__lhs, __rhs);),
+                      (return __hsub(__lhs, __rhs);),
                       (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) - __half2float(__rhs)});))
   }
   else
@@ -108,8 +115,8 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
       (return __hsub(__lhs, __rhs);),
       NV_IS_DEVICE,
       ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
-        return ::__float2bfloat16(__atomic_adl_float<_Tp>{
-          ::__fmaf_ieee_rn(::__bfloat162float(__rhs), -1.0f, ::__bfloat162float(__lhs))});),
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__rhs), -1.0f, __bfloat162float(__lhs))});),
       NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) - __bfloat162float(__rhs)});))
   }
@@ -118,14 +125,17 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
   {
     return __lhs - __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
   if constexpr (__is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2)
   {
-    // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_CTK() && _CCCL_CTK_BELOW(12, 2)
     // Before CTK 12.2, __hlt is device-only and its bfloat16 overload is unavailable before SM80.
 #  if _CCCL_HAS_NVBF16()
@@ -145,12 +155,12 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
     // Intentionally unqualified to avoid including <cuda_fp16.h> and <cuda_bf16.h>.
     return __hlt(__lhs, __rhs);
 #endif // CTK 12.2 or newer
-    // NOLINTEND(cccl-avoid-adl)
   }
   else
   {
     return __lhs < __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 enum class __atomic_tag
