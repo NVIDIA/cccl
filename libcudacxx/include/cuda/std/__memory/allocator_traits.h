@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,12 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
@@ -218,7 +219,7 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 };
 
 template <class _Alloc, class _Tp>
-using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
+using __allocator_traits_rebind_t _CCCL_NODEBUG = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>
@@ -346,13 +347,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
     if constexpr (__has_allocate_hint<_Alloc, size_type, const_void_pointer>)
@@ -463,7 +464,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     ptrdiff_t _Np = __end1 - __begin1;
     if (_Np > 0)
     {
-      ::cuda::std::memcpy(__begin2, __begin1, _Np * sizeof(_Tp));
+      ::cuda::std::memcpy(::cuda::ptr_rebind<void>(__begin2), ::cuda::ptr_rebind<void>(__begin1), _Np * sizeof(_Tp));
       __begin2 += _Np;
     }
   }
@@ -490,7 +491,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     ptrdiff_t _Np = __end1 - __begin1;
     if (_Np > 0)
     {
-      ::cuda::std::memcpy(const_cast<_RawDestTp*>(__begin2), __begin1, _Np * sizeof(_DestTp));
+      ::cuda::std::memcpy(::cuda::ptr_rebind<void>(const_cast<_RawDestTp*>(__begin2)),
+                          ::cuda::ptr_rebind<void>(__begin1),
+                          _Np * sizeof(_DestTp));
       __begin2 += _Np;
     }
   }
@@ -525,7 +528,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     __end2 -= _Np;
     if (_Np > 0)
     {
-      ::cuda::std::memcpy(__end2, __begin1, _Np * sizeof(_Tp));
+      ::cuda::std::memcpy(::cuda::ptr_rebind<void>(__end2), ::cuda::ptr_rebind<void>(__begin1), _Np * sizeof(_Tp));
     }
   }
 };

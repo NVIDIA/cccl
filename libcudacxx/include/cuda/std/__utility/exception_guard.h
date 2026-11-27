@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -142,10 +142,10 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>
-using __exception_guard = __exception_guard_noexceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_noexceptions<_Rollback>;
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
 template <class _Rollback>
-using __exception_guard = __exception_guard_exceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_exceptions<_Rollback>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Rollback>

@@ -1,5 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -62,7 +68,7 @@ TEST_CASE("TestIsSortedCudaStreams", "[is_sorted]")
   v[3] = 0;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 0));
   REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1));
@@ -85,5 +91,5 @@ TEST_CASE("TestIsSortedCudaStreams", "[is_sorted]")
 
   REQUIRE_FALSE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.end()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

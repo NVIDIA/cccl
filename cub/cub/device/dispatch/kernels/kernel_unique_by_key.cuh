@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,8 @@
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -237,7 +239,7 @@ template <typename PolicySelector,
           typename OffsetT>
 __launch_bounds__(
   device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -257,7 +259,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

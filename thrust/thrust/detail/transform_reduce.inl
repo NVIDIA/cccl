@@ -5,24 +5,29 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/transform_reduce.h>
 #include <thrust/system/detail/sequential/transform_reduce.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_reduce.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_reduce.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/transform_reduce.h>
 #  include <thrust/system/cuda/detail/transform_reduce.h>
 #  include <thrust/system/omp/detail/transform_reduce.h>
@@ -37,7 +42,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
+_CCCL_HOST_DEVICE_API OutputType transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -52,7 +57,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
 } // end transform_reduce()
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
-OutputType transform_reduce(
+_CCCL_HOST_API OutputType transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,28 +25,30 @@
 
 #  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
-#  include <cuda/__device/physical_device.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+// Keep the new container and its cached storage separate from the former std::vector.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
-  ::cuda::__simple_vector<device_ref> __ret{::cuda::__physical_devices().size(), ::cuda::no_init};
-  for (::cuda::std::size_t __i = 0; __i < ::cuda::__physical_devices().size(); ++__i)
+  const auto __count = ::cuda::__physical_devices_count();
+  ::cuda::__simple_vector<device_ref> __ret{__count, ::cuda::no_init};
+  for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
   {
     __ret.emplace_back(static_cast<int>(__i));
   }
   return __ret;
 }
 
-[[nodiscard]] inline ::cuda::std::span<const device_ref> __devices()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> __devices()
 {
   static const auto __devices = ::cuda::__make_devices();
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};
@@ -70,14 +72,14 @@ public:
   {
     if (__i >= size())
     {
-      _CCCL_THROW(::std::out_of_range, "device index out of range");
+      _CCCL_THROW_STD(out_of_range, "device index out of range");
     }
-    return ::cuda::__devices()[__i];
+    return device_ref{static_cast<int>(__i)};
   }
 
   [[nodiscard]] _CCCL_HOST_API size_type size() const
   {
-    return ::cuda::__devices().size();
+    return ::cuda::__physical_devices_count();
   }
 
   [[nodiscard]] _CCCL_HOST_API iterator begin() const
@@ -129,6 +131,8 @@ public:
 //! * device
 //! * device_ref
 inline constexpr __all_devices devices{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA
 

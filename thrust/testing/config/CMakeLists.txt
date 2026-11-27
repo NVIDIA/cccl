@@ -13,9 +13,7 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
 
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
 
-  # The warning has to reach the user. Note that cccl_add_xfail_compile_target_test
-  # picks the target up from the caller's `test_target` variable, so it has to be
-  # named that.
+  # The warning has to reach the user.
   set(test_target ${config_prefix}.test.config.deprecated_compiler_warning)
   cccl_add_executable(
     ${test_target}

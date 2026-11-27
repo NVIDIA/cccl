@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,11 +26,11 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/prologue.h>
-
 #if _CCCL_HOST_COMPILATION()
 #  include <functional>
 #endif // _CCCL_HOST_COMPILATION()
+
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOST_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API bool
 __ptr_ranges_overlap_host(_Tp* __lhs_begin, _Tp* __lhs_end, _Tp* __rhs_begin, _Tp* __rhs_end) noexcept
@@ -58,7 +58,7 @@ __ptr_ranges_overlap_host(_Tp* __lhs_begin, _Tp* __lhs_end, _Tp* __rhs_begin, _T
   _CCCL_ASSERT(::std::less_equal<>{}(__rhs_begin, __rhs_end), "rhs range is invalid");
   return ::std::less<>{}(__lhs_begin, __rhs_end) && ::std::less<>{}(__rhs_begin, __lhs_end);
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOST_COMPILATION()
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::forward_iterator<_Tp>)
@@ -74,7 +74,7 @@ ranges_overlap(_Tp __lhs_begin, _Tp __lhs_end, _Tp __rhs_begin, _Tp __rhs_end) n
       _CCCL_ASSERT(__rhs_begin <= __rhs_end, "rhs range is invalid");
       return __lhs_begin < __rhs_end && __rhs_begin < __lhs_end;
     }
-    else
+    else // NOLINT(readability-else-after-return)
     {
       const auto __ptr_lhs_begin = ::cuda::std::to_address(__lhs_begin);
       const auto __ptr_lhs_end   = ::cuda::std::to_address(__lhs_end);

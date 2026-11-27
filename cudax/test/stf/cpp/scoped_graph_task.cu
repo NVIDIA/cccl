@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
   for (size_t ind = 0; ind < n; ind++)
   {
-    X[ind] = 1.0 * static_cast<double>(ind) + 42;
+    X[ind] = (1.0 * static_cast<double>(ind)) + 42;
     Y[ind] = 0.0;
   }
 

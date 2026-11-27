@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,7 +45,7 @@ _CCCL_CONCEPT has_property = _CCCL_REQUIRES_EXPR((_Resource, _Property), const _
   ((void) get_property(__res, __prop)));
 
 template <class _Property>
-using __property_value_t = typename _Property::value_type;
+using __property_value_t _CCCL_NODEBUG = typename _Property::value_type;
 
 //! @brief The \c property_with_value concept verifies that a Property is stateful and signals this through the
 //! `value_type` alias

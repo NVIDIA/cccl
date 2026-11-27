@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -204,7 +204,7 @@ private:
     { // [pairs#pair]-11.2: is_constructible<T2, U2> is true
       return __select_constructor::__invalid;
     }
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     else if constexpr (reference_constructs_from_temporary_v<_T1, _U1&&>
                        || reference_constructs_from_temporary_v<_T2, _U2&&>)
     { // [pairs#pair]-13: This constructor is defined as deleted if
@@ -227,7 +227,7 @@ private:
   // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
   // instantiations. An alias to bool_constant is not a static data member.
   template <class _UPair>
-  using __disambiguate_pair_like =
+  using __disambiguate_pair_like _CCCL_NODEBUG =
     bool_constant<!is_same_v<pair, remove_cvref_t<_UPair>> // [pairs#pair]-42.1 different-from<P, pair> is true
                   && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>> // [pairs#pair]-15.1, [pairs#pair]-42.2
                   && __pair_like<_UPair>>; // [pairs#pair]-13, [pairs#pair]-42 template<pair-like P>
@@ -252,13 +252,13 @@ private:
   }
 
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t _CCCL_NODEBUG = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
 #else // ^^^ _CCCL_COMPILER(GCC, <, 11) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 11) vvv
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t _CCCL_NODEBUG = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 11)
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Tp, class... _Args>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __piecewise_reference_from_temporary_pack() noexcept
   {
@@ -293,7 +293,7 @@ private:
     { // [pairs#pair]-18.2: is_constructible_v<T2, Args2...> is true
       return __select_constructor::__invalid;
     }
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     else if constexpr (pair::__piecewise_reference_from_temporary_pack<_T1, _Args1...>()
                        || pair::__piecewise_reference_from_temporary_pack<_T2, _Args2...>())
     { // [pairs#pair] note 2: defined as deleted if a reference member would bind to a temporary
@@ -309,10 +309,10 @@ private:
 
   // MSVC cannot parse a default template argument that calls a function with two packs.
   template <class _TupleTypes0, class _TupleTypes1>
-  using _PiecewiseConstructible =
+  using _PiecewiseConstructible _CCCL_NODEBUG =
     _ConstructorConstraint<pair::__select_piecewise_constructible(_TupleTypes0{}, _TupleTypes1{})>;
 
-  using __base = __pair_base<_T1, _T2>;
+  using __base _CCCL_NODEBUG = __pair_base<_T1, _T2>;
 
 public:
   using first_type  = _T1;
@@ -368,7 +368,7 @@ public:
       : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _U1                         = _T1,
             class _U2                         = _T2,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1, _U2>(),
@@ -399,7 +399,7 @@ public:
       : __base(__p.first, __p.second)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _U1,
             class _U2,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&, _U2&>(),
@@ -427,7 +427,7 @@ public:
       : __base(__p.first, __p.second)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _U1,
             class _U2,
             enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
@@ -456,7 +456,7 @@ public:
       : __base(static_cast<_U1&&>(cuda::std::move(__p).first), static_cast<_U2&&>(cuda::std::move(__p).second))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _U1,
             class _U2,
             enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
@@ -489,7 +489,7 @@ public:
                static_cast<const _U2&&>(cuda::std::move(__p).second))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _U1,
             class _U2,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&&, const _U2&&>(),
@@ -528,7 +528,7 @@ public:
                ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <
     class _UPair,
     enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
@@ -554,7 +554,7 @@ public:
                __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _Args1,
             class... _Args2,
             class _Constraints = _PiecewiseConstructible<__tuple_types<_Args1...>, __tuple_types<_Args2...>>,
@@ -748,7 +748,8 @@ struct basic_common_reference<
   _UQual,
   void_t<pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>>>
 {
-  using type = pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>;
+  using type _CCCL_NODEBUG =
+    pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>;
 };
 
 #if _CCCL_STD_VER >= 2023

@@ -1,5 +1,9 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 
@@ -50,13 +54,13 @@ TEST_CASE("TestTransformReduceCudaStreams", "[transform_reduce]")
   const T init = 10;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const T result = thrust::transform_reduce(
     thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(8 == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

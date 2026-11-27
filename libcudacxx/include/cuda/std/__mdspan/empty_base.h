@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,6 +33,13 @@
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -98,7 +105,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco;
 template <class _Elem1>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, _Elem1>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
@@ -140,8 +147,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     : __mdspan_ebco_impl<0, _Elem1>
     , __mdspan_ebco_impl<1, _Elem2>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
@@ -237,9 +244,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     , __mdspan_ebco_impl<1, _Elem2>
     , __mdspan_ebco_impl<2, _Elem3>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
-  using __base3 = __mdspan_ebco_impl<2, _Elem3>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
+  using __base3 _CCCL_NODEBUG = __mdspan_ebco_impl<2, _Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
@@ -363,6 +370,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

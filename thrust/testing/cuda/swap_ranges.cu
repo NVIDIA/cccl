@@ -1,5 +1,7 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/swap.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <unittest/unittest.h>
 
@@ -49,13 +51,13 @@ TEST_CASE("TestSwapRangesCudaStreams", "[swap_ranges]")
   const Vector v2_ref(v1);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::swap_ranges(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(v1 == v1_ref);
   REQUIRE(v2 == v2_ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

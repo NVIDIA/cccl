@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,6 +22,7 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/iket_support.cuh>
@@ -189,6 +190,19 @@ struct AgentScan
   static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(AgentScanPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ScanLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a blocked "
+                "arrangement");
+  static_assert(AgentScanPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED,
+                "ScanLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
+  static_assert(
+    (AgentScanPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ScanLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan prefix callback: with warp "
+    "scans threads_per_block must be a multiple of 32, otherwise the raking layout must yield 32 raking threads");
+
   // Parameterized BlockLoad type
   using BlockLoadT =
     BlockLoad<AccumT,
@@ -252,7 +266,7 @@ struct AgentScan
   //---------------------------------------------------------------------
 
   template <bool Inclusive = IS_INCLUSIVE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanFirstTile(AccumT (&items)[ITEMS_PER_THREAD], InitValueT init_value, ScanOpT scan_op, AccumT& block_aggregate)
   {
     BlockScanT blockScan(temp_storage.scan_storage.scan);
@@ -276,7 +290,7 @@ struct AgentScan
   }
 
   template <bool Inclusive = IS_INCLUSIVE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanFirstTileWithPrefix(AccumT (&items)[ITEMS_PER_THREAD], AccumT prefix, ScanOpT scan_op, AccumT& block_aggregate)
   {
     BlockScanT block_scan(temp_storage.scan_storage.scan);
@@ -292,7 +306,7 @@ struct AgentScan
   }
 
   template <typename PrefixCallback, bool Inclusive = IS_INCLUSIVE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanSubsequentTile(AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op)
   {
     BlockScanT blockScan(temp_storage.scan_storage.scan);
@@ -326,7 +340,7 @@ struct AgentScan
    * @param init_value
    *   Initial value to seed the exclusive scan
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScan(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentScan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
@@ -357,7 +371,7 @@ struct AgentScan
    *   Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     // Load items
@@ -433,7 +447,7 @@ struct AgentScan
    * @param start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
     // Blocks are launched in increasing order, so just assign one tile per
     // block
@@ -473,7 +487,7 @@ struct AgentScan
   //! @param[in] completion_op Called by all threads after look-back completes.
   //!   Only thread 0 provides a valid inclusive prefix.
   template <bool IsLastTile, typename CompletionOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeBatchTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeBatchTile(
     OffsetT num_remaining,
     OffsetT tile_idx,
     int batch_tile_idx,
@@ -561,7 +575,7 @@ struct AgentScan
    *   Number of valid items in the tile
    */
   template <bool IsFirstTile, bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT tile_offset, RunningPrefixCallbackOp& prefix_op, int valid_items = TILE_ITEMS)
   {
     // Load items
@@ -620,7 +634,7 @@ struct AgentScan
    * @param[in] range_end
    *   Threadblock end offset (exclusive)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end)
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(scan_op);
 
@@ -664,7 +678,7 @@ struct AgentScan
    * @param[in] prefix
    *   The prefix to apply to the scan segment
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end, AccumT prefix)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end, AccumT prefix)
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(prefix, scan_op);
 

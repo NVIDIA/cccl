@@ -13,7 +13,7 @@
 
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -103,7 +103,7 @@
 #endif // ^^^ no RDC ^^^
 
 // Check whether extensible whole program is being compiled.
-#if defined(__CUDACC_EWP__)
+#ifdef __CUDACC_EWP__
 #  define _CCCL_HAS_EWP() 1
 #else // ^^^ has EWP ^^^ / vvv no EWP vvv
 #  define _CCCL_HAS_EWP() 0

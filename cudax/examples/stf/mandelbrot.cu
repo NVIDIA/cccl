@@ -40,7 +40,8 @@ int main(int argc, char** argv)
   // Describe a 2D array of integers of size (width x height)
   auto lbuffer = ctx.logical_data(shape_of<slice<int, 2>>(width, height));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
 
@@ -51,8 +52,8 @@ int main(int argc, char** argv)
       ->*[=] _CCCL_DEVICE(size_t x, size_t y, auto buffer) {
             // Map pixel coordinates to complex plane
             // c = cr + i ci
-            const double cr = static_cast<double>(x) * (xMax - xMin) / static_cast<double>(width) + xMin;
-            const double ci = static_cast<double>(y) * (yMax - yMin) / static_cast<double>(height) + yMin;
+            const double cr = (static_cast<double>(x) * (xMax - xMin) / static_cast<double>(width)) + xMin;
+            const double ci = (static_cast<double>(y) * (yMax - yMin) / static_cast<double>(height)) + yMin;
 
             // z = zr + i zi
             double zr = 0.0;
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
             int iterations = 0;
 
             // Evaluate depth
-            while (zr * zr + zi * zi < 4 && iterations < maxIterations)
+            while ((zr * zr) + (zi * zi) < 4 && iterations < maxIterations)
             {
               // compute : z = z * z + c;
               //
@@ -71,8 +72,8 @@ int main(int argc, char** argv)
               // zi = (2 zi zr + ci)
               const double zr_prev = zr;
               const double zi_prev = zi;
-              zr                   = zr_prev * zr_prev - zi_prev * zi_prev + cr;
-              zi                   = 2.0 * zr_prev * zi_prev + ci;
+              zr                   = (zr_prev * zr_prev) - (zi_prev * zi_prev) + cr;
+              zi                   = (2.0 * zr_prev * zi_prev) + ci;
 
               iterations++;
             }

@@ -1,4 +1,6 @@
+#include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
@@ -8,6 +10,7 @@
 #include <cuda/functional>
 
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,17 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 
+// Structured bindings to const tuple-likes need the host specializations of ::std::tuple_size for cv-qualified types
+#if _CCCL_HOSTED()
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/utility.h>)
+#    include <bits/utility.h> // for ::std::tuple_size<const _Tp>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__tuple/tuple_size.h>)
+#    include <__tuple/tuple_size.h> // for ::std::tuple_size<const _Tp>
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBCXX) ^^^ / vvv other host standard library vvv
+#    include <utility> // for ::std::tuple_size<const _Tp>
+#  endif // ^^^ other host standard library ^^^
+#endif // _CCCL_HOSTED()
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -41,7 +52,7 @@ template <class _Tp>
 inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
 template <class _Tp, class...>
-using __enable_if_tuple_size_imp = _Tp;
+using __enable_if_tuple_size_imp _CCCL_NODEBUG = _Tp;
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT

@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -45,12 +45,24 @@
 #  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) 0
 #endif // !__has_declspec_attribute
 
-// MSVC needs extra help with empty base classes
+// MSVC needs extra help with empty base classes, and the layout of CCCL types depends on it. Some code bases define
+// `empty_bases` as a macro, which must neither change this check nor break _CCCL_DECLSPEC_EMPTY_BASES. So push and
+// pop `empty_bases` around this check and in every header that uses _CCCL_DECLSPEC_EMPTY_BASES, like
+// <cuda/std/__tuple_dir/tuple_leaf.h> does.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 #if _CCCL_COMPILER(MSVC) || _CCCL_HAS_DECLSPEC_ATTRIBUTE(empty_bases)
 #  define _CCCL_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_DECLSPEC_EMPTY_BASES
 #endif // !_CCCL_COMPILER(MSVC)
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #if _CCCL_HAS_ATTRIBUTE(__nodebug__)
 #  define _CCCL_NODEBUG __attribute__((__nodebug__))
@@ -67,12 +79,20 @@
 #  define _CCCL_ARTIFICIAL
 #endif // !_CCCL_HAS_ATTRIBUTE(__artificial__)
 
-// The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
-#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
-#  define _CCCL_NODEBUG_ALIAS
-#endif // !_CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif _CCCL_COMPILER(GCC, >=, 13)
+#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
+#else
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_assume)
+
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
 
 // _CCCL_ASSUME
 // NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
@@ -116,7 +136,10 @@
 
 // MSVC provides a way to mark functions as intrinsic provided the function's body consists of a single
 // return statement of a cast expression (e.g., move(x) or forward<T>(u)).
-#if _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(msvc) || defined(intrinsic)
+#  define _CCCL_INTRINSIC
+#elif _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
 #  define _CCCL_INTRINSIC [[msvc::intrinsic]]
 #else
 #  define _CCCL_INTRINSIC
@@ -124,11 +147,12 @@
 
 // _CCCL_PURE
 
+// The MSVC attribute is optional, so skip it if users define its name as a macro, which would break it.
 #if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
 #  define _CCCL_PURE __nv_pure__
 #elif _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__pure__)
 #  define _CCCL_PURE [[__gnu__::__pure__]]
-#elif _CCCL_COMPILER(MSVC)
+#elif _CCCL_COMPILER(MSVC) && !defined(noalias)
 #  define _CCCL_PURE __declspec(noalias)
 #else
 #  define _CCCL_PURE
@@ -152,7 +176,11 @@
 
 // _CCCL_NO_SPECIALIZATIONS
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(clang) || defined(msvc) || defined(no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
+#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::__no_specializations__(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
@@ -168,7 +196,10 @@
 
 // _CCCL_LIFETIMEBOUND
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(clang) || defined(msvc) || defined(lifetimebound)
+#  define _CCCL_LIFETIMEBOUND
+#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
 #  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]

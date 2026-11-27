@@ -1,6 +1,11 @@
 #include <thrust/binary_search.h>
+#include <thrust/device_vector.h>
 #include <thrust/distance.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/algorithm>
@@ -8,13 +13,17 @@
 #include <cuda/std/type_traits>
 
 #include <complex>
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numeric>
 
+#include <catch2/generators/catch_generators.hpp>
 #include <unittest/unittest.h>
 
 template <typename ValueType, typename DifferenceType>
 inline constexpr bool diff_type_is =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_same_v<typename thrust::counting_iterator<ValueType>::difference_type, DifferenceType>;
 
 static_assert(diff_type_is<int8_t, int>);
@@ -53,7 +62,7 @@ TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, signed int>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

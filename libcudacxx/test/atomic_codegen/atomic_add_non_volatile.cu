@@ -37,33 +37,33 @@ __global__ void add_relaxed_system_pointer_non_volatile(int** data, int** out, i
 ; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
 ; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#RESULT:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
 ; SMXX-DAG:  ld.param.{{b|u}}32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_2{{.*}}
+; GLOBAL-DAG: cvta.to.global.u64 %rd[[#GATOM:]], %rd[[#ATOM]];
 ; SMXX-DAG:  cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#RESULT]];
-; SMXX-DAG:  {{/*[[:space:]] *}}atom.add.relaxed.gpu.s32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
+; GENERIC-DAG: {{/*[[:space:]] *}}atom.add.relaxed.gpu.s32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
+; GLOBAL-DAG: atom.relaxed.gpu.global.add.u32 %r[[#DEST:]], [%rd[[#GATOM]]], %r[[#INPUT]];
 ; SMXX-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
 ; SMXX-NEXT: ret;
 
 ; SMXX-LABEL: .visible .entry {{_.*add_relaxed_block_pointer_non_volatile.*}}(
-; SMXX: {{.*}}atom.add.relaxed.cta.u64{{.*}}
+; GENERIC: {{.*}}atom.add.relaxed.cta.u64 {{.*}}
+; GLOBAL: atom.relaxed.cta.global.add.u64 {{.*}}
 ; SMXX: ret;
 
 ; SMXX-LABEL: .visible .entry {{_.*add_relaxed_device_pointer_non_volatile.*}}(
-; SMXX: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
+; GENERIC: {{.*}}atom.add.relaxed.gpu.u64 {{.*}}
+; GLOBAL: atom.relaxed.gpu.global.add.u64 {{.*}}
 ; SMXX: ret;
 
-; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*add_relaxed_cluster_pointer_non_volatile.*}}(
-; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
-; NOT-SM90-PLUS: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
-; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
-; NOT-SM90-PLUS: ret;
-
-; SM90-PLUS-LABEL: .visible .entry {{_.*add_relaxed_cluster_pointer_non_volatile.*}}(
-; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
-; SM90-PLUS: {{.*}}atom.add.relaxed.cluster.u64{{.*}}
-; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
-; SM90-PLUS: ret;
+; SMXX-LABEL: .visible .entry {{_.*add_relaxed_cluster_pointer_non_volatile.*}}(
+; SMXX-NOT: {{.*}}atom.{{.*}}
+; GENERIC: {{.*}}atom.add.relaxed.[[CLUSTER_SCOPE]].u64 {{.*}}
+; GLOBAL: atom.relaxed.[[CLUSTER_SCOPE]].global.add.u64 {{.*}}
+; SMXX-NOT: {{.*}}atom.{{.*}}
+; SMXX: ret;
 
 ; SMXX-LABEL: .visible .entry {{_.*add_relaxed_system_pointer_non_volatile.*}}(
-; SMXX: {{.*}}atom.add.relaxed.sys.u64{{.*}}
+; GENERIC: {{.*}}atom.add.relaxed.sys.u64 {{.*}}
+; GLOBAL: atom.relaxed.sys.global.add.u64 {{.*}}
 ; SMXX: ret;
 
 */

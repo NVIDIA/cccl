@@ -1,5 +1,10 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/inner_product.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -54,11 +59,11 @@ TEST_CASE("TestInnerProductCudaStreams", "[inner_product]")
   thrust::device_vector<int> v2 = {-4, 5, 6};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const int init   = 3;
   const int result = thrust::inner_product(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), init);
   REQUIRE(result == 7);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

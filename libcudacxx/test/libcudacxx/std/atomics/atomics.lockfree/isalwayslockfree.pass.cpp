@@ -24,7 +24,7 @@
 // NVRTC doesn't include host atomic making this feature test invalid
 // TODO: Should we define __cccl_lib_atomic_is_always_lock_free for NVRTC?
 #if !TEST_COMPILER(NVRTC)
-#  if !defined(__cccl_lib_atomic_is_always_lock_free)
+#  ifndef __cccl_lib_atomic_is_always_lock_free
 #    error Feature test macro missing.
 #  endif
 #endif // !TEST_COMPILER(NVRTC)

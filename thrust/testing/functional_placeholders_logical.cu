@@ -1,6 +1,15 @@
 #include <thrust/detail/allocator/allocator_system.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
+#include <thrust/universal_vector.h>
+
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/functional>
+#include <cuda/std/memory>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -12,19 +21,20 @@ struct rebind_vector;
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::host_vector<T, Allocator>, U>
 {
-  using type = thrust::host_vector<U, typename cuda::std::allocator_traits<Allocator>::template rebind_alloc<U>>;
+  using type _CCCL_NODEBUG =
+    thrust::host_vector<U, typename cuda::std::allocator_traits<Allocator>::template rebind_alloc<U>>;
 };
 
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::device_vector<T, Allocator>, U>
 {
-  using type = thrust::device_vector<U, typename Allocator::template rebind<U>::other>;
+  using type _CCCL_NODEBUG = thrust::device_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
 {
-  using type = thrust::universal_vector<U, typename Allocator::template rebind<U>::other>;
+  using type _CCCL_NODEBUG = thrust::universal_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 TEMPLATE_LIST_TEST_CASE("LogicalAndOr", "[functional]", vector_list)

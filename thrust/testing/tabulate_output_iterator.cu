@@ -6,13 +6,20 @@
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -91,8 +98,10 @@ TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
                                                                                thrust::random_access_traversal_tag>;
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  // NOLINTBEGIN(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::value_type, void>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  // NOLINTEND(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::tabulate_output_iterator_proxy<Op, ptrdiff_t>>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
@@ -121,7 +130,7 @@ void test_tabulate_output_iterator()
   Vector output(num_items, T{42});
 
   // Use operator type that supports the targeted system
-  using op_t = ::cuda::std::conditional_t<(::cuda::std::is_same_v<space, thrust::host_system_tag>),
+  using op_t = ::cuda::std::conditional_t<::cuda::std::is_same_v<space, thrust::host_system_tag>,
                                           host_write_first_op<it_t>,
                                           device_write_first_op<it_t>>;
 
@@ -155,7 +164,7 @@ DECLARE_VECTOR_UNITTEST(test_tabulate_output_iterator);
 TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {
   using vector_t = thrust::host_vector<int>;
-  using vec_it_t = typename vector_t::iterator;
+  using vec_it_t = vector_t::iterator;
   using op_t     = host_write_op<vec_it_t>;
 
   vector_t out(4, 42);

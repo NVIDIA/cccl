@@ -52,7 +52,7 @@ int main()
   int array[N];
   for (size_t i = 0; i < N; i++)
   {
-    array[i] = static_cast<int>(1 + i * i);
+    array[i] = static_cast<int>(1 + (i * i));
   }
 
   auto lB = sctx.logical_data(array);

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -82,8 +82,8 @@ class __shared_memory_accessor : public _Accessor
 {
   static_assert(::cuda::std::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
-  using __element_type     = ::cuda::std::remove_pointer_t<__data_handle_type>;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
+  using __element_type _CCCL_NODEBUG     = ::cuda::std::remove_pointer_t<__data_handle_type>;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -161,7 +161,7 @@ public:
 
   _CCCL_API reference access(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_access_noexcept)
   {
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (bool __is_shared_mem = ::__isShared(__p); //
@@ -176,7 +176,7 @@ public:
 
   _CCCL_API data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_offset_noexcept)
   {
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (bool __is_shared_mem = ::__isShared(__p); //
@@ -189,7 +189,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API static bool __detectably_invalid(
     [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) noexcept
   {

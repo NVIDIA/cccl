@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -95,7 +95,7 @@ _CCCL_CONCEPT __opt_is_assignable_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
 template <class _Tp>
 class optional : private __optional_move_assign_base<_Tp>
 {
-  using __base = __optional_move_assign_base<_Tp>;
+  using __base _CCCL_NODEBUG = __optional_move_assign_base<_Tp>;
 
   template <class>
   friend class optional;
@@ -209,8 +209,8 @@ public:
     return *this;
   }
 
-  constexpr optional& operator=(const optional&) = default;
-  constexpr optional& operator=(optional&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(const optional&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(optional&&)      = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = value_type)

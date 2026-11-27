@@ -1,5 +1,13 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
+#include <thrust/host_vector.h>
+#include <thrust/memory.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -81,7 +89,7 @@ void test_max_element_cuda_streams(ExecutionPolicy policy)
   data[5] = 1;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
@@ -91,7 +99,7 @@ void test_max_element_cuda_streams(ExecutionPolicy policy)
   REQUIRE(*thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()) == 1);
   REQUIRE(thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin() == 2);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestMaxElementCudaStreamsSync", "[max_element]")

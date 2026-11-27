@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,11 +24,9 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__exception/terminate.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
-#include <cuda/experimental/__execution/env.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

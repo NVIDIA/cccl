@@ -1,5 +1,7 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <unittest/unittest.h>
 
@@ -73,25 +75,25 @@ TEST_CASE("TestSequenceCudaStreams", "[sequence]")
   Vector v(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   Vector ref{0, 1, 2, 3, 4};
   REQUIRE(v == ref);
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 11, 12, 13, 14};
   REQUIRE(v == ref);
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10, 2);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 12, 14, 16, 18};
   REQUIRE(v == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

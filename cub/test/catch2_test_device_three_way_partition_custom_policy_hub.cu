@@ -94,31 +94,35 @@ CUB_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition
     policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_first.data()),
-    thrust::raw_pointer_cast(d_second.data()),
-    thrust::raw_pointer_cast(d_unselected.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    less_than_zero_t{},
-    equal_zero_t{},
-    static_cast<offset_t>(h_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_first.data()),
+      thrust::raw_pointer_cast(d_second.data()),
+      thrust::raw_pointer_cast(d_unselected.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      less_than_zero_t{},
+      equal_zero_t{},
+      static_cast<offset_t>(h_in.size()),
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_first.data()),
-    thrust::raw_pointer_cast(d_second.data()),
-    thrust::raw_pointer_cast(d_unselected.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    less_than_zero_t{},
-    equal_zero_t{},
-    static_cast<offset_t>(h_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_first.data()),
+      thrust::raw_pointer_cast(d_second.data()),
+      thrust::raw_pointer_cast(d_unselected.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      less_than_zero_t{},
+      equal_zero_t{},
+      static_cast<offset_t>(h_in.size()),
+      /* stream */ nullptr));
 
   const auto num_first  = static_cast<std::size_t>(d_num_selected[0]);
   const auto num_second = static_cast<std::size_t>(d_num_selected[1]);

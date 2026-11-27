@@ -26,7 +26,8 @@ using namespace cuda::experimental::stf;
 _CCCL_DEVICE double atomicMax(double* address, double val)
 {
   unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
-  unsigned long long int old             = *address_as_ull, assumed;
+  unsigned long long int old             = *address_as_ull;
+  unsigned long long int assumed;
 
   do
   {
@@ -106,7 +107,8 @@ int main(int argc, char** argv)
       A(i, j) = (i == j) ? 10.0 : -1.0;
     };
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
 
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
@@ -152,6 +154,6 @@ int main(int argc, char** argv)
   float elapsedTime;
   // finalize() does not wait for work recorded in a stream returned by fence().
   cuda_safe_call(cudaEventSynchronize(stop));
-  cudaEventElapsedTime(&elapsedTime, start, stop);
+  cuda_safe_call(cudaEventElapsedTime(&elapsedTime, start, stop));
   printf("Elapsed time: %f ms\n", elapsedTime);
 }

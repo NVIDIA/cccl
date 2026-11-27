@@ -1,14 +1,23 @@
-#include <thrust/detail/seq.h>
-#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/detail/config.h>
+
+#include <thrust/detail/execute_with_allocator_fwd.h>
+#include <thrust/execution_policy.h>
+#include <thrust/mr/allocator.h>
+#include <thrust/mr/memory_resource.h>
+#include <thrust/system/cpp/execution_policy.h>
+#include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/cstddef>
 
+#include <cstddef>
+#include <memory>
+
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/execution_policy.h>
 #endif
 
 template <typename T>
@@ -39,7 +48,7 @@ struct policy_info
   template <template <typename, template <typename> class> class Template, typename Argument>
   struct apply_base_second
   {
-    using type = Template<Argument, CRTPBase>;
+    using type _CCCL_NODEBUG = Template<Argument, CRTPBase>;
   };
 };
 

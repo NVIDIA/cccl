@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,6 +33,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#  ifdef empty_bases
+#    pragma push_macro("empty_bases")
+#    undef empty_bases
+#    define _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // cudafe++ makes the queries (that are device only) return void when compiling for host, which causes host compilers
@@ -47,7 +54,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
 template <class _Level>
 struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_level_base<_Level>
 {
-  using __base_type = hierarchy_level_base<_Level>;
+  using __base_type _CCCL_NODEBUG = hierarchy_level_base<_Level>;
   using __base_type::count;
   using __base_type::count_as;
   using __base_type::dims;
@@ -63,7 +70,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::rank;
   using __base_type::rank_as;
 
-#    if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#    ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
   using __base_type::is_root_rank;
 #    endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
@@ -161,6 +168,11 @@ struct __native_hierarchy_level_base<grid_level> : hierarchy_level_base<grid_lev
 {};
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#    pragma pop_macro("empty_bases")
+#    undef _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #  include <cuda/std/__cccl/epilogue.h>
 

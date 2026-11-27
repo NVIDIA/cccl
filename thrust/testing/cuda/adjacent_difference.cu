@@ -1,7 +1,17 @@
 #include <thrust/adjacent_difference.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -76,20 +86,20 @@ DECLARE_VARIABLE_UNITTEST(TestAdjacentDifferenceDeviceDevice);
 TEST_CASE("TestAdjacentDifferenceCudaStreams", "[adjacent_difference]")
 {
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::device_vector<int> input{1, 4, 6};
   thrust::device_vector<int> output(input.size());
 
   thrust::adjacent_difference(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const thrust::device_vector<int> ref{1, 3, 2};
 
   REQUIRE(output == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 struct detect_wrong_difference

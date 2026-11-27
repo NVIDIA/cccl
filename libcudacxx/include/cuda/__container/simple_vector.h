@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,8 +21,7 @@
 #endif // no system header
 
 #include <cuda/__utility/no_init.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/allocate.h>
@@ -42,7 +41,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp>
 class __simple_vector
 {
-private:
   _Tp* __begin_      = nullptr;
   _Tp* __end_        = nullptr;
   size_t __capacity_ = 0;
@@ -53,9 +51,9 @@ private:
     {
       return nullptr;
     }
-    else if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
+    if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
     {
-      _CCCL_THROW(::std::bad_alloc);
+      _CCCL_THROW_STD(bad_alloc);
     }
 
     return reinterpret_cast<_Tp*>(::cuda::std::__cccl_allocate(__count * sizeof(_Tp), alignof(_Tp)));

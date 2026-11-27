@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -187,7 +187,7 @@ struct common_reference<>
 template <class _Tp>
 struct common_reference<_Tp>
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 // bullet 3 - sizeof...(T) == 2

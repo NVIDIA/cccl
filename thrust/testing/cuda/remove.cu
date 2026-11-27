@@ -1,7 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/remove.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -63,7 +68,7 @@ struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
-    return x ? true : false;
+    return static_cast<bool>(x);
   }
 };
 
@@ -313,7 +318,7 @@ TEST_CASE("TestRemoveCudaStreams", "[remove]")
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end = thrust::remove(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2);
 
@@ -323,7 +328,7 @@ TEST_CASE("TestRemoveCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
@@ -336,7 +341,7 @@ TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
   Vector result(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::remove_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), (T) 2);
@@ -347,7 +352,7 @@ TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
@@ -357,7 +362,7 @@ TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), cuda::__is_even{});
 
@@ -367,7 +372,7 @@ TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
@@ -380,7 +385,7 @@ TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
   Vector stencil{0, 1, 0, 0, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
@@ -391,7 +396,7 @@ TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
@@ -403,7 +408,7 @@ TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
   Vector result(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
@@ -414,7 +419,7 @@ TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestRemoveCopyIfStencilCudaStreams", "[remove]")
@@ -429,7 +434,7 @@ TEST_CASE("TestRemoveCopyIfStencilCudaStreams", "[remove]")
   Vector result(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end = thrust::remove_copy_if(
     thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
@@ -440,5 +445,5 @@ TEST_CASE("TestRemoveCopyIfStencilCudaStreams", "[remove]")
   const Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

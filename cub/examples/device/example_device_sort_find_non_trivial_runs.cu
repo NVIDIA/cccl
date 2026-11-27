@@ -311,22 +311,10 @@ int main(int argc, char** argv)
   }
 
   // Host cleanup
-  if (h_keys)
-  {
-    delete[] h_keys;
-  }
-  if (h_values)
-  {
-    delete[] h_values;
-  }
-  if (h_offsets_reference)
-  {
-    delete[] h_offsets_reference;
-  }
-  if (h_lengths_reference)
-  {
-    delete[] h_lengths_reference;
-  }
+  delete[] h_keys;
+  delete[] h_values;
+  delete[] h_offsets_reference;
+  delete[] h_lengths_reference;
 
   printf("\n\n");
 

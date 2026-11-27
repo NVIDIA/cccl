@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -144,7 +144,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float sqrt(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SQRTF)
+#ifdef _CCCL_BUILTIN_SQRTF
   return _CCCL_BUILTIN_SQRTF(__x);
 #else // ^^^ _CCCL_BUILTIN_SQRTF ^^^ // vvv !_CCCL_BUILTIN_SQRTF vvv
   return ::sqrtf(__x);
@@ -153,7 +153,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float sqrtf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SQRTF)
+#ifdef _CCCL_BUILTIN_SQRTF
   return _CCCL_BUILTIN_SQRTF(__x);
 #else // ^^^ _CCCL_BUILTIN_SQRTF ^^^ // vvv !_CCCL_BUILTIN_SQRTF vvv
   return ::sqrtf(__x);
@@ -162,7 +162,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double sqrt(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SQRT)
+#ifdef _CCCL_BUILTIN_SQRT
   return _CCCL_BUILTIN_SQRT(__x);
 #else // ^^^ _CCCL_BUILTIN_SQRT ^^^ // vvv !_CCCL_BUILTIN_SQRT vvv
   return ::sqrt(__x);
@@ -172,7 +172,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double sqrt(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SQRTL)
+#  ifdef _CCCL_BUILTIN_SQRTL
   return _CCCL_BUILTIN_SQRTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SQRTL ^^^ // vvv !_CCCL_BUILTIN_SQRTL vvv
   return ::sqrtl(__x);
@@ -181,7 +181,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double sqrtl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SQRTL)
+#  ifdef _CCCL_BUILTIN_SQRTL
   return _CCCL_BUILTIN_SQRTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SQRTL ^^^ // vvv !_CCCL_BUILTIN_SQRTL vvv
   return ::sqrtl(__x);
@@ -239,7 +239,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float cbrt(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CBRTF)
+#ifdef _CCCL_BUILTIN_CBRTF
   return _CCCL_BUILTIN_CBRTF(__x);
 #else // ^^^ _CCCL_BUILTIN_CBRTF ^^^ // vvv !_CCCL_BUILTIN_CBRTF vvv
   return ::cbrtf(__x);
@@ -248,7 +248,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline float cbrtf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CBRTF)
+#ifdef _CCCL_BUILTIN_CBRTF
   return _CCCL_BUILTIN_CBRTF(__x);
 #else // ^^^ _CCCL_BUILTIN_CBRTF ^^^ // vvv !_CCCL_BUILTIN_CBRTF vvv
   return ::cbrtf(__x);
@@ -257,7 +257,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline double cbrt(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CBRT)
+#ifdef _CCCL_BUILTIN_CBRT
   return _CCCL_BUILTIN_CBRT(__x);
 #else // ^^^ _CCCL_BUILTIN_CBRT ^^^ // vvv !_CCCL_BUILTIN_CBRT vvv
   return ::cbrt(__x);
@@ -267,7 +267,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double cbrt(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_CBRTL)
+#  ifdef _CCCL_BUILTIN_CBRTL
   return _CCCL_BUILTIN_CBRTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_CBRTL ^^^ // vvv !_CCCL_BUILTIN_CBRTL vvv
   return ::cbrtl(__x);
@@ -276,7 +276,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline long double cbrtl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_CBRTL)
+#  ifdef _CCCL_BUILTIN_CBRTL
   return _CCCL_BUILTIN_CBRTL(__x);
 #  else // ^^^ _CCCL_BUILTIN_CBRTL ^^^ // vvv !_CCCL_BUILTIN_CBRTL vvv
   return ::cbrtl(__x);

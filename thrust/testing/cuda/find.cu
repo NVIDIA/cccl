@@ -1,6 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -177,7 +182,7 @@ TEST_CASE("TestFindCudaStreams", "[find]")
   thrust::device_vector<int> vec{1, 2, 3, 3, 5};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 0) - vec.begin() == 5);
   REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 1) - vec.begin() == 0);
@@ -186,5 +191,5 @@ TEST_CASE("TestFindCudaStreams", "[find]")
   REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 4) - vec.begin() == 5);
   REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin() == 4);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

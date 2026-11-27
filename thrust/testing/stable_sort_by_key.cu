@@ -1,6 +1,10 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sort.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -65,8 +69,10 @@ void test_stable_sort_by_key_simple()
 {
   using T = typename Vector::value_type;
 
-  Vector unsorted_keys, unsorted_values;
-  Vector sorted_keys, sorted_values;
+  Vector unsorted_keys;
+  Vector unsorted_values;
+  Vector sorted_keys;
+  Vector sorted_values;
 
   initialize_simple_stable_key_value_sort_test(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 

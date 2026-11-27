@@ -1,6 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -10,7 +16,8 @@ void test_set_difference_descending_simple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a{5, 4, 2, 0}, b{6, 4, 3, 3, 0};
+  Vector a{5, 4, 2, 0};
+  Vector b{6, 4, 3, 3, 0};
 
   Vector ref{5, 2};
   Vector result(2);

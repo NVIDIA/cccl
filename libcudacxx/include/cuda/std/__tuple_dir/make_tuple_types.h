@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -110,7 +110,7 @@ struct __make_tuple_types<_Tuple<_Types...>>
 };
 
 template <class _Tuple>
-using __make_tuple_types_t = typename __make_tuple_types<remove_cvref_t<_Tuple>>::type;
+using __make_tuple_types_t _CCCL_NODEBUG = typename __make_tuple_types<remove_cvref_t<_Tuple>>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

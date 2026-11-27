@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,7 +22,7 @@ namespace detail
 template <template <typename...> typename Trait, typename... Args>
 struct lazy_trait
 {
-  using type = Trait<Args...>;
+  using type _CCCL_NODEBUG = Trait<Args...>;
 };
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED

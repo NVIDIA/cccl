@@ -1,4 +1,14 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
+#include <thrust/host_vector.h>
+#include <thrust/memory.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/utility>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -86,14 +96,14 @@ TEST_CASE("TestMinMaxElementCudaStreams", "[minmax_element]")
   Vector data{3, 5, 1, 2, 5, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first == 1);
   REQUIRE(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second == 5);
   REQUIRE(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first - data.begin() == 2);
   REQUIRE(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin() == 1);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestMinMaxElementDevicePointer", "[minmax_element]")

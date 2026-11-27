@@ -12,16 +12,14 @@
 
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/execution>
 #include <cuda/hierarchy>
 #include <cuda/iterator>
 #include <cuda/launch>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
-#include <cuda/std/execution>
-#include <cuda/std/optional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -37,7 +35,6 @@ struct DeviceSegmentedSumKernel
     Config config,
     const T* in,
     T* out,
-    cuda::std::size_t nsegments,
     cuda::std::integral_constant<cuda::std::size_t, SegmentSize>,
     GroupFn group_fn,
     UnitFn unit_fn)
@@ -78,7 +75,7 @@ void device_segmented_sum(
 {
   const auto config =
     cuda::make_config(cuda::grid_dims(dim3{static_cast<unsigned>(nsegments)}), cuda::block_dims<SegmentSize>());
-  cuda::launch(stream, config, DeviceSegmentedSumKernel{}, in, out, nsegments, segment_size, group_fn, unit_fn);
+  cuda::launch(stream, config, DeviceSegmentedSumKernel{}, in, out, segment_size, group_fn, unit_fn);
 }
 } // namespace
 

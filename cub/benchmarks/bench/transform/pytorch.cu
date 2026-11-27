@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %RANGE% TUNE_BIF_BIAS bif -16:16:4
-// %RANGE% TUNE_ALGORITHM alg 0:4:1
+// %RANGE% TUNE_KBIF_BIAS kbif -32:64:4
+// %RANGE% TUNE_ALGORITHM alg 0:3:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 
 // for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit

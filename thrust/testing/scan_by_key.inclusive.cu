@@ -1,9 +1,15 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
+
+#include <cuda/std/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -80,7 +86,7 @@ struct head_flag_predicate
   template <typename T>
   _CCCL_HOST_DEVICE bool operator()(const T&, const T& b)
   {
-    return b ? false : true;
+    return !static_cast<bool>(b);
   }
 };
 

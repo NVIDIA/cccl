@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,11 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/iosfwd>
+#include <cuda/std/__type_traits/is_same.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -40,7 +50,9 @@ struct SegmentedRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedRadixSortPolicy& p)
   {
     return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
               << ", .alternate_pass = " << p.alternate_pass << " }";
@@ -68,7 +80,7 @@ struct policy_selector
   // Dominant-sized key/value type
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
-    return ::cuda::std::max(value_size, key_size);
+    return (::cuda::std::max) (value_size, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
@@ -78,7 +90,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -88,7 +100,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -105,7 +117,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -115,7 +127,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -132,7 +144,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -142,7 +154,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -159,7 +171,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -169,7 +181,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -188,7 +200,7 @@ struct policy_selector
       const int primary_radix_bits = 5;
       const int alt_radix_bits     = primary_radix_bits - 1;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
@@ -198,7 +210,7 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         primary_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
@@ -215,7 +227,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -225,7 +237,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -242,7 +254,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -252,7 +264,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -268,7 +280,7 @@ struct policy_selector
     // SM50
     const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-    const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+    const auto regular_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
       192,
       31,
       __dominant_size(),
@@ -278,7 +290,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       segmented_radix_bits);
 
-    const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+    const auto alternate_pass = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_downsweep_policy(
       256,
       11,
       __dominant_size(),

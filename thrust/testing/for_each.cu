@@ -1,11 +1,17 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/std/iterator>
+
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -169,8 +175,8 @@ void test_for_each(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  const mark_present_for_each<T> h_f{&h_output[0]};
-  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
+  const mark_present_for_each<T> h_f{h_output.data()};
+  const mark_present_for_each<T> d_f{d_output.data().get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each(h_input.begin(), h_input.end(), h_f);
 
@@ -199,8 +205,8 @@ void test_for_each_n(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  const mark_present_for_each<T> h_f{&h_output[0]};
-  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
+  const mark_present_for_each<T> h_f{h_output.data()};
+  const mark_present_for_each<T> d_f{d_output.data().get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each_n(h_input.begin(), h_input.size(), h_f);
 
@@ -314,7 +320,7 @@ struct only_set_when_expected
   unsigned long long expected;
   bool* flag;
 
-  _CCCL_DEVICE void operator()(unsigned long long x)
+  _CCCL_DEVICE void operator()(unsigned long long x) const
   {
     if (x == expected)
     {

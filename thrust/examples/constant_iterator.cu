@@ -6,6 +6,7 @@
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <iostream>
 #include <iterator>

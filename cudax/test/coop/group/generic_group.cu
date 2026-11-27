@@ -12,6 +12,8 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -31,8 +33,14 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   static_assert(cudax::coop::group<Group>);
 
   // Test types
-  static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
-  static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
+  static_assert(cuda::std::is_same_v<Unit, typename Group::unit_level>);
+  static_assert(cuda::std::is_same_v<Level, typename Group::boundary_level>);
+
+  // Test Group::arrival_token.
+  using ArrivalToken = typename Group::arrival_token;
+  static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+  static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+  static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
   // Test that the group can be queried for it's hierarchy.
   {
@@ -42,8 +50,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test that the group can be synchronized using .sync() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>);
-    static_assert(noexcept(group.sync()));
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
@@ -62,13 +69,46 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
     }
   }
 
+  // Test that the group can be synchronized using .arrive() + .wait() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait(cuda::std::declval<ArrivalToken&&>()))>);
+
+    // Unaligned variants method must support calls from different branches. Add some dummy work to make sure the
+    // branches are not collided.
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
+    {
+      atomic++;
+      auto arrival_token = group.arrive();
+      atomic--;
+      group.wait(cuda::std::move(arrival_token));
+    }
+    else
+    {
+      atomic--;
+      auto arrival_token = group.arrive();
+      atomic++;
+      group.wait(cuda::std::move(arrival_token));
+    }
+  }
+
   // Test that the group can be synchronized using .sync_aligned() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>);
-    static_assert(noexcept(group.sync_aligned()));
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync_aligned() method must be called by all threads in the group uniformly in one place.
     group.sync_aligned();
+  }
+
+  // Test that the group can be synchronized using .arrive_aligned() + .wait_aligned() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive_aligned())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait_aligned(cuda::std::declval<ArrivalToken&&>()))>);
+
+    group.wait_aligned(group.arrive_aligned());
   }
 }
 
@@ -82,10 +122,10 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   static_assert(cuda::gpu_thread.static_count(group_view) == StaticN);
 
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
-  using Level = typename Group::level_type;
+  using Bound = typename Group::boundary_level;
 
   const auto count_ref = group.__mapping_result().unit_count();
-  const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
+  const auto rank_ref  = cuda::gpu_thread.rank(Bound{}, group.hierarchy()) % count_ref;
 
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
@@ -94,6 +134,10 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   const auto static_group_count_ref = group.__mapping_result().static_group_count();
   const auto group_count_ref        = group.__mapping_result().group_count();
   const auto group_rank_ref         = group.__mapping_result().group_rank();
+
+  static_assert(cuda::std::is_same_v<decltype(group.static_rank(parent_group)), cuda::std::size_t>);
+  REQUIRE(group_view.static_rank(parent_group) == MappingResult::static_group_rank());
+  REQUIRE(group.static_rank(parent_group) == MappingResult::static_group_rank());
 
   REQUIRE(group.static_count(parent_group) == static_group_count_ref);
   REQUIRE(group.count(parent_group) == group_count_ref);
@@ -111,10 +155,11 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
     const cudax::coop::group_by mapping{cuda::std::cw<N>};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    static_assert(group.static_rank(parent_group) == (nbarriers == 1 ? 0 : cuda::std::dynamic_extent));
     test_queries<N>(group, parent_group);
     group.sync();
   }
@@ -122,10 +167,11 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     auto& barriers = get_barriers<nbarriers, 1>(level);
 
     const cudax::coop::group_by mapping{N};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    static_assert(group.static_rank(parent_group) == cuda::std::dynamic_extent);
     test_queries<cuda::std::dynamic_extent>(group, parent_group);
     group.sync();
   }

@@ -1,9 +1,17 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -52,7 +60,8 @@ void test_set_intersection_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  Vector a{0, 2, 4};
+  Vector b{0, 3, 3, 4};
   Vector ref{0, 4};
 
   Vector result(2);

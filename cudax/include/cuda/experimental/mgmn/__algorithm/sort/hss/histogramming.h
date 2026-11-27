@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,12 +23,20 @@
 #endif // no system header
 
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/simple_vector.h>
+#include <cuda/__hierarchy/hierarchy_dimensions.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__runtime/types.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -36,6 +44,8 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__random/philox_engine.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__ranges/access.h>

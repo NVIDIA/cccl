@@ -2,8 +2,13 @@
 
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
@@ -11,10 +16,22 @@
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
+#include <cstddef>
+#include <functional>
+#include <iterator>
 #include <numeric>
+#include <ostream>
 
 #include <unittest/unittest.h>
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#  include <cub/util_device.cuh>
+
+#  include <cuda/devices>
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 template <class Vector>
 void test_scan_simple()
@@ -413,12 +430,12 @@ void test_scan_mixed_types()
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (float) 3.5);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (int) 3);
-  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (int) 3);
+  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), 3);
+  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), 3);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (int) 3);
-  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (int) 3);
+  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), 3);
+  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), 3);
   REQUIRE(d_int_output == h_int_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (float) 3.5);
@@ -461,7 +478,7 @@ TEST_CASE("TestScanWithLargeTypes", "[scan]")
 {
   test_scan_with_large_types<int, 1>();
 
-#if !defined(__QNX__)
+#ifndef __QNX__
   test_scan_with_large_types<int, 8>();
   test_scan_with_large_types<int, 64>();
 #endif

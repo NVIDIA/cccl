@@ -53,7 +53,7 @@ inline void clearCheckpoint()
   globalCheckpoint() = Checkpoint();
 }
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  define CHECKPOINT_FUNCTION_NAME __PRETTY_FUNCTION__
 #else
 #  define CHECKPOINT_FUNCTION_NAME __func__

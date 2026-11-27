@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -93,7 +93,7 @@ class __host_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -207,7 +207,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size) const noexcept
   {
@@ -237,7 +237,7 @@ class __device_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -345,7 +345,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
@@ -372,7 +372,7 @@ class __managed_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -466,7 +466,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
+#ifndef _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
   [[nodiscard]] _CCCL_API constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {

@@ -1,7 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -73,23 +78,23 @@ void test_reduce_into_cuda_streams(ExecutionPolicy policy)
   Vector o(1);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   // no initializer
   thrust::reduce_into(streampolicy, v.begin(), v.end(), o.begin());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
   REQUIRE(o[0] == 2);
 
   // with initializer
   thrust::reduce_into(streampolicy, v.begin(), v.end(), o.begin(), 10);
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
   REQUIRE(o[0] == 12);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestReduceIntoCudaStreamsSync", "[reduce_into]")
@@ -102,7 +107,7 @@ TEST_CASE("TestReduceIntoCudaStreamsNoSync", "[reduce_into]")
   test_reduce_into_cuda_streams(thrust::cuda::par_nosync);
 }
 
-#if defined(THRUST_RDC_ENABLED)
+#ifdef THRUST_RDC_ENABLED
 TEST_CASE("TestReduceIntoLargeInput", "[reduce_into]")
 {
   using T                 = unsigned long long;

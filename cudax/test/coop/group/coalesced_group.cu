@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -31,9 +31,20 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::boundary_level>);
+
+    // Test Group::arrival_token.
+    using ArrivalToken = typename Group::arrival_token;
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.
     {
@@ -44,7 +55,9 @@ __device__ void test_coalesced_group(Config config)
     static_assert(!Group::is_always_contiguous());
 
     group.sync();
+    group.wait(group.arrive());
     group.sync_aligned();
+    group.wait_aligned(group.arrive_aligned());
 
     static_assert(cuda::gpu_thread.static_count(group) == cuda::std::dynamic_extent);
     REQUIRE(cuda::gpu_thread.count(group) == 32);
@@ -73,9 +86,20 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::boundary_level>);
+
+    // Test Group::arrival_token.
+    using ArrivalToken = typename Group::arrival_token;
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.
     {
@@ -86,7 +110,9 @@ __device__ void test_coalesced_group(Config config)
     static_assert(!Group::is_always_contiguous());
 
     group.sync();
+    group.wait(group.arrive());
     group.sync_aligned();
+    group.wait_aligned(group.arrive_aligned());
 
     static_assert(cuda::gpu_thread.static_count(group) == cuda::std::dynamic_extent);
     REQUIRE(cuda::gpu_thread.count(group) == 16);
@@ -115,9 +141,20 @@ __device__ void test_coalesced_group(Config config)
     using Group = decltype(group);
 
     static_assert(cudax::coop::group<Group>);
+    static_assert(group.static_rank(cuda::warp) == 0);
+    static_assert(
+      group.static_rank(cuda::block) == (group.static_count(cuda::block) == 1 ? 0 : cuda::std::dynamic_extent));
+    static_assert(
+      group.static_rank(cuda::grid) == (group.static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
-    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
-    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
+    static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_level>);
+    static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::boundary_level>);
+
+    // Test Group::arrival_token.
+    using ArrivalToken = typename Group::arrival_token;
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.
     {
@@ -128,7 +165,9 @@ __device__ void test_coalesced_group(Config config)
     static_assert(!Group::is_always_contiguous());
 
     group.sync();
+    group.wait(group.arrive());
     group.sync_aligned();
+    group.wait_aligned(group.arrive_aligned());
 
     static_assert(cuda::gpu_thread.static_count(group) == cuda::std::dynamic_extent);
     REQUIRE(cuda::gpu_thread.count(group) == 16);

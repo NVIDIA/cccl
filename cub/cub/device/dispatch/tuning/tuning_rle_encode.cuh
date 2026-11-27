@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
-#include <cub/agent/agent_rle.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
@@ -23,21 +22,23 @@
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/iosfwd>
+#include <cuda/std/__optional/nullopt.h>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,7 +67,9 @@ struct RleLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RleLookbackPolicy& p)
   {
     return os
         << "RleLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -99,9 +102,11 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, RleAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -165,8 +170,8 @@ struct RleLookaheadPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
   dyn_smem_bytes(int key_size, int key_align) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
-         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t);
+    return (static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size)
+         + (static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t));
   }
 
   static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;
@@ -211,7 +216,9 @@ struct RleLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookaheadPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RleLookaheadPolicy& p)
   {
     return os
         << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
@@ -244,7 +251,9 @@ struct RleEncodePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const RleEncodePolicy& p)
   {
     return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";
@@ -257,10 +266,10 @@ namespace detail::rle::encode
 // TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
-          primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
-          primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
-          length_size LengthSize           = classify_length_size<LengthT>(),
-          key_size KeySize                 = classify_key_size<KeyT>()>
+          primitive_length PrimitiveLength = _CUB::detail::is_primitive_length<LengthT>(),
+          primitive_key PrimitiveKey       = _CUB::detail::is_primitive_key<KeyT>(),
+          length_size LengthSize           = _CUB::detail::classify_length_size<LengthT>(),
+          key_size KeySize                 = _CUB::detail::classify_key_size<KeyT>()>
 struct sm80_tuning;
 
 template <class LengthT, class KeyT>
@@ -318,10 +327,10 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 // TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
-          primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
-          primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
-          length_size LengthSize           = classify_length_size<LengthT>(),
-          key_size KeySize                 = classify_key_size<KeyT>()>
+          primitive_length PrimitiveLength = _CUB::detail::is_primitive_length<LengthT>(),
+          primitive_key PrimitiveKey       = _CUB::detail::is_primitive_key<KeyT>(),
+          length_size LengthSize           = _CUB::detail::classify_length_size<LengthT>(),
+          key_size KeySize                 = _CUB::detail::classify_key_size<KeyT>()>
 struct sm90_tuning;
 
 template <class LengthT, class KeyT>
@@ -379,10 +388,10 @@ struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 // TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
-          primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
-          primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
-          length_size LengthSize           = classify_length_size<LengthT>(),
-          key_size KeySize                 = classify_key_size<KeyT>()>
+          primitive_length PrimitiveLength = _CUB::detail::is_primitive_length<LengthT>(),
+          primitive_key PrimitiveKey       = _CUB::detail::is_primitive_key<KeyT>(),
+          length_size LengthSize           = _CUB::detail::classify_length_size<LengthT>(),
+          key_size KeySize                 = _CUB::detail::classify_key_size<KeyT>()>
 struct sm100_tuning;
 
 template <class LengthT, class KeyT>
@@ -574,7 +583,7 @@ struct policy_selector
       BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(
+      _CUB::detail::default_reduce_by_key_delay_constructor_policy(
         length_size, int{sizeof(int)}, length_is_primitive || length_is_trivially_copyable, true)};
   }
 

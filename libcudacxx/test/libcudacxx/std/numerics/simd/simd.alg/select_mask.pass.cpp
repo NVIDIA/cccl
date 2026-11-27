@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.alg], algorithms
 //
@@ -24,9 +24,9 @@
 // Covers the scalar overload and the basic_mask overloads that produce a mask
 // (select(mask, mask, mask) and select(mask, bool, bool)).
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

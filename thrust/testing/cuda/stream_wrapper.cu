@@ -1,5 +1,6 @@
-#include <thrust/execution_policy.h>
+#include <thrust/device_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/stream>
 
@@ -50,7 +51,7 @@ void test_on_stream(ExecutionPolicy policy)
   v[2] = 3;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   Wrapper wrapper(s);
 
@@ -58,7 +59,7 @@ void test_on_stream(ExecutionPolicy policy)
 
   REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end()) == 2);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")

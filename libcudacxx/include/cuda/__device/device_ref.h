@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,8 +26,9 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
-#  include <cuda/std/span>
-#  include <cuda/std/string_view>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__fwd/span.h>
+#  include <cuda/std/__fwd/string_view.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -37,7 +38,15 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
-::cuda::std::size_t __physical_devices_count();
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __physical_devices_count()
+{
+  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
+  return __device_count;
+}
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref

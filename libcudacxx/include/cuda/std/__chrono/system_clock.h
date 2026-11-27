@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,9 +27,11 @@
 
 #include <nv/target>
 
-#if _CCCL_HOSTED()
+// Android before API level 29 has no `timespec_get` (see <cuda/std/ctime>). Only there the host time comes from
+// <chrono>.
+#if _CCCL_HOSTED() && defined(__ANDROID_API__) && __ANDROID_API__ < 29
 #  include <chrono> // IWYU pragma: keep
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && defined(__ANDROID_API__) && __ANDROID_API__ < 29
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,22 +48,31 @@ public:
   using time_point                = ::cuda::std::chrono::time_point<system_clock>;
   static constexpr bool is_steady = false;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_point now() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point now() noexcept
   {
+#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
+    // The host time comes from `timespec_get` and not from `::std::chrono::system_clock`. The host's <chrono> is
+    // expensive to compile (in C++20 it includes <format>), and <cuda/std/atomic> reaches this header.
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (::cuda::std::timespec __ts{}; (void) ::cuda::std::timespec_get(&__ts, TIME_UTC);
+                       return time_point(duration_cast<duration>(seconds(__ts.tv_sec) + nanoseconds(__ts.tv_nsec)));),
+                      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+#else // ^^^ has timespec_get ^^^ / vvv no timespec_get vvv
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (return time_point(duration_cast<duration>(nanoseconds(
         ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
           .count())));),
       (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+#endif // no timespec_get
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_t to_time_t(const time_point& __t) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_t to_time_t(const time_point& __t) noexcept
   {
     return time_t(::cuda::std::chrono::duration_cast<seconds>(__t.time_since_epoch()).count());
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static time_point from_time_t(time_t __t) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point from_time_t(time_t __t) noexcept
   {
     return time_point(::cuda::std::chrono::seconds(__t));
   }

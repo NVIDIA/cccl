@@ -1,22 +1,38 @@
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
 #include <cuda/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <cstdint>
 
 #include <unittest/unittest.h>
 
 template <typename Vector>
 void test_merge_by_key_simple()
 {
-  const Vector a_key{0, 2, 4}, a_val{13, 7, 42}, b_key{0, 3, 3, 4}, b_val{42, 42, 7, 13};
-  Vector ref_key{0, 0, 2, 3, 3, 4, 4}, ref_val{13, 42, 7, 42, 7, 42, 13};
+  const Vector a_key{0, 2, 4};
+  const Vector a_val{13, 7, 42};
+  const Vector b_key{0, 3, 3, 4};
+  const Vector b_val{42, 42, 7, 13};
+  Vector ref_key{0, 0, 2, 3, 3, 4, 4};
+  Vector ref_val{13, 42, 7, 42, 7, 42, 13};
 
-  Vector result_key(7), result_val(7);
+  Vector result_key(7);
+  Vector result_val(7);
 
   const auto ends = thrust::merge_by_key(
     a_key.begin(),

@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@ namespace system::detail::generic
 struct tag
 {
   template <typename T>
-  _CCCL_HOST_DEVICE inline tag(const T&)
+  _CCCL_HOST_DEVICE_API tag(const T&)
   {}
 };
 } // namespace system::detail::generic

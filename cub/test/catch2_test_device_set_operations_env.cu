@@ -298,3 +298,64 @@ CUB_TEST("DeviceSetOps keys can be tuned", "[set_ops][device]", CUB_SMALL, key_o
   check_keys<op>(keys1, keys2, result, num, ::cuda::std::less<int>{});
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#if TEST_LAUNCH != 1
+
+template <int ThreadsPerBlock>
+struct set_ops_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(::cuda::compute_capability, cub::detail::set_ops::SetOpsPolicy policy) const
+    -> cub::detail::set_ops::SetOpsPolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+CUB_TEST("DeviceSetOps keys tuning can be modified", "[set_ops][device]", CUB_SMALL, key_ops)
+{
+  using op                                 = c2h::get<0, TestType>;
+  constexpr unsigned int target_block_size = 384; // must be different from any value we use in production
+
+  auto keys1        = c2h::device_vector<int>{0, 2, 2, 5};
+  auto keys2        = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result       = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num          = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_block_size = c2h::device_vector<unsigned int>{0u};
+
+  const block_size_extracting_op<::cuda::std::less<>> block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  {
+    REQUIRE(
+      cudaSuccess
+      == op::api(keys1.begin(),
+                 static_cast<int>(keys1.size()),
+                 keys2.begin(),
+                 static_cast<int>(keys2.size()),
+                 result.begin(),
+                 num.begin(),
+                 block_size_check,
+                 ::cuda::std::execution::env<>{}));
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
+
+  auto env = ::cuda::execution::tune(set_ops_tuning_transform<target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == op::api(keys1.begin(),
+               static_cast<int>(keys1.size()),
+               keys2.begin(),
+               static_cast<int>(keys2.size()),
+               result.begin(),
+               num.begin(),
+               block_size_check,
+               env));
+
+  check_keys<op>(keys1, keys2, result, num, ::cuda::std::less<int>{});
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

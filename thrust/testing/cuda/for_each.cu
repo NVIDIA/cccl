@@ -1,7 +1,11 @@
 #include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
+#include <thrust/host_vector.h>
+#include <thrust/memory.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <algorithm>
+#include <cstddef>
 
 #include "thrust/device_vector.h"
 #include <unittest/unittest.h>
@@ -30,7 +34,7 @@ struct CopyFunctorWithManyRegisters
 TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
-  cudaGetDevice(&current_device);
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
   cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
@@ -44,7 +48,7 @@ TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 TEST_CASE("TestForEachNLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
-  cudaGetDevice(&current_device);
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
   cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
@@ -216,7 +220,7 @@ DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceDevice);
 TEST_CASE("TestForEachCudaStreams", "[for_each]")
 {
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::device_vector<int> input{3, 2, 3, 4, 6};
   thrust::device_vector<int> output(7, 0);
@@ -225,10 +229,10 @@ TEST_CASE("TestForEachCudaStreams", "[for_each]")
 
   thrust::for_each(thrust::cuda::par.on(s), input.begin(), input.end(), f);
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

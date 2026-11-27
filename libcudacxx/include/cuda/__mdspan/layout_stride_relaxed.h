@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -44,6 +44,13 @@
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -110,14 +117,14 @@ public:
   static_assert(_Extents::rank() == _Strides::rank(),
                 "layout_stride_relaxed::mapping: extents and strides must have the same rank");
 
-  using extents_type = _Extents;
-  using strides_type = _Strides;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using offset_type  = decltype(::cuda::std::__de_ice(_OffsetType{}));
-  using layout_type  = layout_stride_relaxed;
-  using __base       = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
+  using extents_type         = _Extents;
+  using strides_type         = _Strides;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using offset_type          = decltype(::cuda::std::__de_ice(_OffsetType{}));
+  using layout_type          = layout_stride_relaxed;
+  using __base _CCCL_NODEBUG = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();
@@ -460,6 +467,11 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _LIBCUDACXX_POP_MACRO_empty_bases
+#endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #include <cuda/std/__cccl/epilogue.h>
 

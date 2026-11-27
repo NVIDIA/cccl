@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(sequential::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE_API void assign_value(sequential::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
 {
   *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
 } // end assign_value()

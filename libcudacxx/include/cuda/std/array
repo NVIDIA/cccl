@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,9 +25,8 @@
 #include <cuda/std/__algorithm/lexicographical_compare.h>
 #include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__fwd/array.h>
-#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -74,7 +73,7 @@ template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array
 {
   // types:
-  using __self                 = array;
+  using __self _CCCL_NODEBUG   = array;
   using value_type             = _Tp;
   using reference              = value_type&;
   using const_reference        = const value_type&;
@@ -182,7 +181,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      _CCCL_THROW(::std::out_of_range, "array::at");
+      _CCCL_THROW_STD(out_of_range, "array::at");
     }
     return __elems_[__n];
   }
@@ -191,7 +190,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      _CCCL_THROW(::std::out_of_range, "array::at");
+      _CCCL_THROW_STD(out_of_range, "array::at");
     }
     return __elems_[__n];
   }
@@ -230,7 +229,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 {
   // types:
-  using __self                 = array;
+  using __self _CCCL_NODEBUG   = array;
   using value_type             = _Tp;
   using reference              = value_type&;
   using const_reference        = const value_type&;
@@ -243,7 +242,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
 
-  using _CharType = conditional_t<is_const_v<_Tp>, const char, char>;
+  using _CharType _CCCL_NODEBUG = conditional_t<is_const_v<_Tp>, const char, char>;
 
   struct _ArrayInStructT
   {
@@ -354,13 +353,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 
   [[nodiscard]] _CCCL_API constexpr reference at(size_type)
   {
-    _CCCL_THROW(::std::out_of_range, "array<T, 0>::at");
+    _CCCL_THROW_STD(out_of_range, "array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 
   [[nodiscard]] _CCCL_API constexpr const_reference at(size_type) const
   {
-    _CCCL_THROW(::std::out_of_range, "array<T, 0>::at");
+    _CCCL_THROW_STD(out_of_range, "array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 

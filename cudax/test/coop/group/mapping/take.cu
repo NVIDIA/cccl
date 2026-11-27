@@ -12,7 +12,8 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/cstddef>
-#include <cuda/std/numeric>
+#include <cuda/std/cstdint>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -40,11 +41,11 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
 
     // Test the mapping is constructible from uint32_t.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
     // Test the mapping is constructible and deducible from constant_wrapper<N>.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
       cudax::coop::take mapping{cuda::std::cw<N>}; // NOLINT(misc-const-correctness)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
@@ -57,14 +58,13 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::take mapping{cuda::std::cw<N>};
       auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
+      static_assert(Result::static_group_rank() == ThreadsInWarpMappingResult::static_group_rank());
       static_assert(Result::static_unit_count() == N);
       static_assert(Result::is_always_exhaustive()
                     == (sizeof...(NonExhaustive) == 0
@@ -99,14 +99,14 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
     // Test the mapping is constructible and deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
       cudax::coop::take mapping{n}; // NOLINT(misc-const-correctness)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
     // Test the mapping is constructible from constant_wrapper<N>.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
     // Test map(...).
     {
@@ -115,14 +115,13 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{n};
       auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
+      static_assert(Result::static_group_rank() == ThreadsInWarpMappingResult::static_group_rank());
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(Result::is_always_exhaustive() == (sizeof...(NonExhaustive) == 0));
       static_assert(Result::is_always_contiguous());

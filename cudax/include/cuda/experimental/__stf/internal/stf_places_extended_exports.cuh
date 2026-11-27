@@ -24,12 +24,18 @@
 
 #pragma once
 
+#include <cuda/std/__cccl/cuda_toolkit.h>
+
 #include <cuda/experimental/__places/cute_partition.cuh>
+#include <cuda/experimental/__places/data_place_interface.cuh>
+#include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/exec/locality_domain.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
+#include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__places/partitions/tiled_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__places/stream_pool.cuh>

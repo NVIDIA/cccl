@@ -1,7 +1,15 @@
+#include <thrust/iterator/detail/any_assign.h>
+#include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
+#include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -16,7 +24,7 @@ TEST_CASE("TestDiscardIteratorTraits", "[discard_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, thrust::detail::any_assign>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

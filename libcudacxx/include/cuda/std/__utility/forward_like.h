@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,7 +43,7 @@
 #endif // _CCCL_FREESTANDING()
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif // defined(__CUDACC_TILE__)
@@ -72,7 +72,7 @@ using ::std::forward_like;
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() vvv
 
 template <class _Ap, class _Bp>
-using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
+using _ForwardLike _CCCL_NODEBUG = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>

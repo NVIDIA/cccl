@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,8 +24,7 @@
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__random/is_valid.h>
@@ -185,7 +184,7 @@ public:
     __y_                                            = {};
     __k_                                            = {};
     __j_                                            = word_count - 1;
-    constexpr auto __p                              = (word_size - 1) / 32 + 1;
+    constexpr auto __p                              = ((word_size - 1) / 32) + 1;
     array<uint_least32_t, word_count / 2 * __p> __a = {};
     __seq.generate(__a.begin(), __a.end());
     for (size_t __k = 0; __k < word_count / 2; ++__k)
@@ -359,7 +358,7 @@ public:
     for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __os << __e.__k_[__i];
-      if (__i < word_count / 2 - 1)
+      if (__i < (word_count / 2) - 1)
       {
         __os << __os.widen(' ');
       }

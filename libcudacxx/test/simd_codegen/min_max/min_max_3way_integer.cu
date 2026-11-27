@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__simd_> // IWYU pragma: keep
 #include <cuda/std/cstdint>
+#include <cuda/std/simd> // IWYU pragma: keep
 
 namespace simd = cuda::std::simd;
 

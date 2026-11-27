@@ -1,8 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/partition.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -59,7 +63,7 @@ TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
   Iterator ref  = first + 3;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
@@ -67,5 +71,5 @@ TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
   ref  = last;
   REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

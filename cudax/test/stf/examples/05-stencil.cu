@@ -29,10 +29,10 @@ public:
       , end(end)
       , block_size(end - beg)
       , ghost_size(GHOST_SIZE)
-      , array(std::vector<T>(block_size + 2 * ghost_size))
+      , array(std::vector<T>(block_size + (2 * ghost_size)))
       , left_interface(std::vector<T>(ghost_size))
       , right_interface(std::vector<T>(ghost_size))
-      , handle(ctx.logical_data(&array[0], block_size + 2 * ghost_size))
+      , handle(ctx.logical_data(&array[0], block_size + (2 * ghost_size)))
       , left_handle(ctx.logical_data(&left_interface[0], ghost_size))
       , right_handle(ctx.logical_data(&right_interface[0], ghost_size))
   {}
@@ -111,10 +111,10 @@ private:
 template <typename T>
 __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T* array1)
 {
-  for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (size_t idx = threadIdx.x + (blockIdx.x * blockDim.x); idx < cnt; idx += blockDim.x * gridDim.x)
   {
     const size_t idx2 = idx + ghost_size;
-    array[idx2]       = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    array[idx2]       = (0.9 * array1[idx2]) + (0.05 * array1[idx2 - 1]) + (0.05 * array1[idx2 + 1]);
   }
 }
 
@@ -134,7 +134,7 @@ void stencil(data_block<T>& bn, data_block<T>& bn1)
 template <typename T>
 __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 {
-  for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (size_t idx = threadIdx.x + (blockIdx.x * blockDim.x); idx < cnt; idx += blockDim.x * gridDim.x)
   {
     dst[idx] = src[idx];
   }
@@ -185,7 +185,7 @@ void copy_array(data_block<T>& bn, data_block<T>& bn1)
 {
   assert(bn.get_preferred_devid() == bn1.get_preferred_devid());
   copy_task<T>(
-    bn.get_block_size() + 2 * bn.get_ghost_size(), bn1.get_handle(), 0, bn.get_handle(), 0, bn.get_preferred_devid());
+    bn.get_block_size() + (2 * bn.get_ghost_size()), bn1.get_handle(), 0, bn.get_handle(), 0, bn.get_preferred_devid());
 }
 
 int main(int argc, char** argv)
@@ -282,6 +282,7 @@ int main(int argc, char** argv)
       copy_array(Un[b], Un1[b]);
     }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     // We make sure that the total sum of elements remains constant
     if (iter % 250 == 0)

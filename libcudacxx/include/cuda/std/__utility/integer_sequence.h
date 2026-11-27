@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -52,7 +52,7 @@ struct __integer_sequence
   using __to_tuple_indices _CCCL_NODEBUG = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
+#ifdef _CCCL_BUILTIN_MAKE_INTEGER_SEQ
 
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp _CCCL_NODEBUG =
@@ -212,7 +212,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 template <size_t... _Ip>
 using index_sequence = integer_sequence<size_t, _Ip...>;
 
-#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
+#ifdef _CCCL_BUILTIN_MAKE_INTEGER_SEQ
 
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
@@ -263,7 +263,7 @@ struct tuple_element<_Ip, integer_sequence<_Tp, _Indices...>>
 {
   static_assert(_Ip < sizeof...(_Indices),
                 "Index out of bounds in cuda::std::tuple_element<> (cuda::std::integer_sequence)");
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <size_t _Ip, class _Tp, _Tp... _Indices>
@@ -271,7 +271,7 @@ struct tuple_element<_Ip, const integer_sequence<_Tp, _Indices...>>
 {
   static_assert(_Ip < sizeof...(_Indices),
                 "Index out of bounds in cuda::std::tuple_element<> (const cuda::std::integer_sequence)");
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <size_t _Ip, class _Tp, _Tp... _Indices>
@@ -297,7 +297,7 @@ template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
 struct tuple_element<_Ip, ::cuda::std::integer_sequence<_Tp, _Indices...>>
 {
   static_assert(_Ip < sizeof...(_Indices), "Index out of bounds in std::tuple_element<> (cuda::std::integer_sequence)");
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
@@ -305,7 +305,7 @@ struct tuple_element<_Ip, const ::cuda::std::integer_sequence<_Tp, _Indices...>>
 {
   static_assert(_Ip < sizeof...(_Indices),
                 "Index out of bounds in std::tuple_element<> (const cuda::std::integer_sequence)");
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

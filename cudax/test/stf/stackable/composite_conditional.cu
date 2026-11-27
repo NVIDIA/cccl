@@ -41,7 +41,9 @@ int main()
   // place without requiring several devices or green context support.
   auto grid = exec_place::repeat(exec_place::current_device(), 2);
 
-  const size_t nx = 404, nz = 204, nv = 4;
+  const size_t nx    = 404;
+  const size_t nz    = 204;
+  const size_t nv    = 4;
   const size_t iters = 30;
   const auto part    = make_partition(dim4(nx, nz, nv), partition_spec{whole, blocked<0>, whole}, grid.get_dims());
   const auto dp      = make_composite_data_place(grid, part);
@@ -88,7 +90,7 @@ int main()
       {
         for (size_t i = 0; i < nx; i++)
         {
-          EXPECT(s(i, k, v) == 1.0 + 2.0 * (double) iters);
+          EXPECT(s(i, k, v) == 1.0 + (2.0 * (double) iters));
         }
       }
     }

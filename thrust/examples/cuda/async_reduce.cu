@@ -4,7 +4,11 @@
 #include <thrust/reduce.h>
 #include <thrust/system/cuda/execution_policy.h>
 
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/functional>
+
 #include <cassert>
+#include <cstddef>
 #include <future>
 
 // This example demonstrates two ways to achieve algorithm invocations that are asynchronous with
@@ -38,7 +42,7 @@ int main()
 
   // create a CUDA stream
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamCreate, "cudaStreamCreate failed", &s);
 
   // launch a CUDA kernel with only 1 thread on our stream
 #ifdef THRUST_EXAMPLE_DEVICE_SIDE
@@ -48,12 +52,12 @@ int main()
 #endif
 
   // wait for the stream to finish
-  cudaStreamSynchronize(s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "cudaStreamSynchronize failed", s);
 
   // our result should be ready
   assert(result[0] == n);
 
-  cudaStreamDestroy(s);
+  _CCCL_TRY_RUNTIME_API(cudaStreamDestroy, "cudaStreamDestroy failed", s);
 
   // reset the result
   result[0] = 0;

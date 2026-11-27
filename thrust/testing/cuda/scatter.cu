@@ -1,9 +1,13 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/scatter.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/functional>
 
 #include <algorithm>
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -124,16 +128,16 @@ TEST_CASE("TestScatterCudaStreams", "[scatter]")
   Vector dst(8, 0); // destination vector
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::scatter(thrust::cuda::par.on(s), src.begin(), src.end(), map.begin(), dst.begin());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
   REQUIRE(dst == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
@@ -146,13 +150,13 @@ TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
   Vector dst(8); // destination vector
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::scatter_if(thrust::cuda::par.on(s), src.begin(), src.end(), map.begin(), flg.begin(), dst.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
   REQUIRE(dst == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

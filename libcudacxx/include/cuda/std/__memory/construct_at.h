@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
@@ -39,7 +39,16 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  include <cuda/std/__host_stdlib/memory>
+// <bits/stl_construct.h> of libstdc++ 9 and older is not self-contained and lacks std::construct_at
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 10)
+#    include <bits/stl_construct.h> // for ::std::construct_at
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/construct_at.h>)
+#    include <__memory/construct_at.h> // for ::std::construct_at
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <xutility> // for ::std::construct_at
+#  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
+#    include <cuda/std/__host_stdlib/memory>
+#  endif // ^^^ other host standard library ^^^
 
 #  if __cpp_lib_constexpr_dynamic_alloc < 201907L
 namespace std
@@ -50,7 +59,7 @@ template <class _Tp,
           class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#    ifdef _CCCL_BUILTIN_ADDRESSOF
   return ::new (::cuda::std::__voidify(*__location)) _Tp(::cuda::std::forward<_Args>(__args)...);
 #    else
   return ::new (const_cast<void*>(static_cast<const volatile void*>(__location)))
@@ -87,7 +96,7 @@ struct __check_narrowing<_To, _From, void_t<decltype(_To{::cuda::std::declval<_F
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 5) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 5) vvv
 // We cannot allow narrowing conversions between arithmetic types as the assignment will generate an error
 template <class _Tp, class... _Args>
-using __check_narrowing =
+using __check_narrowing _CCCL_NODEBUG =
   conditional_t<sizeof...(_Args) == 1, __cccl_internal::__is_non_narrowing_convertible<_Tp, _Args...>, true_type>;
 #endif // !_CCCL_COMPILER(NVHPC, <, 25, 5)
 

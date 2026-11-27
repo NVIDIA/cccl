@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,12 +15,17 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/__utility/in_range.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -28,12 +33,12 @@ namespace detail::segmented_reduce
 {
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
 {}
 
 /// Normalize input iterator to segment offset (specialized for arg-index)
 template <typename KeyValuePairT, typename OffsetT, typename WrappedIteratorT, typename OutputValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void NormalizeReductionOutput(
   KeyValuePairT& val, OffsetT base_offset, ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
 {
   val.key -= base_offset;
@@ -110,7 +115,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) //
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_reduce.threads_per_block) //
   void DeviceSegmentedReduceKernel(
     const InputIteratorT d_in,
     const OutputIteratorT d_out,
@@ -121,7 +127,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     const InitValueT init,
     const size_t max_segment_size)
 {
-  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = _CUB::detail::current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -187,7 +193,12 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
       constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
       const int sid_within_block       = tid / threads_per_warp;
       const int lane_id                = tid % threads_per_warp;
-      const int global_segment_id      = bid * segments_per_block + sid_within_block;
+      // The dispatch limits the number of segments per invocation to a multiple of segments_per_block, so
+      // the global segment id cannot overflow
+      _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_block) + sid_within_block
+                     <= (::cuda::std::numeric_limits<int>::max)(),
+                   "global segment id overflows int");
+      const int global_segment_id = (bid * segments_per_block) + sid_within_block;
 
       if (global_segment_id < num_segments)
       {
@@ -198,7 +209,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         {
           if (lane_id == 0)
           {
-            reduce::handle_empty_problem(d_out + global_segment_id, init);
+            _CUB::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
           }
           return;
         }
@@ -206,11 +217,12 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         AccumT warp_aggregate =
           AgentWarpReduceT(storage[sid_within_block], d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
-        NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
+        _CUB::detail::segmented_reduce::NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
 
         if (lane_id == 0)
         {
-          reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+          _CUB::detail::reduce::finalize_and_store_aggregate(
+            d_out + global_segment_id, reduction_op, init, warp_aggregate);
         }
       }
     };
@@ -240,7 +252,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     {
       if (tid == 0)
       {
-        reduce::handle_empty_problem(d_out + bid, init);
+        _CUB::detail::reduce::handle_empty_problem(d_out + bid, init);
       }
       return;
     }
@@ -248,11 +260,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     AccumT block_aggregate =
       AgentReduceT(temp_storage.large_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
-    NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
+    _CUB::detail::segmented_reduce::NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
 
     if (tid == 0)
     {
-      reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      _CUB::detail::reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
     }
   }
 }
@@ -315,19 +327,20 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(
-  const InputIteratorT d_in,
-  const OutputIteratorT d_out,
-  const OffsetT segment_size,
-  const int num_segments,
-  ReductionOpT reduction_op,
-  const InitValueT init,
-  AccumT* const d_partial_out,
-  const int full_chunk_size,
-  const int blocks_per_segment)
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  _CUB::detail::current_policy<PolicySelector>()
+    .large_reduce
+    .threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(const InputIteratorT d_in,
+                                                                  const OutputIteratorT d_out,
+                                                                  const OffsetT segment_size,
+                                                                  const int num_segments,
+                                                                  ReductionOpT reduction_op,
+                                                                  const InitValueT init,
+                                                                  AccumT* const d_partial_out,
+                                                                  const int full_chunk_size,
+                                                                  const int blocks_per_segment)
 {
-  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = _CUB::detail::current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -386,9 +399,14 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
   if (segment_size <= small_items_per_tile)
   {
-    const int sid_within_block  = tid / small_threads_per_warp;
-    const int lane_id           = tid % small_threads_per_warp;
-    const int global_segment_id = bid * segments_per_small_block + sid_within_block;
+    const int sid_within_block = tid / small_threads_per_warp;
+    const int lane_id          = tid % small_threads_per_warp;
+    // The dispatch limits the number of segments per invocation to a multiple of segments_per_small_block, so
+    // the global segment id cannot overflow
+    _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_small_block) + sid_within_block
+                   <= (::cuda::std::numeric_limits<int>::max)(),
+                 "global segment id overflows int");
+    const int global_segment_id = (bid * segments_per_small_block) + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
@@ -399,7 +417,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
       {
         if (lane_id == 0)
         {
-          detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
+          _CUB::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
         }
         return;
       }
@@ -410,15 +428,21 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (lane_id == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        _CUB::detail::reduce::finalize_and_store_aggregate(
+          d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
   else if (segment_size <= medium_items_per_tile)
   {
-    const int sid_within_block  = tid / medium_threads_per_warp;
-    const int lane_id           = tid % medium_threads_per_warp;
-    const int global_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const int sid_within_block = tid / medium_threads_per_warp;
+    const int lane_id          = tid % medium_threads_per_warp;
+    // The dispatch limits the number of segments per invocation to a multiple of segments_per_medium_block, so
+    // the global segment id cannot overflow
+    _CCCL_ASSERT((static_cast<::cuda::std::int64_t>(bid) * segments_per_medium_block) + sid_within_block
+                   <= (::cuda::std::numeric_limits<int>::max)(),
+                 "global segment id overflows int");
+    const int global_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
@@ -431,7 +455,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (lane_id == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        _CUB::detail::reduce::finalize_and_store_aggregate(
+          d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
@@ -470,7 +495,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (tid == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+        _CUB::detail::reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
       }
     }
   }

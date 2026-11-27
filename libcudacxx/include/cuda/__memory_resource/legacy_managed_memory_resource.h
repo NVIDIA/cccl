@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,8 +26,7 @@
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -38,7 +37,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
 class legacy_managed_memory_resource : public memory_resource_base<legacy_managed_memory_resource>
 {
-private:
   // cudaMemAttach values are macros, so we cannot :: them.
   unsigned int __flags_ = cudaMemAttachGlobal;
 
@@ -69,8 +67,9 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "Invalid alignment passed to legacy_managed_memory_resource::allocate_sync.");
+      _CCCL_THROW_STD(invalid_argument,
+                      "Invalid alignment passed to "
+                      "legacy_managed_memory_resource::allocate_sync.");
     }
 
     const ::cuda::__ensure_current_context __guard(__device_);

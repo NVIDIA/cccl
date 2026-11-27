@@ -1,17 +1,24 @@
+#include <thrust/device_vector.h>
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/functional>
+
+#include <cstddef>
+
 #include <unittest/unittest.h>
 
 template <typename Vector>
 void test_merge_simple()
 {
-  const Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  const Vector a{0, 2, 4};
+  const Vector b{0, 3, 3, 4};
   const Vector ref{0, 0, 2, 3, 3, 4, 4};
 
   Vector result(7);

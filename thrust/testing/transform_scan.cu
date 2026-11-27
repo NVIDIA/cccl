@@ -1,4 +1,7 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -6,8 +9,13 @@
 #include <thrust/tabulate.h>
 #include <thrust/transform_scan.h>
 
+#include <cuda/functional>
+#include <cuda/std/functional>
+
 #include <algorithm>
+#include <cstddef>
 #include <numeric>
+#include <ostream>
 
 #include <unittest/unittest.h>
 
@@ -213,7 +221,7 @@ struct negate
 
 TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
 {
-  typename thrust::host_vector<int>::iterator h_iter;
+  thrust::host_vector<int>::iterator h_iter;
 
   thrust::host_vector<Record> h_input{{1}, {3}, {-2}, {4}, {-5}};
   thrust::host_vector<int> h_output(5);
@@ -227,7 +235,7 @@ TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
   REQUIRE(h_input == input_copy);
   REQUIRE(h_output == result);
 
-  typename thrust::device_vector<int>::iterator d_iter;
+  thrust::device_vector<int>::iterator d_iter;
 
   thrust::device_vector<Record> d_input = h_input;
   thrust::device_vector<int> d_output(5);

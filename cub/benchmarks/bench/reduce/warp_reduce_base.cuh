@@ -12,7 +12,7 @@
 struct benchmark_op_t
 {
   template <typename T>
-  __device__ __forceinline__ T operator()(T thread_data) const
+  _CCCL_DEVICE_API __forceinline__ T operator()(T thread_data) const
   {
     using WarpReduce  = cub::WarpReduce<T>;
     using TempStorage = typename WarpReduce::TempStorage;
@@ -23,7 +23,7 @@ struct benchmark_op_t
 };
 
 template <typename T>
-void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
+_CCCL_HOST_API void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   constexpr int block_size    = 256;
   constexpr int unroll_factor = 128; // compromise between compile time and noise
@@ -33,8 +33,8 @@ void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
   int max_blocks_per_SM = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
   const int grid_size = max_blocks_per_SM * num_SMs;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, block_size>>>(benchmark_op_t{});
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<grid_size, block_size, 0, launch.get_stream()>>>(benchmark_op_t{});
   });
 }
 

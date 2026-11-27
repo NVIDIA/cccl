@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,6 +29,7 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/array>
 
@@ -45,10 +46,7 @@ __hierarchy_static_extents_mul_helper(::cuda::std::size_t __lhs, ::cuda::std::si
   {
     return ::cuda::std::dynamic_extent;
   }
-  else
-  {
-    return __lhs * __rhs;
-  }
+  return __lhs * __rhs;
 }
 
 template <class _ResultIndex, class _LhsExts, class _RhsExts, ::cuda::std::size_t... _Is>
@@ -99,20 +97,19 @@ template <class _Index, class _OrgIndex, ::cuda::std::size_t... _StaticExts>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::extents<_Index, _StaticExts...>
 __hierarchy_extents_cast(::cuda::std::extents<_OrgIndex, _StaticExts...> __org_exts) noexcept
 {
-  using _OrgExts = ::cuda::std::extents<_OrgIndex, _StaticExts...>;
-  ::cuda::std::array<_Index, _OrgExts::rank()> __ret{};
-  for (::cuda::std::size_t __i = 0; __i < _OrgExts::rank(); ++__i)
+  if constexpr (::cuda::std::is_same_v<_Index, _OrgIndex>)
   {
-    if (_OrgExts::static_extent(__i) == ::cuda::std::dynamic_extent)
+    return __org_exts;
+  }
+  else
+  {
+    ::cuda::std::array<_Index, sizeof...(_StaticExts)> __ret{};
+    for (::cuda::std::size_t __i = 0; __i < sizeof...(_StaticExts); ++__i)
     {
       __ret[__i] = static_cast<_Index>(__org_exts.extent(__i));
     }
-    else
-    {
-      __ret[__i] = static_cast<_Index>(_OrgExts::static_extent(__i));
-    }
+    return ::cuda::std::extents<_Index, _StaticExts...>{__ret};
   }
-  return ::cuda::std::extents<_Index, _StaticExts...>{__ret};
 }
 
 template <class _Tp, class _Unit, class _Level, class _Hierarchy>

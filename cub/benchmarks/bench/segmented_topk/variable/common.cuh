@@ -26,14 +26,14 @@ using segment_size_t = cuda::std::int32_t;
 
 enum class pattern_kind : int
 {
-  random = 0,
+  random,
   quantized_random,
   relu_quantized,
   tie_heavy,
   pivot_tie
 };
 
-[[nodiscard]] inline pattern_kind string_to_pattern(const std::string& pattern)
+[[nodiscard]] _CCCL_HOST_API inline pattern_kind string_to_pattern(const std::string& pattern)
 {
   if (pattern == "random")
   {
@@ -59,7 +59,7 @@ enum class pattern_kind : int
 }
 
 template <int MaxSegmentSize, int K>
-[[nodiscard]] thrust::device_vector<float>
+[[nodiscard]] _CCCL_HOST_API thrust::device_vector<float>
 gen_data(int num_segments, pattern_kind pattern, const segment_size_t* d_seg_sizes)
 {
   const auto num_keys = static_cast<std::size_t>(num_segments) * static_cast<std::size_t>(MaxSegmentSize);
@@ -162,7 +162,8 @@ using max_segment_size_list = nvbench::enum_type_list< //
   2048,
   4096,
   8192
-#if 0 // need these, waiting for implementation to catch up
+// need these, waiting for implementation to catch up
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
   ,
   16384,
   32768,

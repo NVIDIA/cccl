@@ -1,6 +1,7 @@
 #include <thrust/detail/type_traits/minimum_type.h>
 #include <thrust/iterator/iterator_categories.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>

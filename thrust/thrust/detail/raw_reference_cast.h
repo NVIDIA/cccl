@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,7 +70,7 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cud
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cuda::std::remove_cv_t<T>>>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 } // namespace raw_reference_detail
 
@@ -105,13 +105,13 @@ struct raw_reference_tuple_helper
 template <typename... Ts>
 struct raw_reference_tuple_helper<::cuda::std::tuple<Ts...>>
 {
-  using type = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 template <typename... Ts>
 struct raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>
 {
-  using type = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 } // namespace raw_reference_detail
 
@@ -135,31 +135,32 @@ public:
 template <typename... Ts>
 struct raw_reference<tuple_of_iterator_references<Ts...>>
 {
-  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
+  using type _CCCL_NODEBUG =
+    typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
 };
 } // namespace detail
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
   return ::cuda::std::forward<T>(t);
 }
 
 template <typename... Ts>
-_CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
+_CCCL_HOST_DEVICE_API auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
   typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
 {
   if constexpr (detail::can_unwrap<detail::tuple_of_iterator_references<Ts...>>)

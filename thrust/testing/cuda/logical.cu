@@ -1,6 +1,10 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/logical.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 
@@ -88,7 +92,7 @@ TEST_CASE("TestAllOfCudaStreams", "[logical]")
   Vector v(3, T{1});
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::all_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
@@ -101,7 +105,7 @@ TEST_CASE("TestAllOfCudaStreams", "[logical]")
   REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -189,7 +193,7 @@ TEST_CASE("TestAnyOfCudaStreams", "[logical]")
   Vector v(3, T{1});
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
@@ -202,7 +206,7 @@ TEST_CASE("TestAnyOfCudaStreams", "[logical]")
   REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -290,7 +294,7 @@ TEST_CASE("TestNoneOfCudaStreams", "[logical]")
   Vector v(3, T{1});
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
@@ -303,5 +307,5 @@ TEST_CASE("TestNoneOfCudaStreams", "[logical]")
   REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

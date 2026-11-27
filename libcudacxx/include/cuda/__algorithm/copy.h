@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,8 +28,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/mdspan>
 #  include <cuda/std/span>
 
@@ -38,7 +37,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Source access order for copy_bytes
-enum class source_access_order
+enum class source_access_order // NOLINT(readability-enum-initial-value)
 {
   //! @brief Access source in stream order
   stream = 0x1,
@@ -97,7 +96,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     if (__src.size_bytes() > __dst.size_bytes())
     {
-      _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+      _CCCL_THROW_STD(invalid_argument, "Copy destination is too small to fit the source data");
     }
   }
 
@@ -148,12 +147,12 @@ _CCCL_HOST_API void __copy_bytes_impl(
   // Check only destination, because the layout of destination is the same as source
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "copy_bytes supports only exhaustive mdspans");
+    _CCCL_THROW_STD(invalid_argument, "copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination size differs from the source");
+    _CCCL_THROW_STD(invalid_argument, "Copy destination size differs from the source");
   }
 
   ::cuda::__detail::__copy_bytes_impl(

@@ -55,23 +55,27 @@ CUB_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
   using dispatch_t =
     DispatchAdjacentDifference<value_t*, value_t*, difference_op_t, offset_t, MayAlias::No, ReadOption::Left, policy_hub_t>;
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(in_items.data()),
-    thrust::raw_pointer_cast(out_items.data()),
-    num_items,
-    difference_op_t{},
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(in_items.data()),
+      thrust::raw_pointer_cast(out_items.data()),
+      num_items,
+      difference_op_t{},
+      /* stream */ nullptr));
   c2h::device_vector<std::uint8_t> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(in_items.data()),
-    thrust::raw_pointer_cast(out_items.data()),
-    num_items,
-    difference_op_t{},
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(in_items.data()),
+      thrust::raw_pointer_cast(out_items.data()),
+      num_items,
+      difference_op_t{},
+      /* stream */ nullptr));
 
   REQUIRE(out_items == expected);
 }
