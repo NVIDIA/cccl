@@ -48,116 +48,62 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * --------------------------------------------------------------------
  * Scaling ldexp(x, n) = x * 2^n (fp32mp2 and fp64mp2) - exact on the limb pair
  * --------------------------------------------------------------------
- * Replaces the legacy fp64 round-trip with an all-fp32 implementation:
- * the 2^n factor is built directly from its biased fp32 exponent via
- * bit-cast and multiplied into x.  No native double is ever touched,
- * so the routine runs at full fp32 throughput on GPUs where fp64 is
- * 1:32 or worse.
+ * Each limb is multiplied by 2^n, which is exact but for a subnormal product, so no pair
+ * arithmetic is needed and, for fp32mp2, no FP64 operation.
  *
- * Algorithm -- 3-piece split (vs. the 2-piece used by
- * __internal_fpmp2_exp_scale for the bounded-n exp callers):
+ * Where 2^n is a normal number of the limb format (-126 <= n <= 127 for fp32mp2,
+ * -1022 <= n <= 1023 for fp64mp2) that is one multiplication per limb, and a result in the
+ * subnormal range is rounded once.  Any other n goes to the limb format's own ldexp, which
+ * splits the factor and rounds once as well.
  *
- *   2^n  =  2^k * 2^k * 2^(n - 2k),  k = n/3
+ * The special operands come out as IEEE-754 has it:
  *
- * Each factor's biased exponent is clamped to [1, 254] (fp32 normal
- * range), so every scale is finite and strictly positive.  This
- * keeps the mul chain IEEE-clean for the special inputs that show up
- * in `ldexp` corner cases:
- *
- *   ldexp(0,   n) ->  +-0    (0 * finite positive = +-0, never NaN)
- *   ldexp(+-inf, n) ->  +-inf    (inf * finite positive = inf)
- *   ldexp(NaN, n) ->  NaN  (NaN propagates)
- *   ldexp(x,   n) -> +-inf    when |n| is huge enough to overflow fp32
- *   ldexp(x,   n) -> +-0    when |n| is huge enough to underflow fp32
- *
- * Saturation: n is pre-clamped to +-300.  Even a denormal x (|x| >=
- * 2^-149) scaled by 2^300 overflows to +inf, and any finite x scaled by
- * 2^-300 underflows to +-0 -- so further-out n values would produce the
- * same result and saturating is exact, not lossy.
- *
- * The fp64mp2 branch (compile-time-selected when FpType == double)
- * forwards to `::cuda::std::ldexp(double, int)`; fp64 hardware handles this in
- * one instruction and there is no fp64 cost concern on machines that
- * have fp64mp2 enabled.
+ *   ldexp(+-0, n)   ->  +-0
+ *   ldexp(+-inf, n) ->  +-inf
+ *   ldexp(NaN, n)   ->  NaN
+ *   ldexp(x, n)     ->  +-inf  when the result overflows
+ *   ldexp(x, n)     ->  +-0    when it underflows
  * --------------------------------------------------------------------
  */
+// 2^n for an n in the normal exponent range of the limb format.
+template <typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _FpType __fpmp_pow2(const int __n) noexcept
+{
+  if constexpr (__fpmp2_is_fp32_v<_FpType>)
+  {
+    return ::cuda::std::bit_cast<float>(static_cast<uint32_t>(__n + 127) << 23);
+  }
+  else
+  {
+    return ::cuda::std::bit_cast<double>(static_cast<uint64_t>(__n + 1023) << 52);
+  }
+}
+
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  if constexpr (__fpmp2_is_fp32_v<_FpType>)
+  constexpr int __e_min = __fpmp2_is_fp32_v<_FpType> ? -126 : -1022;
+  constexpr int __e_max = __fpmp2_is_fp32_v<_FpType> ? 127 : 1023;
+
+  _FpType __hi, __lo;
+  if (__n >= __e_min && __n <= __e_max)
   {
-    using __ffloat = fp32mp2_low;
-
-    /* Saturate |n| to +-300.  Any |n| larger than this is provably
-     * monotone in the final result (overflow or underflow) for
-     * every finite fp32 input, so clamping does not lose info. */
-    if (__n > 300)
-    {
-      __n = 300;
-    }
-    if (__n < -300)
-    {
-      __n = -300;
-    }
-
-    const int __k = __n / 3;
-    int __ek1     = 127 + __k;
-    int __ek2     = 127 + __k;
-    int __ek3     = 127 + (__n - 2 * __k);
-    if (__ek1 < 1)
-    {
-      __ek1 = 1;
-    }
-    if (__ek2 < 1)
-    {
-      __ek2 = 1;
-    }
-    if (__ek3 < 1)
-    {
-      __ek3 = 1;
-    }
-    if (__ek1 > 254)
-    {
-      __ek1 = 254;
-    }
-    if (__ek2 > 254)
-    {
-      __ek2 = 254;
-    }
-    if (__ek3 > 254)
-    {
-      __ek3 = 254;
-    }
-    const float __s1 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek1) << 23);
-    const float __s2 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
-    const float __s3 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek3) << 23);
-
-    const __ffloat __result = __ffloat(__x_hi, __x_lo) * __s1 * __s2 * __s3;
-
-    *__res_hi = __result.hi();
-    *__res_lo = __result.lo();
+    const _FpType __s = ::cuda::__fpmp_pow2<_FpType>(__n);
+    __hi              = ::cuda::__fpmp_mul_rn(__x_hi, __s);
+    __lo              = ::cuda::__fpmp_mul_rn(__x_lo, __s);
   }
   else
   {
-    /* fp64mp2 path: scale each limb by the same power of two.  That is exact for
-     * both of them, so the pair keeps its low limb; the double round-trip this
-     * replaces discarded lo for every fp64mp2 value, ldexp(1 + 2^-70, 4) coming
-     * back as exactly 16. */
-    *__res_hi = ::cuda::std::ldexp(__x_hi, __n);
-    *__res_lo = ::cuda::std::ldexp(__x_lo, __n);
+    __hi = ::cuda::std::ldexp(__x_hi, __n);
+    __lo = ::cuda::std::ldexp(__x_lo, __n);
   }
 
-  /* Overflow, for either element type: the low limb is meaningless once the high
-   * one is infinite, and leaving it as it comes out (inf - inf = NaN from the
-   * fp32mp2 scaling, or a still-finite value from the fp64mp2 one, since lo is
-   * about 2^-53 of hi) makes hi + lo NaN instead of the infinity this is
-   * documented to return.  Collapse to (+-inf, 0), which is what a conversion
-   * from an overflowing scalar produces. */
-  if (::cuda::std::isinf(*__res_hi))
-  {
-    *__res_lo = _FpType(0);
-  }
+  /* Overflow: the low limb is meaningless once the high one is infinite, and it can
+   * still be finite, since lo is about one part in 2^24 (2^53) of hi.  Collapse to
+   * (+-inf, 0), which is what a conversion from an overflowing scalar produces. */
+  *__res_hi = __hi;
+  *__res_lo = ::cuda::std::isinf(__hi) ? _FpType(0) : __lo;
 }
 
 /*
@@ -172,9 +118,8 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
  * --------------------------------------------------------------------
  * For IEEE 754 binary formats (FLT_RADIX == 2 -- true on every
  * platform we target) `scalbn(x, n)` is bit-identical to
- * `ldexp(x, n)`, so we simply forward to the dedicated fp32mp2
- * ldexp implementation above and avoid duplicating the 3-piece
- * bit-cast scaling logic.  No fp64 round-trip is required.
+ * `ldexp(x, n)`, so we simply forward to the ldexp implementation
+ * above.  No fp64 round-trip is required.
  * --------------------------------------------------------------------
  */
 template <typename _FpType>
@@ -386,15 +331,36 @@ __fpmp2_scalbln(const _FpType __x_hi, const _FpType __x_lo, long int __n, _FpTyp
  * range.  A single double cannot express the situation at all, which is why the
  * placeholder never had to think about it.
  *
- * For 0, infinity and NaN, frexp reports an exponent of 0 and returns hi unchanged,
- * and scaling lo by 2^0 leaves the pair as it was.
+ * For 0, frexp reports an exponent of 0, and scaling lo by 2^0 leaves the pair as it was.
+ * For infinity and NaN, frexp returns hi unchanged and the exponent it reports is
+ * unspecified.  The exponent is clamped before lo is scaled, so a zero lo stays zero.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_frexp(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo, int* __nptr) noexcept
 {
+  constexpr int __e_min = __fpmp2_is_fp32_v<_FpType> ? -126 : -1022;
+  constexpr int __e_max = __fpmp2_is_fp32_v<_FpType> ? 127 : 1023;
+
   _FpType __m_hi = ::cuda::std::frexp(__x_hi, __nptr);
-  _FpType __m_lo = ::cuda::std::ldexp(__x_lo, -*__nptr);
+  /* lo * 2^k with k = -*nptr, rounded once.  k lies in [-128, 148] ([-1024, 1073]).
+   * One normal power of two, 2^k1, covers k unless hi is in the top two binades or below
+   * 2^-128 (2^-1024).  In those cases an extra factor 2^(k - k1) is applied first.  That
+   * factor is exact: it scales lo up, or down by at most two binades.  A lo that it takes
+   * into the subnormal range ends as zero either way.
+   *
+   * The exponent that the limb format's frexp stores for an infinity or a NaN is unspecified.
+   * Clamping it to twice the normal range keeps both factors finite.  The zero low limb of
+   * an infinity therefore stays zero. */
+  const int __e  = (*__nptr < -2 * __e_max) ? -2 * __e_max : ((*__nptr > -2 * __e_min) ? -2 * __e_min : *__nptr);
+  const int __k  = -__e; // negated after the clamp: -*__nptr overflows for INT_MIN
+  const int __k1 = (__k < __e_min) ? __e_min : ((__k > __e_max) ? __e_max : __k);
+  _FpType __m_lo = __x_lo;
+  if (__k != __k1)
+  {
+    __m_lo = ::cuda::__fpmp_mul_rn(__m_lo, ::cuda::__fpmp_pow2<_FpType>(__k - __k1));
+  }
+  __m_lo = ::cuda::__fpmp_mul_rn(__m_lo, ::cuda::__fpmp_pow2<_FpType>(__k1));
 
   if (::cuda::__fpmp_internal_fabs(__m_hi) == _FpType(0.5) && __m_lo != _FpType(0)
       && (::cuda::std::signbit(__m_hi) != ::cuda::std::signbit(__m_lo)))

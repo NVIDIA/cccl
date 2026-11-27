@@ -19,8 +19,10 @@
 //  with the Payne-Hanek range, the hyperbolic functions, cbrt, rcbrt, hypot,
 //  rhypot, fdim, modf, the error and probability functions, boys_f0, the six
 //  rounding functions (fp32mp2 and fp64mp2, whose zero result carries the sign
-//  of the argument) and the classification predicates on loose pairs. Values
-//  are compared against the double reference where one is in ISO <cmath>.
+//  of the argument), ldexp and frexp up to the ends of the exponent range, the
+//  fp64mp2 division by a divisor next to the largest finite value, and the
+//  classification predicates on loose pairs. Values are compared against the
+//  double reference where one is in ISO <cmath>.
 //
 //  Left out on purpose:
 //    - sqrt and rsqrt take no branch for special arguments and return NaN
@@ -519,6 +521,19 @@ TEST_HOST_DEVICE_FUNC void test_fdim_fp64mp2()
   assert(is_nan(fdim(nl::quiet_NaN(), T(1.0))));
 }
 
+// A low operation can leave a NaN in the low limb alone. fdim returns NaN for it in either
+// operand, whichever way the high limbs compare.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_fdim_nan_low_limb()
+{
+  using F     = decltype(T{}.hi());
+  const F nan = cuda::std::numeric_limits<F>::quiet_NaN();
+  const T x   = T(F(1), nan);
+  assert(is_nan_both(fdim(x, T(F(2)))) && is_nan_both(fdim(x, T(F(0.5)))));
+  assert(is_nan_both(fdim(T(F(2)), x)) && is_nan_both(fdim(T(F(0.5)), x)));
+}
+
 // ---- error and probability functions ------------------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_erf_family()
@@ -694,6 +709,28 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(rnorm3d(D(0x1p-600), D(0.0), -w)), 4.0));
   assert(approx_eq(static_cast<double>(norm4d(D(0x1p-600), w, D(0.0), w)), 0.35355339059327379));
   assert(approx_eq(static_cast<double>(norm3d(w, D(3.0), D(4.0))), 5.0062460986251967));
+
+  // A low limb above the high limb in magnitude: the norms read the operand with its limbs
+  // exchanged, so a high limb far below the low one does not set the scale, and an infinity
+  // in the low limb alone is an infinite operand.
+  const float finf = cuda::std::numeric_limits<float>::infinity();
+  const T below(0x1p-80f, 3.0f);
+  assert(approx_eq(static_cast<double>(rhypot(below, T(4.0f))), 0.2));
+  assert(approx_eq(static_cast<double>(norm3d(T(0.0f), below, T(4.0f))), 5.0));
+  assert(approx_eq(static_cast<double>(rnorm4d(T(4.0f), T(0.0f), T(0.0f), -below)), 0.2));
+  assert(is_zero(rhypot(T(1.0f, finf), T(0.0f))) && is_pos_inf(norm3d(T(-1.0f, finf), T(2.0f), T(0.0f))));
+  assert(is_pos_inf(norm4d(T(0.0f), T(1.0f, -finf), T(0.0f), T(0.0f)))
+         && is_zero(rnorm3d(T(1.0f, finf), T(2.0f), T(0.0f))));
+
+  const double dinf = cuda::std::numeric_limits<double>::infinity();
+  const D dbelow(0x1p-600, 3.0);
+  assert(approx_eq(static_cast<double>(hypot(dbelow, D(4.0))), 5.0));
+  assert(approx_eq(static_cast<double>(rhypot(dbelow, D(4.0))), 0.2));
+  assert(approx_eq(static_cast<double>(norm3d(D(0.0), dbelow, D(4.0))), 5.0));
+  assert(approx_eq(static_cast<double>(rnorm4d(D(4.0), D(0.0), D(0.0), -dbelow)), 0.2));
+  assert(is_pos_inf(hypot(D(1.0, dinf), D(0.0))) && is_pos_inf(hypot(D(-1.0, dinf), D(2.0))));
+  assert(is_zero(rhypot(D(1.0, dinf), D(0.0))) && is_pos_inf(norm3d(D(-1.0, dinf), D(2.0), D(0.0))));
+  assert(is_pos_inf(norm4d(D(0.0), D(1.0, -dinf), D(0.0), D(0.0))) && is_zero(rnorm3d(D(1.0, dinf), D(2.0), D(0.0))));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------
@@ -774,6 +811,121 @@ TEST_HOST_DEVICE_FUNC void test_modf_and_classify()
   assert(llround(T(-0x1p63f, -1.0f)) == ::cuda::std::llround(-0x1p63));
 }
 
+// ---- ldexp and frexp ----------------------------------------------------------
+//
+// Both scale the limbs by a power of two, which is exact: one multiplication per limb where
+// 2^n is a normal number, the limb format's own ldexp otherwise. A result in the subnormal
+// range is rounded once, an overflowing one is an infinity with a zero low limb, and zeros,
+// infinities and NaN come back as they are.
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC void test_ldexp_frexp()
+{
+  using F               = decltype(MP2().hi());
+  using nl              = cuda::std::numeric_limits<F>;
+  constexpr int digits  = nl::digits;
+  constexpr int max_exp = nl::max_exponent; // 2^(max_exp - 1) is the largest power of two
+  constexpr int min_exp = nl::min_exponent; // 2^(min_exp - 1) is the smallest normal number
+
+  F lo   = cuda::std::ldexp(F(0.375), -digits);
+  MP2 x  = MP2(F(1.25), lo);
+  MP2 r1 = ldexp(x, 7);
+  assert(r1.hi() == F(160) && r1.lo() == cuda::std::ldexp(lo, 7));
+  MP2 r2 = ldexp(x, -9);
+  assert(r2.hi() == F(1.25) / F(512) && r2.lo() == cuda::std::ldexp(lo, -9));
+  assert(scalbn(x, 7) == r1 && scalbln(x, -9L) == r2);
+
+  // Next to the ends of the one-multiplication range, and beyond them
+  assert(ldexp(x, max_exp - 2).hi() == cuda::std::ldexp(F(1.25), max_exp - 2));
+  assert(ldexp(x, max_exp - 2).lo() == cuda::std::ldexp(lo, max_exp - 2));
+  assert(ldexp(MP2(F(0.25)), max_exp).hi() == cuda::std::ldexp(F(1), max_exp - 2));
+  // the smallest exponent that leaves the low limb a normal number
+  assert(ldexp(x, min_exp + digits + 2).hi() == cuda::std::ldexp(F(1.25), min_exp + digits + 2));
+  assert(ldexp(x, min_exp + digits + 2).lo() == cuda::std::ldexp(lo, min_exp + digits + 2));
+  assert(ldexp(ldexp(x, max_exp - 2), -(max_exp + 3)) == ldexp(x, -5));
+
+  // Overflow and underflow, at the first exponent that reaches them and far beyond it
+  assert(is_pos_inf(ldexp(x, max_exp)) && ldexp(x, max_exp).lo() == 0);
+  assert(is_neg_inf(ldexp(-x, max_exp)) && ldexp(-x, max_exp).lo() == 0);
+  assert(is_pos_inf(ldexp(x, INT_MAX)) && ldexp(x, INT_MAX).lo() == 0);
+  assert(is_zero(ldexp(x, INT_MIN)) && is_zero(ldexp(x, 2 * min_exp - 2 * digits)));
+
+  // Zeros keep their sign; infinities and NaN are returned
+  assert(is_pos_zero(ldexp(MP2(F(0)), 5)) && is_neg_zero(ldexp(MP2(-F(0)), -5)));
+  assert(is_neg_zero(ldexp(MP2(-F(0)), INT_MAX)) && is_pos_zero(ldexp(MP2(F(0)), INT_MIN)));
+  assert(is_pos_inf(ldexp(MP2(nl::infinity()), -3)) && is_neg_inf(ldexp(MP2(-nl::infinity()), INT_MIN)));
+  assert(is_nan(ldexp(MP2(nl::quiet_NaN()), 3)) && is_nan(ldexp(MP2(nl::quiet_NaN()), INT_MAX)));
+
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal results: flushed to zero on the device
+  // 3 * 2^(min_exp - digits) is a subnormal number: the scaling down and up again are exact,
+  // and a subnormal result is rounded once, to the nearest multiple of the smallest one
+  MP2 tiny = ldexp(MP2(F(1.5)), min_exp - digits + 1);
+  assert(tiny.hi() == 3 * nl::denorm_min() && tiny.lo() == 0);
+  assert(ldexp(tiny, digits - min_exp - 1) == MP2(F(1.5)));
+  assert(ldexp(MP2(F(1.25)), min_exp - digits).hi() == nl::denorm_min());
+  assert(ldexp(MP2(F(1.75)), min_exp - digits).hi() == 2 * nl::denorm_min());
+  assert(ldexp(ldexp(MP2(F(1.75)), max_exp - 1), min_exp - digits - max_exp + 1).hi() == 2 * nl::denorm_min());
+#endif // !TEST_HAS_CUDA_FAST_MATH
+
+  // frexp: the exponent is that of the pair, the mantissa the pair scaled by it, exactly
+  int e   = 0;
+  MP2 big = ldexp(x, max_exp - 1); // in the top binade
+  MP2 m   = frexp(big, &e);
+  assert(e == max_exp && m.hi() == F(0.625) && m.lo() == cuda::std::ldexp(lo, -1));
+  m = frexp(ldexp(x, min_exp + digits + 2), &e);
+  assert(e == min_exp + digits + 3 && m.hi() == F(0.625) && m.lo() == cuda::std::ldexp(lo, -1));
+  // just below a power of two: the mantissa is next to 1, not next to 1/2
+  m = frexp(MP2(F(4), -cuda::std::ldexp(F(1), -digits)), &e);
+  assert(e == 2 && m.hi() == F(1) && m.lo() == -cuda::std::ldexp(F(1), -digits - 2));
+  m = frexp(MP2(F(0)), &e);
+  assert(e == 0 && is_pos_zero(m));
+  m = frexp(MP2(nl::infinity()), &e);
+  assert(is_pos_inf(m) && m.lo() == 0);
+
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal results: flushed to zero on the device
+  // In the top binade the low limb can scale into the subnormal range, where it is rounded
+  // once: 23/16 of the smallest subnormal number goes to 1 of it. Scaling in two steps that
+  // both round gives 6/4 and then 2.
+  m = frexp(MP2(cuda::std::ldexp(F(1), max_exp - 1), cuda::std::ldexp(F(23), max_exp + min_exp - digits - 4)), &e);
+  assert(e == max_exp && m.hi() == F(0.5) && m.lo() == nl::denorm_min());
+#endif // !TEST_HAS_CUDA_FAST_MATH
+}
+
+// ---- fp64mp2 division next to the ends of the exponent range -------------------
+//
+// On the device the division starts from an approximate reciprocal, which flushes subnormal
+// numbers to zero. A divisor whose reciprocal is subnormal (from 2^1022 on), or within a
+// binade of that (from 2^1021 on), takes the correctly rounded reciprocal instead, and the
+// quotient does not collapse to zero: 64 u^2 allows for the bits the subnormal reciprocal is
+// short of at the low accuracy level.
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC void test_division_ends_fp64mp2()
+{
+  constexpr double u2        = 0x1p-106;
+  constexpr double scales[3] = {0x1p+1021, 0x1p+1022, 0x1p+1023}; // both sides of 2^1022, and the top binade
+  for (double scale : scales)
+  {
+    // the dividend is 3/4 of the divisor, exactly
+    MP2 d      = MP2(1.5 * scale, 1.25 * scale * 0x1p-54);
+    MP2 n      = MP2(1.125 * scale, 0.9375 * scale * 0x1p-54);
+    MP2 q      = n / d;
+    double err = (q.hi() - 0.75) + q.lo();
+    assert(cuda::std::fabs(err) <= 64 * u2);
+    // a one-limb divisor: (3/4) (1.5 + 1.25 2^-54) / 1.5 = 3/4 + (5/8) 2^-54
+    q   = n / (1.5 * scale);
+    err = (q.hi() - 0.75) + (q.lo() - 0.625 * 0x1p-54);
+    assert(cuda::std::fabs(err) <= 64 * u2);
+  }
+  MP2 big = MP2(cuda::std::numeric_limits<double>::max());
+  MP2 one = big / big;
+  assert(cuda::std::fabs((one.hi() - 1.0) + one.lo()) <= 64 * u2);
+  // the divisor next below 2^1022: its reciprocal is the normal number next above 2^-1022
+  constexpr double edge = 0x1.fffffffffffffp+1021;
+  MP2 half              = MP2(0.5 * edge) / MP2(edge);
+  assert(cuda::std::fabs((half.hi() - 0.5) + half.lo()) <= 64 * u2);
+  half = MP2(0.5 * edge) / edge;
+  assert(cuda::std::fabs((half.hi() - 0.5) + half.lo()) <= 64 * u2);
+}
+
 int main(int, char**)
 {
   // force_include.h makes this main __host__ __device__ and runs it twice, on the
@@ -802,6 +954,12 @@ int main(int, char**)
   test_norm_specials<cuda::fp32mp2_low>();
   test_norm_specials<cuda::fp32mp2_high>();
   test_fdim_fp64mp2();
+  test_fdim_nan_low_limb<cuda::fp32mp2>();
+  test_fdim_nan_low_limb<cuda::fp32mp2_low>();
+  test_fdim_nan_low_limb<cuda::fp32mp2_high>();
+  test_fdim_nan_low_limb<cuda::fp64mp2>();
+  test_fdim_nan_low_limb<cuda::fp64mp2_low>();
+  test_fdim_nan_low_limb<cuda::fp64mp2_high>();
   test_erf_family();
   test_erfc_ends<cuda::fp32mp2>();
   test_erfc_ends<cuda::fp32mp2_low>();
@@ -809,5 +967,11 @@ int main(int, char**)
   test_loose_zero_high_limb();
   test_llrint_ends();
   test_modf_and_classify();
+  test_ldexp_frexp<cuda::fp32mp2>();
+  test_ldexp_frexp<cuda::fp32mp2_low>();
+  test_ldexp_frexp<cuda::fp64mp2>();
+  test_division_ends_fp64mp2<cuda::fp64mp2>();
+  test_division_ends_fp64mp2<cuda::fp64mp2_low>();
+  test_division_ends_fp64mp2<cuda::fp64mp2_high>();
   return 0;
 }

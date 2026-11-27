@@ -2305,11 +2305,14 @@ _CCCL_FPMP_MATH_DISPATCH_1A(high_acos)
  * ====================================================================
  * sinpi(x), cospi(x), sincospi(x) - sin(pi*x) and cos(pi*x)
  * ====================================================================
- * fp32mp2 reduces x = n + f, |f| <= 1/2, by splitting the limb pair.
- * f is folded into [-1/4, 1/4], scaled by pi, and evaluated with the
- * sincos kernels: the Taylor kernel at fpmp2_accuracy::high (the
- * __internal_fpmp2_high_ entry points), the minimax kernels otherwise.
- * No radian argument reduction is involved.
+ * fp32mp2 reduces x = n + f, |f| <= 1/2, by splitting the limb pair, and
+ * folds f into [-1/4, 1/4]. No radian argument reduction is involved.
+ * The default and low levels evaluate minimax polynomials in f itself,
+ * sinpi(f) = f (pi + f^2 S(f^2)) and cospi(f) = 1 + f^2 C(f^2), so that
+ * f is never multiplied by pi; sinpi and cospi evaluate one of the two,
+ * its coefficients selected by the fold. fpmp2_accuracy::high (the
+ * __internal_fpmp2_high_ entry points) scales f by pi and evaluates the
+ * Taylor kernel of sincos.
  * fp64mp2 remains a double-precision fallback, the same at every level.
  */
 
@@ -2317,6 +2320,23 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept;
 _CCCL_FPMP_CORE_API void __internal_fpmp2_high_sincospi(
   const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept;
+
+// Which results a call of __internal_fpmp2_sincospi_core needs.
+enum class __fpmp2_trigpi_part
+{
+  __both,
+  __sine,
+  __cosine
+};
+template <__fpmp2_trigpi_part _Part>
+_CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi_core(
+  const float __x_hi,
+  const float __x_lo,
+  float* __sin_hi,
+  float* __sin_lo,
+  float* __cos_hi,
+  float* __cos_lo,
+  const bool __high) noexcept;
 
 /*
  * --------------------------------------------------------------------
@@ -2327,7 +2347,8 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinpi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   float __c_hi, __c_lo;
-  ::cuda::__internal_fpmp2_sincospi(__x_hi, __x_lo, __res_hi, __res_lo, &__c_hi, &__c_lo);
+  ::cuda::__internal_fpmp2_sincospi_core<__fpmp2_trigpi_part::__sine>(
+    __x_hi, __x_lo, __res_hi, __res_lo, &__c_hi, &__c_lo, false);
 }
 
 /* fpmp2_accuracy::high */
@@ -2378,7 +2399,8 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cospi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   float __s_hi, __s_lo;
-  ::cuda::__internal_fpmp2_sincospi(__x_hi, __x_lo, &__s_hi, &__s_lo, __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_sincospi_core<__fpmp2_trigpi_part::__cosine>(
+    __x_hi, __x_lo, &__s_hi, &__s_lo, __res_hi, __res_lo, false);
 }
 
 /* fpmp2_accuracy::high */
@@ -2494,14 +2516,159 @@ __internal_fpmp2_pi_times(const float __f_hi, const float __f_lo, float* __a_hi,
 }
 
 /*
+ * Kernel polynomial of sinpi and cospi: the unnormalized pair
+ * z = u (k1 + k2 u + ... + k6 u^5) for u = f^2, |f| <= 1/4, where
+ *   sinpi(f) = f (pi + z)  with the sine coefficients,
+ *   cospi(f) = 1 + z       with the cosine coefficients,
+ * both minimax in the relative error of the result (weighted Remez; k1..k3 as 48-bit pairs
+ * and k4..k6 as single floats, rounded one at a time with the others refitted). The relative
+ * error is below 2^-55.4 and 2^-50.3; for the cosine it is what rounding k1 = -pi^2 / 2 to a
+ * pair leaves. `__cosine` selects the set, at compile time when it is a constant.
+ *
+ * The steps are those of __internal_fpmp2_trig_poly, one degree shorter: k4..k6 run in single
+ * precision, and the rounding error of the last of those steps (up to 2^-25 k4 u^4, or 2^-42
+ * of cospi(f)) is recovered (k4 - w is exact, as |t u| < k4 / 100) and carried into the pair
+ * steps. Each pair step adds its product to a coefficient at least 19 times larger, so the sum
+ * is a Fast2Sum. f_lo^2 and the products of two low words are dropped.
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_trigpi_poly(
+  const bool __cosine, const float __f_hi, const float __f_lo, float* __z_hi, float* __z_lo) noexcept
+{
+  // k1 hi, k1 lo, k2 hi, k2 lo, k3 hi, k3 lo, k4, k5, k6
+  constexpr float __sin_k[9] = {
+    -0x1.4abbcep+2f,
+    -0x1.896f9p-24f,
+    0x1.466bc6p+1f,
+    0x1.dd61f8p-25f,
+    -0x1.32d2ccp-1f,
+    -0x1.c60192p-26f,
+    0x1.50783p-4f,
+    -0x1.e30094p-8f,
+    0x1.e3fd2p-12f,
+  };
+  constexpr float __cos_k[9] = {
+    -0x1.3bd3ccp+2f,
+    -0x1.37c8cep-23f,
+    0x1.03c1fp+2f,
+    0x1.036b7ap-23f,
+    -0x1.55d3c8p+0f,
+    0x1.0dd93ap-27f,
+    0x1.e1f4fcp-3f,
+    -0x1.a6c9c4p-6f,
+    0x1.f3da7ap-10f,
+  };
+  float __k[9];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int __i = 0; __i < 9; ++__i)
+  {
+    __k[__i] = __cosine ? __cos_k[__i] : __sin_k[__i];
+  }
+
+  float __p_lo;
+  float __e;
+
+  // u = f^2
+  const float __u_hi = ::cuda::__fpmp_two_mult_fma(__f_hi, __f_hi, &__p_lo);
+  const float __u_lo = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_add_rn(__f_hi, __f_hi), __f_lo, __p_lo);
+
+  // w + d = k4 + u (k5 + u k6), d the rounding error of the last step
+  const float __t = ::cuda::__fpmp_fma_rn(__k[8], __u_hi, __k[7]);
+  const float __w = ::cuda::__fpmp_fma_rn(__t, __u_hi, __k[6]);
+  const float __d = ::cuda::__fpmp_fma_rn(__t, __u_hi, ::cuda::__fpmp_sub_rn(__k[6], __w));
+
+  // q3 = k3 + u (w + d)
+  float __p_hi        = ::cuda::__fpmp_two_mult_fma(__w, __u_hi, &__p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__w, __u_lo, __p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__d, __u_hi, __p_lo);
+  const float __q3_hi = ::cuda::__fpmp_fast_two_sum(__k[4], __p_hi, &__e);
+  const float __q3_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__k[5], __p_lo), __e);
+
+  // q2 = k2 + u q3
+  __p_hi              = ::cuda::__fpmp_two_mult_fma(__q3_hi, __u_hi, &__p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__q3_hi, __u_lo, __p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__q3_lo, __u_hi, __p_lo);
+  const float __q2_hi = ::cuda::__fpmp_fast_two_sum(__k[2], __p_hi, &__e);
+  const float __q2_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__k[3], __p_lo), __e);
+
+  // q1 = k1 + u q2
+  __p_hi              = ::cuda::__fpmp_two_mult_fma(__q2_hi, __u_hi, &__p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__q2_hi, __u_lo, __p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__q2_lo, __u_hi, __p_lo);
+  const float __q1_hi = ::cuda::__fpmp_fast_two_sum(__k[0], __p_hi, &__e);
+  const float __q1_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__k[1], __p_lo), __e);
+
+  // z = u q1
+  *__z_hi = ::cuda::__fpmp_two_mult_fma(__q1_hi, __u_hi, &__p_lo);
+  __p_lo  = ::cuda::__fpmp_fma_rn(__q1_hi, __u_lo, __p_lo);
+  *__z_lo = ::cuda::__fpmp_fma_rn(__q1_lo, __u_hi, __p_lo);
+}
+
+/*
+ * cospi(f) when `__cosine`, else sinpi(f), for |f| <= 1/4: a (b + z) with a = 1, b = 1 or
+ * a = f, b = pi and the matching coefficients. One polynomial serves sinpi and cospi of a
+ * folded fraction whose fold picks the function. |z| < 1/3, so b + z is a Fast2Sum.
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_sinpi_or_cospi_kernel(
+  const bool __cosine, const float __f_hi, const float __f_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  // pi in three limbs. The pair of the first two is a relative 2^-49.7 above pi, a third of
+  // u^2 that every sine would be high by; the third limb joins z_lo, the smallest of the low
+  // words.
+  constexpr float __pi_hi  = 0x1.921fb6p+1f;
+  constexpr float __pi_lo  = -0x1.777a5cp-24f;
+  constexpr float __pi_lo2 = -0x1.ee59dap-49f;
+
+  float __z_hi;
+  float __z_lo;
+  ::cuda::__internal_fpmp2_trigpi_poly(__cosine, __f_hi, __f_lo, &__z_hi, &__z_lo);
+
+  const float __a_hi = __cosine ? 1.0f : __f_hi;
+  const float __a_lo = __cosine ? 0.0f : __f_lo;
+  const float __b_hi = __cosine ? 1.0f : __pi_hi;
+  const float __b_lo = __cosine ? 0.0f : __pi_lo;
+  const float __b_l2 = __cosine ? 0.0f : __pi_lo2;
+
+  float __e;
+  const float __w_hi = ::cuda::__fpmp_fast_two_sum(__b_hi, __z_hi, &__e);
+  const float __w_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__b_lo, __e), ::cuda::__fpmp_add_rn(__z_lo, __b_l2));
+
+  float __y_lo;
+  const float __y_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, __w_hi, &__y_lo);
+  __y_lo             = ::cuda::__fpmp_fma_rn(__a_hi, __w_lo, __y_lo);
+  __y_lo             = ::cuda::__fpmp_fma_rn(__a_lo, __w_hi, __y_lo);
+  *__res_hi          = ::cuda::__fpmp_fast_two_sum(__y_hi, __y_lo, __res_lo);
+}
+
+/*
+ * cospi(f) = 1 + z for |f| <= 1/4. The same value as __internal_fpmp2_sinpi_or_cospi_kernel
+ * gives with a = 1, without its products by 1 and 0.
+ */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_cospi_kernel(const float __f_hi, const float __f_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  float __z_hi;
+  float __z_lo;
+  ::cuda::__internal_fpmp2_trigpi_poly(true, __f_hi, __f_lo, &__z_hi, &__z_lo);
+
+  float __e;
+  const float __r_hi = ::cuda::__fpmp_fast_two_sum(1.0f, __z_hi, &__e);
+  const float __r_lo = ::cuda::__fpmp_add_rn(__z_lo, __e);
+  *__res_hi          = ::cuda::__fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
+}
+
+/*
  * --------------------------------------------------------------------
  * Sine and cosine of pi*x sincospi(x, &s, &c) (fp32mp2)
  * --------------------------------------------------------------------
- * x = n + f, |f| <= 1/2. Fold f into [-1/4, 1/4] so pi*f is inside the
- * kernels' range, then apply the cofunction identity and the sign (-1)^n.
+ * x = n + f, |f| <= 1/2. Fold f into [-1/4, 1/4], then apply the
+ * cofunction identity and the sign (-1)^n.
  * `__high` (a constant at every call) selects the Taylor kernel of
- * fpmp2_accuracy::high; everything else is the same at every level.
+ * fpmp2_accuracy::high on pi * f; the other levels evaluate the kernels
+ * of sinpi and cospi on f. `_Part` says which results the caller needs:
+ * sinpi and cospi then evaluate one kernel instead of two, and return the
+ * value sincospi does.
  */
+template <__fpmp2_trigpi_part _Part>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi_core(
   const float __x_hi,
   const float __x_lo,
@@ -2552,24 +2719,21 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi_core(
     int __n           = ::cuda::__fpmp_fp2int_rn(__x_hi);
     const float __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
     const float __e   = __x_hi - __n_f;
-    float __fl        = 0.0f;
-    float __fh        = ::cuda::__fpmp_two_sum(__e, __x_lo, &__fl);
-    if (__fh > 0.5f || (__fh == 0.5f && __fl > 0.0f))
+    // The fraction as a normalized pair, whatever the limbs of x overlap by.
+    __f_hi = ::cuda::__fpmp_two_sum(__e, __x_lo, &__f_lo);
+    // x_lo can carry it past a half. Subtracting 1 from a float in [1/2, 2] is exact; the
+    // pair it leaves, next to -1/2, is folded and renormalized below.
+    if (__f_hi > 0.5f || (__f_hi == 0.5f && __f_lo > 0.0f))
     {
       ++__n;
-      float __err = 0.0f;
-      __fh        = ::cuda::__fpmp_two_sum(__fh, -1.0f, &__err);
-      __fl += __err;
+      __f_hi = ::cuda::__fpmp_sub_rn(__f_hi, 1.0f);
     }
-    else if (__fh < -0.5f || (__fh == -0.5f && __fl < 0.0f))
+    else if (__f_hi < -0.5f || (__f_hi == -0.5f && __f_lo < 0.0f))
     {
       --__n;
-      float __err = 0.0f;
-      __fh        = ::cuda::__fpmp_two_sum(__fh, 1.0f, &__err);
-      __fl += __err;
+      __f_hi = ::cuda::__fpmp_add_rn(__f_hi, 1.0f);
     }
-    __f_hi = ::cuda::__fpmp_two_sum(__fh, __fl, &__f_lo);
-    __odd  = __n & 1;
+    __odd = __n & 1;
   }
   else
   {
@@ -2581,46 +2745,55 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi_core(
     __f_lo             = 0.0f;
   }
 
-  // Captured before the fold. CUDA's contract is sinpi(-0) == -0. two_sum of that
-  // fraction yields +0, and the sine kernel keeps the sign it is given, so the
+  // Captured before the fold. CUDA's contract is sinpi(-0) == -0. The fraction of an
+  // integer is +0, and the sine kernel keeps the sign it is given, so the
   // input sign has to be put back when the fraction is exactly zero. The odd
   // negation stays on the cosine and is not applied to that sine zero.
   const bool __exact_integer = (__f_hi == 0.0f) && (__f_lo == 0.0f);
 
-  /* Fold into [-1/4, 1/4]. q == 1 uses sin=cos, cos=sin; q == 3 uses sin=-cos, cos=sin. */
+  /* Fold into [-1/4, 1/4]. q == 1 uses sin=cos, cos=sin; q == 3 uses sin=-cos, cos=sin.
+   * 1/2 - f_hi and f_hi + 1/2 are exact for |f_hi| in [1/4, 1/2]. Either is zero or at
+   * least an ulp of f_hi, which f_lo does not exceed, so that a Fast2Sum renormalizes the
+   * folded pair; it returns the pair of an unfolded fraction as it is. */
   int __q = 0;
   if (__f_hi > 0.25f || (__f_hi == 0.25f && __f_lo > 0.0f))
   {
-    __q         = 1;
-    float __err = 0.0f;
-    __f_hi      = ::cuda::__fpmp_two_sum(0.5f, -__f_hi, &__err);
-    __f_lo      = __err - __f_lo;
+    __q    = 1;
+    __f_hi = ::cuda::__fpmp_sub_rn(0.5f, __f_hi);
+    __f_lo = -__f_lo;
   }
   else if (__f_hi < -0.25f || (__f_hi == -0.25f && __f_lo < 0.0f))
   {
-    __q         = 3;
-    float __err = 0.0f;
-    __f_hi      = ::cuda::__fpmp_two_sum(__f_hi, 0.5f, &__err);
-    __f_lo += __err;
+    __q    = 3;
+    __f_hi = ::cuda::__fpmp_add_rn(__f_hi, 0.5f);
   }
-  {
-    const float __renorm = ::cuda::__fpmp_two_sum(__f_hi, __f_lo, &__f_lo);
-    __f_hi               = __renorm;
-  }
+  __f_hi = ::cuda::__fpmp_fast_two_sum(__f_hi, __f_lo, &__f_lo);
 
-  /* angle = pi * f, see __internal_fpmp2_pi_times */
-  float __angle_hi, __angle_lo;
-  ::cuda::__internal_fpmp2_pi_times(__f_hi, __f_lo, &__angle_hi, &__angle_lo);
-
-  float __s_hi, __s_lo, __c_hi, __c_lo;
+  float __s_hi = 0.0f, __s_lo = 0.0f, __c_hi = 0.0f, __c_lo = 0.0f;
   if (__high)
   {
+    /* angle = pi * f, see __internal_fpmp2_pi_times */
+    float __angle_hi, __angle_lo;
+    ::cuda::__internal_fpmp2_pi_times(__f_hi, __f_lo, &__angle_hi, &__angle_lo);
     ::cuda::__internal_fpmp2_sincos_kernel(__angle_hi, __angle_lo, &__s_hi, &__s_lo, &__c_hi, &__c_lo);
+  }
+  else if constexpr (_Part == __fpmp2_trigpi_part::__both)
+  {
+    ::cuda::__internal_fpmp2_sinpi_or_cospi_kernel(false, __f_hi, __f_lo, &__s_hi, &__s_lo);
+    ::cuda::__internal_fpmp2_cospi_kernel(__f_hi, __f_lo, &__c_hi, &__c_lo);
   }
   else
   {
-    ::cuda::__internal_fpmp2_sin_kernel(__angle_hi, __angle_lo, &__s_hi, &__s_lo);
-    ::cuda::__internal_fpmp2_cos_kernel(__angle_hi, __angle_lo, &__c_hi, &__c_lo);
+    // The one kernel the result is taken from after the swap below: sinpi(x) is the sine of
+    // an unfolded fraction and the cosine of a folded one, and cospi(x) the other way round.
+    const bool __want_sine = _Part == __fpmp2_trigpi_part::__sine;
+    const bool __cosine    = __want_sine == (__q != 0);
+    float __v_hi, __v_lo;
+    ::cuda::__internal_fpmp2_sinpi_or_cospi_kernel(__cosine, __f_hi, __f_lo, &__v_hi, &__v_lo);
+    __s_hi = __cosine ? 0.0f : __v_hi;
+    __s_lo = __cosine ? 0.0f : __v_lo;
+    __c_hi = __cosine ? __v_hi : 0.0f;
+    __c_lo = __cosine ? __v_lo : 0.0f;
   }
 
   if (__q == 1)
@@ -2669,14 +2842,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi_core(
 _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept
 {
-  ::cuda::__internal_fpmp2_sincospi_core(__x_hi, __x_lo, __sin_hi, __sin_lo, __cos_hi, __cos_lo, false);
+  ::cuda::__internal_fpmp2_sincospi_core<__fpmp2_trigpi_part::__both>(
+    __x_hi, __x_lo, __sin_hi, __sin_lo, __cos_hi, __cos_lo, false);
 }
 
 /* fpmp2_accuracy::high: the Taylor kernel */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_high_sincospi(
   const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept
 {
-  ::cuda::__internal_fpmp2_sincospi_core(__x_hi, __x_lo, __sin_hi, __sin_lo, __cos_hi, __cos_lo, true);
+  ::cuda::__internal_fpmp2_sincospi_core<__fpmp2_trigpi_part::__both>(
+    __x_hi, __x_lo, __sin_hi, __sin_lo, __cos_hi, __cos_lo, true);
 }
 
 /*

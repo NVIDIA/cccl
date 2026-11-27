@@ -12,8 +12,8 @@
 // which take no branch for them), with those of fabs, copysign, fmax and fmin.
 //
 // sqrt and rsqrt have two kernels, neither of which takes a branch (a positive, finite operand
-// with a normal high limb): the default and low accuracy levels get a short one (within 2.5 u^2
-// and 8 u^2 for fp32mp2, 13 u^2 for rsqrt on the device), and fpmp2_accuracy::high one that adds
+// with a normal high limb): the default and low accuracy levels get a short one (within 2.6 u^2
+// and 5.9 u^2 for either type), and fpmp2_accuracy::high one that adds
 // the second-order term of its Newton step (1.3 u^2 for fp32mp2, 0.5 u^2 for fp64mp2, and
 // 4.2 u^2 for rsqrt). Every check runs on the default, low and high types; sqrt and rsqrt are
 // held to the bound of the kernel the type gets, and are not asked for positive operands below
@@ -99,8 +99,8 @@ TEST_HOST_DEVICE_FUNC F short_kernel_min()
 
 // The largest error MPFR sweeps of 1M (fp32mp2) and 262144 (fp64mp2) operand sets per range
 // found on the host and on the device, in u^2 of the result. sqrt and rsqrt at the high level:
-// 1.3 (fp32mp2; 0.5 for fp64mp2, 1.9 on the device) and 4.2; at the default and low levels: 2.5 (fp32mp2) and
-// 8 on the host, 13 on the device, whose seed is the approximate reciprocal square root. fdim:
+// 1.3 (fp32mp2; 0.5 for fp64mp2, 1.9 on the device) and 4.2; at the default and low levels: 2.6 and
+// 5.9, on the host and on the device, whatever the seed is. fdim:
 // 2.5. The norms take the roots of the short kernels at every level: 4 for the fp32mp2 hypot,
 // norm3d and norm4d, and the error of the short rsqrt for rhypot, rnorm3d and rnorm4d; the
 // fp64mp2 norms inherit the error of the short fp64mp2 square root. At the high level the fp32mp2
@@ -108,12 +108,11 @@ TEST_HOST_DEVICE_FUNC F short_kernel_min()
 template <class T, class F, int N>
 TEST_HOST_DEVICE_FUNC void check_accuracy(const acc_case<F> (&cases)[N], bool high)
 {
-  // The short fp64mp2 square root reaches 5.8 u^2 on the host, where its seed is 1 / sqrt(x).
-  const double sqrt_default = sizeof(F) == 4 ? 3.5 : 7.0;
+  const double sqrt_default = 3.5;
   const double norm_high    = sizeof(F) == 4 ? 2.0 : 7.5;
   const double rnorm_high   = sizeof(F) == 4 ? 2.0 : 16.0;
   const double tolerance_high[fn_rnorm4d + 1] = {2.5, 5.0, 3.5, 7.5, 16.0, norm_high, rnorm_high, norm_high, rnorm_high};
-  const double tolerance_default[fn_rnorm4d + 1] = {sqrt_default, 16.0, 3.5, 7.5, 16.0, 7.5, 16.0, 7.5, 16.0};
+  const double tolerance_default[fn_rnorm4d + 1] = {sqrt_default, 7.5, 3.5, 7.5, 16.0, 7.5, 16.0, 7.5, 16.0};
   const double* tolerance                        = high ? tolerance_high : tolerance_default;
   const double u                                 = static_cast<double>(cuda::std::numeric_limits<F>::epsilon()) / 2;
   const double denorm                            = static_cast<double>(cuda::std::numeric_limits<F>::denorm_min());

@@ -239,8 +239,8 @@ question.
      - 28
 
    * - ``fma``
+     - 13
      - 16
-     - 19
      - 37
 
    * - ``/`` on ``fp32mp2``
@@ -380,11 +380,13 @@ fp32mp2
   - **Prefer the one-limb accumulate.** ``acc += f`` with a ``float`` operand takes a dedicated
     path, 10 instructions against 11 at ``mid`` and 10 against 20 at ``high``, and builds no
     temporary pair.
-  - **Prefer** ``mad`` **to a multiply and an add, and use** ``fma`` **for its rounding, not by
-    habit.** ``mad(a, b, c)`` is a ``low`` multiply followed by an addition at the type's level, 16
-    instructions at ``mid`` against 19 for the two operations written out. ``fma`` is 19 at ``mid``
-    and 37 at ``high``, more than the separate operations at ``high``, so it belongs where the fused
-    rounding of the main term matters.
+  - **Prefer** ``fma`` **or** ``mad`` **to a multiply and an add.** At ``low`` and ``mid`` the two
+    are the same kernel, which adds the exact product of the high limbs to ``z`` without error and
+    rounds the remaining terms once each: 13 instructions at ``low`` and 16 at ``mid``, against 19
+    at ``mid`` for the two operations written out, and it is more accurate than they are. At
+    ``high`` they differ: ``mad`` is a product followed by a ``high`` addition, 28 instructions,
+    and ``fma`` keeps the cross terms exact, at 37, more than the separate operations, so it
+    belongs where a cancellation between ``x·y`` and ``z`` has to be survived.
   - **Hoist divisions.** Division is the most expensive basic operation and the least accurate. A
     loop-invariant divisor is a reciprocal computed once and multiplied, at the price of one extra
     rounding, and where a square root feeds a division, ``rsqrt`` and a multiply replace the pair.

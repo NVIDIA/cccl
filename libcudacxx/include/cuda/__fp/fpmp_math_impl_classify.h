@@ -60,34 +60,17 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmax(
 {
   const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
   const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
-  if (__x_is_nan && !__y_is_nan)
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-    return;
-  }
-  if (__y_is_nan && !__x_is_nan)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   // Of two zeros, +0 is the larger one (IEEE 754-2019 maximumNumber). The low limbs are compared
   // first: a low-accuracy pair can carry a zero high limb over a nonzero low one.
   const bool __x_greater =
     (__x_hi > __y_hi)
     || (__x_hi == __y_hi
         && (__x_lo > __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__y_hi))));
-  if (__x_greater)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
-  else
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-  }
+  // x unless it is NaN, or y is a number and x is not the larger one, so two NaNs give y.
+  // One selection, no branch.
+  const bool __pick_x = !__x_is_nan && (__y_is_nan || __x_greater);
+  *__res_hi           = __pick_x ? __x_hi : __y_hi;
+  *__res_lo           = __pick_x ? __x_lo : __y_lo;
 }
 
 /*
@@ -113,33 +96,15 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmin(
 {
   const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
   const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
-  if (__x_is_nan && !__y_is_nan)
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-    return;
-  }
-  if (__y_is_nan && !__x_is_nan)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-    return;
-  }
   // Of two zeros, -0 is the smaller one (IEEE 754-2019 minimumNumber); low limbs first, as in fmax.
   const bool __x_less =
     (__x_hi < __y_hi)
     || (__x_hi == __y_hi
         && (__x_lo < __y_lo || (__x_lo == __y_lo && __x_hi == _FpType(0) && ::cuda::std::signbit(__x_hi))));
-  if (__x_less)
-  {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_lo;
-  }
-  else
-  {
-    *__res_hi = __y_hi;
-    *__res_lo = __y_lo;
-  }
+  // As in fmax: one selection, no branch.
+  const bool __pick_x = !__x_is_nan && (__y_is_nan || __x_less);
+  *__res_hi           = __pick_x ? __x_hi : __y_hi;
+  *__res_lo           = __pick_x ? __x_lo : __y_lo;
 }
 
 /*
@@ -226,8 +191,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_min(
  * --------------------------------------------------------------------
  * x - y where x > y and +0 otherwise, the comparison being the lexicographic one of fmax.
  * The difference is the accurate one (fpmp2_accuracy::high) whatever the accuracy of the
- * type, since x and y may cancel. A NaN operand gives NaN; a difference that overflows,
- * or that of unlike infinities, gives +inf with a zero low limb.
+ * type, since x and y may cancel. A NaN in either limb of an operand gives NaN, since a
+ * low-accuracy operation can leave a NaN in the low limb alone. A difference that overflows,
+ * or that of unlike infinities, gives +inf with a zero low limb. The low limbs are tested for
+ * NaN only on the paths that do not return the computed difference, which keeps the test off
+ * the common path.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
@@ -238,22 +206,27 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
+  constexpr _FpType __nan = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
   if (::cuda::__fpmp_internal_isnan(__x_hi) || ::cuda::__fpmp_internal_isnan(__y_hi))
   {
-    *__res_hi = *__res_lo = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
+    *__res_hi = *__res_lo = __nan;
   }
   else if ((__x_hi > __y_hi) || (__x_hi == __y_hi && __x_lo > __y_lo))
   {
     ::cuda::__fpmp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
     if (!(*__res_hi <= (::cuda::std::numeric_limits<_FpType>::max)()))
     {
-      *__res_hi = ::cuda::std::numeric_limits<_FpType>::infinity();
-      *__res_lo = _FpType(0);
+      // The high limb is not finite: an overflow, unlike infinities, or a NaN low limb, which
+      // the difference carries into its high limb.
+      const bool __lo_nan = ::cuda::__fpmp_internal_isnan(__x_lo) || ::cuda::__fpmp_internal_isnan(__y_lo);
+      *__res_hi           = __lo_nan ? __nan : ::cuda::std::numeric_limits<_FpType>::infinity();
+      *__res_lo           = __lo_nan ? __nan : _FpType(0);
     }
   }
   else
   {
-    *__res_hi = *__res_lo = _FpType(0);
+    const bool __lo_nan = ::cuda::__fpmp_internal_isnan(__x_lo) || ::cuda::__fpmp_internal_isnan(__y_lo);
+    *__res_hi = *__res_lo = __lo_nan ? __nan : _FpType(0);
   }
 }
 
