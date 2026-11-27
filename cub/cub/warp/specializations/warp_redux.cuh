@@ -90,9 +90,11 @@ inline constexpr bool is_warp_redux_op_supported =
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 Redux
 
+#if _CCCL_HOST_COMPILATION() || (_CCCL_PTX_ARCH() >= 800)
+
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
-warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE_API
+_CCCL_FORCEINLINE T warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
   static_assert(is_warp_redux_op_supported_sm80<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
@@ -262,6 +264,8 @@ warp_redux_min_max_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   }
   return _CUB::detail::from_words<T>(words);
 }
+
+#endif // _CCCL_HOST_COMPILATION() || (_CCCL_PTX_ARCH() >= 800)
 
 //----------------------------------------------------------------------------------------------------------------------
 // Floating-point Min/Max Redux
