@@ -158,81 +158,84 @@ _CCCL_API constexpr bool __static_bound_in_range() noexcept
   }
 }
 
-template <class _ElementType, class _StaticBounds>
-inline constexpr bool __valid_static_bounds_v = false;
+template <class _ElementType, class _Bounds>
+inline constexpr bool __valid_bounds_v = false;
 
 template <class _ElementType>
-inline constexpr bool __valid_static_bounds_v<_ElementType, no_bounds> = true;
+inline constexpr bool __valid_bounds_v<_ElementType, no_bounds> = true;
+
+template <class _ElementType>
+inline constexpr bool __valid_bounds_v<_ElementType, runtime_bounds<_ElementType>> = true;
 
 template <class _ElementType, auto _Lowest, auto _Highest>
-inline constexpr bool __valid_static_bounds_v<_ElementType, static_bounds<_Lowest, _Highest>> =
+inline constexpr bool __valid_bounds_v<_ElementType, static_bounds<_Lowest, _Highest>> =
   __static_bound_in_range<_ElementType, _Lowest>() && __static_bound_in_range<_ElementType, _Highest>();
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
 {
-  if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
+  if constexpr (::cuda::std::is_same_v<_Bounds, no_bounds> || __is_runtime_bounds_v<_Bounds>)
   {
     return __type_lowest<_ElementType>();
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::lower());
+    return static_cast<_ElementType>(_Bounds::lower());
   }
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 {
-  if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
+  if constexpr (::cuda::std::is_same_v<_Bounds, no_bounds> || __is_runtime_bounds_v<_Bounds>)
   {
     return __type_highest<_ElementType>();
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::upper());
+    return static_cast<_ElementType>(_Bounds::upper());
   }
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr _ElementType __effective_lowest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  const auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
+  const auto __static_lowest = __wrapper_static_lowest<_ElementType, _Bounds>();
   return __static_lowest < __runtime_bounds.lower() ? __runtime_bounds.lower() : __static_lowest;
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr _ElementType __effective_highest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  const auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
+  const auto __static_highest = __wrapper_static_highest<_ElementType, _Bounds>();
   return __static_highest < __runtime_bounds.upper() ? __static_highest : __runtime_bounds.upper();
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr bool __has_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  return __bounds_less_equal(__effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds),
-                             __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds));
+  return __bounds_less_equal(__effective_lowest<_ElementType, _Bounds>(__runtime_bounds),
+                             __effective_highest<_ElementType, _Bounds>(__runtime_bounds));
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr void __validate_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  static_assert(__valid_static_bounds_v<_ElementType, _StaticBounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
-                "values representable by the element type");
-  _CCCL_VERIFY((__has_bounds_intersection<_ElementType, _StaticBounds>(__runtime_bounds)),
+  static_assert(__valid_bounds_v<_ElementType, _Bounds>,
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
+  _CCCL_VERIFY((__has_bounds_intersection<_ElementType, _Bounds>(__runtime_bounds)),
                "static and runtime argument bounds do not intersect");
 }
 
-template <class _ElementType, class _StaticBounds>
+template <class _ElementType, class _Bounds>
 _CCCL_API constexpr void __validate_static_element_bounds([[maybe_unused]] const _ElementType& __val) noexcept
 {
-  if constexpr (!::cuda::std::is_same_v<_StaticBounds, no_bounds>)
+  if constexpr (!::cuda::std::is_same_v<_Bounds, no_bounds> && !__is_runtime_bounds_v<_Bounds>)
   {
-    _CCCL_ASSERT((__bounds_greater_equal(__val, __wrapper_static_lowest<_ElementType, _StaticBounds>())),
+    _CCCL_ASSERT((__bounds_greater_equal(__val, __wrapper_static_lowest<_ElementType, _Bounds>())),
                  "immediate argument value is below static lowest bound");
-    _CCCL_ASSERT((__bounds_less_equal(__val, __wrapper_static_highest<_ElementType, _StaticBounds>())),
+    _CCCL_ASSERT((__bounds_less_equal(__val, __wrapper_static_highest<_ElementType, _Bounds>())),
                  "immediate argument value is above static highest bound");
   }
 }
@@ -260,7 +263,7 @@ class immediate
 public:
   using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
-  static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
+  static_assert(__valid_bounds_v<__element_type, _StaticBounds> && !__is_runtime_bounds_v<_StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
@@ -311,7 +314,7 @@ public:
   using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
   static_assert(__is_sequence_v<_Arg>, "immediate sequence arguments must have a distinct element type");
-  static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
+  static_assert(__valid_bounds_v<__element_type, _StaticBounds> && !__is_runtime_bounds_v<_StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
@@ -407,15 +410,15 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __immediate_sequence(_Arg, runtime_bounds<_Tp>,
 // =====================================================================
 
 //! @brief Common base for deferred argument wrappers.
-template <class _Arg, class _StaticBounds = no_bounds>
+template <class _Arg, class _Bounds = no_bounds>
 class __deferred_base
 {
 public:
   using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
-  static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
-                "values representable by the element type");
+  static_assert(__valid_bounds_v<__element_type, _Bounds>,
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
 private:
   friend struct __access;
@@ -424,49 +427,60 @@ private:
   runtime_bounds<__element_type> __runtime_bounds_{};
 
 public:
+  _CCCL_TEMPLATE(class _BoundsT = _Bounds)
+  _CCCL_REQUIRES((!__is_runtime_bounds_v<_BoundsT>) )
   _CCCL_API constexpr __deferred_base(_Arg __arg) noexcept
       : __arg_{::cuda::std::move(__arg)}
   {
-    __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
+    __validate_bounds_intersection<__element_type, _Bounds>(__runtime_bounds_);
   }
 
-  _CCCL_API constexpr __deferred_base(_Arg __arg, _StaticBounds) noexcept
+  _CCCL_TEMPLATE(class _BoundsT = _Bounds)
+  _CCCL_REQUIRES((!__is_runtime_bounds_v<_BoundsT>) )
+  _CCCL_API constexpr __deferred_base(_Arg __arg, _Bounds) noexcept
       : __arg_{::cuda::std::move(__arg)}
   {
-    __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
+    __validate_bounds_intersection<__element_type, _Bounds>(__runtime_bounds_);
   }
 
-  template <class _BoundsTp>
+  _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
+  _CCCL_REQUIRES((!::cuda::std::is_same_v<_BoundsT, no_bounds>) )
   _CCCL_API constexpr __deferred_base(_Arg __arg, runtime_bounds<_BoundsTp> __rb) noexcept
       : __arg_{::cuda::std::move(__arg)}
       , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
                           __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
+    __validate_bounds_intersection<__element_type, _Bounds>(__runtime_bounds_);
   }
 
-  template <class _BoundsTp>
-  _CCCL_API constexpr __deferred_base(_Arg __arg, _StaticBounds, runtime_bounds<_BoundsTp> __rb) noexcept
+  _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
+  _CCCL_REQUIRES(__is_static_bounds_v<_BoundsT>)
+  _CCCL_API constexpr __deferred_base(_Arg __arg, _Bounds, runtime_bounds<_BoundsTp> __rb) noexcept
       : __arg_{::cuda::std::move(__arg)}
       , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
                           __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
+    __validate_bounds_intersection<__element_type, _Bounds>(__runtime_bounds_);
   }
 
-  template <class _BoundsTp>
-  _CCCL_API constexpr __deferred_base(_Arg __arg, runtime_bounds<_BoundsTp> __rb, _StaticBounds __sb) noexcept
+  _CCCL_TEMPLATE(class _BoundsTp, class _BoundsT = _Bounds)
+  _CCCL_REQUIRES(__is_static_bounds_v<_BoundsT>)
+  _CCCL_API constexpr __deferred_base(_Arg __arg, runtime_bounds<_BoundsTp> __rb, _Bounds __sb) noexcept
       : __deferred_base(::cuda::std::move(__arg), __sb, __rb)
   {}
 };
 
-//! @brief Wraps a reference to a single value that is potentially not available at API call time but will be available
-//! by the time the argument is consumed in stream order.
-template <class _Arg, class _StaticBounds = no_bounds>
-class deferred : public __deferred_base<_Arg, _StaticBounds>
+//! @brief Wraps a reference to a single value that becomes available in stream order.
+//!
+//! @tparam _Bounds @c no_bounds, @c runtime_bounds<element_type>, or @c static_bounds<Low,High>.
+//!
+//! Deduction records runtime-only bounds or, when supplied, static bounds. Effective bounds intersect both ranges:
+//! the larger lower bound and the smaller upper bound. Runtime bounds require a bounds type other than @c no_bounds.
+template <class _Arg, class _Bounds = no_bounds>
+class deferred : public __deferred_base<_Arg, _Bounds>
 {
 public:
-  using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
+  using __deferred_base<_Arg, _Bounds>::__deferred_base;
 };
 
 template <class _Tp>
@@ -481,7 +495,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>
   -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>) -> deferred<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>)
+  -> deferred<_Arg, runtime_bounds<__element_type_of_t<_Arg>>>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
@@ -492,15 +507,17 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>, static_boun
   -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
-//! @brief Wraps a reference to a sequence of values that is potentially not available at API call time but will be
-//! available by the time the argument is consumed in stream order.
-template <class _Arg, class _StaticBounds = no_bounds>
-class deferred_sequence : public __deferred_base<_Arg, _StaticBounds>
+//! @brief Wraps a reference to a sequence of values that becomes available in stream order.
+//!
+//! Bounds deduction and effective ranges follow @c deferred.
+//! @see deferred
+template <class _Arg, class _Bounds = no_bounds>
+class deferred_sequence : public __deferred_base<_Arg, _Bounds>
 {
 public:
   static_assert(__is_sequence_v<_Arg>, "deferred sequence arguments must have a distinct element type");
 
-  using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
+  using __deferred_base<_Arg, _Bounds>::__deferred_base;
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED
@@ -512,7 +529,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, 
   -> deferred_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, runtime_bounds<_Tp>) -> deferred_sequence<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, runtime_bounds<_Tp>)
+  -> deferred_sequence<_Arg, runtime_bounds<__element_type_of_t<_Arg>>>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
@@ -566,21 +584,20 @@ struct __access
     return ::cuda::std::move(__wrapper.__arg_);
   }
 
-  template <class _Arg, class _StaticBounds>
-  [[nodiscard]] _CCCL_API static constexpr _Arg& __arg(__deferred_base<_Arg, _StaticBounds>& __wrapper) noexcept
+  template <class _Arg, class _Bounds>
+  [[nodiscard]] _CCCL_API static constexpr _Arg& __arg(__deferred_base<_Arg, _Bounds>& __wrapper) noexcept
   {
     return __wrapper.__arg_;
   }
 
-  template <class _Arg, class _StaticBounds>
-  [[nodiscard]] _CCCL_API static constexpr const _Arg&
-  __arg(const __deferred_base<_Arg, _StaticBounds>& __wrapper) noexcept
+  template <class _Arg, class _Bounds>
+  [[nodiscard]] _CCCL_API static constexpr const _Arg& __arg(const __deferred_base<_Arg, _Bounds>& __wrapper) noexcept
   {
     return __wrapper.__arg_;
   }
 
-  template <class _Arg, class _StaticBounds>
-  [[nodiscard]] _CCCL_API static constexpr _Arg&& __arg(__deferred_base<_Arg, _StaticBounds>&& __wrapper) noexcept
+  template <class _Arg, class _Bounds>
+  [[nodiscard]] _CCCL_API static constexpr _Arg&& __arg(__deferred_base<_Arg, _Bounds>&& __wrapper) noexcept
   {
     return ::cuda::std::move(__wrapper.__arg_);
   }
@@ -599,16 +616,16 @@ struct __access
     return __wrapper.__runtime_bounds_;
   }
 
-  template <class _Arg, class _StaticBounds>
+  template <class _Arg, class _Bounds>
   [[nodiscard]] _CCCL_API static constexpr runtime_bounds<__element_type_of_t<_Arg>>&
-  __runtime_bounds(__deferred_base<_Arg, _StaticBounds>& __wrapper) noexcept
+  __runtime_bounds(__deferred_base<_Arg, _Bounds>& __wrapper) noexcept
   {
     return __wrapper.__runtime_bounds_;
   }
 
-  template <class _Arg, class _StaticBounds>
+  template <class _Arg, class _Bounds>
   [[nodiscard]] _CCCL_API static constexpr const runtime_bounds<__element_type_of_t<_Arg>>&
-  __runtime_bounds(const __deferred_base<_Arg, _StaticBounds>& __wrapper) noexcept
+  __runtime_bounds(const __deferred_base<_Arg, _Bounds>& __wrapper) noexcept
   {
     return __wrapper.__runtime_bounds_;
   }
@@ -628,10 +645,10 @@ template <auto _Value>
 inline constexpr bool __is_wrapper_v<__constant_sequence<_Value>> = true;
 template <class _Arg, class _StaticBounds>
 inline constexpr bool __is_wrapper_v<__immediate_sequence<_Arg, _StaticBounds>> = true;
-template <class _Arg, class _StaticBounds>
-inline constexpr bool __is_wrapper_v<deferred<_Arg, _StaticBounds>> = true;
-template <class _Arg, class _StaticBounds>
-inline constexpr bool __is_wrapper_v<deferred_sequence<_Arg, _StaticBounds>> = true;
+template <class _Arg, class _Bounds>
+inline constexpr bool __is_wrapper_v<deferred<_Arg, _Bounds>> = true;
+template <class _Arg, class _Bounds>
+inline constexpr bool __is_wrapper_v<deferred_sequence<_Arg, _Bounds>> = true;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
@@ -690,38 +707,38 @@ template <class _Arg, class _StaticBounds>
   return __access::__arg(::cuda::std::move(__arg));
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(deferred<_Arg, _StaticBounds>& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(deferred<_Arg, _Bounds>& __arg) noexcept
 {
   return __access::__arg(__arg);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const deferred<_Arg, _StaticBounds>& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const deferred<_Arg, _Bounds>& __arg) noexcept
 {
   return __access::__arg(__arg);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr _Arg __unwrap(deferred<_Arg, _StaticBounds>&& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr _Arg __unwrap(deferred<_Arg, _Bounds>&& __arg) noexcept
 {
   return __access::__arg(::cuda::std::move(__arg));
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(deferred_sequence<_Arg, _Bounds>& __arg) noexcept
 {
   return __access::__arg(__arg);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const deferred_sequence<_Arg, _Bounds>& __arg) noexcept
 {
   return __access::__arg(__arg);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr _Arg __unwrap(deferred_sequence<_Arg, _StaticBounds>&& __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr _Arg __unwrap(deferred_sequence<_Arg, _Bounds>&& __arg) noexcept
 {
   return __access::__arg(::cuda::std::move(__arg));
 }
@@ -773,29 +790,36 @@ _CCCL_API constexpr auto __constant_sequence_compute_highest() noexcept
 //! @brief Traits for argument wrappers and plain argument values.
 //!
 //! Models @c numeric_limits for bounds: @c lowest is the lower bound, @c highest is the upper bound.
-//! Use in @c if @c constexpr for compile-time dispatch based on bounds.
+//! @c has_bounds is true when the argument type guarantees bounds. @c has_static_bounds is true when those bounds
+//! are known at compile time. A plain item count has both flags set to false because it carries the count itself.
+//! An immediate sequence can store runtime bounds even when its type has @c has_bounds set to false.
+//! To require bounds only for deferred counts, check <tt>!traits::is_deferred || traits::has_bounds</tt>.
 template <class _Tp>
 struct __traits_impl
 {
-  using value_type                      = _Tp;
-  using element_type                    = __element_type_of_t<_Tp>;
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __type_lowest<element_type>();
-  static constexpr element_type highest = __type_highest<element_type>();
+  using value_type                        = _Tp;
+  using element_type                      = __element_type_of_t<_Tp>;
+  static constexpr bool has_static_bounds = false;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __type_lowest<element_type>();
+  static constexpr element_type highest   = __type_highest<element_type>();
 };
 
 template <auto _Value, class _Tp>
 struct __traits_impl<constant<_Value, _Tp>>
 {
-  using value_type                      = typename constant<_Value, _Tp>::value_type;
-  using element_type                    = value_type;
-  static constexpr bool is_constant     = true;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value, _Tp>();
-  static constexpr element_type highest = __constant_compute_highest<_Value, _Tp>();
+  using value_type                        = typename constant<_Value, _Tp>::value_type;
+  using element_type                      = value_type;
+  static constexpr bool has_static_bounds = true;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = true;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __constant_compute_lowest<_Value, _Tp>();
+  static constexpr element_type highest   = __constant_compute_highest<_Value, _Tp>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -803,15 +827,17 @@ struct __traits_impl<immediate<_Arg, _StaticBounds>>
 {
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
-  static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
+  static_assert(__valid_bounds_v<element_type, _StaticBounds> && !__is_runtime_bounds_v<_StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_StaticBounds>;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _StaticBounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _StaticBounds>();
 };
 
 template <auto _Value>
@@ -820,11 +846,13 @@ struct __traits_impl<__constant_sequence<_Value>>
   using value_type   = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using element_type = __element_type_of_t<value_type>;
   static_assert(__is_sequence_v<value_type>, "The value type of __constant_sequence must be a sequence");
-  static constexpr bool is_constant     = true;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __constant_sequence_compute_lowest<_Value>();
-  static constexpr element_type highest = __constant_sequence_compute_highest<_Value>();
+  static constexpr bool has_static_bounds = true;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = true;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = false;
+  static constexpr element_type lowest    = __constant_sequence_compute_lowest<_Value>();
+  static constexpr element_type highest   = __constant_sequence_compute_highest<_Value>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -833,48 +861,55 @@ struct __traits_impl<__immediate_sequence<_Arg, _StaticBounds>>
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__is_sequence_v<value_type>, "immediate sequence arguments must have a distinct element type");
-  static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
+  static_assert(__valid_bounds_v<element_type, _StaticBounds> && !__is_runtime_bounds_v<_StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
                 "values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_StaticBounds>;
+  static constexpr bool has_bounds        = has_static_bounds;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = false;
+  static constexpr bool is_single_value   = false;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _StaticBounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _StaticBounds>();
 };
 
-template <class _Arg, class _StaticBounds>
-struct __traits_impl<deferred<_Arg, _StaticBounds>>
+// Flags classify _Bounds, not stored values. Runtime-only tags have has_bounds && !has_static_bounds.
+template <class _Arg, class _Bounds>
+struct __traits_impl<deferred<_Arg, _Bounds>>
 {
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
-  static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
-                "values representable by the element type");
+  static_assert(__valid_bounds_v<element_type, _Bounds>,
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = true;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_bounds        = !::cuda::std::is_same_v<_Bounds, no_bounds>;
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_Bounds>;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = true;
+  static constexpr bool is_single_value   = true;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _Bounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _Bounds>();
 };
 
-template <class _Arg, class _StaticBounds>
-struct __traits_impl<deferred_sequence<_Arg, _StaticBounds>>
+template <class _Arg, class _Bounds>
+struct __traits_impl<deferred_sequence<_Arg, _Bounds>>
 {
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__is_sequence_v<value_type>, "deferred sequence arguments must have a distinct element type");
-  static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
-                "values representable by the element type");
+  static_assert(__valid_bounds_v<element_type, _Bounds>,
+                "argument wrapper bounds type must be cuda::args::no_bounds, cuda::args::runtime_bounds<element_type>, "
+                "or cuda::args::static_bounds with values representable by the element type");
 
-  static constexpr bool is_constant     = false;
-  static constexpr bool is_deferred     = true;
-  static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
-  static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
+  static constexpr bool has_bounds        = !::cuda::std::is_same_v<_Bounds, no_bounds>;
+  static constexpr bool has_static_bounds = __is_static_bounds_v<_Bounds>;
+  static constexpr bool is_constant       = false;
+  static constexpr bool is_deferred       = true;
+  static constexpr bool is_single_value   = false;
+  static constexpr element_type lowest    = __wrapper_static_lowest<element_type, _Bounds>();
+  static constexpr element_type highest   = __wrapper_static_highest<element_type, _Bounds>();
 };
 
 template <class _Tp>
@@ -927,22 +962,22 @@ template <class _Arg, class _StaticBounds>
   return __effective_lowest<_ET, _StaticBounds>(__runtime_bounds);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __lowest_(deferred<_Arg, _StaticBounds> __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(deferred<_Arg, _Bounds> __arg) noexcept
 {
   using _ET                    = __element_type_of_t<_Arg>;
   const auto& __runtime_bounds = __access::__runtime_bounds(__arg);
-  __validate_bounds_intersection<_ET, _StaticBounds>(__runtime_bounds);
-  return __effective_lowest<_ET, _StaticBounds>(__runtime_bounds);
+  __validate_bounds_intersection<_ET, _Bounds>(__runtime_bounds);
+  return __effective_lowest<_ET, _Bounds>(__runtime_bounds);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __lowest_(deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(deferred_sequence<_Arg, _Bounds> __arg) noexcept
 {
   using _ET                    = __element_type_of_t<_Arg>;
   const auto& __runtime_bounds = __access::__runtime_bounds(__arg);
-  __validate_bounds_intersection<_ET, _StaticBounds>(__runtime_bounds);
-  return __effective_lowest<_ET, _StaticBounds>(__runtime_bounds);
+  __validate_bounds_intersection<_ET, _Bounds>(__runtime_bounds);
+  return __effective_lowest<_ET, _Bounds>(__runtime_bounds);
 }
 
 //! @brief Returns the effective highest bound, combining static and runtime bounds.
@@ -987,22 +1022,22 @@ template <class _Arg, class _StaticBounds>
   return __effective_highest<_ET, _StaticBounds>(__runtime_bounds);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __highest_(deferred<_Arg, _StaticBounds> __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr auto __highest_(deferred<_Arg, _Bounds> __arg) noexcept
 {
   using _ET                    = __element_type_of_t<_Arg>;
   const auto& __runtime_bounds = __access::__runtime_bounds(__arg);
-  __validate_bounds_intersection<_ET, _StaticBounds>(__runtime_bounds);
-  return __effective_highest<_ET, _StaticBounds>(__runtime_bounds);
+  __validate_bounds_intersection<_ET, _Bounds>(__runtime_bounds);
+  return __effective_highest<_ET, _Bounds>(__runtime_bounds);
 }
 
-template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __highest_(deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
+template <class _Arg, class _Bounds>
+[[nodiscard]] _CCCL_API constexpr auto __highest_(deferred_sequence<_Arg, _Bounds> __arg) noexcept
 {
   using _ET                    = __element_type_of_t<_Arg>;
   const auto& __runtime_bounds = __access::__runtime_bounds(__arg);
-  __validate_bounds_intersection<_ET, _StaticBounds>(__runtime_bounds);
-  return __effective_highest<_ET, _StaticBounds>(__runtime_bounds);
+  __validate_bounds_intersection<_ET, _Bounds>(__runtime_bounds);
+  return __effective_highest<_ET, _Bounds>(__runtime_bounds);
 }
 
 _CCCL_END_NAMESPACE_CUDA_ARGUMENT

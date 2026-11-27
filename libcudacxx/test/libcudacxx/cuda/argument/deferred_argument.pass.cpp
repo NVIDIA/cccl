@@ -27,6 +27,9 @@ TEST_FUNC constexpr bool test()
     assert(cuda::args::__access::__arg(def)[0] == 42);
     static_assert(cuda::args::__traits<decltype(def)>::lowest == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::args::__traits<decltype(def)>::highest == (cuda::std::numeric_limits<int>::max)());
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(!traits::has_static_bounds);
+    static_assert(!traits::has_bounds);
   }
 
   // Deferred single value with static bounds
@@ -36,6 +39,35 @@ TEST_FUNC constexpr bool test()
     assert(cuda::args::__unwrap(def)[0] == 42);
     static_assert(cuda::args::__traits<decltype(def)>::lowest == 1);
     static_assert(cuda::args::__traits<decltype(def)>::highest == 1000);
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+  }
+
+  // Deferred single value with runtime bounds
+  {
+    int val      = 42;
+    auto def     = cuda::args::deferred{&val, cuda::args::bounds(short{0}, short{100})};
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(!traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+    static_assert(traits::lowest == cuda::std::numeric_limits<int>::lowest());
+    static_assert(traits::highest == (cuda::std::numeric_limits<int>::max)());
+    static_assert(cuda::args::__is_deferred_v<decltype(def)>);
+    static_assert(cuda::std::is_same_v<decltype(def), cuda::args::deferred<int*, cuda::args::runtime_bounds<int>>>);
+    static_assert(!cuda::std::is_constructible_v<decltype(def), int*>);
+    using unbounded_t = cuda::args::deferred<int*>;
+    using bounds_t    = cuda::args::runtime_bounds<int>;
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, cuda::args::no_bounds, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t, cuda::args::no_bounds>);
+    assert(cuda::args::__lowest_(def) == 0);
+    assert(cuda::args::__highest_(def) == 100);
+
+    auto copy = cuda::args::deferred{def};
+    static_assert(cuda::std::is_same_v<decltype(copy), decltype(def)>);
+    assert(cuda::args::__unwrap(copy) == &val);
+    assert(cuda::args::__highest_(copy) == 100);
   }
 
   // Deferred single value via pointer
@@ -66,6 +98,16 @@ TEST_FUNC constexpr bool test()
       cuda::args::deferred{cuda::std::span<int, 1>{&val, 1}, cuda::args::bounds(5, 100), cuda::args::bounds<1, 256>()};
     static_assert(cuda::args::__traits<decltype(def)>::lowest == 1);
     static_assert(cuda::args::__traits<decltype(def)>::highest == 256);
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+    static_assert(
+      cuda::std::is_constructible_v<decltype(def), cuda::std::span<int, 1>, cuda::args::static_bounds<1, 256>>);
+    auto reversed =
+      cuda::args::deferred{cuda::std::span<int, 1>{&val, 1}, cuda::args::bounds<1, 256>(), cuda::args::bounds(5, 100)};
+    static_assert(cuda::std::is_same_v<decltype(def), decltype(reversed)>);
+    assert(cuda::args::__lowest_(reversed) == 5);
+    assert(cuda::args::__highest_(reversed) == 100);
     assert(cuda::args::__access::__runtime_bounds(def).lower() == 5);
     assert(cuda::args::__access::__runtime_bounds(def).upper() == 100);
     assert(cuda::args::__lowest_(def) == 5);
@@ -83,6 +125,35 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::args::__traits<decltype(def)>::lowest == 0);
     static_assert(cuda::args::__traits<decltype(def)>::highest == 100);
     static_assert(!cuda::args::__traits<decltype(def)>::is_single_value);
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+  }
+
+  // Deferred sequence with runtime bounds
+  {
+    int arr[3]   = {10, 20, 30};
+    auto def     = cuda::args::deferred_sequence{+arr, cuda::args::bounds(short{0}, short{100})};
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(!traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+    static_assert(traits::lowest == cuda::std::numeric_limits<int>::lowest());
+    static_assert(traits::highest == (cuda::std::numeric_limits<int>::max)());
+    static_assert(
+      cuda::std::is_same_v<decltype(def), cuda::args::deferred_sequence<int*, cuda::args::runtime_bounds<int>>>);
+    static_assert(!cuda::std::is_constructible_v<decltype(def), int*>);
+    using unbounded_t = cuda::args::deferred_sequence<int*>;
+    using bounds_t    = cuda::args::runtime_bounds<int>;
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, cuda::args::no_bounds, bounds_t>);
+    static_assert(!cuda::std::is_constructible_v<unbounded_t, int*, bounds_t, cuda::args::no_bounds>);
+    assert(cuda::args::__lowest_(def) == 0);
+    assert(cuda::args::__highest_(def) == 100);
+
+    auto copy = cuda::args::deferred_sequence{def};
+    static_assert(cuda::std::is_same_v<decltype(copy), decltype(def)>);
+    assert(cuda::args::__unwrap(copy) == +arr);
+    assert(cuda::args::__highest_(copy) == 100);
   }
 
   // Deferred sequence with both bounds
@@ -94,6 +165,16 @@ TEST_FUNC constexpr bool test()
     assert(cuda::args::__access::__runtime_bounds(def).lower() == 5);
     assert(cuda::args::__access::__runtime_bounds(def).upper() == 100);
     static_assert(cuda::args::__traits<decltype(def)>::lowest == 1);
+    using traits = cuda::args::__traits<decltype(def)>;
+    static_assert(traits::has_static_bounds);
+    static_assert(traits::has_bounds);
+    static_assert(
+      cuda::std::is_constructible_v<decltype(def), cuda::std::span<int>, cuda::args::static_bounds<1, 4096>>);
+    auto reversed = cuda::args::deferred_sequence{
+      cuda::std::span<int>{arr, 4}, cuda::args::bounds(5, 100), cuda::args::bounds<1, 4096>()};
+    static_assert(cuda::std::is_same_v<decltype(def), decltype(reversed)>);
+    assert(cuda::args::__lowest_(reversed) == 5);
+    assert(cuda::args::__highest_(reversed) == 100);
     assert(cuda::args::__lowest_(def) == 5);
     assert(cuda::args::__highest_(def) == 100);
   }
@@ -128,6 +209,8 @@ TEST_FUNC constexpr bool test()
     using traits = cuda::args::__traits<cuda::args::deferred_sequence<cuda::std::span<int>>>;
     static_assert(traits::is_deferred);
     static_assert(!traits::is_single_value);
+    static_assert(!traits::has_static_bounds);
+    static_assert(!traits::has_bounds);
   }
 
   // Unwrap: deferred

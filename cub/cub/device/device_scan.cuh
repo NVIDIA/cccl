@@ -2515,7 +2515,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2617,7 +2617,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
