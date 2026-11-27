@@ -31,6 +31,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__builtin_clear_padding)
+#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_clear_padding(__VA_ARGS__)
+// nvcc supports __builtin_clear_padding in device code only since 13.5.
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 5) && _CCCL_DEVICE_COMPILATION()
+#    undef _CCCL_BUILTIN_CLEAR_PADDING
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 5) && _CCCL_DEVICE_COMPILATION()
+#elif _CCCL_COMPILER(MSVC, >=, 19, 27)
+// nvcc crashes on arrays with this builtin in device code (nvbug 7043357).
+#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_zero_non_value_bits(__VA_ARGS__)
+#endif // ^^^ has _CCCL_BUILTIN_CLEAR_PADDING ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifdef _CCCL_BUILTIN_CLEAR_PADDING
@@ -58,7 +69,9 @@ _CCCL_HOST_DEVICE_API void __clear_padding(_Tp& __value) noexcept
   }
   else if constexpr (::cuda::std::is_trivially_copyable_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
   {
-    _CCCL_BUILTIN_CLEAR_PADDING(::cuda::std::addressof(__value));
+    // Workaround for nvcc and nvrtc nvbug 7150163.
+    _Tp* __ptr[]{::cuda::std::addressof(__value)};
+    _CCCL_BUILTIN_CLEAR_PADDING(__ptr[0]);
   }
   else // cuda::is_trivially_copyable_v<_Tp>
   {
@@ -82,7 +95,14 @@ __create_copy(const _Tp& __value) noexcept
 {
   if constexpr (::cuda::std::is_array_v<_Tp>)
   {
+    // nvcc and nvrtc fails to lower __builtin_bit_cast with an array source.
+#  if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
+    alignas(_Tp) __array_copy<unsigned char[sizeof(_Tp)]> __bytes;
+    ::cuda::std::memcpy(__bytes.__value, __value, sizeof(_Tp));
+    return ::cuda::std::bit_cast<__array_copy<_Tp>>(__bytes);
+#  else // ^^^ NVCC or NVRTC device code ^^^ / vvv other compilers vvv
     return ::cuda::std::bit_cast<__array_copy<_Tp>>(__value);
+#  endif // ^^^ other compilers ^^^
   }
   else
   {
