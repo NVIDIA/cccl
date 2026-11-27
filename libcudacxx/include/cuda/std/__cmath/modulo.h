@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -201,6 +203,18 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
          : ::__hsub(__x, __integral_part);
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 modf(__float128 __x, __float128* __y) noexcept
+{
+  // __builtin_modff128 is not used because it takes a _Float128*, which __float128* does not convert to in C++
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_modf(__x, __y);))
+  const __float128 __integral_part = ::cuda::std::trunc(__x);
+  *__y                             = __integral_part;
+  // x - trunc(x) is exact. Integral values and infinities return a zero with the sign of the argument
+  return (__integral_part == __x) ? ::cuda::std::copysign(__float128(0), __x) : __x - __integral_part;
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
