@@ -17,6 +17,8 @@
 
 #include <nv/target>
 
+#include <chrono>
+
 #include "test_macros.h"
 
 int main(int, char**)
