@@ -8,8 +8,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 #include "cub_test_macros.h"
@@ -18,6 +20,7 @@
 
 namespace capacity    = cub::detail::segmented_sort_lrb;
 constexpr int sm90_cc = cuda::compute_capability{9, 0}.get();
+using sort_orders     = c2h::enum_type_list<cub::SortOrder, cub::SortOrder::Ascending, cub::SortOrder::Descending>;
 
 // Exercise host/device projections with architecture-dependent private settings.
 template <typename Key>
@@ -100,14 +103,72 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
 }
 
+// Retry one sorting kernel with a reduced grid and check that it restores exactly its segment ranges.
+template <int KernelIndex, cub::SortOrder Order, typename Key>
+static void check_kernel_retry(
+  capacity::partition_result bins,
+  const c2h::host_vector<long long>& begins,
+  const c2h::host_vector<long long>& ends,
+  const c2h::host_vector<Key>& expected,
+  long long* d_begins,
+  long long* d_ends,
+  const Key* d_in,
+  c2h::device_vector<Key>& d_out,
+  cudaStream_t stream)
+{
+  using kernels_t           = capacity::group_merge_sort_kernels_t<Key>;
+  using sort_policy_t       = cub::detail::policy_getter<capacity::policy_selector<Key>, sm90_cc>;
+  using capacities          = typename kernels_t::template capacities_t<sort_policy_t>;
+  using kernel_t            = typename kernels_t::template kernel_t<KernelIndex>;
+  using policy_getter_t     = cub::detail::policy_getter<typename kernel_t::policy_selector, sm90_cc>;
+  using kernel_capacities_t = typename kernel_t::template capacities_t<policy_getter_t>;
+  constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<sort_policy_t>(KernelIndex);
+  constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
+  auto retry                = expected;
+  for (size_t segment = 0; segment < begins.size(); ++segment)
+  {
+    const auto length = ends[segment] - begins[segment];
+    if (length > lower_bound && length <= kernel_capacities_t::bounds.back())
+    {
+      std::fill(retry.begin() + begins[segment], retry.begin() + ends[segment], Key{-99});
+    }
+  }
+  d_out = retry;
+  REQUIRE(
+    capacity::launch_sort_kernel<kernel_t, Order>(
+      {bins.bin_offsets + first_bin, bins.segment_ids},
+      d_begins,
+      d_ends,
+      d_in,
+      thrust::raw_pointer_cast(d_out.data()),
+      1,
+      stream,
+      cub::detail::TripleChevronFactory{},
+      policy_getter_t{})
+    == cudaSuccess);
+  REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
+  REQUIRE(c2h::host_vector<Key>(d_out) == expected);
+}
+
+template <cub::SortOrder Order, typename... Args>
+static void check_kernel_retries(Args&&... args)
+{
+  check_kernel_retry<0, Order>(args...);
+  check_kernel_retry<1, Order>(args...);
+  check_kernel_retry<2, Order>(args...);
+}
+
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
 CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          "[segmented][sort][device]",
          CUB_SMALL,
-         c2h::type_list<int, double>)
+         c2h::type_list<int, double>,
+         sort_orders)
 {
-  using key_type  = c2h::get<0, TestType>;
-  using kernels_t = capacity::group_merge_sort_kernels_t<key_type>;
+  using key_type   = c2h::get<0, TestType>;
+  using order_t    = c2h::get<1, TestType>;
+  using compare_op = std::conditional_t<order_t::value == cub::SortOrder::Ascending, std::less<>, std::greater<>>;
+  using kernels_t  = capacity::group_merge_sort_kernels_t<key_type>;
   using capacities =
     typename kernels_t::template capacities_t<cub::detail::policy_getter<capacity::policy_selector<key_type>, sm90_cc>>;
   using warp_kernel_t        = typename kernels_t::template kernel_t<0>;
@@ -162,7 +223,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       continue; // Overflow is classified but its output must remain untouched.
     }
     std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
-    std::stable_sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
+    std::stable_sort(expected.begin() + begins[segment], expected.begin() + ends[segment], compare_op{});
   }
   c2h::device_vector<key_type> d_in = input;
   c2h::device_vector<key_type> d_out(input.size(), key_type{-99});
@@ -173,7 +234,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   const auto stream_owner   = c2h::make_current_device_stream();
   const cudaStream_t stream = stream_owner.get();
   const auto run            = [&](void* storage) {
-    return capacity::dispatch(
+    return capacity::dispatch<order_t::value>(
       storage,
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
@@ -203,56 +264,34 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(offsets.back() - offsets[capacities::size] == 1);
   REQUIRE(c2h::host_vector<key_type>(d_in) == input);
   // Force scratch reuse and cross-bin work iterations independently in every sorting kernel.
-  const auto retry_kernel = [&](auto index) {
-    constexpr int i           = decltype(index)::value;
-    using kernel_t            = typename kernels_t::template kernel_t<i>;
-    using policy_getter_t     = cub::detail::policy_getter<typename kernel_t::policy_selector, sm90_cc>;
-    using kernel_capacities_t = typename kernel_t::template capacities_t<policy_getter_t>;
-    constexpr int first_bin =
-      kernels_t::template kernel_bin_begin_idx<cub::detail::policy_getter<capacity::policy_selector<key_type>, sm90_cc>>(
-        i);
-    constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
-    auto retry                = expected;
-    for (size_t segment = 0; segment < lengths.size(); ++segment)
-    {
-      if (lengths[segment] > lower_bound && lengths[segment] <= kernel_capacities_t::bounds.back())
-      {
-        std::fill(retry.begin() + begins[segment], retry.begin() + ends[segment], key_type{-99});
-      }
-    }
-    d_out = retry;
-    REQUIRE(
-      capacity::launch_sort_kernel<kernel_t>(
-        {result.bin_offsets + first_bin, result.segment_ids},
-        thrust::raw_pointer_cast(d_begins.data()),
-        thrust::raw_pointer_cast(d_ends.data()),
-        thrust::raw_pointer_cast(d_in.data()),
-        thrust::raw_pointer_cast(d_out.data()),
-        1,
-        stream,
-        cub::detail::TripleChevronFactory{},
-        policy_getter_t{})
-      == cudaSuccess);
-    REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
-    REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
-  };
-  retry_kernel(cuda::std::integral_constant<int, 0>{});
-  retry_kernel(cuda::std::integral_constant<int, 1>{});
-  retry_kernel(cuda::std::integral_constant<int, 2>{});
+  check_kernel_retries<order_t::value>(
+    result,
+    begins,
+    ends,
+    expected,
+    thrust::raw_pointer_cast(d_begins.data()),
+    thrust::raw_pointer_cast(d_ends.data()),
+    thrust::raw_pointer_cast(d_in.data()),
+    d_out,
+    stream);
   // A different private aggregate must drive matching partition and sorting settings on both sides.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   const auto run_custom = [&](void* workspace) {
-    return capacity::
-      dispatch<key_type, long long*, long long*, cub::detail::TripleChevronFactory, test_policy_selector<key_type>>(
-        workspace,
-        bytes,
-        thrust::raw_pointer_cast(d_begins.data()),
-        thrust::raw_pointer_cast(d_ends.data()),
-        static_cast<unsigned>(lengths.size()),
-        thrust::raw_pointer_cast(d_in.data()),
-        thrust::raw_pointer_cast(d_out.data()),
-        result,
-        stream);
+    return capacity::dispatch<order_t::value,
+                              key_type,
+                              long long*,
+                              long long*,
+                              cub::detail::TripleChevronFactory,
+                              test_policy_selector<key_type>>(
+      workspace,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<unsigned>(lengths.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result,
+      stream);
   };
   REQUIRE(run_custom(nullptr) == cudaSuccess);
   storage.resize(bytes);
@@ -273,12 +312,17 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
 CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent",
          "[segmented][sort][device]",
          CUB_SMALL,
-         c2h::type_list<float, double>)
+         c2h::type_list<float, double>,
+         sort_orders)
 {
   using key_type          = c2h::get<0, TestType>;
+  using order_t           = c2h::get<1, TestType>;
   const key_type infinity = std::numeric_limits<key_type>::infinity();
   const c2h::host_vector<key_type> input{infinity, -key_type{0}, 3, -infinity, key_type{0}, -7, -1, 1};
-  const c2h::host_vector<key_type> expected{-infinity, -7, -1, 0, 0, 1, 3, infinity};
+  const c2h::host_vector<key_type> expected =
+    order_t::value == cub::SortOrder::Ascending
+      ? c2h::host_vector<key_type>{-infinity, -7, -1, 0, 0, 1, 3, infinity}
+      : c2h::host_vector<key_type>{infinity, 3, 1, 0, 0, -1, -7, -infinity};
   c2h::device_vector<key_type> d_in = input;
   c2h::device_vector<key_type> d_out(input.size());
   c2h::device_vector<int> d_offsets = c2h::host_vector<int>{0, static_cast<int>(input.size())};
@@ -288,7 +332,7 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
   size_t bytes   = 0;
   const auto run = [&](void* storage) {
     const auto* offsets = thrust::raw_pointer_cast(d_offsets.data());
-    return capacity::dispatch(
+    return capacity::dispatch<order_t::value>(
       storage,
       bytes,
       offsets,
