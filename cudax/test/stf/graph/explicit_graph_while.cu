@@ -48,7 +48,7 @@ int main()
   cParams.conditional.type    = cudaGraphCondTypeWhile;
   cParams.conditional.size    = 1;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams);
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
 #  else
   cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
 #  endif

@@ -6,6 +6,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
 
+# DO NOT MERGE: the 'ext' devcontainer has clang-tidy but not the LLVM / Clang development
+# libraries needed to build the CCCL clang-tidy plugins (they are only in the 'tidy' image).
+tidy_llvm_major="$(clang-tidy --version | grep -oP 'version \K[0-9]+' | head -n 1)"
+tidy_pkgs=("libclang-${tidy_llvm_major}-dev" "llvm-${tidy_llvm_major}-dev" libzstd-dev)
+if ! dpkg -s "${tidy_pkgs[@]}" > /dev/null 2>&1; then
+  sudo apt-get update -y
+  sudo apt-get install -y --no-install-recommends "${tidy_pkgs[@]}"
+fi
+
 BUILD_NAME="clang-tidy"
 PRESET="all-tidy"
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")

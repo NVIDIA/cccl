@@ -87,6 +87,10 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # DO NOT MERGE: temporary override to run clang-tidy on code the regular tidy job cannot see
+    # (CTK 13+ code, cuBLAS / cuSOLVER blocks), plus one cudax build that compiles the same code.
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang22'], cudacxx: ['clang'], ctk: '13.X', sm: '75' }
+    - { jobs: ['build'], project: 'cudax', std: 'max', ctk: '13.X', cxx: 'gcc' }
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
@@ -979,7 +983,9 @@ projects:
   tidy:
     name: 'clang-tidy'
     stds: [17]
-    ext: [tidy]
+    # DO NOT MERGE: no image has both the math libraries and the clang-tidy development libraries;
+    # use the 'ext' image and install the latter in ci/build_tidy.sh.
+    ext: [cuda]
 
 # name -> Display name for generated job labels.
 # runner -> GPU/driver/count segment of the GHA runner label.
