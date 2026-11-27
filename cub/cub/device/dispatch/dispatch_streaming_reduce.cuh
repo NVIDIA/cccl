@@ -85,7 +85,8 @@ struct accumulating_transform_output_op
   _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void advance(GlobalOffsetT partition_size, bool next_partition_is_the_last)
   {
     promote_op.advance(partition_size);
-    using ::cuda::std::swap;
+    // Note: no ADL swap here. Both of these are raw pointers so we can save the compiler a few
+    // cycles looking up the appropriate swap() function.
     ::cuda::std::swap(d_previous_aggregate, d_aggregate_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
