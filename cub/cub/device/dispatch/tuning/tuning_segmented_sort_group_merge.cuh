@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Private partition launch settings and GroupMerge thread/IPT ranges and launch defaults.
+// Private partition and tiny-segment walk launch settings and GroupMerge thread/IPT ranges and launch defaults.
 
 #pragma once
 
@@ -23,10 +23,23 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_lrb
 {
-// Count and scatter use the same block size, with one input segment per thread.
+// The deferred-ID scatter strides over its queue with one ID per thread per pass.
 struct partition_policy
 {
-  int threads_per_block = 256;
+  int threads_per_block    = 256;
+  int grid_size_multiplier = 4; // Launch at most SM count * grid_size_multiplier blocks.
+};
+
+// Walk launch: one warp per block, with each thread visiting segments_per_thread segments.
+// Lengths 2 to inline_cutoff - 1 are sorted by logical warps of up to max_threads_per_segment threads.
+struct tiny_walk_policy
+{
+  static constexpr int threads_per_block       = 32;
+  static constexpr int segments_per_thread     = 4;
+  static constexpr int items_per_thread        = 9;
+  static constexpr int max_threads_per_segment = 4;
+  // Exclusive: the walk sorts shorter segments; this length and longer go to capacity bins.
+  static constexpr int inline_cutoff = max_threads_per_segment * items_per_thread;
 };
 
 // Settings for one GroupMerge sorting launch.
@@ -68,6 +81,7 @@ struct lrb_policy
   operator==(const lrb_policy& lhs, const lrb_policy& rhs) noexcept
   {
     return lhs.partition.threads_per_block == rhs.partition.threads_per_block
+        && lhs.partition.grid_size_multiplier == rhs.partition.grid_size_multiplier
         && lhs.group_merge.warp == rhs.group_merge.warp && lhs.group_merge.small_block == rhs.group_merge.small_block
         && lhs.group_merge.large == rhs.group_merge.large;
   }
@@ -80,9 +94,10 @@ struct policy_selector
   {
     constexpr int large_threads_per_block = sizeof(Key) <= 4 ? 1024 : 512;
     lrb_policy policy{};
-    auto& warp                      = policy.group_merge.warp;
-    warp.threads_per_block          = 256;
-    warp.min_threads_per_segment    = 1;
+    auto& warp             = policy.group_merge.warp;
+    warp.threads_per_block = 256;
+    // The warp launch starts at the walk's logical warp width, whose minimum capacity is the walk's cutoff.
+    warp.min_threads_per_segment    = tiny_walk_policy::max_threads_per_segment;
     warp.max_threads_per_segment    = 32;
     warp.min_items_per_thread       = 9;
     warp.max_items_per_thread       = 15;
