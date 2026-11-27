@@ -8,12 +8,7 @@
 
 #include <thrust/complex.h>
 
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
-
-#if _CCCL_HOSTED()
-#  include <ios>
-#endif // _CCCL_HOSTED()
+#include <cuda/std/__host_stdlib/iosfwd>
 
 THRUST_NAMESPACE_BEGIN
 template <typename ValueType, class CharT, class Traits>
@@ -46,7 +41,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, complex<ValueType>& z)
       }
       else
       {
-        is.setstate(std::ios_base::failbit);
+        is.setstate(is.failbit);
       }
     }
     else if (ch == ')')
@@ -55,7 +50,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, complex<ValueType>& z)
     }
     else
     {
-      is.setstate(std::ios_base::failbit);
+      is.setstate(is.failbit);
     }
   }
   else
