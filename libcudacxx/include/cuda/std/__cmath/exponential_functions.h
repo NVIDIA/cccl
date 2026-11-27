@@ -366,7 +366,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 ldexp(__float128 __x, int __e) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LDEXPF128)
+#  ifdef _CCCL_BUILTIN_LDEXPF128
   return _CCCL_BUILTIN_LDEXPF128(__x, __e);
 #  else // ^^^ _CCCL_BUILTIN_LDEXPF128 ^^^ / vvv !_CCCL_BUILTIN_LDEXPF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_ldexp(__x, __e);))
