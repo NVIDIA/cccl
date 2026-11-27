@@ -32,3 +32,11 @@ coop.histogram(
 coop.histogram(  # expected-error: [call-overload]
     block, values, bins=32, algorithm="other"
 )
+
+counters = coop.histogram_init(block, bins=70)
+coop.histogram_init(block, counters, bins=70)  # expected-error: [call-overload]
+coop.histogram_init(block)  # expected-error: [call-overload]
+coop.histogram_composite(warp, values, counters)  # expected-error: [arg-type]
+coop.histogram_composite(  # expected-error: [call-arg]
+    block, values, counters, bins_per_thread=2
+)

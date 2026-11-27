@@ -208,8 +208,10 @@ visualization pages draw what the primitives do:
      - :doc:`Adjacent Difference <visualizations/adjacent-difference>`,
        :doc:`Discontinuity <visualizations/discontinuity>`
    * - :ref:`Histogram <coop-cutlass-histogram>`
-     - :func:`~cuda.coop.cutlass.histogram`
-     - Counts how many of a block's samples fall in each bin.
+     - :func:`~cuda.coop.cutlass.histogram`,
+       :func:`~cuda.coop.cutlass.histogram_init`,
+       :func:`~cuda.coop.cutlass.histogram_composite`
+     - Counts one tile or accumulates several tiles into shared bins.
      - :doc:`Histogram <visualizations/histogram>`
    * - :ref:`Run Length Decode <coop-cutlass-run-length>`
      - :func:`~cuda.coop.cutlass.run_length_decode`,

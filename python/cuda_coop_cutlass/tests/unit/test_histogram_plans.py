@@ -128,7 +128,8 @@ def test_mismatched_result_rejected():
         _histogram._CubHistogramRequest(replace(request.plan, result=result))
 
 
-def test_failed_storage_emission_restores_session(monkeypatch):
+@pytest.mark.parametrize("composite", (False, True))
+def test_failed_storage_emission_restores_session(monkeypatch, composite):
     """Restore saved session state if Histogram scratch registration fails.
 
     Stubs replace request recording and register-tensor creation, so the call
@@ -151,15 +152,68 @@ def test_failed_storage_emission_restores_session(monkeypatch):
     monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", fail)
     samples = ThreadData(items_per_thread=2, dtype=cutlass.Int32, values=[3, 1])
     with pytest.raises(RuntimeError, match="scratch emission failed"):
-        _histogram.provider_histogram(
+        common = dict(
             group=this_block(),
             launch=LaunchFacts(exact_block_dim=(32, 1, 1)),
             samples=samples,
             bins=5,
-            bins_per_thread=1,
-            counter_dtype=None,
             algorithm="atomic",
             temp_storage=None,
         )
+        if composite:
+            _histogram.provider_histogram_composite(
+                **common, counters=SimpleNamespace(element_type=cutlass.Int32)
+            )
+        else:
+            _histogram.provider_histogram(
+                **common, bins_per_thread=1, counter_dtype=None
+            )
     assert restored == [saved]
     assert samples.values("histogram") == (3, 1)
+
+
+def _composite_request(
+    *, algorithm="atomic", items=3, counter=cutlass.Int32, temp_storage=None
+):
+    operation = _histogram.GroupHistogramCompositeSemantics(
+        cutlass.Uint8, items, 70, counter, algorithm
+    )
+    return _histogram._CubHistogramRequest(
+        _histogram._plan_with_storage(
+            this_block(),
+            LaunchFacts(exact_block_dim=(64, 1, 1)),
+            operation,
+            temp_storage,
+        )
+    )
+
+
+@pytest.mark.parametrize("algorithm", ("atomic", "sort"))
+@pytest.mark.parametrize(
+    "counter", (cutlass.Int32, cutlass.Uint32, cutlass.Int64, cutlass.Uint64)
+)
+def test_composite_shared_counters(algorithm, counter):
+    request = _composite_request(algorithm=algorithm, counter=counter)
+    assert request.plan.result is None
+    assert request.plan.provenance.method == "Composite"
+    assert (
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
+    )
+    assert (
+        "BlockHistogram<" in _histogram._scratch_probe(request).size_expression
+    )
+    source = _rendering.render_bundle_source([request])
+    assert "unsigned int counters_address" in source
+    assert "__cvta_shared_to_generic(counters_address)" in source
+    assert ".Composite(samples, counters)" in source
+    assert "if (storage_auto_sync != 0) { __syncthreads(); }" in source
+    assert ".Histogram(" not in source
+    assert "BlockHistogramCoop" not in source
+    assert _request().symbol_name != request.symbol_name
+
+
+def test_composite_sort_tile_limit():
+    with pytest.raises(ValueError, match="65535"):
+        _composite_request(items=1024, algorithm="sort")
+    assert _composite_request(items=1024).plan.result is None

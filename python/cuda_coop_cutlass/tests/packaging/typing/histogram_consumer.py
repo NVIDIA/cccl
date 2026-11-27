@@ -10,6 +10,7 @@ import numpy as np
 from cutlass import (
     Int32,
     Uint64,
+    cute,
 )
 from typing_extensions import assert_type
 
@@ -72,4 +73,15 @@ def check_cutlass_histogram() -> None:
             algorithm="sort",
         ),
         coop.ThreadData[Int32],
+    )
+    counters = coop.histogram_init(block, bins=70, counter_dtype=Uint64)
+    assert_type(counters, cute.Tensor)
+    assert_type(coop.histogram_init(block, counters), cute.Tensor)
+    coop.histogram_composite(block, samples, counters)
+    coop.histogram_composite(
+        block,
+        samples.to_register_tensor(),
+        counters,
+        algorithm="sort",
+        temp_storage=storage,
     )

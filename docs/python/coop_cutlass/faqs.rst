@@ -263,10 +263,16 @@ rules for each argument and for the result.
 Does Histogram retain counters between calls?
 ---------------------------------------------
 
-No. Each call counts from zero, even when it shares a ``TempStorage`` with
-earlier calls. To count several tiles, keep a payload of totals and add
-each call's counters to it. Item ``i`` of a thread's counters stands for
-the same bin in every call, so each thread adds item by item:
+:func:`~cuda.coop.cutlass.histogram` counts one tile from zero and returns
+its bin counts to the threads. Sharing a :class:`~cuda.coop.cutlass.TempStorage`
+between calls reuses scratch space.
+
+To count several tiles into the same bins, call
+:func:`~cuda.coop.cutlass.histogram_init` once before the loop. Pass the
+shared counter tensor it returns to
+:func:`~cuda.coop.cutlass.histogram_composite` for each tile. This kernel
+counts four tiles into 70 bins on 64 threads, then writes the 70 totals
+in bin order.
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
    :language: python
@@ -274,12 +280,11 @@ the same bin in every call, so each thread adds item by item:
    :end-before: # cutlass-histogram-tiles-example-end
    :dedent: 4
 
-Here ``totals`` and the counters are ``Int32``. For totals past the range
-of ``Int32``, call ``histogram`` with ``counter_dtype=cutlass.Int64`` and
-give ``totals`` the same element type. CUB's ``Composite`` method, which
-adds to counters the caller keeps, has no counterpart in the package.
-:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
-rules for each argument and for the result.
+Each entry ``counters[b]`` holds the total for bin ``b`` in this block.
+Threads 0 through 5 each write a second bin, so the last six bins are
+included. For larger totals, choose a 64-bit ``counter_dtype`` when
+initializing the counters. See :ref:`Histogram <coop-cutlass-histogram>`
+for counter types and synchronization when passing explicit scratch.
 
 .. _coop-faq-rld-lifecycle:
 

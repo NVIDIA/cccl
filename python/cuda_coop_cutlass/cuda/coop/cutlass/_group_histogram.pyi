@@ -14,7 +14,7 @@ from typing import Literal, TypeAlias, overload
 import numpy as np
 from typing_extensions import TypeVar
 
-from cutlass import Int32, Int64, Uint32, Uint64
+from cutlass import Int32, Int64, Uint32, Uint64, cute
 
 from ._thread_data import (
     CutlassTensorSample,
@@ -86,3 +86,24 @@ def histogram(
     algorithm: Literal["atomic", "sort"] = "atomic",
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[_Counter]: ...
+@overload
+def histogram_init(
+    group: BlockGroup,
+    /,
+    *,
+    bins: int,
+    counter_dtype: type[int | _Counter] | np.dtype[_NumpyCounter] | None = None,
+) -> cute.Tensor: ...
+@overload
+def histogram_init(
+    group: BlockGroup, counters: cute.Tensor, /
+) -> cute.Tensor: ...
+def histogram_composite(
+    group: BlockGroup,
+    samples: _Samples[_Sample],
+    counters: cute.Tensor,
+    /,
+    *,
+    algorithm: Literal["atomic", "sort"] = "atomic",
+    temp_storage: TempStorageLike | None = None,
+) -> None: ...

@@ -17,7 +17,10 @@ from typing import Any
 
 from .._symbols import semantic_token
 from .._types import INT32, ArgumentKind, ParameterClassification, ParameterRole
-from ..block.histogram import make_block_histogram_specialization
+from ..block.histogram import (
+    make_block_histogram_composite_specialization,
+    make_block_histogram_specialization,
+)
 from ._dispatch import _register_group_operation_family
 from ._execution_requirements import _build_execution_requirements
 from ._model import (
@@ -80,6 +83,36 @@ class GroupHistogramSemantics:
         return True
 
 
+@dataclass(frozen=True)
+class GroupHistogramCompositeSemantics:
+    """Accumulate each member's samples into a block's shared counter array."""
+
+    sample_dtype: Any
+    items_per_thread: int
+    bins: int
+    counter_dtype: Any
+    algorithm: str
+
+    @property
+    def semantic_key(self) -> tuple[Any, ...]:
+        return (
+            "histogram_composite",
+            semantic_token(self.sample_dtype),
+            self.items_per_thread,
+            self.bins,
+            semantic_token(self.counter_dtype),
+            self.algorithm,
+        )
+
+    @property
+    def result_visibility(self) -> ResultVisibility:
+        return ResultVisibility.ALL_MEMBERS
+
+    @property
+    def returns_value(self) -> bool:
+        return False
+
+
 def _classifications(operation):
     """Identify the samples as the group's only runtime input payload.
 
@@ -125,6 +158,10 @@ def _plan_histogram(call, resolved, launch, operation):
             ),
         )
     )
+    return _block_histogram_plan(call, resolved, launch, specialization, result)
+
+
+def _block_histogram_plan(call, resolved, launch, specialization, result):
     requirements = _build_execution_requirements(
         resolved,
         launch,
@@ -145,7 +182,7 @@ def _plan_histogram(call, resolved, launch, operation):
             library="CUB",
             header="cub/block/block_histogram.cuh",
             cpp_class="cub::BlockHistogram",
-            method="Histogram",
+            method=specialization.method_name,
         ),
     )
 
@@ -157,5 +194,37 @@ _register_group_operation_family(
     group_kinds=frozenset({"block"}),
     unsupported_group_message=(
         "histogram supports only complete this_block() groups"
+    ),
+)
+
+
+def _composite_classifications(operation):
+    return (
+        *_classifications(operation),
+        ParameterClassification(
+            "counters", ArgumentKind.RUNTIME, ParameterRole.INOUT
+        ),
+    )
+
+
+def _plan_composite(call, resolved, launch, operation):
+    specialization = make_block_histogram_composite_specialization(
+        sample_dtype=operation.sample_dtype,
+        block_dim=launch.exact_block_dim,
+        items_per_thread=operation.items_per_thread,
+        bins=operation.bins,
+        counter_dtype=operation.counter_dtype,
+        algorithm=operation.algorithm,
+    )
+    return _block_histogram_plan(call, resolved, launch, specialization, None)
+
+
+_register_group_operation_family(
+    GroupHistogramCompositeSemantics,
+    classifications=_composite_classifications,
+    planner=_plan_composite,
+    group_kinds=frozenset({"block"}),
+    unsupported_group_message=(
+        "histogram_composite supports only complete this_block() groups"
     ),
 )

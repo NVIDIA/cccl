@@ -363,3 +363,228 @@ def test_documented_histogram(items_per_thread):
         output[:65], np.bincount(source, minlength=65)
     )
     np.testing.assert_array_equal(output[65:], 0)
+
+
+@pytest.mark.parametrize(
+    "algorithm,dtype,seed,bins,manual_sync",
+    [
+        ("atomic", np.uint32, 2**31 + 5, 70, False),
+        ("sort", np.uint32, 2**31 + 5, 7, True),
+        ("atomic", np.int32, -19, 7, True),
+        ("sort", np.int32, -19, 70, False),
+        ("atomic", np.int64, 2**32 - 1, 70, True),
+        ("sort", np.int64, 2**32 - 1, 7, False),
+        ("atomic", np.uint64, 2**63 + 2**32 - 1, 7, False),
+        ("sort", np.uint64, 2**63 + 2**32 - 1, 70, True),
+    ],
+)
+def test_histogram_composite(algorithm, dtype, seed, bins, manual_sync):
+    """Accumulate several tiles, then reset the shared counters."""
+    from cutlass.memory import SmemAllocator
+
+    counter_type = cutlass_dtype(dtype)
+    alignment = np.dtype(dtype).itemsize
+    threads, items, tiles, blocks = 64, 4, 3, 2
+    tile_size = threads * items
+    extent = blocks * tiles * tile_size
+
+    @cute.kernel
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, copy: cute.Pointer
+    ):
+        block = coop.this_block()
+        tid = block.rank()
+        bid = cute.arch.block_idx()[0]
+        output = cute.make_tensor(
+            destination, cute.make_layout(2 * blocks * bins)
+        )
+        counters = SmemAllocator().allocate_tensor(
+            counter_type, cute.make_layout(bins), byte_alignment=alignment
+        )
+        coop.histogram_init(block, counters)
+        for slot in cutlass.range_constexpr((bins + threads - 1) // threads):
+            b = tid + slot * threads
+            if b < bins:
+                counters[b] = counter_type(seed)
+        block.sync()
+        if cutlass.const_expr(manual_sync):
+            scratch = coop.TempStorage(auto_sync=False)
+        else:
+            scratch = None
+        for tile in cutlass.range(tiles):
+            offset = (bid * tiles + tile) * tile_size
+            samples = coop.load(
+                block, source, items_per_thread=items, offset=offset
+            )
+            coop.histogram_composite(
+                block,
+                samples,
+                counters,
+                algorithm=algorithm,
+                temp_storage=scratch,
+            )
+            if cutlass.const_expr(manual_sync):
+                block.sync()
+            coop.store(block, copy, samples, offset=offset)
+        for slot in cutlass.range_constexpr((bins + threads - 1) // threads):
+            b = tid + slot * threads
+            if b < bins:
+                output[bid * bins + b] = counters[b]
+        block.sync()
+        cleared = coop.histogram_init(block, counters)
+        for slot in cutlass.range_constexpr((bins + threads - 1) // threads):
+            b = tid + slot * threads
+            if b < bins:
+                output[(blocks + bid) * bins + b] = cleared[b]
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, copy: cute.Pointer
+    ):
+        kernel(source, destination, copy).launch(grid=blocks, block=threads)
+
+    values = (
+        (np.arange(extent) * 17 + np.arange(extent) // tile_size) % bins
+    ).astype(np.int32)
+    observed = np.full(2 * blocks * bins, 99, dtype=dtype)
+    preserved = np.full_like(values, -1)
+    with (
+        device_array(values) as src,
+        device_array(observed) as dst,
+        device_array(preserved) as copy,
+    ):
+        launch(src, dst, copy)
+    for bid, samples in enumerate(values.reshape(blocks, -1)):
+        expected = np.bincount(samples, minlength=bins).astype(dtype) + dtype(
+            seed
+        )
+        np.testing.assert_array_equal(
+            observed[bid * bins : (bid + 1) * bins], expected
+        )
+    np.testing.assert_array_equal(observed[blocks * bins :], 0)
+    np.testing.assert_array_equal(preserved, values)
+
+
+def test_histogram_init_separate_allocations():
+    """Allocate two independent counter arrays on an init-only launch."""
+
+    @cute.kernel
+    def kernel(destination: cute.Pointer, repeats: cutlass.Int32):
+        block = coop.this_block()
+        tid = block.rank()
+        first = coop.histogram_init(block, bins=64)
+        first[tid] = tid + 10
+        output = cute.make_tensor(destination, cute.make_layout(128))
+        for iteration in cutlass.range(repeats):
+            second = coop.histogram_init(block, bins=64)
+            output[tid + 64] = second[(tid + 32) % 64]
+            block.sync()
+            second[tid] = iteration + 1
+            block.sync()
+        output[tid] = first[tid]
+
+    @cute.jit
+    def launch(destination: cute.Pointer, repeats: cutlass.Int32):
+        kernel(destination, repeats).launch(grid=1, block=64, smem=1)
+
+    observed = np.full(128, -1, dtype=np.int32)
+    with device_array(observed) as dst:
+        launch(dst, cutlass.Int32(2))
+    np.testing.assert_array_equal(observed[:64], np.arange(64) + 10)
+    np.testing.assert_array_equal(observed[64:], 0)
+
+
+@pytest.mark.parametrize(
+    "invalid,composite",
+    [
+        ("global", True),
+        ("register", False),
+        ("rank", True),
+        ("stride", False),
+        ("dynamic", True),
+        ("dtype", False),
+    ],
+)
+def test_histogram_rejects_invalid_counter_tensor(invalid, composite):
+    """Reject counters whose storage cannot be passed to CUB as a flat array."""
+    from cutlass.memory import SmemAllocator
+
+    @cute.kernel
+    def kernel(source: cute.Pointer):
+        block = coop.this_block()
+        shared = SmemAllocator().allocate_tensor(
+            cutlass.Int32, cute.make_layout(64), byte_alignment=4
+        )
+        if cutlass.const_expr(invalid == "global"):
+            counters = cute.make_tensor(source, cute.make_layout(64))
+        elif cutlass.const_expr(invalid == "register"):
+            counters = cute.make_rmem_tensor(
+                cute.make_layout(64), cutlass.Int32
+            )
+        elif cutlass.const_expr(invalid == "rank"):
+            counters = cute.make_tensor(
+                shared.iterator, cute.make_layout((8, 8))
+            )
+        elif cutlass.const_expr(invalid == "stride"):
+            counters = cute.make_tensor(
+                shared.iterator, cute.make_layout(32, stride=2)
+            )
+        elif cutlass.const_expr(invalid == "dynamic"):
+            counters = cute.make_tensor(
+                shared.iterator, cute.make_layout(block.rank() + 1)
+            )
+        else:
+            counters = SmemAllocator().allocate_tensor(
+                cutlass.Float32, cute.make_layout(64)
+            )
+        if cutlass.const_expr(composite):
+            samples = coop.load(block, source, items_per_thread=1)
+            coop.histogram_composite(block, samples, counters)
+        else:
+            coop.histogram_init(block, counters)
+
+    @cute.jit
+    def launch(source: cute.Pointer):
+        kernel(source).launch(grid=1, block=64)
+
+    with (
+        device_array(np.zeros(64, dtype=np.int32)) as src,
+        pytest.raises(
+            (TypeError, ValueError, DSLRuntimeError), match="counter|histogram"
+        ),
+    ):
+        cute.compile(launch, src)
+
+
+@pytest.mark.parametrize(
+    "first,second", [("sort", "atomic"), ("atomic", "sort")]
+)
+def test_histogram_mixed_algorithms(first, second):
+    """Share counters and a scratch region across both algorithms."""
+
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        block = coop.this_block()
+        tid = block.rank()
+        counters = coop.histogram_init(
+            block, bins=1, counter_dtype=cutlass.Uint64
+        )
+        samples = coop.ThreadData.from_values(cutlass.Int32(0))
+        scratch = coop.TempStorage(auto_sync=True)
+        coop.histogram_composite(
+            block, samples, counters, algorithm=first, temp_storage=scratch
+        )
+        coop.histogram_composite(
+            block, samples, counters, algorithm=second, temp_storage=scratch
+        )
+        output = cute.make_tensor(destination, cute.make_layout(64))
+        output[tid] = counters[0]
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=64)
+
+    observed = np.zeros(64, dtype=np.uint64)
+    with device_array(observed) as dst:
+        launch(dst)
+    np.testing.assert_array_equal(observed, 128)

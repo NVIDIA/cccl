@@ -267,6 +267,8 @@ Histogram
 .. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: histogram
+.. autofunction:: histogram_init
+.. autofunction:: histogram_composite
 
 .. _coop-cutlass-run-length:
 

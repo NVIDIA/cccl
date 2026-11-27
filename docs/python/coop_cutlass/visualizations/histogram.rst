@@ -10,10 +10,10 @@ A histogram counts how many of a block's samples fall in each bin. Each
 sample is itself a bin index: a sample with value ``b`` adds one to bin
 ``b``.
 
-The explorer runs :func:`~cuda.coop.cutlass.histogram` on one block of eight
-teaching threads. Change the samples to send most of them to one bin, or
-change the bin count to see which thread receives which counter. Every
-sample in the explorer is a valid bin index.
+Choose **One tile, striped result** to see which threads receive the counters
+from :func:`~cuda.coop.cutlass.histogram`. Choose **Shared bins across two
+tiles** to see :func:`~cuda.coop.cutlass.histogram_composite` update the
+same bins twice. Both modes use one block of eight teaching threads.
 
 .. coop-visualization:: histogram
 
@@ -44,7 +44,7 @@ sample in the explorer is a valid bin index.
 Reading the stages
 ------------------
 
-Each call first sets its counters to zero. With ``atomic``, every thread
+For a single tile, ``histogram`` first sets its counters to zero. With ``atomic``, every thread
 then adds one to the counter that each of its samples names. The additions
 are atomic, so every sample is counted when several threads add to one bin.
 The explorer shows one round for each item, with one sample from every
@@ -60,6 +60,35 @@ The last stage shows the counters grouped by thread, the way the call
 returns them: thread ``t`` holds the counts of bins ``t``, ``t + 8`` and so
 on. :ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
 rules for each argument and for the result.
+
+Keeping counts across tiles
+---------------------------
+
+:func:`~cuda.coop.cutlass.histogram_init` clears the shared bins before
+the loop. Each :func:`~cuda.coop.cutlass.histogram_composite` adds its tile
+to the counts already there. The table follows one block of eight threads,
+with five bins and one sample per thread.
+
+.. list-table:: Shared counters after each call
+   :header-rows: 1
+
+   * - Call
+     - Tile samples
+     - Shared bins 0 through 4
+   * - Initialize
+     -
+     - ``0 0 0 0 0``
+   * - Composite tile 1
+     - ``0 0 0 1 1 1 2 2``
+     - ``3 3 2 0 0``
+   * - Composite tile 2
+     - ``2 3 3 3 4 4 4 0``
+     - ``4 3 3 3 3``
+
+Bin 1 stays at three because the second tile has no ones. Bin 0 rises
+from three to four. The :ref:`multi-tile example
+<coop-faq-histogram-accumulation>` writes the shared bins to global
+memory after the last tile.
 
 Using Histogram in a kernel
 ---------------------------

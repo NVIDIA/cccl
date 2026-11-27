@@ -69,8 +69,11 @@ rest take a block only:
    * - ``adjacent_difference``, ``discontinuity``
      - ``cub::BlockAdjacentDifference``, ``cub::BlockDiscontinuity``
      -
-   * - ``histogram``
+   * - ``histogram``, ``histogram_composite``
      - ``cub::BlockHistogram``
+     -
+   * - ``histogram_init``
+     - Cooperative bin initialization in shared memory
      -
    * - ``run_length_decode``, ``run_length_decode_into``
      - ``cub::BlockRunLengthDecode``
@@ -89,7 +92,8 @@ These rules hold for every primitive:
   plain integer argument reaches the launch as a CuTe value, and the block
   size is then known only at run time.
 * A block can have one, two or three dimensions, and its threads are ranked
-  x first, then y, then z. ``histogram``, the four ``topk`` functions and
+  x first, then y, then z. The three histogram functions, the four
+  ``topk`` functions and
   the two ``run_length_decode`` functions take one-dimensional blocks only.
 * A warp group needs a block whose size is a multiple of 32, so that every
   warp is complete.

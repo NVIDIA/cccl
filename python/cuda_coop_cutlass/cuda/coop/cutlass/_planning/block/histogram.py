@@ -134,6 +134,21 @@ class BlockHistogramSpecialization:
     bins_per_thread: int
 
 
+def _histogram_geometry(block_dim, items_per_thread, bins):
+    block_dim = normalize_block_dim(block_dim)
+    if block_dim[1:] != (1, 1):
+        raise ValueError("histogram supports only one-dimensional blocks")
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
+    bins = normalize_positive_int("bins", bins)
+    if max(bins, block_dim[0] * items_per_thread) > (1 << 31) - 1:
+        raise ValueError(
+            "histogram tile and bin count must fit a signed 32-bit integer"
+        )
+    return block_dim, items_per_thread, bins
+
+
 def make_block_histogram_specialization(
     *,
     sample_dtype: Any,
@@ -159,26 +174,15 @@ def make_block_histogram_specialization(
     writes zero into output slots beyond the bin count.
     """
 
-    block_dim = normalize_block_dim(block_dim)
-    if block_dim[1:] != (1, 1):
-        raise ValueError("histogram supports only one-dimensional blocks")
-    items_per_thread = normalize_positive_int(
-        "items_per_thread", items_per_thread
+    block_dim, items_per_thread, bins = _histogram_geometry(
+        block_dim, items_per_thread, bins
     )
-    bins = normalize_positive_int("bins", bins)
     bins_per_thread = normalize_positive_int("bins_per_thread", bins_per_thread)
     if bins > block_dim[0] * bins_per_thread:
         raise ValueError(
             "histogram bins_per_thread must provide capacity for every bin"
         )
-    if (
-        max(
-            bins,
-            block_dim[0] * bins_per_thread,
-            block_dim[0] * items_per_thread,
-        )
-        > (1 << 31) - 1
-    ):
+    if block_dim[0] * bins_per_thread > (1 << 31) - 1:
         raise ValueError(
             "histogram tile and output sizes must fit a signed 32-bit integer"
         )
@@ -242,4 +246,61 @@ def make_block_histogram_specialization(
     )
     return BlockHistogramSpecialization(
         specialization, block_dim, items_per_thread, bins, bins_per_thread
+    )
+
+
+def make_block_histogram_composite_specialization(
+    *, sample_dtype, block_dim, items_per_thread, bins, counter_dtype, algorithm
+) -> Algorithm:
+    """Describe a CUB Composite into caller-owned, contiguous shared bins."""
+    block_dim, items_per_thread, bins = _histogram_geometry(
+        block_dim, items_per_thread, bins
+    )
+    sample_dtype = validate_histogram_dtype(sample_dtype)
+    counter_dtype = validate_histogram_dtype(counter_dtype, counter=True)
+    algorithm = normalize_histogram_algorithm(algorithm)
+    if algorithm == "sort" and block_dim[0] * items_per_thread > 65535:
+        raise ValueError(
+            "histogram sort supports at most 65535 samples per block"
+        )
+    arguments = {
+        "SampleT": sample_dtype,
+        "BLOCK_DIM_X": block_dim[0],
+        "ITEMS_PER_THREAD": items_per_thread,
+        "BINS": bins,
+        "ALGORITHM": "::cub::BLOCK_HISTO_ATOMIC"
+        if algorithm == "atomic"
+        else "::cub::BLOCK_HISTO_SORT",
+    }
+    return Algorithm(
+        struct_name="BlockHistogram",
+        method_name="Composite",
+        c_name="block_histogram_composite",
+        includes=("cub/block/block_histogram.cuh",),
+        template_parameters=tuple(
+            TemplateParameter(name) for name in arguments
+        ),
+        parameters=(
+            (
+                TempStorageParameter(),
+                Array(
+                    Dependency("SampleT"),
+                    Dependency("ITEMS_PER_THREAD"),
+                    name="samples",
+                ),
+                Array(
+                    counter_dtype,
+                    Dependency("BINS"),
+                    name="counters",
+                    is_inout=True,
+                    is_return=False,
+                ),
+            ),
+        ),
+        template_arguments=arguments,
+        metadata={
+            "scope": "block",
+            "primitive": "histogram_composite",
+            "algorithm": algorithm,
+        },
     )
