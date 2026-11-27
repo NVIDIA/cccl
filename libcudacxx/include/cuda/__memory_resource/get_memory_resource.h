@@ -43,10 +43,11 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
   requires(!__is_synchronous_resource_env<_Tp>),
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
+// Forming __query_result_t already checks queryability. Repeating __queryable_with here can make
+// MSVC 19.52 reuse a false result for valid unadvertised queries in C++17.
 template <class _Env>
 _CCCL_CONCEPT __has_usable_advertised_resource_query = _CCCL_REQUIRES_EXPR((_Env))(
   requires(::cuda::std::execution::__detail::__advertises_query_v<_Env, get_memory_resource_t>),
-  requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>),
   requires(
     resource<::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
 

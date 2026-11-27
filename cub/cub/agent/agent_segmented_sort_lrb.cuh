@@ -37,7 +37,7 @@ struct agent_t
     unsigned bin_work_offsets[capacities_t::size + 1];
   };
 
-  template <typename Key, typename BeginIterator, typename EndIterator>
+  template <bool Descending, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE static void process(
     partition_result partition,
     BeginIterator begins,
@@ -101,7 +101,7 @@ struct agent_t
       const auto segment_idx =
         partition.bin_offsets[bin_idx] + ((work_id - bin_work_offsets[bin_idx]) * segments_per_group)
         + (thread_idx_in_group / config.threads_per_segment);
-      implementation_t::invoke(
+      implementation_t::template invoke<Descending>(
         segment_idx < partition.bin_offsets[bin_idx + 1] ? segment_idx : ~0u,
         config,
         partition,

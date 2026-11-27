@@ -15,22 +15,13 @@
 
 int main()
 {
-  // allocate storage for compressed input and run lengths
-  thrust::device_vector<char> input(6);
-  thrust::device_vector<int> lengths(6);
-
-  // clang-format off
-  input[0] = 'a';  lengths[0] = 3;
-  input[1] = 'b';  lengths[1] = 5;
-  input[2] = 'c';  lengths[2] = 1;
-  input[3] = 'd';  lengths[3] = 2;
-  input[4] = 'e';  lengths[4] = 9;
-  input[5] = 'f';  lengths[5] = 2;
-  // clang-format on
+  // compressed input and run lengths
+  thrust::device_vector<char> input  = {'a', 'b', 'c', 'd', 'e', 'f'};
+  thrust::device_vector<int> lengths = {3, 5, 1, 2, 9, 2};
 
   // print the initial data
   std::cout << "run-length encoded input:" << '\n';
-  for (size_t i = 0; i < 6; i++)
+  for (size_t i = 0; i < input.size(); i++)
   {
     std::cout << "(" << input[i] << "," << lengths[i] << ")";
   }
