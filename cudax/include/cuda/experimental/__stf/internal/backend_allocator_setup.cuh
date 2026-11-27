@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
@@ -64,8 +65,8 @@ inline ::std::string default_allocator_from_env()
   ::std::string kind(env ? env : "cached");
   if (kind != "cached" && kind != "uncached" && kind != "cached_fifo" && kind != "pooled")
   {
-    _CCCL_THROW(::std::invalid_argument,
-                ::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'"));
+    _CCCL_THROW_STD_EXCEPTION(
+      invalid_argument, ::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'").c_str());
   }
   return kind;
 }

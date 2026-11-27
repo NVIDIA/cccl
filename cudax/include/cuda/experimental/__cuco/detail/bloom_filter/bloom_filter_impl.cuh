@@ -156,17 +156,18 @@ public:
   {
     if (__storage.size() < __required_words())
     {
-      ::cuda::std::__throw_invalid_argument("Bloom filter storage is too small for the requested number of blocks");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument,
+                                "Bloom filter storage is too small for the requested number of blocks");
     }
 
     if (!::cuda::is_aligned(__storage.data(), __alignment))
     {
-      ::cuda::std::__throw_invalid_argument("Bloom filter storage has insufficient alignment");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Bloom filter storage has insufficient alignment");
     }
 
     if (__block_extent() > __policy_type::max_filter_blocks)
     {
-      ::cuda::std::__throw_invalid_argument("Bloom filter block count exceeds the policy's maximum");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Bloom filter block count exceeds the policy's maximum");
     }
   }
 

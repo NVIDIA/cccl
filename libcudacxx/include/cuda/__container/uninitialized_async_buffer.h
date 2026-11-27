@@ -228,13 +228,13 @@ private:
     constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
     if (__count > __max_element_count)
     {
-      ::cuda::std::__throw_invalid_argument("cuda::__uninitialized_async_buffer: Input size overflow");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
 
     const size_t __count_elements = __count * sizeof(_Tp);
     if (__count_elements > __max_element_count - (__alignment - 1))
     {
-      ::cuda::std::__throw_invalid_argument("cuda::__uninitialized_async_buffer: Input size overflow");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
     return __count;
   }
@@ -476,12 +476,13 @@ public:
     {
       if (__info.capacity != 0)
       {
-        ::cuda::std::__throw_invalid_argument("cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
+        _CCCL_THROW_STD_EXCEPTION(invalid_argument,
+                                  "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
       }
     }
     else if (!::cuda::is_aligned(__info.ptr, __info.alignment))
     {
-      ::cuda::std::__throw_invalid_argument("cuda::__uninitialized_async_buffer: Invalid alignment");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
     }
     __ret.__count_ = __info.capacity;
     __ret.__buf_   = __info.ptr;

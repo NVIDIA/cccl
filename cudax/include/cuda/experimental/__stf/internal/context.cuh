@@ -17,6 +17,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/type_traits>
@@ -1075,7 +1076,7 @@ public:
     {
       return *ctx;
     }
-    _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
+    _CCCL_THROW_STD_EXCEPTION(runtime_error, "Payload does not hold graph_ctx");
   }
 
   /**

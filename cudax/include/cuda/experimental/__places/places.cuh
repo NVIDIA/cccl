@@ -35,6 +35,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__host_stdlib/mutex>
 
@@ -488,14 +489,14 @@ public:
     {
       if (extent != 0 && total_bytes > ::cuda::std::numeric_limits<size_t>::max() / extent)
       {
-        _CCCL_THROW(::std::invalid_argument,
-                    "allocate_nd: extents and element size overflow the addressable byte count");
+        _CCCL_THROW_STD_EXCEPTION(invalid_argument,
+                                  "allocate_nd: extents and element size overflow the addressable byte count");
       }
       total_bytes *= extent;
     }
     if (total_bytes > static_cast<size_t>(::cuda::std::numeric_limits<::std::ptrdiff_t>::max()))
     {
-      _CCCL_THROW(::std::invalid_argument, "allocate_nd: allocation size exceeds PTRDIFF_MAX");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "allocate_nd: allocation size exceeds PTRDIFF_MAX");
     }
     return pimpl_->allocate_nd(data_dims, elemsize, stream);
   }
@@ -1612,15 +1613,15 @@ public:
   {
     if (places_.empty())
     {
-      _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: places must not be empty");
     }
     if (dims_.x == 0 || dims_.y == 0 || dims_.z == 0 || dims_.t == 0)
     {
-      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: grid dimensions must be positive");
     }
     if (dims_.size() != places_.size())
     {
-      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
     }
   }
 
@@ -1719,15 +1720,15 @@ _CCCL_HOST_API inline exec_place make_grid(::std::vector<exec_place> places, con
 {
   if (places.empty())
   {
-    _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: places must not be empty");
   }
   if (dims.x == 0 || dims.y == 0 || dims.z == 0 || dims.t == 0)
   {
-    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: grid dimensions must be positive");
   }
   if (dims.size() != places.size())
   {
-    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
   }
   if (places.size() == 1)
   {
@@ -1760,7 +1761,7 @@ _CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_ax
 {
   if (first_axis > last_axis || last_axis > 3)
   {
-    _CCCL_THROW(::std::invalid_argument, "exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
   }
 
   const dim4 old_dims         = get_dims();
@@ -2051,9 +2052,10 @@ public:
     // A byte count alone does not carry the tensor geometry the partitioner
     // needs (it maps element coordinates to places), so there is no meaningful
     // way to service this request.
-    _CCCL_THROW(::std::runtime_error,
-                "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
-                "allocate through a logical data");
+    _CCCL_THROW_STD_EXCEPTION(
+      runtime_error,
+      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+      "allocate through a logical data");
   }
 
   _CCCL_HOST_API void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -2204,9 +2206,10 @@ public:
       }
       if (!(grid_.get_place(p).affine_data_place() == grid_.get_place(rep).affine_data_place()))
       {
-        _CCCL_THROW(::std::invalid_argument,
-                    "replicated data place: shared axes require co-located fiber members (equal affine data places); "
-                    "replicate over that axis too, or build the grid from members with coarser data affinity");
+        _CCCL_THROW_STD_EXCEPTION(
+          invalid_argument,
+          "replicated data place: shared axes require co-located fiber members (equal affine data places); "
+          "replicate over that axis too, or build the grid from members with coarser data affinity");
       }
     }
   }
@@ -2254,12 +2257,12 @@ public:
 
   _CCCL_HOST_API void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    _CCCL_THROW(::std::runtime_error, "replicated data_place: allocate through a logical data");
+    _CCCL_THROW_STD_EXCEPTION(runtime_error, "replicated data_place: allocate through a logical data");
   }
 
   _CCCL_HOST_API void deallocate(void*, size_t, cudaStream_t) const override
   {
-    _CCCL_THROW(::std::runtime_error, "replicated data_place: instances deallocate through their member places");
+    _CCCL_THROW_STD_EXCEPTION(runtime_error, "replicated data_place: instances deallocate through their member places");
   }
 
   _CCCL_HOST_API bool allocation_is_stream_ordered() const override
@@ -2358,7 +2361,7 @@ _CCCL_HOST_API inline data_place data_place::replicated(const exec_place& grid)
 {
   if (!grid.get_impl())
   {
-    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "replicated data_place requires a valid execution place");
   }
   // A live replicated place always has >= 2 instances: everything downstream
   // (acquire, member(), shard rebase) relies on it. One instance is a plain
@@ -2383,7 +2386,7 @@ _CCCL_HOST_API data_place data_place::replicated(const exec_place& grid, replica
   static_assert(((axes < 4) && ...), "grid axes are 0..3");
   if (!grid.get_impl())
   {
-    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "replicated data_place requires a valid execution place");
   }
   constexpr unsigned mask = ((1u << axes) | ...);
   auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);

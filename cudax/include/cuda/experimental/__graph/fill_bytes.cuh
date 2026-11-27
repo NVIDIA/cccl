@@ -78,7 +78,7 @@ _CCCL_HOST_API graph_node_ref __fill_bytes_graph_impl(
 {
   if (!__dst.is_exhaustive())
   {
-    ::cuda::std::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "fill_bytes supports only exhaustive mdspans");
   }
 
   return __fill_bytes_graph_impl(

@@ -69,13 +69,13 @@ template <class _Dummy = void>
         return __ret;
       }
       case -1:
-        ::cuda::std::__throw_bad_alloc();
+        _CCCL_THROW_STD_EXCEPTION(bad_alloc);
       case -2:
-        ::cuda::std::__throw_runtime_error("invalid mangled name passed to cuda::demangle function");
+        _CCCL_THROW_STD_EXCEPTION(runtime_error, "invalid mangled name passed to cuda::demangle function");
       case -3:
         _CCCL_VERIFY(false, "cccl internal error - invalid argument passed to __cu_demangle");
       default:
-        ::cuda::std::__throw_runtime_error("an unknown error occurred during demangling operation");
+        _CCCL_THROW_STD_EXCEPTION(runtime_error, "an unknown error occurred during demangling operation");
     }
   }
   _CCCL_CATCH_ALL

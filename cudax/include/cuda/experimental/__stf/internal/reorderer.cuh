@@ -29,6 +29,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/cassert>
 
@@ -387,7 +388,7 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
     return ::std::make_unique<post_mortem_reorderer>(order_file);
   }
 
-  _CCCL_THROW(::std::invalid_argument,
-              ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'"));
+  _CCCL_THROW_STD_EXCEPTION(
+    invalid_argument, ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'").c_str());
 }
 } // namespace cuda::experimental::stf::reserved

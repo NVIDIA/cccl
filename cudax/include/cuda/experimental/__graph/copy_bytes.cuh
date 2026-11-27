@@ -54,7 +54,7 @@ __copy_bytes_graph_impl(path_builder& __pb, ::cuda::std::span<_SrcTy> __src, ::c
 
   if (__src.size_bytes() > __dst.size_bytes())
   {
-    ::cuda::std::__throw_invalid_argument("Copy destination is too small to fit the source data");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Copy destination is too small to fit the source data");
   }
 
   if (__src.size_bytes() == 0)
@@ -100,12 +100,12 @@ _CCCL_HOST_API graph_node_ref __copy_bytes_graph_impl(
 
   if (!__dst.is_exhaustive())
   {
-    ::cuda::std::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    ::cuda::std::__throw_invalid_argument("Copy destination size differs from the source");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Copy destination size differs from the source");
   }
 
   return __copy_bytes_graph_impl(

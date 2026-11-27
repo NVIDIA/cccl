@@ -147,7 +147,7 @@ public:
       : __comm_{[&] {
         if (__comm == ::cuda::experimental::__nccl::__NCCL_COMM_NULL)
         {
-          ::cuda::std::__throw_invalid_argument("Invalid NCCL communicator: NCCL_COMM_NULL");
+          _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Invalid NCCL communicator: NCCL_COMM_NULL");
         }
         return __comm;
       }()}
@@ -158,9 +158,9 @@ public:
     if (const auto __nccl_device = ::cuda::experimental::__nccl::__ncclCommCuDevice(native_handle());
         __nccl_device != logical_device().underlying_device())
     {
-      ::cuda::std::__throw_runtime_error(
-        "Inconsistent devices, NCCL communicator device and provided logical device "
-        "do not match");
+      _CCCL_THROW_STD_EXCEPTION(runtime_error,
+                                "Inconsistent devices, NCCL communicator device and provided logical device "
+                                "do not match");
     }
   }
 

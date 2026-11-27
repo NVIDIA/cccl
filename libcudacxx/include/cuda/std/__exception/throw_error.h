@@ -62,43 +62,6 @@
 #  define _CCCL_THROW_STD_EXCEPTION(_TYPE, ...) _CCCL_THROW(::std::_TYPE, __VA_ARGS__)
 #endif // ^^^ _CCCL_THROW ^^^
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-[[noreturn]] _CCCL_API inline void __throw_bad_alloc()
-{
-  _CCCL_THROW_STD_EXCEPTION(bad_alloc);
-}
-
-[[noreturn]] _CCCL_API inline void __throw_invalid_argument([[maybe_unused]] const char* __msg)
-{
-  _CCCL_THROW_STD_EXCEPTION(invalid_argument, __msg);
-}
-
-[[noreturn]] _CCCL_API inline void __throw_length_error([[maybe_unused]] const char* __msg)
-{
-  _CCCL_THROW_STD_EXCEPTION(length_error, __msg);
-}
-
-[[noreturn]] _CCCL_API inline void __throw_out_of_range([[maybe_unused]] const char* __msg)
-{
-  _CCCL_THROW_STD_EXCEPTION(out_of_range, __msg);
-}
-
-[[noreturn]] _CCCL_API inline void __throw_overflow_error([[maybe_unused]] const char* __msg)
-{
-  _CCCL_THROW_STD_EXCEPTION(overflow_error, __msg);
-}
-
-[[noreturn]] _CCCL_API inline void __throw_runtime_error([[maybe_unused]] const char* __msg)
-{
-  _CCCL_THROW_STD_EXCEPTION(runtime_error, __msg);
-}
-
-_CCCL_END_NAMESPACE_CUDA_STD
-
-#undef _CCCL_THROW_STD_EXCEPTION
-#undef _CCCL_THROW_HOST_STD_EXCEPTION
-
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___EXCEPTION_THROW_ERROR_H

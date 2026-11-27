@@ -265,7 +265,8 @@ public:
     const data_place& dp = d.get_dplace();
     if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
     {
-      ::cuda::std::__throw_invalid_argument(
+      _CCCL_THROW_STD_EXCEPTION(
+        invalid_argument,
         "replicated data places only support read access (mutate the data at another place; the next replicated "
         "read re-broadcasts)");
     }

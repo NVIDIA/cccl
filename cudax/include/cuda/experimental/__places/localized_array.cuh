@@ -152,9 +152,9 @@ template <typename OwnerFn>
 {
   if (elemsize == 0 || block_size_bytes < elemsize)
   {
-    ::cuda::std::__throw_invalid_argument(
-      "placement blocks must hold at least one element (elemsize in [1, block "
-      "size])");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument,
+                              "placement blocks must hold at least one element (elemsize in [1, block "
+                              "size])");
   }
   const size_t block_elems = block_size_bytes / elemsize;
 
@@ -264,7 +264,7 @@ inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
     && static_cast<size_t>(p.get(3)) < static_cast<size_t>(grid_dims.t);
   if (!in_range)
   {
-    ::cuda::std::__throw_out_of_range("placement mapper returned a position outside the grid");
+    _CCCL_THROW_STD_EXCEPTION(out_of_range, "placement mapper returned a position outside the grid");
   }
   return grid_dims.get_index(p);
 }
@@ -446,7 +446,7 @@ private:
   {
     if (elemsize == 0)
     {
-      ::cuda::std::__throw_invalid_argument("localized_array requires an element size of at least 1 byte");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "localized_array requires an element size of at least 1 byte");
     }
 
     cuda_try(cudaFree(nullptr));
@@ -494,13 +494,14 @@ private:
     {
       if (r.num_blocks == 0 || r.first_block != cursor)
       {
-        ::cuda::std::__throw_invalid_argument("placement runs must be non-empty, ordered, and tile the blocks exactly");
+        _CCCL_THROW_STD_EXCEPTION(invalid_argument,
+                                  "placement runs must be non-empty, ordered, and tile the blocks exactly");
       }
       cursor += r.num_blocks;
     }
     if (cursor != nblocks)
     {
-      ::cuda::std::__throw_invalid_argument("placement runs must cover every placement block");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "placement runs must cover every placement block");
     }
 
     // Reserve the virtual range only once the placement plan is validated:

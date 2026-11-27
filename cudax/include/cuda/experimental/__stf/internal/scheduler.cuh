@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
@@ -474,7 +475,7 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
     return ::std::make_unique<heft_scheduler>();
   }
 
-  _CCCL_THROW(::std::invalid_argument,
-              ::std::string("invalid CUDASTF_SCHEDULE value '").append(schedule_type_s).append("'"));
+  _CCCL_THROW_STD_EXCEPTION(
+    invalid_argument, ::std::string("invalid CUDASTF_SCHEDULE value '").append(schedule_type_s).append("'").c_str());
 }
 } // namespace cuda::experimental::stf::reserved

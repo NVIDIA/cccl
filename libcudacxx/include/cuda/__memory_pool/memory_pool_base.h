@@ -75,7 +75,7 @@ struct __pool_attr_impl
     }
     else
     {
-      ::cuda::std::__throw_invalid_argument("This attribute can't be set");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "This attribute can't be set");
     }
   }
 };
@@ -155,7 +155,7 @@ __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __at
 {
   if (__value != 0)
   {
-    ::cuda::std::__throw_invalid_argument("This attribute can't be set to a non-zero value.");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "This attribute can't be set to a non-zero value.");
   }
   ::cuda::__driver::__mempoolSetAttribute(__pool, __attr, &__value);
 }
@@ -248,7 +248,7 @@ struct location_t
 
   _CCCL_HOST_API static void set(::cudaMemPool_t, type)
   {
-    ::cuda::std::__throw_invalid_argument("This attribute can't be set");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "This attribute can't be set");
   }
 };
 inline constexpr location_t location{};
@@ -423,25 +423,25 @@ struct memory_pool_properties
 #    if _CCCL_CTK_AT_LEAST(13, 0)
     if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
     {
-      ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Max pool size is not supported for managed memory pools");
     }
 #    endif // _CCCL_CTK_AT_LEAST(13, 0)
     if (__properties.initial_pool_size > __properties.max_pool_size)
     {
-      ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Initial pool size must be less than the max pool size");
     }
   }
   __pool_properties.maxSize = __properties.max_pool_size;
 #  else
   if (__properties.max_pool_size != 0)
   {
-    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Max pool size is not supported on this CUDA version");
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
-    ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the release threshold");
+    _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Initial pool size must be less than the release threshold");
   }
 
   ::CUmemoryPool __cuda_pool_handle{};
@@ -511,7 +511,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument("Invalid alignment passed to __memory_pool_base::allocate_sync.");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate_sync.");
     }
 
     const ::CUdeviceptr __ptr =
@@ -556,7 +556,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument("Invalid alignment passed to __memory_pool_base::allocate.");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate.");
     }
 
     return allocate(__stream, __bytes);

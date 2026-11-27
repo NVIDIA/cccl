@@ -124,7 +124,7 @@ public:
   {
     if (__size == 0)
     {
-      ::cuda::std::__throw_invalid_argument("cuda::__stream_pool requires at least one stream");
+      _CCCL_THROW_STD_EXCEPTION(invalid_argument, "cuda::__stream_pool requires at least one stream");
     }
     // No other thread can see the pool yet, so the slots are filled with plain stores.
     if (__mode == __stream_pool_creation::lazy)
@@ -237,7 +237,7 @@ public:
   {
     if (__index >= __size_)
     {
-      ::cuda::std::__throw_out_of_range("cuda::__stream_pool::at index out of range");
+      _CCCL_THROW_STD_EXCEPTION(out_of_range, "cuda::__stream_pool::at index out of range");
     }
     return (*this)[__index];
   }

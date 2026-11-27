@@ -130,7 +130,7 @@ public:
     {
       if (!is_open())
       {
-        ::cuda::std::__throw_runtime_error("cuFile driver must be opened to query this attribute.");
+        _CCCL_THROW_STD_EXCEPTION(runtime_error, "cuFile driver must be opened to query this attribute.");
       }
 
       ::CUfileDrvProps_t __props{};
@@ -177,9 +177,9 @@ public:
     {
       if (!is_open())
       {
-        ::cuda::std::__throw_runtime_error(
-          "This cuFile driver attribute range must be queried after the driver is "
-          "opened.");
+        _CCCL_THROW_STD_EXCEPTION(runtime_error,
+                                  "This cuFile driver attribute range must be queried after the driver is "
+                                  "opened.");
       }
     }
 
@@ -253,9 +253,9 @@ public:
       }
       else
       {
-        ::cuda::std::__throw_runtime_error(
-          "This cuFile driver attribute cannot be modified after the driver is "
-          "opened.");
+        _CCCL_THROW_STD_EXCEPTION(runtime_error,
+                                  "This cuFile driver attribute cannot be modified after the driver is "
+                                  "opened.");
       }
     }
     else
