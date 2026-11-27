@@ -654,11 +654,16 @@ void launch_unit_count_layout(const cuda::stream& stream, cuda::std::integer_seq
 template <cuda::std::size_t GroupCount, unsigned... Pattern>
 struct CyclicLayout
 {
-  static constexpr cuda::std::array pattern{Pattern...};
+  // MSVC 19.52 rejects a subscript expanded directly in make's return type.
+  template <cuda::std::size_t Rank>
+  static constexpr unsigned value_at()
+  {
+    constexpr unsigned values[]{Pattern...};
+    return values[Rank % sizeof...(Pattern)];
+  }
 
   template <cuda::std::size_t... Ranks>
-  static auto make(cuda::std::index_sequence<Ranks...>)
-    -> cuda::std::integer_sequence<unsigned, pattern[Ranks % pattern.size()]...>;
+  static auto make(cuda::std::index_sequence<Ranks...>) -> cuda::std::integer_sequence<unsigned, value_at<Ranks>()...>;
 
   using type = decltype(make(cuda::std::make_index_sequence<GroupCount>{}));
 };
@@ -668,6 +673,8 @@ using cyclic_layout = typename CyclicLayout<GroupCount, Pattern...>::type;
 
 C2H_TEST("Dispatch by unit count across repeated group sizes", "[dispatch]")
 {
+  static_assert(
+    cuda::std::is_same_v<cyclic_layout<7, 2, 1, 1>, cuda::std::integer_sequence<unsigned, 2, 1, 1, 2, 1, 1, 2>>);
   const cuda::stream stream{cuda::devices[0]};
 
   // Adjacent groups with the same size share a specialization, including long runs at either end.

@@ -27,6 +27,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -128,7 +129,7 @@ struct agent_group_merge
   // merge across cooperating threads, and write the valid keys back.
   // A segment_idx of ~0u gives an unused segment zero length; its threads still reach every sync.
   // Configuration and merge rounds are uniform within the warp/block synchronization group.
-  template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
+  template <int ItemsPerThread, bool Descending, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void sort_segment(
     unsigned segment_idx,
     bin_config config,
@@ -139,7 +140,7 @@ struct agent_group_merge
     Key* out,
     Key* keys_shared)
   {
-    const ::cuda::std::less<Key> compare_op{};
+    const ::cuda::std::conditional_t<Descending, ::cuda::std::greater<Key>, ::cuda::std::less<Key>> compare_op{};
 
     const int thread_idx_in_group = threadIdx.x % threads_per_group;
     if constexpr (is_warp)
@@ -176,16 +177,17 @@ struct agent_group_merge
 
     if (thread_idx_in_segment * ItemsPerThread < segment_size)
     {
-      Key max_key = keys[0];
+      // Pad with the valid key that sorts last in this run (largest ascending, smallest descending).
+      Key padding_key = keys[0];
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if ((thread_idx_in_segment * ItemsPerThread) + item < segment_size)
         {
-          max_key = (::cuda::std::max) (max_key, keys[item], compare_op);
+          padding_key = (::cuda::std::max) (padding_key, keys[item], compare_op);
         }
         else
         {
-          keys[item] = max_key;
+          keys[item] = padding_key;
         }
       }
       NullType values[ItemsPerThread];
@@ -246,7 +248,7 @@ struct agent_group_merge
   }
 
   // Translate runtime IPT into a specialization with a fixed-size per-thread key array.
-  template <typename Key, typename BeginIterator, typename EndIterator>
+  template <bool Descending, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void invoke(
     unsigned segment_idx,
     bin_config config,
@@ -261,25 +263,25 @@ struct agent_group_merge
     switch (config.items_per_thread)
     {
       case 9:
-        sort_segment<9>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<9, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 10:
-        sort_segment<10>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<10, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 11:
-        sort_segment<11>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<11, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 12:
-        sort_segment<12>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<12, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 13:
-        sort_segment<13>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<13, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 14:
-        sort_segment<14>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<14, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 15:
-        sort_segment<15>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<15, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       default:
         _CCCL_UNREACHABLE();

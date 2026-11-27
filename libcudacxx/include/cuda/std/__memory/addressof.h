@@ -51,6 +51,8 @@
 #    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
 #    include <__memory/addressof.h>
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <type_traits> // for ::std::addressof
 #  else
 #    include <cuda/std/__host_stdlib/memory>
 #  endif

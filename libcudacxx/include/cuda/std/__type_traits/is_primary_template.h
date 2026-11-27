@@ -99,8 +99,10 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
 using __test_for_primary_std_template = enable_if_t<is_same_v<_Traits, typename _Traits::__primary_template>>;
+// This must be a class template and not an alias template, because we need to specialize it for `common_iterator`
 template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
+struct __is_primary_std_template : _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>
+{};
 
 #  elif _CCCL_HOST_STD_LIB(STL)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20

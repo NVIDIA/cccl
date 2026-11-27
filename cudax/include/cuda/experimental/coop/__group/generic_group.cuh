@@ -35,6 +35,7 @@
 #include <cuda/experimental/coop/__group/dispatch.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
+#include <cuda/experimental/coop/__group/tags.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
 
@@ -113,9 +114,9 @@ public:
           ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result_)}
   {}
 
-  // internal constructor used by make_group(non_exhaustive_t, ...)
+  // Internal constructor for make_group(non_exhaustive_t, ...).
   _CCCL_DEVICE_API explicit generic_group(
-    const non_exhaustive_t&,
+    const __private_tag&,
     const _Unit&,
     const _ParentGroup& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
@@ -125,9 +126,10 @@ public:
       , __synchronizer_instance_{__synchronizer_instance}
   {}
 
+  // Internal constructor for make_group(non_exhaustive_t, ...).
   template <class _ParentUnit, class _ParentMappingResult>
   _CCCL_DEVICE_API explicit generic_group(
-    const non_exhaustive_t&,
+    const __private_tag&,
     const _Unit&,
     const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
     const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,

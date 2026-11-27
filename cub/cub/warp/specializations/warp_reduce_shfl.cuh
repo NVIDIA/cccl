@@ -239,6 +239,16 @@ struct WarpReduceShfl
     }
   }
 
+  struct shuffle_reduce_step
+  {
+    template <typename Step, typename ReductionOp>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    operator()(Step step, WarpReduceShfl& self, T& input, ReductionOp reduction_op, const int last_lane) const
+    {
+      input = self.ReduceStep(input, reduction_op, last_lane, 1 << step);
+    }
+  };
+
   // Unrolls the reduction steps
   template <typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduce(T& input, ReductionOp reduction_op, const int last_lane)
@@ -247,16 +257,9 @@ struct WarpReduceShfl
     // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
     if constexpr (has_16bit_member_v<T>)
     {
-      // A captureless lambda avoids extra packing for 16-bit scan-by-key accumulators.
+      // A stateless functor avoids extra packing for 16-bit scan-by-key accumulators.
       // See https://github.com/NVIDIA/cccl/pull/12736.
-      ::cuda::static_for<steps>(
-        [](auto step, WarpReduceShfl& self, T& input, auto reduction_op, const int last_lane) {
-          input = self.ReduceStep(input, reduction_op, last_lane, 1 << step);
-        },
-        *this,
-        input,
-        reduction_op,
-        last_lane);
+      ::cuda::static_for<steps>(shuffle_reduce_step{}, *this, input, reduction_op, last_lane);
     }
     else
     {
