@@ -70,6 +70,43 @@ class __fmt_formatter_tuple<_CharT, _Tuple<_Args...>, enable_if_t<__fmt_enable_t
   basic_string_view<_CharT> __closing_bracket_ = _CCCL_STRLIT(_CharT, ")");
   __fmt_spec_parser<_CharT> __parser_          = ::cuda::std::__fmt_formatter_tuple_make_parser<_CharT>();
 
+  struct __parse_element
+  {
+    template <class _Index, class _Underlying, class _ParseContext>
+    _CCCL_HOST_DEVICE_API constexpr void operator()(_Index __i, _Underlying& __underlying, _ParseContext& __ctx) const
+    {
+      using ::cuda::std::get;
+      auto& __formatter = get<__i()>(__underlying);
+      __formatter.parse(__ctx);
+
+      // todo(dabayer): Enable setting debug format once we have debug format support.
+      // Unlike the range_formatter we don't guard against evil parsers. Since
+      // this format-spec never has a format-spec for the underlying type
+      // adding the test would give additional overhead.
+      // ::cuda::std::__set_debug_format(__formatter);
+    }
+  };
+
+  struct __format_element
+  {
+    template <class _Index, class _Tuple2, class _FormatContext, class _CopyDelimiter>
+    _CCCL_HOST_DEVICE_API void operator()(
+      _Index __i,
+      const __fmt_formatter_tuple& __self,
+      _Tuple2& __tuple,
+      _FormatContext& __ctx,
+      const _CopyDelimiter& __copy_delimiter) const
+    {
+      using ::cuda::std::get;
+
+      if constexpr (__i() > 0)
+      {
+        __ctx.advance_to(__copy_delimiter(__self.__separator_));
+      }
+      __ctx.advance_to(get<__i()>(__self.__underlying_).format(get<__i()>(__tuple), __ctx));
+    }
+  };
+
   template <class _Tuple2, class _FormatContext>
   [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FormatContext::iterator
   __format_tuple(_Tuple2&& __tuple, _FormatContext& __ctx) const
@@ -87,17 +124,7 @@ class __fmt_formatter_tuple<_CharT, _Tuple<_Args...>, enable_if_t<__fmt_enable_t
     };
 
     __ctx.advance_to(__copy_delimiter(__opening_bracket_));
-
-    ::cuda::static_for<sizeof...(_Args)>([&](auto __i) {
-      using ::cuda::std::get;
-
-      if constexpr (__i() > 0)
-      {
-        __ctx.advance_to(__copy_delimiter(__separator_));
-      }
-      __ctx.advance_to(get<__i()>(__underlying_).format(get<__i()>(__tuple), __ctx));
-    });
-
+    ::cuda::static_for<sizeof...(_Args)>(__format_element{}, *this, __tuple, __ctx, __copy_delimiter);
     return __copy_delimiter(__closing_bracket_);
   }
 
@@ -148,17 +175,7 @@ public:
     // [format.tuple]/7
     //   ... For each element e in underlying_, if e.set_debug_format()
     //   is a valid expression, calls e.set_debug_format().
-    ::cuda::static_for<sizeof...(_Args)>([&](auto __i) {
-      using ::cuda::std::get;
-      auto& __formatter = get<__i()>(__underlying_);
-      __formatter.parse(__ctx);
-
-      // todo(dabayer): Enable setting debug format once we have debug format support.
-      // Unlike the range_formatter we don't guard against evil parsers. Since
-      // this format-spec never has a format-spec for the underlying type
-      // adding the test would give additional overhead.
-      // ::cuda::std::__set_debug_format(__formatter);
-    });
+    ::cuda::static_for<sizeof...(_Args)>(__parse_element{}, __underlying_, __ctx);
     return __begin;
   }
 

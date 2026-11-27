@@ -113,6 +113,8 @@ Functions
    concept-constrained placeholder. If an unconstrained deduced return type is necessary, add a comment explaining why.
 #. Do not use extended lambda expressions (lambdas annotated with ``__host__``/``__device__`` etc.),
    except in examples and API example tests (``*_api.cu``), since they require that users add an extra flag (``--extended-lambda``).
+#. Do not use generic lambdas (lambdas with ``auto`` parameters) in device code, since NVRTC before 13.2 rejects them
+   unless users pass ``-default-device``. Spell out the parameter types or use a function object instead.
 
 Macros
 ~~~~~~

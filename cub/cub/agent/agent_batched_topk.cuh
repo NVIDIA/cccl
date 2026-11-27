@@ -197,6 +197,43 @@ struct agent_batched_topk_worker_per_segment
       , d_large_segments_tile_offsets(d_large_segments_tile_offsets)
   {}
 
+  template <bool IsFullTile>
+  struct small_segment_topk_op
+  {
+    TempStorage_& temp_storage;
+    key_t (&thread_keys)[items_per_thread];
+    value_t (&thread_values)[items_per_thread];
+    segment_size_val_t k;
+    segment_size_val_t segment_size;
+
+    template <typename DirectionTag>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(DirectionTag) const
+    {
+      if constexpr (is_keys_only)
+      {
+        if constexpr (DirectionTag::value == detail::topk::select::max)
+        {
+          block_topk_t(temp_storage.topk).template max_keys<IsFullTile>(thread_keys, k, segment_size);
+        }
+        else
+        {
+          block_topk_t(temp_storage.topk).template min_keys<IsFullTile>(thread_keys, k, segment_size);
+        }
+      }
+      else
+      {
+        if constexpr (DirectionTag::value == detail::topk::select::max)
+        {
+          block_topk_t(temp_storage.topk).template max_pairs<IsFullTile>(thread_keys, thread_values, k, segment_size);
+        }
+        else
+        {
+          block_topk_t(temp_storage.topk).template min_pairs<IsFullTile>(thread_keys, thread_values, k, segment_size);
+        }
+      }
+    }
+  };
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
@@ -291,39 +328,11 @@ struct agent_batched_topk_worker_per_segment
         __syncthreads();
 
         // Perform Block Top-K
-        if constexpr (is_keys_only)
-        {
-          const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
-            select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
-              if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
-              {
-                block_topk_t(temp_storage.topk).template max_keys<is_full_tile>(thread_keys, k, segment_size);
-              }
-              else
-              {
-                block_topk_t(temp_storage.topk).template min_keys<is_full_tile>(thread_keys, k, segment_size);
-              }
-            });
-          _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
-        }
-        else
-        {
-          // Pass both keys and values
-          const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
-            select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
-              if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
-              {
-                block_topk_t(temp_storage.topk)
-                  .template max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
-              }
-              else
-              {
-                block_topk_t(temp_storage.topk)
-                  .template min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
-              }
-            });
-          _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
-        }
+        const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
+          select_directions,
+          segment_id,
+          small_segment_topk_op<is_full_tile>{temp_storage, thread_keys, thread_values, k, segment_size});
+        _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
 
         __syncthreads();
 

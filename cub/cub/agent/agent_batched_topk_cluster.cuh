@@ -1189,7 +1189,7 @@ private:
         const auto keys = stage_span(stage, overflow_idx);
         for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), consume_key);
       },
-      [&](const auto& chunk) {
+      [&](const chunk_desc& chunk) {
         const int num_iterations = ::cuda::ceil_div(chunk.num_items, policy.threads_per_block);
         _CCCL_PRAGMA_UNROLL(UnrollFactor)
         for (int j = 0; j < num_iterations; ++j)
@@ -1973,7 +1973,7 @@ private:
                       Blocked>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
       },
       // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
-      [&](const auto& chunk) {
+      [&](const chunk_desc& chunk) {
         // FromSmem=false: `smem_src` is unread, so pass nullptr.
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/false,
@@ -2047,14 +2047,6 @@ private:
   template <bool Blocked, detail::topk::select SelectDirection>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void run_filter(det_filter_state<SelectDirection>& state)
   {
-    const auto step = [&](auto&& region) {
-      // No explicit barrier: `final_filter_should_stop` self-syncs, isolating its read from `region`'s placement
-      // atomics and the prior region's.
-      if (!final_filter_should_stop(state))
-      {
-        region();
-      }
-    };
     if constexpr (is_tie_reversed)
     {
       process_tail_edge<Blocked>(state);
@@ -2063,13 +2055,18 @@ private:
     {
       process_head_edge<Blocked>(state);
     }
-    step([&] {
+    // No explicit barrier before each region: `final_filter_should_stop` self-syncs, isolating its read from the
+    // region's placement atomics and the prior region's.
+    if (!final_filter_should_stop(state))
+    {
       process_resident<Blocked>(state);
-    });
-    step([&] {
+    }
+    if (!final_filter_should_stop(state))
+    {
       process_overflow<Blocked>(state);
-    });
-    step([&] {
+    }
+    if (!final_filter_should_stop(state))
+    {
       if constexpr (is_tie_reversed)
       {
         process_head_edge<Blocked>(state);
@@ -2078,7 +2075,7 @@ private:
       {
         process_tail_edge<Blocked>(state);
       }
-    });
+    }
   }
 
   // Consume the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
@@ -2265,7 +2262,7 @@ private:
                       /*Blocked=*/false>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
       },
       // Generic fallback: read the overflow chunk straight from gmem.
-      [&](const auto& chunk) {
+      [&](const chunk_desc& chunk) {
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/false,
                       /*Reversed=*/false,
@@ -3604,6 +3601,17 @@ private:
     return true;
   }
 
+  struct run_op
+  {
+    agent_batched_topk_cluster& self;
+
+    template <typename DirectionTag>
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(DirectionTag) const
+    {
+      self.template run<DirectionTag::value>();
+    }
+  };
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void process_impl()
   {
     // Raw launched cluster rank/size from the PTX special registers (replaces cooperative_groups' `this_cluster()`),
@@ -3694,10 +3702,7 @@ private:
     cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok =
-      _CUB::detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
-        constexpr detail::topk::select Direction = decltype(direction_tag)::value;
-        this->template run<Direction>();
-      });
+      _CUB::detail::params::dispatch_discrete(select_directions, segment_id, run_op{*this});
     _CCCL_ASSERT(is_ok, "Unsupported select direction for cluster top-k");
   }
 };
