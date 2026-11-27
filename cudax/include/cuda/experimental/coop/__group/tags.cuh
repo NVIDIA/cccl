@@ -52,6 +52,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT parent_group_t
 };
 
 _CCCL_GLOBAL_CONSTANT parent_group_t parent_group{};
+
+struct __private_tag
+{
+  _CCCL_HIDE_FROM_ABI explicit __private_tag() = default;
+};
 } // namespace cuda::experimental::coop
 
 #include <cuda/std/__cccl/epilogue.h>

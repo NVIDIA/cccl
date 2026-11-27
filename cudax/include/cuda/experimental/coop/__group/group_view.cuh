@@ -181,16 +181,19 @@ public:
       , __synchronizer_instance_{__other.__synchronizer_instance()}
   {}
 
-  // Internal constructor for a view with a specialized mapping result.
-  _CCCL_DEVICE_API explicit group_view(const _Group& __group _CCCL_LIFETIMEBOUND, const _MappingResult& __mapping_result)
+  // Internal constructor for dispatch views with a specialized mapping result.
+  _CCCL_DEVICE_API explicit group_view(
+    const __private_tag&, const _Group& __group _CCCL_LIFETIMEBOUND, const _MappingResult& __mapping_result)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{__mapping_result}
       , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
+  // Internal constructor for dispatch views with a specialized mapping result.
   _CCCL_TEMPLATE(class _OtherUnit, class _OtherMappingResult)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit, _OtherUnit>)
-  _CCCL_DEVICE_API explicit group_view(const group_view<_OtherUnit, _Group, _OtherMappingResult>& __group,
+  _CCCL_DEVICE_API explicit group_view(const __private_tag&,
+                                       const group_view<_OtherUnit, _Group, _OtherMappingResult>& __group,
                                        const _MappingResult& __mapping_result)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{__mapping_result}

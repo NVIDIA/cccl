@@ -56,6 +56,7 @@ template <::cuda::std::size_t _Count, ::cuda::std::size_t _GroupRank = ::cuda::s
 
   const auto& __mapping = __group.__mapping_result();
   return __dispatch_view_t<_Group, _SpecializedMappingResult>{
+    __private_tag{},
     __group,
     _SpecializedMappingResult{
       __mapping.group_count(),

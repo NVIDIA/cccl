@@ -41,6 +41,7 @@
 #include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
+#include <cuda/experimental/coop/__group/tags.cuh>
 #include <cuda/experimental/coop/__group/this_group.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
 
@@ -92,7 +93,7 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
     ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
   using _Ret = ::cuda::std::optional<_Group>;
   return (__mapping_result.is_valid())
-         ? _Ret{::cuda::std::in_place, __non_exhaustive, __unit, __parent, __mapping_result, __synchronizer_instance}
+         ? _Ret{::cuda::std::in_place, __private_tag{}, __unit, __parent, __mapping_result, __synchronizer_instance}
          : _Ret{};
 }
 
@@ -123,7 +124,7 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
     ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
   using _Ret = ::cuda::std::optional<_Group>;
   return (__mapping_result.is_valid())
-         ? _Ret{::cuda::std::in_place, __non_exhaustive, __unit, __parent, __mapping_result, __synchronizer_instance}
+         ? _Ret{::cuda::std::in_place, __private_tag{}, __unit, __parent, __mapping_result, __synchronizer_instance}
          : _Ret{};
 }
 
