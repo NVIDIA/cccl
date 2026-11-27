@@ -38,12 +38,27 @@ TEST_FUNC constexpr void test()
   assert(cuda::round_up(maxv, U(1)) == maxv);
   assert(cuda::round_up(maxv, maxv) == maxv);
 
+  static_assert(cuda::std::is_same<decltype(cuda::__round_up_pow2(T(0), U(1))), CommonType>::value);
+  assert(cuda::__round_up_pow2(T(0), U(1)) == CommonType(0));
+  assert(cuda::__round_up_pow2(T(1), U(1)) == CommonType(1));
+  assert(cuda::__round_up_pow2(T(45), U(32)) == CommonType(64));
+  assert(cuda::__round_up_pow2(T(64), U(32)) == CommonType(64));
+  // ensure that we are resilient against overflow
+  assert(cuda::__round_up_pow2(maxv, U(1)) == maxv);
+
   assert(cuda::round_down(T(0), U(1)) == CommonType(0));
   assert(cuda::round_down(T(1), U(1)) == CommonType(1));
   assert(cuda::round_down(T(78), U(64)) == CommonType(64));
   // ensure that we are resilient against overflow
   assert(cuda::round_down(maxv, U(1)) == maxv);
   assert(cuda::round_down(maxv, maxv) == maxv);
+
+  static_assert(cuda::std::is_same<decltype(cuda::__round_down_pow2(T(0), U(1))), CommonType>::value);
+  assert(cuda::__round_down_pow2(T(0), U(1)) == CommonType(0));
+  assert(cuda::__round_down_pow2(T(1), U(1)) == CommonType(1));
+  assert(cuda::__round_down_pow2(T(78), U(64)) == CommonType(64));
+  assert(cuda::__round_down_pow2(T(64), U(64)) == CommonType(64));
+  assert(cuda::__round_down_pow2(maxv, U(1)) == maxv);
 }
 
 template <class T, class = void>

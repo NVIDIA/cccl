@@ -1,0 +1,418 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___ASYNC_COPY
+#define _CUDA___ASYNC_COPY
+
+#include <cuda/std/detail/__config>
+
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
+
+#  include <cuda/__memory/address_space.h>
+#  include <cuda/__ptx/instructions/cp_async_bulk.h>
+#  include <cuda/__ptx/ptx_dot_variants.h>
+#  include <cuda/std/__memory/is_sufficiently_aligned.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/make_nbit_int.h>
+#  include <cuda/std/climits>
+#  include <cuda/std/cstdint>
+
+#  include <nv/target>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+
+// TODO(bgruber): this should be called from a uniform code path
+//! @brief Copies @p __bytes bytes from global to the calling block's shared memory with one `cp.async.bulk`,
+//! completing with a complete-tx of @p __bytes on the mbarrier at @p __bar. Issued by the calling thread alone.
+//! Pointers must be 16-byte aligned and @p __bytes a multiple of 16.
+//!
+//! Like all loads in this header, it returns the bytes it adds to the barrier's transaction count. The intended use is
+//! to issue the copies first and then arm the barrier once with `mbarrier.arrive.expect_tx` of the summed return
+//! values, which is legal since the tx-count may transiently be negative while an arrival is still pending.
+//! @return @p __bytes
+_CCCL_DEVICE_API inline auto __bulk_load(
+  void* __smem_dst, const void* __gmem_src, ::cuda::std::uint32_t __bytes, ::cuda::std::uint64_t* __bar) noexcept
+  -> ::cuda::std::uint32_t
+{
+  _CCCL_ASSERT(__bytes % 16 == 0, "__bulk_load: size must be a multiple of 16 bytes");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_dst),
+               "__bulk_load: destination must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_src), "__bulk_load: source must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_dst, ::cuda::device::address_space::shared),
+               "__bulk_load: destination must be in the calling block's shared memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_src, ::cuda::device::address_space::global),
+               "__bulk_load: source must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__bar, ::cuda::device::address_space::shared),
+               "__bulk_load: barrier must be in the calling block's shared memory");
+
+  // The .shared::cta destination state space needs PTX ISA 8.6; older ISAs spell a CTA-local destination as
+  // .shared::cluster.
+  ::cuda::ptx::cp_async_bulk(
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+    ::cuda::ptx::space_global,
+    __smem_dst,
+    __gmem_src,
+    __bytes,
+    __bar);
+  return __bytes;
+}
+
+#  if __cccl_ptx_isa >= 920
+//! @brief Copies @p __bytes bytes of data starting @p __head_padding bytes after the 16-byte aligned pointers
+//! @p __smem_dst and @p __gmem_src with one `cp.async.bulk`. The copy is rounded out to 16-byte boundaries and the
+//! hardware is told to ignore the padding bytes (`.ignore_oob`), whose destination contents are indeterminate.
+//! Issued by the calling thread alone. Requires PTX ISA 9.2.
+//!
+//! @param __head_padding Distance in bytes from the aligned pointers to the first byte of data, in [0, 16).
+//! @return Bytes the copy contributes to the transaction count of @p __bar, i.e. the rounded size.
+// TODO(bgruber): this should be called from a uniform code path
+_CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
+  void* __smem_dst,
+  const void* __gmem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint32_t __head_padding,
+  ::cuda::std::uint64_t* __bar) noexcept -> ::cuda::std::uint32_t
+{
+  _CCCL_ASSERT(__head_padding < 16, "__bulk_load_unaligned_ignore_oob: invalid head padding");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_dst),
+               "__bulk_load_unaligned_ignore_oob: destination must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_src),
+               "__bulk_load_unaligned_ignore_oob: source must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_dst, ::cuda::device::address_space::shared),
+               "__bulk_load_unaligned_ignore_oob: destination must be in the calling block's shared memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_src, ::cuda::device::address_space::global),
+               "__bulk_load_unaligned_ignore_oob: source must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__bar, ::cuda::device::address_space::shared),
+               "__bulk_load_unaligned_ignore_oob: barrier must be in the calling block's shared memory");
+
+  const ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
+  // round up as head padding + (bytes + 15), so the compiler can share bytes + 15 between copies of equally sized
+  // ranges that only differ in their head padding. Rounding __padded_bytes up, e.g. with cuda::__round_up_pow2, costs
+  // one SASS instruction per such copy.
+  const ::cuda::std::uint32_t __size = (__head_padding + (__bytes + 15u)) & ~15u;
+  ::cuda::ptx::cp_async_bulk_ignore_oob(
+    ::cuda::ptx::space_shared,
+    ::cuda::ptx::space_global,
+    __smem_dst,
+    __gmem_src,
+    __size,
+    /* ignore left */ __head_padding,
+    /* ignore right */ __size - __padded_bytes,
+    __bar);
+  return __size;
+}
+
+//! @brief Overload of `__bulk_load_unaligned_ignore_oob` taking the pointers to the data, which may be unaligned by
+//! the same amount. Derives the head padding from @p __gmem_src.
+_CCCL_DEVICE_API inline auto __bulk_load_unaligned_ignore_oob(
+  void* __smem_dst, const void* __gmem_src, ::cuda::std::uint32_t __bytes, ::cuda::std::uint64_t* __bar) noexcept
+  -> ::cuda::std::uint32_t
+{
+  const int __head_padding = static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) & 15u);
+  return ::cuda::device::__bulk_load_unaligned_ignore_oob(
+    static_cast<char*>(__smem_dst) - __head_padding,
+    static_cast<const char*>(__gmem_src) - __head_padding,
+    __bytes,
+    __head_padding,
+    __bar);
+}
+#  endif // __cccl_ptx_isa >= 920
+
+//! @brief Cooperatively copies @p __bytes bytes from @p __gmem_src to @p __smem_dst, where both pointers may be
+//! unaligned by the same @p __head_padding bytes past a `_TargetAlignment` boundary. The aligned middle goes through
+//! one `cp.async.bulk` issued by the thread with @p __elected set, head and tail bytes are copied by the threads with
+//! `__thread_rank < _TargetAlignment / _CopyUnit` in units of `_CopyUnit` bytes. Must be called at least by those
+//! threads, with the same arguments except @p __thread_rank; the elected thread must be among them.
+//!
+//! @tparam _CopyUnit Bytes moved per thread for the head and tail. @p __head_padding and @p __bytes must be multiples
+//! of it, e.g. the alignment of the element type.
+//! @param __head_padding Distance in bytes from @p __smem_dst and from @p __gmem_src back to the preceding address
+//! aligned to `_TargetAlignment`. It must be the same for both pointers.
+//! @param __transaction_bytes Incremented by the bytes the bulk copy contributes to the transaction count of @p __bar.
+//! Only the elected thread modifies it.
+//
+// TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
+// TODO(bgruber): we would love to return the transaction bytes instead of taking them by reference. But because of the
+// early returns, conditionally adding to them leads to better codegen (3 SASS instructions less in DeviceTransform).
+template <int _TargetAlignment = 16, int _CopyUnit = 1>
+_CCCL_DEVICE_API void __bulk_load_unaligned_precise(
+  void* __smem_dst,
+  const void* __gmem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint32_t __head_padding,
+  ::cuda::std::uint64_t* __bar,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected,
+  ::cuda::std::uint32_t& __transaction_bytes) noexcept
+{
+  static_assert(_TargetAlignment >= 16 && _TargetAlignment % 16 == 0,
+                "__bulk_load_unaligned_precise: alignment must be a multiple of 16");
+  static_assert(_CopyUnit == 1 || _CopyUnit == 2 || _CopyUnit == 4 || _CopyUnit == 8,
+                "__bulk_load_unaligned_precise: copy unit must be 1, 2, 4 or 8 bytes");
+  using __unit_t = ::cuda::std::__make_nbit_uint_t<_CopyUnit * CHAR_BIT>;
+
+  _CCCL_ASSERT(__head_padding < _TargetAlignment, "__bulk_load_unaligned_precise: invalid head padding");
+  _CCCL_ASSERT(__head_padding % _CopyUnit == 0 && __bytes % _CopyUnit == 0,
+               "__bulk_load_unaligned_precise: head padding and size must be multiples of the copy unit");
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__smem_dst) % _TargetAlignment == __head_padding,
+               "__bulk_load_unaligned_precise: head padding does not match the destination's misalignment");
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % _TargetAlignment == __head_padding,
+               "__bulk_load_unaligned_precise: head padding does not match the source's misalignment");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_dst, ::cuda::device::address_space::shared),
+               "__bulk_load_unaligned_precise: destination must be in the calling block's shared memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_src, ::cuda::device::address_space::global),
+               "__bulk_load_unaligned_precise: source must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__bar, ::cuda::device::address_space::shared),
+               "__bulk_load_unaligned_precise: barrier must be in the calling block's shared memory");
+
+  const auto* __src = reinterpret_cast<const __unit_t*>(__gmem_src);
+  auto* __dst       = reinterpret_cast<__unit_t*>(__smem_dst);
+
+  // handle tiny copies to simplify head/tail bytes computations below
+  if (__bytes < _TargetAlignment)
+  {
+    if (__thread_rank < __bytes / _CopyUnit)
+    {
+      __dst[__thread_rank] = __src[__thread_rank];
+    }
+    return;
+  }
+
+  const ::cuda::std::uint32_t __head_bytes = (_TargetAlignment - __head_padding) % _TargetAlignment;
+  const ::cuda::std::uint32_t __tail_bytes = (__bytes - __head_bytes) % 16;
+  _CCCL_ASSERT(__bytes >= __head_bytes + __tail_bytes, "");
+
+  // launch the bulk copy only from the elected thread
+  if (__elected)
+  {
+    const ::cuda::std::uint32_t __aligned_bytes = __bytes - __head_bytes - __tail_bytes;
+    if (__aligned_bytes > 0)
+    {
+      ::cuda::device::__bulk_load(
+        reinterpret_cast<char*>(__dst) + __head_bytes,
+        reinterpret_cast<const char*>(__src) + __head_bytes,
+        __aligned_bytes,
+        __bar);
+      __transaction_bytes += __aligned_bytes;
+    }
+  }
+
+  // perform both loads first and then both stores, this reduces the total latency
+  const ::cuda::std::uint32_t __head_units = __head_bytes / _CopyUnit;
+  const ::cuda::std::uint32_t __tail_units = __tail_bytes / _CopyUnit;
+  __unit_t __head_value;
+  __unit_t __tail_value;
+  if (__thread_rank < __head_units)
+  {
+    __head_value = __src[__thread_rank];
+  }
+  if (__thread_rank < __tail_units)
+  {
+    __tail_value = __src[(__bytes - __tail_bytes) / _CopyUnit + __thread_rank];
+  }
+  if (__thread_rank < __head_units)
+  {
+    __dst[__thread_rank] = __head_value;
+  }
+  if (__thread_rank < __tail_units)
+  {
+    __dst[(__bytes - __tail_bytes) / _CopyUnit + __thread_rank] = __tail_value;
+  }
+}
+
+//! @brief Overload of `__bulk_load_unaligned_precise` deriving the head padding from @p __gmem_src.
+template <int _TargetAlignment = 16, int _CopyUnit = 1>
+_CCCL_DEVICE_API void __bulk_load_unaligned_precise(
+  void* __smem_dst,
+  const void* __gmem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint64_t* __bar,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected,
+  ::cuda::std::uint32_t& __transaction_bytes) noexcept
+{
+  const int __head_padding =
+    static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_src) % static_cast<unsigned>(_TargetAlignment));
+  ::cuda::device::__bulk_load_unaligned_precise<_TargetAlignment, _CopyUnit>(
+    __smem_dst, __gmem_src, __bytes, __head_padding, __bar, __thread_rank, __elected, __transaction_bytes);
+}
+
+//! @brief Copies @p __bytes bytes from the calling block's shared memory to global memory with one `cp.async.bulk`.
+//! The copy joins the calling thread's current bulk async group; the caller commits the group and waits for it, and
+//! issues a `fence.proxy.async` beforehand if threads wrote the shared memory. Issued by the calling thread alone.
+//! Pointers must be 16-byte aligned and @p __bytes a multiple of 16.
+_CCCL_DEVICE_API inline void
+__bulk_store(void* __gmem_dst, const void* __smem_src, ::cuda::std::uint32_t __bytes) noexcept
+{
+  _CCCL_ASSERT(__bytes % 16 == 0, "__bulk_store: size must be a multiple of 16 bytes");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_dst),
+               "__bulk_store: destination must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_src), "__bulk_store: source must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_dst, ::cuda::device::address_space::global),
+               "__bulk_store: destination must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_src, ::cuda::device::address_space::shared),
+               "__bulk_store: source must be in the calling block's shared memory");
+
+  ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __gmem_dst, __smem_src, __bytes);
+}
+
+#  if __cccl_ptx_isa >= 860
+//! @brief Warp-cooperatively copies @p __bytes bytes of data starting @p __head_padding bytes after the 16-byte aligned
+//! pointers @p __smem_src and @p __gmem_dst from shared to global memory. The aligned middle goes through one
+//! `cp.async.bulk` issued by the thread with @p __elected set; the head and tail up to the next 16-byte boundaries are
+//! stored with byte-masked 16-byte bulk copies on SM100+ (issued by the elected thread) and with plain byte stores by
+//! the threads with `__thread_rank < 16` otherwise. The bulk copies join the calling thread's current bulk async group;
+//! the caller commits and waits for the group, and issues a `fence.proxy.async` beforehand if threads wrote the
+//! shared memory. Must be called by a full warp with the same arguments except @p __thread_rank.
+//!
+//! @param __head_padding Distance in bytes from the aligned pointers to the first byte of data, in [0, 16).
+//
+// TODO(bgruber): __thread_rank and __elected should be replaced by a group parameter once we have a group API
+_CCCL_DEVICE_API inline void __bulk_store_unaligned(
+  void* __gmem_dst,
+  const void* __smem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint32_t __head_padding,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected) noexcept
+{
+  _CCCL_ASSERT(__head_padding < 16, "__bulk_store_unaligned: invalid head padding");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__gmem_dst),
+               "__bulk_store_unaligned: destination must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<16>(__smem_src),
+               "__bulk_store_unaligned: source must be 16-byte aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__gmem_dst, ::cuda::device::address_space::global),
+               "__bulk_store_unaligned: destination must be in global memory");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__smem_src, ::cuda::device::address_space::shared),
+               "__bulk_store_unaligned: source must be in the calling block's shared memory");
+
+  auto* __dst       = static_cast<char*>(__gmem_dst);
+  const auto* __src = static_cast<const char*>(__smem_src);
+
+  ::cuda::std::uint32_t __padded_bytes = __head_padding + __bytes;
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+  // For some reason the optimizer propagates information from this computation to the masked bulk copies below and
+  // generates an unaligned access error. Making the value opaque prevents the propagation. It also solves the issue
+  // described in nvbug 5848313 by accident on nvcc 13.2+.
+  asm volatile("" : "+r"(__padded_bytes));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+  const ::cuda::std::uint32_t __tail_bytes   = __padded_bytes % 16; // bytes after the last 16-byte boundary
+  const ::cuda::std::uint32_t __size         = __padded_bytes - __tail_bytes; // rounded down
+  const bool __do_start                      = __head_padding > 0;
+  const bool __do_end                        = __tail_bytes > 0;
+  const ::cuda::std::uint32_t __middle_start = __do_start ? 16u : 0u;
+  const ::cuda::std::uint32_t __middle_bytes = __size - __middle_start;
+
+  constexpr ::cuda::std::uint16_t __full_mask = 0xFFFF;
+  const auto __mask_start                     = static_cast<::cuda::std::uint16_t>(__full_mask << __head_padding);
+  const auto __mask_end = static_cast<::cuda::std::uint16_t>(__full_mask >> ((16 - __tail_bytes) % 16));
+
+  // stores a subset of 16 bytes at a 16-byte aligned position
+  auto __store_masked =
+    [&](char* __block_dst,
+        const char* __block_src,
+        ::cuda::std::uint16_t __mask,
+        ::cuda::std::uint32_t __first,
+        ::cuda::std::uint32_t __last) {
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_100,
+        (if (__elected) {
+          ::cuda::ptx::cp_async_bulk_cp_mask(
+            ::cuda::ptx::space_global, ::cuda::ptx::space_shared, __block_dst, __block_src, 16, __mask);
+        }),
+        ((void) __mask; if (__first <= __thread_rank && __thread_rank < __last) {
+          __block_dst[__thread_rank] = __block_src[__thread_rank];
+        }));
+    };
+
+  // with head padding, the data sits within one 16-byte block only if it ends by the first 16-byte boundary
+  if (!__do_start || __padded_bytes > 16)
+  {
+    // The large copy goes first, so that the arithmetic of the masked copies can hide behind it. It has zero bytes
+    // if the data does not cover a full 16-byte block.
+    if (__elected)
+    {
+      char* __middle_dst = __dst + __middle_start;
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
+      asm volatile("" : "+l"(__middle_dst));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      ::cuda::device::__bulk_store(__middle_dst, __src + __middle_start, __middle_bytes);
+    }
+    if (__do_start)
+    {
+#    if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      // need to work around yet another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8838
+      asm volatile("" : "+l"(__dst));
+      asm volatile("" : "+l"(__src));
+#    endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+      __store_masked(__dst, __src, __mask_start, __head_padding, 16);
+    }
+    if (__do_end)
+    {
+      char* __end_dst = __dst + __size;
+#    if _CCCL_CUDA_COMPILER(NVHPC)
+      // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
+      // when printed, so let's shake the optimizer a bit.
+      asm volatile("" : "+l"(__end_dst));
+#    endif // _CCCL_CUDA_COMPILER(NVHPC)
+      __store_masked(__end_dst, __src + __size, __mask_end, 0, __tail_bytes);
+    }
+  }
+  else
+  {
+    // everything sits within one 16-byte block
+    // not __mask_start & __mask_end: `ptxas fatal   : (C7907) Internal compiler error` before nvcc 13.2, see nvbug
+    // 5848313
+    __store_masked(__dst,
+                   __src,
+                   static_cast<::cuda::std::uint16_t>(__mask_start & (__full_mask >> (16 - __padded_bytes))),
+                   __head_padding,
+                   __padded_bytes);
+  }
+}
+
+//! @brief Overload of `__bulk_store_unaligned` taking the pointers to the data, which may be unaligned by the same
+//! amount. Derives the head padding from @p __gmem_dst.
+_CCCL_DEVICE_API inline void __bulk_store_unaligned(
+  void* __gmem_dst,
+  const void* __smem_src,
+  ::cuda::std::uint32_t __bytes,
+  ::cuda::std::uint32_t __thread_rank,
+  bool __elected) noexcept
+{
+  const int __head_padding = static_cast<int>(reinterpret_cast<::cuda::std::uintptr_t>(__gmem_dst) & 15u);
+  ::cuda::device::__bulk_store_unaligned(
+    static_cast<char*>(__gmem_dst) - __head_padding,
+    static_cast<const char*>(__smem_src) - __head_padding,
+    __bytes,
+    __head_padding,
+    __thread_rank,
+    __elected);
+}
+#  endif // __cccl_ptx_isa >= 860
+
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
+
+#endif // _CUDA___ASYNC_COPY

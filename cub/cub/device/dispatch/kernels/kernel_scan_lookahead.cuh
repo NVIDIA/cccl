@@ -36,6 +36,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/aligned_ptr.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: keep
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -346,10 +347,12 @@ struct lookahead_scan_closure
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<in_out_t>& phaseInOutL,
-    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
+    int valid_items) const
   {
     warpspeed::SmemRef refInOutL = phaseInOutL.acquireRef();
-    _CUB::detail::warpspeed::squadLoadBulk(squad, refInOutL, loadInfo);
+    _CUB::detail::warpspeed::squadLoadBulk(
+      squad, refInOutL, loadInfo, static_cast<::cuda::std::uint32_t>(valid_items * sizeof(InputT)));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -397,7 +400,7 @@ struct lookahead_scan_closure
     int valid_items,
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
-    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
     int idxTile,
     int num_tiles) const
   {
@@ -416,7 +419,7 @@ struct lookahead_scan_closure
       warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
       AccumT regInput[elemPerThread];
       const auto* smem_data_start =
-        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes);
+        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.__head_padding);
       // in the last tile, we load some invalid elements, but don't process them later
       _CUB::detail::warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
 
@@ -506,7 +509,7 @@ struct lookahead_scan_closure
     warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
     bool is_first_tile,
     int valid_items,
-    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
+    const ::cuda::device::__aligned_ptr<InputT>& loadInfo,
     ::cuda::std::size_t idxTileBase) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
     // need to init these to silence nvcc warning about reading uninitialized data
@@ -696,9 +699,7 @@ struct lookahead_scan_closure
 
     // We are always loading a full tile even for the last tile, so we are loading invalid data
     _CUB::detail::warpspeed::squadLoadSmem(
-      squad,
-      regAggrInclusive,
-      reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+      squad, regAggrInclusive, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.__head_padding));
 
     _CCCL_IKET_RANGE_PUSH(ThreadScan);
     // Perform inclusive scan of register array in current thread.
@@ -716,11 +717,10 @@ struct lookahead_scan_closure
     ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
     if constexpr (sizeof(OutputT) <= sizeof(InputT))
     {
-      warpspeed::CpAsyncOobInfo storeInfo =
-        _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+      const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
 
       _CUB::detail::warpspeed::squadStoreSmem(
-        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regAggrInclusive);
+        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.__head_padding), regAggrInclusive);
     }
     else
     {
@@ -729,17 +729,17 @@ struct lookahead_scan_closure
       static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
       for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
       {
-        const int chunk_size = (::cuda::std::min) (valid_items - chunk_offset, elem_per_chunk);
-        warpspeed::CpAsyncOobInfo storeInfo =
-          _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
+        const int chunk_size  = (::cuda::std::min) (valid_items - chunk_offset, elem_per_chunk);
+        const auto storeInfo  = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase + chunk_offset, 16);
+        const auto storeBytes = static_cast<::cuda::std::uint32_t>(chunk_size * sizeof(OutputT));
 
         // only stage elements of the current chunk to SMEM
-        // storeInfo.smemStartSkipBytes < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-        _CCCL_ASSERT(storeInfo.smemStartSkipBytes + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
+        // storeInfo.__head_padding < 16 and smem_output_tile contains extra 16 bytes, so we should fit
+        _CCCL_ASSERT(storeInfo.__head_padding + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
         _CUB::detail::warpspeed::squadStoreSmemPartial(
           squad,
-          reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each
-                                                                                       // iteration
+          reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.__head_padding), // different in each
+                                                                                   // iteration
           regAggrInclusive,
           chunk_offset,
           chunk_offset + chunk_size);
@@ -750,7 +750,8 @@ struct lookahead_scan_closure
         squad.syncThreads();
 
         // Store result to global memory using TMA
-        _CUB::detail::warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+        _CUB::detail::warpspeed::squadStoreBulkSync(
+          squad, storeInfo, storeBytes, smem_output_tile + storeInfo.__head_padding);
 
         squad.syncThreads();
       }
@@ -770,10 +771,13 @@ struct lookahead_scan_closure
     warpspeed::SmemRef refInOutS = phaseInOutS.acquireRef();
     if constexpr (!scanSquadStores)
     {
-      const warpspeed::CpAsyncOobInfo storeInfo =
-        _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+      const auto storeInfo = ::cuda::device::__make_aligned_ptr(params.ptrOut + idxTileBase, 16);
       // Blocks until the bulk store finished reading from shared memory, then refInOutS is released for the next load
-      _CUB::detail::warpspeed::squadStoreBulkSync(squad, storeInfo, refInOutS.data().inout);
+      _CUB::detail::warpspeed::squadStoreBulkSync(
+        squad,
+        storeInfo,
+        static_cast<::cuda::std::uint32_t>(valid_items * sizeof(OutputT)),
+        refInOutS.data().inout + storeInfo.__head_padding);
     }
   }
 
@@ -843,8 +847,7 @@ struct lookahead_scan_closure
       const int valid_items =
         static_cast<int>((cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
-      const warpspeed::CpAsyncOobInfo loadInfo =
-        _CUB::detail::warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
+      const auto loadInfo     = ::cuda::device::__make_aligned_ptr(params.ptrIn + idxTileBase, 16);
 
       // Async loading and async tile index stealing are very lightweight, so one squad is enough to do both
       // slice is intentional, see SquadDesc::operator==()
@@ -853,7 +856,7 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
 
         _CCCL_IKET_RANGE_PUSH(Load);
-        load_current_tile(squad, phaseInOutL, loadInfo);
+        load_current_tile(squad, phaseInOutL, loadInfo, valid_items);
         _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_PUSH(NextIdx);
