@@ -349,7 +349,7 @@ public:
   /**
    * @brief Returns a string representation of the allocator.
    *
-   * @return std::string The string "cached_block_allocator".
+   * @return std::string The string "cached_block_allocator_fifo".
    */
   ::std::string to_string() const override
   {

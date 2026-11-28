@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 // Runs mul/add/div/sub/fma through the raw __fpbits64 emulation cores and checks
-// each against the native double reference. Returns true on success.
+// each against the native double reference. Asserts on failure.
 TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
   cuda::__fpbits64 ex = cuda::__fp64emu_from_double(dx);

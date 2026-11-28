@@ -23,7 +23,7 @@ TEST_FUNC constexpr void test_int_conversion_operator()
   // Construction from an integral type is always noexcept
   static_assert(cuda::std::is_nothrow_constructible_v<T, Int>);
 
-  // Construction from an integral type is always implicit
+  // Conversion to an integral type is always implicit
   static_assert(cuda::std::is_convertible_v<T, Int>);
 
   // TODO: check conversion to an integral type

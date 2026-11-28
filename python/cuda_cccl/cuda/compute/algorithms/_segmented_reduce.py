@@ -177,7 +177,7 @@ def make_segmented_reduce(
     h_init: np.ndarray | GpuStruct,
     compute_capability=None,
 ):
-    """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
+    """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``h_init``.
 
     Example:
         Below, ``make_segmented_reduce`` is used to create a segmented reduction object that can be reused.
@@ -195,7 +195,7 @@ def make_segmented_reduce(
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
-        init: Numpy array storing initial value of the reduction
+        h_init: Numpy array storing initial value of the reduction
         compute_capability: Compute capability, or list of capabilities, to
             build for ahead of time. Accepts a packed int (e.g. ``90``), a
             ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list

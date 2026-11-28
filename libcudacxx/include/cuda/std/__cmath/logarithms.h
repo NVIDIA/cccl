@@ -380,7 +380,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log2)
 
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
 #if _CCCL_CUDA_COMPILER(CLANG)

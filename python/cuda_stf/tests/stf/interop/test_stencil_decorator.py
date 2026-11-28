@@ -20,7 +20,7 @@ def laplacian_5pt_kernel(u_in, u_out, dx, dy):
     """
     Compute a 5-point Laplacian on u_in and write the result to u_out.
 
-    Grid-stride 2-D kernel. Assumes C-contiguous (row-major) inputs.
+    One-thread-per-cell 2-D kernel. Assumes C-contiguous (row-major) inputs.
     Boundary cells are copied unchanged.
     """
     coef_x = 1.0 / (dx * dx)

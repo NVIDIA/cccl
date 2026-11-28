@@ -56,4 +56,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MEMORY_IS_ALIGN_H
+#endif // _CUDA___MEMORY_IS_ALIGNED_H

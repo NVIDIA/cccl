@@ -1244,7 +1244,7 @@ struct DeviceTopK
   //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   The value of K, which is the number of largest keys to find from `num_items` keys. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env
@@ -1663,7 +1663,7 @@ struct DeviceTopK
   //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   The value of K, which is the number of lowest keys to find from `num_items` keys. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env

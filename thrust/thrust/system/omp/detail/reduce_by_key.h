@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/*! \file reduce.h
- *  \brief OpenMP implementation of reduce algorithms.
+/*! \file reduce_by_key.h
+ *  \brief OpenMP implementation of reduce_by_key.
  */
 
 #pragma once

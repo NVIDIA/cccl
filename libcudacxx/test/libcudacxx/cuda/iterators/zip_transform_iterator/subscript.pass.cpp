@@ -32,7 +32,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter[2]), int>);
   }
 
-  { // single iterator, operator* is const
+  { // single iterator, operator[] is const
     const cuda::zip_transform_iterator iter{TimesTwo{}, a};
     assert(iter[2] == TimesTwo{}(a[2]));
     static_assert(noexcept(iter[2]));
@@ -46,7 +46,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter[2]), int>);
   }
 
-  { // single iterator, operator* is const, mutable functor
+  { // single iterator, operator[] is const, mutable functor
     const cuda::zip_transform_iterator iter{TimesTwoMutable{}, a};
     assert(iter[2] == TimesTwoMutable{}(a[2]));
     static_assert(noexcept(iter[2]));
@@ -60,7 +60,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter[2]), int>);
   }
 
-  { // single iterator, operator* is const,  may throw
+  { // single iterator, operator[] is const,  may throw
     const cuda::zip_transform_iterator iter{TimesTwoMayThrow{}, a};
     assert(iter[2] == TimesTwoMayThrow{}(a[2]));
     static_assert(!noexcept(iter[2]));

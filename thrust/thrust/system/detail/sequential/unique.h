@@ -72,6 +72,6 @@ _CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator> unique_co
   }
 
   return count;
-} // end unique()
+} // end unique_count()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

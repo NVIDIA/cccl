@@ -24,7 +24,7 @@
 #include <cuda/iterator>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #include "test_iterators.h"
 #include "types.h"

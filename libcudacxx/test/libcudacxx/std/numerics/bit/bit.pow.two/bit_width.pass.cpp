@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // template <class T>
-//   constexpr T log2p1(T x) noexcept;
+//   constexpr int bit_width(T x) noexcept;
 
 // If x == 0, 0; otherwise one plus the base-2 logarithm of x, with any fractional part discarded.
 

@@ -256,7 +256,7 @@ copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readabilit
  *  is advanced one position if <tt>pred(*(first+n))</tt>. Otherwise, no assignment
  *  occurs and \p result is not advanced.
  *
- *  The algorithm's execution is parallelized as determined by \p system.
+ *  The algorithm's execution is parallelized as determined by \p exec.
  *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the sequence from which to copy.

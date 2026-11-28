@@ -63,7 +63,7 @@ TEST_FUNC constexpr void test_signed(int zero_value)
 
   test<I>(maxVal, I{-1}, -maxVal, zero_value);
   test<I>(maxVal, I{0}, I{0}, zero_value);
-  test<I>(maxVal, I{1}, maxVal, zero_value); // saturated
+  test<I>(maxVal, I{1}, maxVal, zero_value);
   test<I>(maxVal, minVal, minVal, zero_value); // saturated
 
   // No saturation (no limit values)

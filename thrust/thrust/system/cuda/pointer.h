@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2020, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/*! \file thrust/system/cuda/memory.h
- *  \brief Managing memory associated with Thrust's Standard C++ system.
+/*! \file thrust/system/cuda/pointer.h
+ *  \brief Managing memory associated with Thrust's CUDA system.
  */
 
 #pragma once

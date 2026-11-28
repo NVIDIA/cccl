@@ -349,7 +349,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         // Solve the nonlinear system using generic Newton solver
         newton_solver_no_while(
           ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback, use_while == 1);
-      } // repeat_guard automatically manages the loop condition
+      }
 
       // Dump solution after each substep block
       const size_t current_timestep = (outer + 1) * substeps;

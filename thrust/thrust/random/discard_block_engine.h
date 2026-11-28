@@ -78,7 +78,7 @@ public:
   using base_type = Engine;
 
   /*! \typedef result_type
-   *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
+   *  \brief The type of the unsigned integer produced by this \p discard_block_engine.
    */
   using result_type = typename base_type::result_type;
 

@@ -2021,12 +2021,12 @@ public:
   //!   point to the sorted output keys
   //!
   //! @param[in] num_items
-  //!   The total number of items within the segmented array
-  //!
-  //! @param[in] num_segments
   //!   The total number of items within the segmented array, including items not
   //!   covered by segments. `num_items` should match the largest element within
   //!   the range `[d_end_offsets, d_end_offsets + num_segments)`.
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst

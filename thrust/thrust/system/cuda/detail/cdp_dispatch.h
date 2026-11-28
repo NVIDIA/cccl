@@ -25,10 +25,8 @@
 /**
  * \def THRUST_CDP_DISPATCH
  *
- * If CUDA Dynamic Parallelism / CUDA Nested Parallelism is available, always
- * run the parallel implementation. Otherwise, run the parallel implementation
- * when called from the host, and fallback to the sequential implementation on
- * the device.
+ * Run the parallel implementation when called from the host, and fallback to
+ * the sequential implementation on the device.
  *
  * `par_impl` and `seq_impl` are blocks of C++ statements enclosed in
  * parentheses, similar to NV_IF_TARGET blocks:

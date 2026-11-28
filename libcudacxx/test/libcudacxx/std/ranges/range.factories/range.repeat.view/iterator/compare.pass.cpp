@@ -23,7 +23,7 @@ TEST_FUNC constexpr bool test()
     using R = cuda::std::ranges::repeat_view<int>;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     static_assert(cuda::std::three_way_comparable<cuda::std::ranges::iterator_t<R>>);
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
     R r(42);
     auto iter1 = r.begin();
@@ -60,7 +60,7 @@ TEST_FUNC constexpr bool test()
     assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
 
     static_assert(cuda::std::same_as<decltype(iter1 <=> iter2), cuda::std::strong_ordering>);
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   // Test bound
@@ -68,7 +68,7 @@ TEST_FUNC constexpr bool test()
     using R = cuda::std::ranges::repeat_view<int, int>;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     static_assert(cuda::std::three_way_comparable<cuda::std::ranges::iterator_t<R>>);
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
     R r(42, 10);
     auto iter1 = r.begin();
@@ -103,7 +103,7 @@ TEST_FUNC constexpr bool test()
     assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
     assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
     assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   return true;

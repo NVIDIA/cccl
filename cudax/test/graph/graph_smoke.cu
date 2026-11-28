@@ -138,10 +138,10 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
   auto node1        = g.add(empty_node_descriptor{});
   auto node1_handle = node1.get();
 
-  // Move construct a new node
+  // Copy construct a new node
   auto node2 = node1;
 
-  // Verify the handle was moved
+  // Verify the handle was copied
   REQUIRE(node2.get() == node1_handle);
   REQUIRE(node1.get() == node1_handle);
 

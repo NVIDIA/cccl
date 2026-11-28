@@ -81,7 +81,7 @@ void test()
     test_kernel<<<1, 1>>>(map, sizeof(mapping));
   }
 
-  { // all dynamic
+  { // all static
     using extents = cuda::std::extents<size_t, 42, 1337, 7>;
     using mapping = cuda::std::layout_stride::mapping<extents>;
     extents ext{};

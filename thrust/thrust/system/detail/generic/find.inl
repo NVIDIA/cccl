@@ -118,6 +118,6 @@ _CCCL_HOST_DEVICE_API InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred));
-} // end find()
+} // end find_if_not()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

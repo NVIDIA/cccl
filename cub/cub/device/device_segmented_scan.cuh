@@ -1934,7 +1934,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
+  //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
@@ -2206,7 +2206,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! The code snippet below illustrates the exclusive segmented prefix scan of an ``int``
+  //! The code snippet below illustrates the inclusive segmented prefix scan of an ``int``
   //! device vector.
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu

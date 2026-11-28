@@ -9,18 +9,18 @@
 //===----------------------------------------------------------------------===//
 
 // template<class ExecutionPolicy, class ForwardIterator1, class ForwardIterator2, class BinaryPred>
-// pair<ForwardIterator1, ForwardIterator2> mismatch(ExecutionPolicy&& exec
+// pair<ForwardIterator1, ForwardIterator2> mismatch(ExecutionPolicy&& exec,
 //                                                   ForwardIterator1 first1,
 //                                                   ForwardIterator1 last1,
 //                                                   ForwardIterator2 first2,
 //                                                   BinaryPred pred);
 
 // template<class ExecutionPolicy, class ForwardIterator1, class ForwardIterator2, class BinaryPred>
-// pair<ForwardIterator1, ForwardIterator2> mismatch(ExecutionPolicy&& exec
+// pair<ForwardIterator1, ForwardIterator2> mismatch(ExecutionPolicy&& exec,
 //                                                   ForwardIterator1 first1,
 //                                                   ForwardIterator1 last1,
 //                                                   ForwardIterator2 first2,
-//                                                   ForwardIterator2 first2,
+//                                                   ForwardIterator2 last2,
 //                                                   BinaryPred pred);
 
 #include <cuda/iterator>

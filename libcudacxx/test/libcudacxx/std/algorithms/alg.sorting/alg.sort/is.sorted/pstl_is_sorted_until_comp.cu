@@ -56,7 +56,7 @@ void test_is_sorted_until(const Policy& policy, c2h::device_vector<T>& input)
   input[42] = static_cast<T>(1337);
   { // unsorted contiguous range
     const auto res = cuda::std::is_sorted_until(policy, input.begin(), input.end(), cuda::std::greater<>{});
-    // 969 < 1337
+    // 959 < 1337
     CHECK(res == cuda::std::next(input.begin(), 42));
     CHECK(cuda::std::is_sorted(policy, input.begin(), res, cuda::std::greater<>{}));
   }

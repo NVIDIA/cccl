@@ -478,7 +478,7 @@ struct AgentRadixSortUpsweep
    * @brief Extract counts
    *
    * @param[out] bin_count
-   *   The exclusive prefix sum for the digits
+   *   The per-bin counts for the digits
    *   [(threadIdx.x * BinsTrackedPerThread) ... (threadIdx.x * BinsTrackedPerThread) + BinsTrackedPerThread -
    * 1]
    */

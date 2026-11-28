@@ -727,7 +727,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(const TestItem& item, int b
   cuda::std::strncpy(buff + 1, str, len);
   test_from_chars<T>(buff, len + 1, base, 0, cuda::std::errc::invalid_argument);
 
-  // 3. Test a string that has white characters at the beginning
+  // 4. Test a string that has white characters at the beginning
   buff[0] = ' ';
   cuda::std::strncpy(buff + 1, str, len);
   test_from_chars<T>(buff, len + 1, base, 0, cuda::std::errc::invalid_argument);

@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isnan)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isnan)
 
 #if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
 #  undef _CCCL_BUILTIN_ISNAN

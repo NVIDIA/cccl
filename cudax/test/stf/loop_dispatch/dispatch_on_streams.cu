@@ -41,5 +41,5 @@ int main()
   }
 
   ctx.finalize();
-#endif // ^^^ _CCCL_CKT_AT_LEAST(12, 4) ^^^
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
 }

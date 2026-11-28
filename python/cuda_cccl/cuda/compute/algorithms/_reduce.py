@@ -202,7 +202,7 @@ def make_reduce_into(
     h_init: np.ndarray | GpuStruct | None = None,
     **kwargs,
 ):
-    """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
+    """Computes a device-wide reduction using the specified binary ``op`` and initial value ``h_init``.
 
     Example:
         Below, ``make_reduce_into`` is used to create a reduction object that can be reused.

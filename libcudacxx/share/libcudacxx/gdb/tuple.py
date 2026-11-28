@@ -16,7 +16,7 @@ import gdb.printing
 
 
 def _is_cuda_tuple(value_type: gdb.Type) -> bool:
-    # strip_typedefs resolves aliases that can hide accessibility properties.
+    # canonical_type resolves aliases that can hide accessibility properties.
     value_type = cccl_common.canonical_type(value_type)
     public_name = cccl_common.public_type_name(value_type)
     template_name = cccl_common.template_name(value_type)
