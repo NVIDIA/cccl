@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -16,8 +16,7 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/normal_distribution.h>
 
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -82,7 +81,7 @@ template <typename RealType>
 _CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
-  return ::cuda::std::numeric_limits<RealType>::max();
+  return (::cuda::std::numeric_limits<RealType>::max)();
 } // end normal_distribution::max()
 
 template <typename RealType>

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,9 +27,8 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__host_stdlib/math.h>
-#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
@@ -317,7 +316,7 @@ public:
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base                            = typename ostream_type::ios_base;
     const typename ios_base::fmtflags __flags = __os.flags();
-    __os.flags(::std::ios_base::dec | ::std::ios_base::left | ::std::ios_base::fixed);
+    __os.flags(ios_base::dec | ios_base::left | ios_base::fixed);
     __os << __x.mean();
     __os.flags(__flags);
     return __os;

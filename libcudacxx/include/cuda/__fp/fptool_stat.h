@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -114,7 +114,7 @@
 //!
 //! Partial cancellation is measured as `max(ilogb of the operands) - ilogb of the result`,
 //! the number of leading bits that cancelled, against a threshold of half the significand:
-//! 23 bits of 46 for `fp32mp2`, 52 of 104 for `fp64mp2`. It is invisible in
+//! 24 bits of 48 for `fp32mp2`, 53 of 106 for `fp64mp2`. It is invisible in
 //! `full_cancel_count`, the result not being zero. What it measures is the drop in
 //! magnitude, which is not the same as bits gone from the representation: a cancellation
 //! this deep usually leaves fewer surviving bits than a single limb holds, so the result

@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,19 +22,23 @@
 #  pragma system_header
 #endif // no system header
 
+// The pragma namespaces `clang` and `GCC` are not reserved identifiers, so stringize the pragmas without expanding
+// user macros of the same name.
+#define _CCCL_DIAG_PRAGMA(...) _Pragma(#__VA_ARGS__)
+
 // Enable us to selectively silence host compiler warnings
 #if _CCCL_COMPILER(CLANG)
-#  define _CCCL_DIAG_PUSH                     _CCCL_PRAGMA(clang diagnostic push)
-#  define _CCCL_DIAG_POP                      _CCCL_PRAGMA(clang diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_PRAGMA(clang diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_PUSH                     _CCCL_DIAG_PRAGMA(clang diagnostic push)
+#  define _CCCL_DIAG_POP                      _CCCL_DIAG_PRAGMA(clang diagnostic pop)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_DIAG_PRAGMA(clang diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(GCC)
-#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
-#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_DIAG_PRAGMA(GCC diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_DIAG_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
-#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_PRAGMA(GCC diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_DIAG_PRAGMA(GCC diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(NVHPC)
@@ -62,7 +66,7 @@
 
 // Enable us to selectively silence cuda compiler warnings
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#  ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic pop)
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
@@ -137,7 +141,7 @@
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
-#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
+#  ifndef _LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
 #    define _CCCL_USE_PRAGMA_MSVC_WARNING
 #  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
 #endif // !_CCCL_COMPILER(MSVC)

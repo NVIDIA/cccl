@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cub/util_device.cuh>
@@ -51,7 +51,9 @@ struct SetOpsPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SetOpsPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SetOpsPolicy& p)
   {
     return os << "SetOpsPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier

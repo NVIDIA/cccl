@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,8 +19,7 @@
 #include <thrust/random/detail/normal_distribution_base.h>
 #include <thrust/random/detail/random_core_access.h>
 
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN

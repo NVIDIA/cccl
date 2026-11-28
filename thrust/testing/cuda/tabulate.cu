@@ -1,6 +1,10 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/system/cuda/execution_policy.h>
 #include <thrust/tabulate.h>
+
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

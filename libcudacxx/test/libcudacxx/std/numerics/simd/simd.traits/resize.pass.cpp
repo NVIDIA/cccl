@@ -11,14 +11,14 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // template<simd-size-type N, class V> struct resize;
 // template<simd-size-type N, class V> using resize_t = typename resize<N, V>::type;
 
 #include <cuda/__complex_>
-#include <cuda/std/__simd_>
 #include <cuda/std/complex>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include <nv/target>

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -59,7 +59,9 @@ struct SegmentedReduceWarpReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReduceWarpReducePolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedReduceWarpReducePolicy& p)
   {
     return os << "SegmentedReduceWarpReducePolicy { .threads_per_block = " << p.threads_per_block
               << ", .threads_per_warp = " << p.threads_per_warp << ", .items_per_thread = " << p.items_per_thread
@@ -89,7 +91,9 @@ struct SegmentedReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReducePolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedReducePolicy& p)
   {
     return os << "SegmentedReducePolicy { .large_reduce = " << p.large_reduce
               << ", .medium_reduce = " << p.medium_reduce << ", .small_reduce = " << p.small_reduce << " }";

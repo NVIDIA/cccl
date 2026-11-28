@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -17,7 +17,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cub/util_device.cuh>
@@ -60,7 +60,9 @@ struct BatchedCopySmallBufferPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopySmallBufferPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const BatchedCopySmallBufferPolicy& policy)
   {
     return os
         << "BatchedCopySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
@@ -93,7 +95,9 @@ struct BatchedCopyLargeBufferPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLargeBufferPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const BatchedCopyLargeBufferPolicy& policy)
   {
     return os << "BatchedCopyLargeBufferPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .bytes_per_thread = " << policy.bytes_per_thread << " }";
@@ -120,7 +124,9 @@ struct BatchedCopyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLookbackPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const BatchedCopyLookbackPolicy& policy)
   {
     return os << "BatchedCopyLookbackPolicy { .small_buffer = " << policy.small_buffer
               << ", .large_buffer = " << policy.large_buffer << " }";
@@ -148,7 +154,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, BatchedCopyAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -174,7 +182,9 @@ struct BatchedCopyPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyPolicy& policy)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const BatchedCopyPolicy& policy)
   {
     return os << "BatchedCopyPolicy { .algorithm = " << policy.algorithm << ", .lookback = " << policy.lookback << " }";
   }

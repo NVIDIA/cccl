@@ -13,10 +13,10 @@
 
 // [simd.bit], bit_repeat
 
-#include <cuda/std/__simd_>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
@@ -108,6 +108,19 @@ TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
   static_assert(!cuda::std::is_invocable_v<bit_repeat_function, simd::vec<unsigned, 0>, int>);
 }
 
+template <class Count>
+TEST_HOST_DEVICE_FUNC constexpr void test_wide_count()
+{
+  using Vec = simd::vec<unsigned long long, 4>;
+  Vec input(2ULL);
+  simd::vec<Count, 4> counts(Count{0x1'0000'0001});
+  auto result = simd::bit_repeat(input, counts);
+  for (int i = 0; i < Vec::size(); ++i)
+  {
+    assert(result[i] == input[i]);
+  }
+}
+
 TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   _SIMD_BIT_TEST_UNSIGNED_TYPES(test_bit_repeat)
@@ -116,6 +129,8 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_bit_repeat<__uint128_t, 4>{}();
 #endif
   test_constraints();
+  test_wide_count<long long>();
+  test_wide_count<unsigned long long>();
   return true;
 }
 

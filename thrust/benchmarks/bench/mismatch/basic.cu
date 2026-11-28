@@ -6,8 +6,9 @@
 #include <thrust/mismatch.h>
 
 #include <cuda/iterator>
-#include <cuda/memory_pool>
-#include <cuda/stream>
+
+#include <cstddef>
+#include <vector>
 
 #include "nvbench_helper.cuh"
 

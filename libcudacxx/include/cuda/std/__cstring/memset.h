@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,7 +35,7 @@ using ::size_t;
 
 _CCCL_HOST_DEVICE_API inline void* memset(void* __dest, int __ch, size_t __count) noexcept
 {
-  _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: source range is invalid");
+  _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memset: destination range is invalid");
   return ::memset(__dest, __ch, __count);
 }
 

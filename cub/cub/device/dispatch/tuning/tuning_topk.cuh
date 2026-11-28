@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/is_same.h>
 
 #if _CCCL_HAS_CONCEPTS()
@@ -72,7 +72,9 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const topk_policy& p)
   {
     return os << "topk_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -132,7 +134,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
-      const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
+      const int items_per_thread = (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / key_size);
       return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
     }
 

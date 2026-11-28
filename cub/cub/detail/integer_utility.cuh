@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,6 +15,8 @@
 
 #include <cub/detail/type_traits.cuh>
 
+#include <cuda/__functional/operator_properties.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -92,7 +94,7 @@ template <typename T>
   using signed_t = ::cuda::std::make_signed_t<::cuda::std::__fp_storage_of_t<T>>;
 
   const auto bits = static_cast<signed_t>(::cuda::std::__fp_get_storage(value));
-  return bits < 0 ? static_cast<signed_t>(bits ^ ::cuda::std::numeric_limits<signed_t>::max()) : bits;
+  return bits < 0 ? static_cast<signed_t>(bits ^ (::cuda::std::numeric_limits<signed_t>::max)()) : bits;
 }
 
 // Inverse mapping from (comparable) signed integers to floating-point values
@@ -103,8 +105,21 @@ template <typename T, typename Int>
   using storage_t = ::cuda::std::__fp_storage_of_t<T>;
   static_assert(::cuda::std::is_same_v<Int, ::cuda::std::make_signed_t<storage_t>>, "Int must match the storage of T");
 
-  const auto bits = value < 0 ? static_cast<Int>(value ^ ::cuda::std::numeric_limits<Int>::max()) : value;
+  const auto bits = value < 0 ? static_cast<Int>(value ^ (::cuda::std::numeric_limits<Int>::max)()) : value;
   return ::cuda::std::__fp_from_storage<T>(static_cast<storage_t>(bits));
+}
+
+template <typename T, typename ReductionOp>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE auto floating_point_min_max_conversion(const T input, ReductionOp)
+  -> decltype(_CUB::detail::floating_point_to_comparable_int(input))
+{
+  static_assert(is_floating_point_comparable_v<T>, "Unsupported floating-point type");
+  static_assert(::cuda::__is_cuda_minimum_v<ReductionOp, T> || ::cuda::__is_cuda_maximum_v<ReductionOp, T>,
+                "Reduction operator must be minimum or maximum");
+
+  const auto value            = _CUB::detail::floating_point_to_comparable_int(input);
+  constexpr auto nan_identity = ::cuda::identity_element<ReductionOp, decltype(value)>();
+  return ::cuda::std::isnan(input) ? nan_identity : value;
 }
 } // namespace detail
 

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -182,7 +182,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // The staging array is accessed as vectors and as T, so it needs the stricter of the two alignments
-  constexpr auto staging_alignment = ::cuda::std::max(alignof(vector_t), alignof(T));
+  constexpr auto staging_alignment = (::cuda::std::max) (alignof(vector_t), alignof(T));
 
   // Add the alignment check to ensure the vectorized storing can proceed.
   if (::cuda::std::is_sufficiently_aligned<staging_alignment>(block_ptr))
@@ -577,7 +577,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, BlockStoreAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }

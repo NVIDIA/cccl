@@ -11,13 +11,13 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // template<class T, simd-size-type N> using vec  = ...;
 // template<class T, simd-size-type N> using mask = ...;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

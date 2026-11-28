@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,8 +22,7 @@
 
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
@@ -182,11 +181,12 @@ public:
   _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const normal_distribution& __x)
   {
-    _CharT __sp                       = __os.widen(' ');
-    ::std::ios_base::fmtflags __flags = __os.flags();
-    __os.flags(::std::ios_base::dec | ::std::ios_base::left | ::std::ios_base::fixed);
-    _CharT __fill                 = __os.fill(__sp);
-    ::std::streamsize __precision = __os.precision(17); // Max precision for double
+    using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
+    _CharT __sp    = __os.widen(' ');
+    auto __flags   = __os.flags();
+    __os.flags(_Ostream::dec | _Ostream::left | _Ostream::fixed);
+    _CharT __fill    = __os.fill(__sp);
+    auto __precision = __os.precision(17); // Max precision for double
     __os << __x.mean() << __sp << __x.stddev() << __sp << __x.__v_hot_;
     if (__x.__v_hot_)
     {

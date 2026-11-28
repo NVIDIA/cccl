@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,7 +14,20 @@
 #endif // no system header
 
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
+
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _THRUST_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -153,3 +166,8 @@ make_strided_iterator(Iterator it)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifdef _THRUST_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _THRUST_POP_MACRO_empty_bases
+#endif // defined(_THRUST_POP_MACRO_empty_bases)

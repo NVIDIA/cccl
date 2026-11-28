@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -400,7 +400,7 @@ public:
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_interface() const noexcept -> ::cuda::std::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -411,7 +411,7 @@ public:
     return _CCCL_TYPEID(_Interface);
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __in_situ() const noexcept -> bool
   {
     return __vptr_.__flag();

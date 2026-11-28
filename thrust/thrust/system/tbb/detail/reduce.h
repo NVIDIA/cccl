@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,10 +70,10 @@ struct body
 
     OutputType temp = thrust::raw_reference_cast(*iter);
 
-    ++iter;
-
-    for (Size i = r.begin() + 1; i != r.end(); ++i, ++iter)
+    for (Size i = r.begin() + 1; i != r.end(); ++i)
     {
+      // MSVC 19.52 can drop this increment when it is in the loop's iteration expression.
+      ++iter;
       temp = binary_op(temp, *iter);
     }
 

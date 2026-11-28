@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,6 +34,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
@@ -52,9 +53,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ForPolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceFor can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>` that
+//! returns a :cpp:struct:`cub::ForPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
 //!      :language: c++

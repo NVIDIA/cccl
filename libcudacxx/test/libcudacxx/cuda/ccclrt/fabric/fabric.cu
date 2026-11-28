@@ -77,6 +77,24 @@ struct transfer_kernel : fabric_case<cuda::std::uint32_t>
     }
   }
 
+  TEST_DEVICE_FUNC static void submit_requests()
+  {
+    if constexpr (Kind == transfer_kind::get)
+    {
+      cuda::fabric::submit_restrict_fetching();
+    }
+#  if __cccl_ptx_isa >= 950
+    else if constexpr (Kind == transfer_kind::put)
+    {
+      cuda::fabric::submit_commit_group();
+    }
+#  endif // __cccl_ptx_isa >= 950
+    else
+    {
+      cuda::fabric::submit();
+    }
+  }
+
   template <class Config>
   TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
   {
@@ -129,14 +147,7 @@ struct transfer_kernel : fabric_case<cuda::std::uint32_t>
         cuda::fabric::try_reduce_counted_add(endpoint, data_offset, counter_offset, staging, sizeof(staging), bar);
       }
 
-      if constexpr (Kind == transfer_kind::get)
-      {
-        cuda::fabric::submit_restrict_fetching();
-      }
-      else
-      {
-        cuda::fabric::submit();
-      }
+      submit_requests();
       if constexpr (Kind == transfer_kind::put)
       {
         // Overwrite staging before remote completion; wait_reads protects its lifetime.
@@ -157,6 +168,48 @@ struct transfer_kernel : fabric_case<cuda::std::uint32_t>
     })
   }
 };
+
+#  if __cccl_ptx_isa >= 950
+struct submit_groups_kernel : fabric_case<cuda::std::uint32_t>
+{
+  TEST_DEVICE_FUNC static cuda::std::uint32_t expected_value(cuda::std::size_t i, int = 0)
+  {
+    return i < transfer_elements ? cuda::std::uint32_t(source_base_value + i) : initial_value(i);
+  }
+
+  template <class Config>
+  TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, {
+      constexpr cuda::std::size_t group_elements = transfer_elements / 2;
+      __shared__ alignas(16) cuda::std::uint32_t staging[2][group_elements];
+      auto& bar = make_barrier();
+      for (cuda::std::size_t i = 0; i < transfer_elements; ++i)
+      {
+        staging[i / group_elements][i % group_elements] = source_base_value + i;
+      }
+      cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
+      cuda::fabric::try_put(endpoint, data_offset, staging[0], sizeof(staging[0]), bar);
+      cuda::fabric::submit_commit_group();
+      cuda::fabric::try_put(endpoint, data_offset + sizeof(staging[0]), staging[1], sizeof(staging[1]), bar);
+      cuda::fabric::submit_commit_group();
+
+      // Only the newest group may still read staging[1]. The first buffer can be reused.
+      cuda::fabric::wait_reads<1>();
+      for (auto& value : staging[0])
+      {
+        value = 0;
+      }
+      cuda::fabric::wait_reads<0>();
+      for (auto& value : staging[1])
+      {
+        value = 0;
+      }
+      wait_success(bar, sizeof(staging) / 16);
+    })
+  }
+};
+#  endif // __cccl_ptx_isa >= 950
 
 struct data_flag_kernel : fabric_case<cuda::std::uint32_t>
 {
@@ -410,7 +463,10 @@ C2H_TEST("direct fabric transfers dummy test", "[fabric]")
 
 C2H_CCCLRT_TEST("direct fabric unicast transfers and reductions", "[fabric]")
 {
+#  if !TEST_CUDA_COMPILER(NVCC, ==, 13, 5)
+  // This case reuses staging after wait_reads(), whose underlying instruction has no effect in PTX 9.5.
   test_transfer<transfer_kind::put>();
+#  endif
   test_transfer<transfer_kind::counted_put>();
   test_transfer<transfer_kind::masked_put>();
   test_transfer<transfer_kind::get>();
@@ -433,6 +489,13 @@ C2H_CCCLRT_TEST("direct fabric multicast transfers and warp-collective pull redu
   test_multicast<multicast_kind::pull_min>();
   test_multicast<multicast_kind::pull_max>();
 }
+
+#  if __cccl_ptx_isa >= 950
+C2H_CCCLRT_TEST("direct fabric submit groups protect shared inputs", "[fabric]")
+{
+  run_unicast(submit_groups_kernel{});
+}
+#  endif // __cccl_ptx_isa >= 950
 
 C2H_CCCLRT_TEST("direct fabric data completion then alias fence then flag", "[fabric]")
 {

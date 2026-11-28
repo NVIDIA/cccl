@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -115,7 +115,7 @@ struct agent_warp_reduce_policy
   /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
-    ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
+    ::cuda::std::conditional_t<::cuda::std::is_void_v<ComputeT>,
                                NoScaling<0, NominalItemsPerThread4B>,
                                MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
@@ -212,7 +212,7 @@ struct AgentReduceImpl
   /// Constants
   static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int vec_size         = (::cuda::std::min) (ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Vectorize if the policy asks for vector loads (vec_size > 1) and the input is a contiguous range of small trivially
   // copyable values

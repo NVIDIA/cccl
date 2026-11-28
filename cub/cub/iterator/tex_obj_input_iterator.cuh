@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 #include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
@@ -262,7 +262,9 @@ public:
 
 #if _CCCL_HOSTED()
   /// ostream operator
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const self_type& itr)
   {
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";

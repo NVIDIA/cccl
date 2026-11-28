@@ -23,7 +23,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,12 +32,21 @@
 #endif // no system header
 
 #include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/cstdint>
 
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <functional>
+#include <string>
+
+#include <cuda.h>
 
 namespace cuda::experimental::places
 {
@@ -177,7 +186,7 @@ protected:
     const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
     if (devid >= 0 && devid != context_devid)
     {
-      _CCCL_THROW(::std::invalid_argument, "CUcontext device ordinal does not match devid");
+      _CCCL_THROW_STD(invalid_argument, "CUcontext device ordinal does not match devid");
     }
     return context_devid;
   }
@@ -195,7 +204,7 @@ _CCCL_HOST_API inline exec_place exec_place::cuda_context(CUcontext ctx, int dev
     // Reject eagerly: with an explicit devid a null context would construct a
     // place that only fails (or silently unbinds the current context) at
     // activation time.
-    _CCCL_THROW(::std::invalid_argument, "exec_place::cuda_context requires a valid CUcontext");
+    _CCCL_THROW_STD(invalid_argument, "exec_place::cuda_context requires a valid CUcontext");
   }
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, devid, pool_size));
 }

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/contiguous_storage.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>
 #include <thrust/detail/temporary_array.h>
@@ -20,16 +21,19 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/equal.h>
 #include <thrust/fill.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/next.h>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -38,6 +42,8 @@
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
+
+#include <vector>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -767,7 +773,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::copy_insert(iterator position, Forwar
 
       if (new_capacity > max_size())
       {
-        throw std::length_error("insert(): insertion exceeds max_size().");
+        _CCCL_THROW_STD(length_error, "insert(): insertion exceeds max_size().");
       } // end if
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -1097,7 +1103,7 @@ _CCCL_HOST_API void vector_base<T, Alloc>::allocate_and_copy(
 
   if (requested_size > allocated_size)
   {
-    throw std::length_error("assignment exceeds max_size().");
+    _CCCL_THROW_STD(length_error, "assignment exceeds max_size().");
   } // end if
 
   new_storage.allocate(allocated_size);

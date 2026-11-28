@@ -15,7 +15,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(CCCL_DISABLE_EXCEPTIONS) // Escape hatch for users to manually disable exceptions
+#ifdef CCCL_DISABLE_EXCEPTIONS // Escape hatch for users to manually disable exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0
 #elif _CCCL_COMPILER(NVRTC) // NVRTC has no exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0

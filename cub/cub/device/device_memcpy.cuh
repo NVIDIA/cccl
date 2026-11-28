@@ -15,7 +15,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>

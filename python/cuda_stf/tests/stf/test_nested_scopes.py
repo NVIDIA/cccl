@@ -285,28 +285,37 @@ def test_diffusion_timestep_nesting():
 
 
 def test_nested_graph_scopes():
-    """Two levels of graph_scope nesting (no repeat/while)."""
+    """Two levels of graph_scope nesting (no repeat/while).
+
+    Each scope is also named with set_scope_symbol, which targets the current
+    (innermost) scope and only affects DOT output and diagnostics.
+    """
     n = 512
     X_host = np.ones(n, dtype=np.float32)
 
     ctx = stf.stackable_context()
     lX = ctx.logical_data(X_host, name="X")
+    ctx.set_scope_symbol("root")
 
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
     with ctx.graph_scope():  # level 1
+        ctx.set_scope_symbol("outer")
         with ctx.task(lX.rw()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             dX = numba_arguments(t)
             add_kernel[bpg, tpb, nb_stream](dX, 1.0)  # X = 2.0
 
         with ctx.graph_scope():  # level 2 (nested graph inside graph)
+            ctx.set_scope_symbol("inner")
             with ctx.task(lX.rw()) as t:
                 nb_stream = cuda.external_stream(t.stream_ptr())
                 dX = numba_arguments(t)
                 scale_kernel[bpg, tpb, nb_stream](dX, 3.0)  # X = 6.0
 
+        # back in the outer scope, after tasks were submitted
+        ctx.set_scope_symbol("outer-renamed")
         with ctx.task(lX.rw()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             dX = numba_arguments(t)

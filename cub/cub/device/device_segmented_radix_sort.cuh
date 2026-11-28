@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,6 +30,7 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/type_traits>
 

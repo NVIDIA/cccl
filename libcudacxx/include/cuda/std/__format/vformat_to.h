@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -39,6 +39,13 @@
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `noinline` as a macro, which would break _CCCL_NOINLINE_DEVICE.
+#ifdef noinline
+#  pragma push_macro("noinline")
+#  undef noinline
+#  define _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(noinline)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -222,6 +229,11 @@ _CCCL_REQUIRES(output_iterator<_OutIt, const wchar_t&>)
 #endif // _CCCL_HAS_WCHAR_T()
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noinline
+#  pragma pop_macro("noinline")
+#  undef _LIBCUDACXX_POP_MACRO_noinline
+#endif // defined(_LIBCUDACXX_POP_MACRO_noinline)
 
 #include <cuda/std/__cccl/epilogue.h>
 

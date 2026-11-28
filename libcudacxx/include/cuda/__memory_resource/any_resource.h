@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,8 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__execution/property_query.h>
+#  include <cuda/__fwd/get_memory_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
@@ -35,6 +37,13 @@
 #  include <cuda/std/__utility/forward.h>
 
 #  include <cuda/std/__cccl/prologue.h>
+
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#  ifdef empty_bases
+#    pragma push_macro("empty_bases")
+#    undef empty_bases
+#    define _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(empty_bases)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
@@ -270,7 +279,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   //! @endcond
 
 private:
-  using __base::interface;
+  using __base::__get_interface;
 };
 
 // ``any_resource`` wraps any given resource that satisfies the
@@ -298,7 +307,7 @@ private:
   template <class...>
   friend struct any_synchronous_resource;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -360,7 +369,7 @@ private:
   template <class...>
   friend struct synchronous_resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -380,6 +389,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     : __basic_any<__iasync_resource<_Properties...>&>
     , __with_try_get_property<resource_ref<_Properties...>>
 {
+  //! @brief Advertises support for the @c cuda::mr::get_memory_resource query.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::mr::get_memory_resource_t>;
+
   // Inherit other constructors from __basic_any
   _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
 
@@ -409,6 +421,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
 
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
+  //! @brief Queries this memory resource reference.
+  //! @return A shallow copy that refers to the same memory resource.
+  [[nodiscard]] _CCCL_HOST_API constexpr resource_ref query(const get_memory_resource_t&) const noexcept
+  {
+    return *this;
+  }
+
   //! @cond
   _CCCL_HOST_API explicit resource_ref(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
@@ -421,7 +440,7 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -733,6 +752,15 @@ template <_ResourceKind _Kind, class... _Properties>
 class basic_resource_ref
 {
 public:
+  //! @brief Advertises support for the @c cuda::mr::get_memory_resource query.
+  //! @note Available only when `_Kind` is `_ResourceKind::_Asynchronous`.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::mr::get_memory_resource_t>;
+
+  //! @brief Queries this asynchronous memory resource reference.
+  //! @pre `_Kind` is `_ResourceKind::_Asynchronous`.
+  //! @return A shallow copy that refers to the same memory resource.
+  constexpr basic_resource_ref query(const get_memory_resource_t&) const noexcept;
+
   //! @brief Copy constructs a \c basic_resource_ref
   //! @post `*this` and `__other` both refer to the same resource object.
   basic_resource_ref(const basic_resource_ref& __other);
@@ -1154,6 +1182,11 @@ template <class... _DstProperties, class... _SrcProperties>
 }
 
 _CCCL_END_NAMESPACE_CUDA_MR
+
+#  ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#    pragma pop_macro("empty_bases")
+#    undef _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -17,7 +17,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,12 +25,28 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
+#include <cuda/__memory_pool/memory_pool_base.h>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <string>
+#include <vector>
+
+#include <cuda.h>
+
+#ifdef UNITTESTED_FILE
+#  include <unordered_map>
+#endif // UNITTESTED_FILE
 
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE
@@ -106,44 +122,27 @@ public:
 
   _CCCL_HOST_API void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    void* result       = nullptr;
-    const int prev_dev = cuda_try<cudaGetDevice>();
-
-    if (prev_dev != view_.devid)
-    {
-      cuda_try(cudaSetDevice(view_.devid));
-    }
-
-    SCOPE(exit)
-    {
-      if (prev_dev != view_.devid)
-      {
-        cuda_try(cudaSetDevice(prev_dev));
-      }
-    };
-
-    cuda_try(cudaMallocAsync(&result, static_cast<size_t>(size), stream));
-    return result;
+    // The device's primary context must be current for a driver allocation on
+    // the null stream (cudaMallocAsync created it on demand; the driver call
+    // does not): libcu++'s scope pushes it, initializing it on first use.
+    const ::cuda::__ensure_current_context __ctx{::cuda::device_ref{view_.devid}};
+    // The device's default pool, resolved through libcu++'s policy site (which
+    // also sets the release threshold): places do not manage pool properties.
+    // Filled member by member: the layout of CUmemLocation differs between
+    // toolkits (its id became a member of an anonymous union).
+    CUmemLocation location{};
+    location.type           = CU_MEM_LOCATION_TYPE_DEVICE;
+    location.id             = view_.devid;
+    const CUmemoryPool pool = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    CUdeviceptr ptr         = 0;
+    cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
+    return reinterpret_cast<void*>(ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   _CCCL_HOST_API void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
   {
-    const int prev_dev = cuda_try<cudaGetDevice>();
-
-    if (prev_dev != view_.devid)
-    {
-      cuda_try(cudaSetDevice(view_.devid));
-    }
-
-    SCOPE(exit)
-    {
-      if (prev_dev != view_.devid)
-      {
-        cuda_try(cudaSetDevice(prev_dev));
-      }
-    };
-
-    cuda_try(cudaFreeAsync(ptr, stream));
+    const ::cuda::__ensure_current_context __ctx{::cuda::device_ref{view_.devid}};
+    cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
   }
 
   _CCCL_HOST_API bool allocation_is_stream_ordered() const override

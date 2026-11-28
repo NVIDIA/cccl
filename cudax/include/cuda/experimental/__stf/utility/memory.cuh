@@ -19,7 +19,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,14 +27,30 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/cassert>
 #include <cuda/std/source_location>
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <algorithm>
 #include <cstdint>
+#include <initializer_list>
+#include <iterator>
 #include <memory>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <string>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {
@@ -1133,7 +1149,7 @@ private:
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::cuda::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_void_v<result_t>)
         {
           f(i);
         }

@@ -11,7 +11,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,6 +26,8 @@
 
 #if _CCCL_HOST_STD_LIB(STL)
 #  include <cuda/std/__type_traits/is_pointer.h>
+
+#  include <xutility> // for ::std::_Unwrapped_t
 #endif // _CCCL_HOST_STD_LIB(STL)
 
 THRUST_NAMESPACE_BEGIN

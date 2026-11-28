@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,7 +30,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -68,7 +68,9 @@ struct SelectLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SelectLookbackPolicy& p)
   {
     return os
         << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -99,7 +101,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, SelectAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -126,7 +130,9 @@ struct SelectPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SelectPolicy& p)
   {
     return os << "SelectPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -153,7 +159,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, PartitionAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -186,7 +194,9 @@ struct PartitionLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const PartitionLookbackPolicy& p)
   {
     return os
         << "PartitionLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -217,7 +227,9 @@ struct PartitionPolicy
   }
 
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const PartitionPolicy& p)
   {
     return os << "PartitionPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }

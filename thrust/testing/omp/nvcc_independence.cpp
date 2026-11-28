@@ -1,9 +1,11 @@
-#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
-#include <thrust/system_error.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/functional>
 
 #include <unittest/unittest.h>
 

@@ -6,7 +6,7 @@
 
 #define TUNE_ALGORITHM 1
 // fill has no inputs, so no need to bias min_bytes_in_flight
-#define TUNE_BIF_BIAS 0
+#define TUNE_KBIF_BIAS 0
 
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1

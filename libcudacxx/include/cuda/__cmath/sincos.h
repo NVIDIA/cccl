@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -73,17 +73,31 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
   {
     return ::cuda::sincos(static_cast<double>(__v));
   }
+#if _LIBCUDACXX_HAS_NVFP16()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__half>)
+  {
+    const auto __result_float = ::cuda::sincos(::__half2float(__v));
+    return {::__float2half(__result_float.sin), ::__float2half(__result_float.cos)};
+  }
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_bfloat16>)
+  {
+    const auto __result_float = ::cuda::sincos(::__bfloat162float(__v));
+    return {::__float2bfloat16(__result_float.sin), ::__float2bfloat16(__result_float.cos)};
+  }
+#endif // _LIBCUDACXX_HAS_NVBF16()
   else
   {
     [[maybe_unused]] sincos_result<_Tp> __ret{};
-#if defined(_CCCL_BUILTIN_SINCOSF)
+#ifdef _CCCL_BUILTIN_SINCOSF
     if constexpr (::cuda::std::is_same_v<_Tp, float>)
     {
       _CCCL_BUILTIN_SINCOSF(__v, &__ret.sin, &__ret.cos);
       return __ret;
     }
 #endif // _CCCL_BUILTIN_SINCOSF
-#if defined(_CCCL_BUILTIN_SINCOS)
+#ifdef _CCCL_BUILTIN_SINCOS
     if constexpr (::cuda::std::is_same_v<_Tp, double>)
     {
       _CCCL_BUILTIN_SINCOS(__v, &__ret.sin, &__ret.cos);
@@ -98,30 +112,13 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
     }
 #endif // _CCCL_HAS_LONG_DOUBLE() && _CCCL_BUILTIN_SINCOSL
 
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    if constexpr (::cuda::std::is_same_v<_Tp, float>)
     {
-      if constexpr (::cuda::std::is_same_v<_Tp, float>)
-      {
-        NV_IF_TARGET(NV_IS_DEVICE, (::sincosf(__v, &__ret.sin, &__ret.cos); return __ret;))
-      }
-      if constexpr (::cuda::std::is_same_v<_Tp, double>)
-      {
-        NV_IF_TARGET(NV_IS_DEVICE, (::sincos(__v, &__ret.sin, &__ret.cos); return __ret;))
-      }
-#if _LIBCUDACXX_HAS_NVFP16()
-      if constexpr (::cuda::std::is_same_v<_Tp, ::__half>)
-      {
-        const auto __result_float = ::cuda::sincos(::__half2float(__v));
-        return {::__float2half(__result_float.sin), ::__float2half(__result_float.cos)};
-      }
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
-      if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_bfloat16>)
-      {
-        const auto __result_float = ::cuda::sincos(::__bfloat162float(__v));
-        return {::__float2bfloat16(__result_float.sin), ::__float2bfloat16(__result_float.cos)};
-      }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+      NV_IF_TARGET(NV_IS_DEVICE, (::sincosf(__v, &__ret.sin, &__ret.cos); return __ret;))
+    }
+    if constexpr (::cuda::std::is_same_v<_Tp, double>)
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (::sincos(__v, &__ret.sin, &__ret.cos); return __ret;))
     }
     return {::cuda::std::sin(__v), ::cuda::std::cos(__v)};
   }

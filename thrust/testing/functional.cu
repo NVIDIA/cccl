@@ -1,7 +1,14 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
+#include <cuda/functional>
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 
 #include <unittest/unittest.h>

@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/decay.h>
 

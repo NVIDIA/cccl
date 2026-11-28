@@ -16,9 +16,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/std/__algorithm/min.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,9 +27,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+
+#include <array>
+#include <utility>
 
 namespace cuda::experimental::places
 {
@@ -43,10 +49,7 @@ public:
   {
     ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
-    if (target_dim > dimensions - 1)
-    {
-      target_dim = dimensions - 1;
-    }
+    target_dim        = (::cuda::min) (target_dim, dimensions - 1);
 
     //        if constexpr (dimensions > 1) {
     for (size_t d = 0; d < dimensions; d++)
@@ -87,10 +90,7 @@ public:
 
     // Last position in this dimension (excluded)
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
-    if (target_dim > dimensions - 1)
-    {
-      target_dim = dimensions - 1;
-    }
+    target_dim        = (::cuda::min) (target_dim, dimensions - 1);
 
     ::std::ptrdiff_t dim_end = in.extent(target_dim);
 
@@ -108,10 +108,7 @@ public:
     // Find the largest dimension
     const size_t rank = data_dims.get_rank();
     size_t target_dim = (which_dim == -1) ? rank : size_t(which_dim);
-    if (target_dim > rank)
-    {
-      target_dim = rank;
-    }
+    target_dim        = (::cuda::min) (target_dim, rank);
 
     const size_t extent = data_dims.get(target_dim);
 

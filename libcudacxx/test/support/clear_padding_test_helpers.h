@@ -20,6 +20,8 @@ struct WithPadding
 {
   int a;
   char b;
+
+  TEST_FUNC WithPadding* operator&() = delete;
 };
 
 struct RelaxedWithPadding

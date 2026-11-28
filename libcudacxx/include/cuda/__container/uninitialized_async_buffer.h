@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -29,7 +29,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>
@@ -228,13 +228,13 @@ private:
     constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
     if (__count > __max_element_count)
     {
-      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+      _CCCL_THROW_STD(invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
 
     const size_t __count_elements = __count * sizeof(_Tp);
     if (__count_elements > __max_element_count - (__alignment - 1))
     {
-      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+      _CCCL_THROW_STD(invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
     return __count;
   }
@@ -476,12 +476,12 @@ public:
     {
       if (__info.capacity != 0)
       {
-        _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
+        _CCCL_THROW_STD(invalid_argument, "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
       }
     }
     else if (!::cuda::is_aligned(__info.ptr, __info.alignment))
     {
-      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
+      _CCCL_THROW_STD(invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
     }
     __ret.__count_ = __info.capacity;
     __ret.__buf_   = __info.ptr;

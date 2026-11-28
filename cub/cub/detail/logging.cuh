@@ -7,7 +7,7 @@
 
 #include <cub/util_debug.cuh> // IWYU pragma: keep
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,10 +18,13 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/cstdarg>
 #include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
-#include <cuda/std/__host_stdlib/sstream> // IWYU pragma: keep
 #include <cuda/std/cstdlib>
 
 #include <nv/target>
+
+#if defined(CUB_DEBUG_LOG) || (_CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING))
+#  include <cuda/std/__host_stdlib/sstream> // IWYU pragma: keep
+#endif // defined(CUB_DEBUG_LOG) || (_CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING))
 
 #ifdef _CCCL_DOXYGEN_INVOKED
 //! When defined, disables all logging code in CCCL

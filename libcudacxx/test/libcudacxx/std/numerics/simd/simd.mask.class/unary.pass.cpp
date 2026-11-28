@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.mask.unary], basic_mask unary operators
 //
@@ -20,8 +20,8 @@
 // constexpr basic_vec<integer-from<Bytes>, Abi> operator-() const noexcept;
 // constexpr basic_vec<integer-from<Bytes>, Abi> operator~() const noexcept;
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"

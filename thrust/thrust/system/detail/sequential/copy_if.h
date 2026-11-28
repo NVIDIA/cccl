@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,7 @@ _CCCL_HOST_DEVICE_API OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (first != last)
   {

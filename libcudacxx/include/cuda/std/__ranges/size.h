@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,12 +46,12 @@ inline constexpr bool disable_sized_range = false;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__size)
 
-#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
 // A deleted declaration suppresses ADL on these compilers.
 _CCCL_HOST_DEVICE void size();
-#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC) ^^^ / vvv deleted declaration vvv
 _CCCL_HOST_DEVICE void size() = delete;
-#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
 
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;

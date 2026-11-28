@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__copy_bytes/mdspan_d2h_h2d.cuh>
+// IWYU pragma: end_exports
 
 #endif // __CUDAX_COPY_BYTES_CUH

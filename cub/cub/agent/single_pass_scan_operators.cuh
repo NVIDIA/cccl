@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/key_value_pair.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
@@ -34,6 +33,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
@@ -252,20 +252,34 @@ struct reduce_by_key_delay_constructor_t
   }
 };
 
-template <unsigned int Delay, unsigned int L2WriteLatency>
+template <unsigned int Delay, unsigned int L2WriteLatency, bool UseGridThreshold = true>
 struct fixed_delay_constructor_t
 {
   struct delay_t
   {
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      _CUB::detail::delay_or_prevent_hoisting<Delay>();
+      if constexpr (UseGridThreshold || Delay == 0)
+      {
+        _CUB::detail::delay_or_prevent_hoisting<Delay>();
+      }
+      else
+      {
+        _CUB::detail::always_delay_or_prevent_hoisting<Delay>();
+      }
     }
   };
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    _CUB::detail::delay<L2WriteLatency>();
+    if constexpr (UseGridThreshold || L2WriteLatency == 0)
+    {
+      _CUB::detail::delay<L2WriteLatency>();
+    }
+    else
+    {
+      _CUB::detail::always_delay<L2WriteLatency>();
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
@@ -1034,7 +1048,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   // Constants
   static constexpr int PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT));
-  static constexpr int TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE;
+  static constexpr int TXN_WORD_SIZE    = 1 << ::cuda::ceil_ilog2(PAIR_SIZE + 1);
   static constexpr int STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE;
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;

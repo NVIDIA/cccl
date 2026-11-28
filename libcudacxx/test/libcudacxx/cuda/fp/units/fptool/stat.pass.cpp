@@ -97,11 +97,19 @@ TEST_HOST_DEVICE_FUNC pair_t limbs(const _Tp& value)
 
 // Every operation below is computed on both types and the two results compared, so the
 // harness needs no expected values: the wrapped type is the reference.
+//
+// The operands are read through a volatile, so that both sides are computed when the test
+// runs. nvcc does not always fold the round-to-nearest intrinsics on constants to the bits
+// the device computes (a tie can go to the other neighbor), and it can fold an expression on
+// one type while leaving the same expression on the other type to the device.
 TEST_HOST_DEVICE_FUNC void test_parity()
 {
-  const float fa = 1.123456789f;
-  const float fb = 2.987654321f;
-  const float fc = 0.577215664f;
+  volatile float va = 1.123456789f;
+  volatile float vb = 2.987654321f;
+  volatile float vc = 0.577215664f;
+  const float fa    = va;
+  const float fb    = vb;
+  const float fc    = vc;
 
   const base_t ba(fa), bb(fb), bc(fc);
   const stat_t sa(fa), sb(fb), sc(fc);
@@ -281,10 +289,12 @@ TEST_HOST_DEVICE_FUNC void test_parity()
   }
 
   { // the double-double instantiation, so both limb types are exercised
-    using dbase_t = cuda::fp64mp2;
-    using dstat_t = cuda::fp64mp2_stat;
-    const dbase_t db(1.25);
-    const dstat_t ds(1.25);
+    using dbase_t      = cuda::fp64mp2;
+    using dstat_t      = cuda::fp64mp2_stat;
+    volatile double vd = 1.25;
+    const double d     = vd;
+    const dbase_t db(d);
+    const dstat_t ds(d);
     const dbase_t br = (db + db) * db / db - db;
     const dstat_t sr = (ds + ds) * ds / ds - ds;
     assert(br.hi() == sr.hi() && br.lo() == sr.lo());
@@ -432,8 +442,11 @@ __global__ void event_kernel(float* sink)
   acc += (stat_t(1.375f) + stat_t(-1.375f)).hi();
   acc += (stat_t(1.375f) - stat_t(1.375f)).hi();
 
-  // partial cancellation: 24 of 46 significand bits go, and the result is not zero
+  // Exactly half of the 48 significand bits cancel, which must not count.
   acc += (stat_t(1.0f) - stat_t(0.99999994f)).hi();
+
+  // Partial cancellation: 25 of 48 significand bits go, and the result is not zero.
+  acc += (stat_t(1.0f) - stat_t(1.0f, -0x1p-25f)).hi();
 
   // a routine 1-bit drop, which must not count as cancellation
   acc += (stat_t(1.0f) - stat_t(0.6f)).hi();

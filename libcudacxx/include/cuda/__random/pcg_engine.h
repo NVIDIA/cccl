@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__bit/rotr.h>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__utility/pair.h>

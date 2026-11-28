@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,8 +23,7 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/exponential_distribution.h>
 #include <cuda/std/__random/is_valid.h>

@@ -24,7 +24,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/source_location>
 #include <cuda/std/variant>
 
@@ -47,25 +48,26 @@
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 #if __has_include(<cublas_v2.h>)
 #  include <cublas_v2.h>
 #endif
 #if __has_include(<cusolverDn.h>)
-#  include <cusolverDn.h>
+#  include <cusolverDn.h> // IWYU pragma: keep
 #endif
 
 namespace cuda::experimental::stf
 {
 #if __has_include(<cusolverDn.h>)
 // Undocumented
-inline const char* cusolverGetErrorString(const cusolverStatus_t status)
+_CCCL_HOST_API inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 {
   switch (status)
   {
     default:
       break;
+// NOLINTNEXTLINE(readability-identifier-naming) -- deliberately unpronounceable, undefined after the switch
 #  define _b738a2a5fe81ee876deadae4a109521c(x) \
     case x:                                    \
       return #x
@@ -226,7 +228,7 @@ struct status_traits<cublasStatus_t> : cuda_status_traits_base<cublasStatus_t>
   //! `cublasGetStatusString`.
   //! @param[in] status the status
   //! @return a string such as "CUBLAS_STATUS_NOT_INITIALIZED: the library was not initialized"
-  static ::std::string name(const cublasStatus_t status)
+  _CCCL_HOST_API static ::std::string name(const cublasStatus_t status)
   {
     const char* const status_name   = ::cublasGetStatusName(status);
     const char* const status_string = ::cublasGetStatusString(status);
@@ -249,7 +251,7 @@ struct status_traits<cusolverStatus_t> : cuda_status_traits_base<cusolverStatus_
   //! @brief The status's enumerator name, from @ref cusolverGetErrorString.
   //! @param[in] status the status
   //! @return the name
-  static ::std::string name(const cusolverStatus_t status)
+  _CCCL_HOST_API static ::std::string name(const cusolverStatus_t status)
   {
     return ::std::string{cusolverGetErrorString(status)};
   }

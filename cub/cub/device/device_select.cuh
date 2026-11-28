@@ -17,7 +17,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,6 +33,7 @@
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -68,9 +69,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All non-ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SelectPolicy`, as shown in the
-//! example below:
+//! All non-ByKey algorithms in DeviceSelect can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::SelectPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
 //!      :language: c++
@@ -84,9 +84,8 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin select-if-tuning
 //!      :end-before: example-end select-if-tuning
 //!
-//! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
-//! custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown
-//! in the example below:
+//! All *ByKey algorithms in DeviceSelect can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
 //!      :language: c++

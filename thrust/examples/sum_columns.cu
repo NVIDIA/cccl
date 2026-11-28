@@ -2,7 +2,9 @@
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 #include <thrust/tabulate.h>
@@ -11,6 +13,7 @@
 #include <cuda/iterator>
 #include <cuda/std/mdspan>
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 

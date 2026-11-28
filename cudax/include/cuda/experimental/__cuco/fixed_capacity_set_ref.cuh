@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,8 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/span>
 
@@ -176,6 +178,43 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr probing_scheme_type probing_scheme() const
   {
     return __impl_.probing_scheme();
+  }
+
+  //! @brief Returns a copy of this ref that compares keys with `__predicate`.
+  //!
+  //! The copy references the same slot storage and does not rehash stored keys, so `__predicate` must be compatible
+  //! with the predicate used to insert them.
+  //! @tparam _NewKeyEqual Key equality predicate type
+  //! @param[in] __predicate Key equality predicate
+  //! @return A ref over the same storage using `__predicate`
+  template <class _NewKeyEqual>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto rebind_key_eq(const _NewKeyEqual& __predicate) const
+  {
+    using __rebound_ref = fixed_capacity_set_ref<_Key, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+    return __rebound_ref{
+      empty_key<_Key>{empty_key_sentinel()}, __predicate, probing_scheme(), storage_span_type{data(), capacity()}};
+  }
+
+  //! @brief Returns a copy of this ref that hashes keys with `__hash`.
+  //!
+  //! The copy references the same slot storage and keeps the probing scheme kind and CG size. Stored keys are not
+  //! rehashed, so `__hash` (both hashes for double hashing) must be compatible with the hash used to insert them.
+  //! @tparam _NewHash Hash function type, or a tuple-like of two hash functions for double hashing
+  //! @param[in] __hash Hash function
+  //! @return A ref over the same storage using `__hash`
+  template <class _NewHash>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto rebind_hash_function(const _NewHash& __hash) const
+  {
+    const auto __probing_scheme = probing_scheme().rebind_hash_function(__hash);
+    using __rebound_ref =
+      fixed_capacity_set_ref<_Key,
+                             _Scope,
+                             _KeyEqual,
+                             ::cuda::std::decay_t<decltype(__probing_scheme)>,
+                             _BucketSize,
+                             _Capacity>;
+    return __rebound_ref{
+      empty_key<_Key>{empty_key_sentinel()}, key_eq(), __probing_scheme, storage_span_type{data(), capacity()}};
   }
 
   //! @brief Returns a pointer to the slot storage, including empty slots.

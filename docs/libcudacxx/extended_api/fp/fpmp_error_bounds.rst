@@ -58,8 +58,9 @@ Conventions
   ``fp64mp2`` both reciprocals are correctly rounded, while the device's reciprocal square root
   is close to correctly rounded and the host's ``1/sqrt(x)`` carries two roundings. One Newton
   step leaves about ``(3/2)·ε²`` of a seed error ``ε``, which at double-word precision is
-  visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u². Where the sides differ,
-  the tables quote the device.
+  visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u². The ``fp32mp2`` ``sqrt``
+  corrects its seed once more before the low limb is formed and is the same on both sides; the
+  ``fp64mp2`` one is not, and where the sides differ, the tables quote the device.
 
 The bounds
 ----------
@@ -133,20 +134,12 @@ host against binary128 — whichever of the two is larger.
      - 4.0 [#host]_
 
    * - ``x * c`` (scalar ``c`` held exactly by one limb)
-     - ``low``, ``mid``
+     - all
      - relative ≤ ``2u²`` to first order
      - derived
      - all operands
      - 1.98 [#host]_
      - 1.99 [#host]_
-
-   * - ``x * c`` (scalar ``c`` held exactly by one limb)
-     - ``high``
-     - relative ≤ ``2u²`` to first order ([JMP17]_ Algorithm 7)
-     - derived
-     - all operands
-     - 1.50 [#host]_
-     - 1.50 [#host]_
 
    * - ``fma(x, y, z)``
      - ``low``, ``mid``
@@ -181,12 +174,20 @@ host against binary128 — whichever of the two is larger.
      - 6.6
 
    * - ``sqrt(x)``
-     - ``mid``
+     - ``low``, ``mid``
      - —
      - measured
      - ``x > 0``
-     - 9.5
+     - 2.8
      - 2.9 [#seed]_
+
+   * - ``sqrt(x)``
+     - ``high``
+     - —
+     - measured
+     - ``x > 0``
+     - 1.3
+     - 1.9 [#high]_
 
 .. [#host] Measured on the host against an exact reference, the error accumulated from
    error-free transforms, over ``5·10⁷`` normalized operand pairs from random and structured
@@ -198,11 +199,24 @@ host against binary128 — whichever of the two is larger.
 .. [#seed] Measured on the device against binary128 over 2\ :sup:`22` operands spanning 80
    binades, with the host run on the same operands for comparison (5.8): the host's
    two-rounding ``1/sqrt(x)`` seed costs it the difference, as the seed floor in *Conventions*
-   predicts. The specification's own ``fp64mp2`` table reports a smaller maximum for ``sqrt``
-   over its working range.
+   predicts. The ``fp32mp2`` ``sqrt`` takes its Newton step on the exact residual and refines
+   the reciprocal root once more before forming its low limb, so its seed no longer shows: 2.5
+   on both sides in the same run. The specification's own ``fp64mp2`` table reports a smaller
+   maximum for ``sqrt`` over its working range.
+.. [#high] ``sqrt`` and ``rsqrt`` of a ``high`` type add the second-order term of their Newton
+   step, which removes the seed floor described in *Conventions*. Like the short kernels they
+   take no branch, and the same operands. The ``fp32mp2`` ``sqrt`` rounds its remainder and its
+   correction once each, which keeps it within three operations of the short kernel: 1.26 on
+   the host and on the device, whose results differ in the last bit for 7% of the operands,
+   against a reference with a 64-bit significand over 2\ :sup:`21` to 2\ :sup:`23` operands in
+   each of six ranges. The ``fp64mp2`` ``sqrt``
+   carries both rounding errors: measured against MPFR over 2\ :sup:`18` operands per range,
+   the figure is the device's, which takes its reciprocal square root as the seed without
+   refining it; the host stays within 0.5. ``rsqrt(x)`` stays within 2.9 on the host and 4.2
+   on the device at ``high``.
 
-``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and ``low`` and ``mid``
-multiplication by a one-limb scalar compute the *same value*; the normalizing level additionally normalizes it, which is exact, so they share a bound
+``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and multiplication by a one-limb
+scalar at every level compute the *same value*; the normalizing levels additionally normalize it, which is exact, so they share a bound
 and differ only in the state of the result. Division by a one-limb scalar gives the value of
 ``x / y`` with ``y = (c, 0)``, one operation cheaper. The division and square-root sequences (Nagai et al. 2008
 and Karp-Markstein 1997 iterations) have no published analysis; double-word divisions with
@@ -378,7 +392,20 @@ The ``low`` level, and composing operations
 Every bound assumes normalized operands. A ``low`` result is not normalized — its limbs may
 overlap — and feeding it to a further operation weakens that operation's bound by roughly
 the overlap: an input with ``|lo| ≤ k·u·|hi|`` instead of ``u·|hi|`` scales the ``u²``
-constants of the next operation by about ``k``. Over a long ``low`` chain the overlap grows
+constants of the next operation by about ``k``. The ``fp32mp2_low`` functions ``expm1``,
+``log``, ``log2``, ``log10``, ``log1p``, ``sinh``, ``tanh``, ``asinh``, ``acosh`` and ``atanh``
+renormalize an argument with ``|lo| > 2^-20·|hi|`` themselves, because their kernels take the
+size of the argument, and with it the domain test, from the high limb, which a cancellation can
+leave at zero: ``(2^24, 0.25) - 2^24`` is ``(0, 0.25)``. ``exp``, ``exp2``, ``exp10`` and ``cosh``
+need no such step: they take the size of the argument and the multiple of their reduction from
+the sum of the limbs. The ``fp32mp2_low`` functions ``sin``, ``cos``, ``tan``, ``sincos``,
+``sinpi``, ``cospi``, ``sincospi``, ``asin``, ``acos`` and ``atan`` take an argument with a zero
+high limb for its low limb, as ``atan2``, ``rhypot``, ``norm3d``, ``norm4d``, ``rnorm3d`` and
+``rnorm4d`` do for their operands at every level. ``sqrt``, ``rsqrt``, ``cbrt``, ``rcbrt``, ``hypot``, ``pow``
+and ``fmod`` read the high limb alone: renormalize such an argument before the call. Below the
+threshold the domain of a function is decided on the high limb, except for ``acosh``, which
+decides ``x < 1`` on both limbs.
+Over a long ``low`` chain the overlap grows
 with the chain, which is why ``renormalize()`` exists and why converting a ``low`` value to
 ``mid`` or ``high`` restores the invariant (:ref:`changing the accuracy level
 <libcudacxx-extended-api-fp-fpmp-level-change>`). The

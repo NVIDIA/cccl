@@ -19,7 +19,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,6 +38,7 @@
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,9 +31,9 @@
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/span>
 
 #  include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
@@ -117,11 +117,11 @@ private:
   {
     if (__num_blocks == 0)
     {
-      _CCCL_THROW(::std::invalid_argument, "The number of bloom filter blocks must be greater than zero");
+      _CCCL_THROW_STD(invalid_argument, "The number of bloom filter blocks must be greater than zero");
     }
     if (__num_blocks > policy_type::max_filter_blocks)
     {
-      _CCCL_THROW(::std::invalid_argument, "The number of bloom filter blocks exceeds the policy's maximum");
+      _CCCL_THROW_STD(invalid_argument, "The number of bloom filter blocks exceeds the policy's maximum");
     }
 
     // The block layout requires an alignment of up to one 32-byte sector, which is stricter than

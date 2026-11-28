@@ -46,7 +46,7 @@ TEST_FUNC constexpr bool test()
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
   {
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+#ifdef _CCCL_BUILTIN_ADDRESSOF
     static_assert(
       cuda::std::addressof(cuda::std::views::counted) == cuda::std::addressof(cuda::std::ranges::views::counted));
 #endif // _CCCL_BUILTIN_ADDRESSOF

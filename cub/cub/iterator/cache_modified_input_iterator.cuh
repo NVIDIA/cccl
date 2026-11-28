@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cache_modified_input_iterator_fwd.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
 
@@ -28,7 +29,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
@@ -215,7 +216,9 @@ public:
 
   /// ostream operator
 #if _CCCL_HOSTED()
-  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const self_type& /*itr*/)
   {
     return os;
   }
@@ -224,12 +227,6 @@ public:
 
 namespace detail
 {
-template <typename Iterator>
-inline constexpr bool is_CacheModifiedInputIterator = false;
-
-template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = true;
-
 template <CacheLoadModifier LoadModifier, typename Iterator>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {

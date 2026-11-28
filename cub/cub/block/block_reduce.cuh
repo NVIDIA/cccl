@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,7 +26,7 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 
 #if __cpp_lib_format >= 201907L
@@ -177,7 +177,9 @@ namespace detail
 }
 } // namespace detail
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, BlockReduceAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }

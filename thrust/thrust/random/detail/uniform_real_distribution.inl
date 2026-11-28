@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,8 +18,7 @@
 #include <thrust/random/uniform_real_distribution.h>
 
 #include <cuda/std/__cmath/lerp.h>
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -55,16 +54,14 @@ uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& ur
   using traits = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
 
   // call the urng & map its result to [0,1)
-  result_type result = static_cast<result_type>(urng() - (traits::min) ()); // NOLINT(readability-redundant-parentheses)
+  result_type result = static_cast<result_type>(urng() - (traits::min) ());
 
   // adding one to the denominator ensures that the interval is half-open at 1.0
   // XXX adding 1.0 to a potentially large floating point number seems like a bad idea
   // XXX OTOH adding 1 to what is potentially UINT_MAX also seems like a bad idea
   // XXX we could statically check if 1u + (max - min) is representable and do that, otherwise use the current
   // implementation
-  result /=
-    (result_type(1)
-     + static_cast<result_type>((traits::max) () - (traits::min) ())); // NOLINT(readability-redundant-parentheses)
+  result /= (result_type(1) + static_cast<result_type>((traits::max) () - (traits::min) ()));
 
   return ::cuda::std::lerp(parm.first, parm.second, result);
 } // end uniform_real::operator()()

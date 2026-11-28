@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -22,8 +22,11 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/util_namespace.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -35,7 +38,6 @@
 
 #include <cooperative_groups.h>
 
-#include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILATION()
@@ -48,7 +50,7 @@ namespace cuda::experimental::cuco::__open_addressing
 //! @brief Inserts or assigns each pair in `[__first, __first + __n)`.
 template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
-__insert_or_assign_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
+__insert_or_assign_n(_InputIt __first, ::cuda::std::size_t __n, _Ref __ref)
 {
   const auto __stride = detail::__grid_stride() / _CgSize;
   auto __idx          = detail::__global_thread_id() / _CgSize;
@@ -77,7 +79,7 @@ struct __insert_if_fn
   _Predicate __pred;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
+  _CCCL_DEVICE_API void operator()(::cuda::std::size_t __idx)
   {
     if (__pred(*(__stencil + __idx)))
     {
@@ -100,7 +102,7 @@ struct __contains_if_fn
   _OutputIt __output_begin;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
+  _CCCL_DEVICE_API void operator()(::cuda::std::size_t __idx) const
   {
     *(__output_begin + __idx) = __pred(*(__stencil + __idx)) ? __ref.contains(*(__first + __idx)) : false;
   }
@@ -118,7 +120,7 @@ struct __for_each_fn
   _CallbackOp __callback_op;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
+  _CCCL_DEVICE_API void operator()(::cuda::std::size_t __idx)
   {
     __ref.for_each(*(__first + __idx), __callback_op);
   }
@@ -133,7 +135,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __for_each_fn(_InputIt, _CallbackOp, _Ref)
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
   _InputIt __first,
-  detail::__index_type __n,
+  ::cuda::std::size_t __n,
   _StencilIt __stencil,
   _Predicate __pred,
   typename _Ref::size_type* __num_successes,
@@ -183,7 +185,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
 //! stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
-__insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, _Predicate __pred, _Ref __ref)
+__insert_if_n(_InputIt __first, ::cuda::std::size_t __n, _StencilIt __stencil, _Predicate __pred, _Ref __ref)
 {
   const auto __loop_stride = detail::__grid_stride() / _CgSize;
   auto __idx               = detail::__global_thread_id() / _CgSize;
@@ -206,7 +208,7 @@ __insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, 
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __contains_if_n(
   _InputIt __first,
-  detail::__index_type __n,
+  ::cuda::std::size_t __n,
   _StencilIt __stencil,
   _Predicate __pred,
   _OutputIt __output_begin,
@@ -276,7 +278,7 @@ template <class _Ref, class _Iterator>
 //! @param[in,out] __ref Map in which to insert the input pairs
 template <int _CgSize, int _BlockSize, class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n(
-  _InputIt __first, detail::__index_type __n, _FoundIt __found_begin, _InsertedIt __inserted_begin, _Ref __ref)
+  _InputIt __first, ::cuda::std::size_t __n, _FoundIt __found_begin, _InsertedIt __inserted_begin, _Ref __ref)
 {
   const auto __block       = ::cooperative_groups::this_thread_block();
   const auto __thread_idx  = __block.thread_rank();
@@ -284,7 +286,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
   auto __idx               = detail::__global_thread_id() / _CgSize;
 
   using __output_type = typename __find_buffer<_Ref>::type;
-  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
+  __shared__ ::cuda::__uninitialized<__output_type[_BlockSize / _CgSize]> __found_buffer;
   __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
 
   while ((__idx - __thread_idx / _CgSize) < __n)
@@ -335,7 +337,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
   _InputIt __first,
-  detail::__index_type __n,
+  ::cuda::std::size_t __n,
   _StencilIt __stencil,
   _Predicate __pred,
   _OutputIt __output_begin,
@@ -455,7 +457,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __count_if_n(
 //! @note The return value of `__callback_op`, if any, is ignored.
 template <int _CgSize, int _BlockSize, class _InputIt, class _CallbackOp, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
-__for_each_n(_InputIt __first, detail::__index_type __n, _CallbackOp __callback_op, _Ref __ref)
+__for_each_n(_InputIt __first, ::cuda::std::size_t __n, _CallbackOp __callback_op, _Ref __ref)
 {
   const auto __loop_stride = detail::__grid_stride() / _CgSize;
   auto __idx               = detail::__global_thread_id() / _CgSize;
@@ -498,7 +500,7 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
 
   // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
   // require initialization, which is not allowed for shared variables.
-  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
+  __shared__ ::cuda::__uninitialized<__value_type[_BlockSize]> __buffer;
   __shared__ ::cuda::std::uint32_t __buffer_size;
 
   constexpr auto __cg_size         = _ContainerRef::cg_size;

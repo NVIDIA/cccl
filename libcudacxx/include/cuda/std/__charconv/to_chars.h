@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -43,10 +43,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[nodiscard]] _CCCL_API constexpr char __to_chars_value_to_char(int __v, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr char __to_chars_value_to_char(int __v, int __base, bool __uppercase) noexcept
 {
   _CCCL_ASSERT(__v >= 0 && __v < __base, "value must be in the range [0, base)");
-  const int __offset = (__base < 10 || __v < 10) ? '0' : ('a' - 10);
+  const int __offset = (__base <= 10 || __v < 10) ? '0' : ((__uppercase ? 'A' : 'a') - 10);
   return static_cast<char>(__offset + __v);
 }
 
@@ -114,14 +114,17 @@ template <int _Base, class _Tp>
 }
 
 template <class _Tp>
-_CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int __base) noexcept
+[[nodiscard]] _CCCL_API constexpr char*
+__to_chars_int_generic(char* __last, _Tp __value, int __base, bool __uppercase = false) noexcept
 {
-  do
+  while (__value >= static_cast<_Tp>(__base))
   {
     const int __c = __value % __base;
-    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base);
+    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base, __uppercase);
     __value /= static_cast<_Tp>(__base);
-  } while (__value != 0);
+  }
+  *--__last = ::cuda::std::__to_chars_value_to_char(static_cast<int>(__value), __base, __uppercase);
+  return __last;
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -177,7 +180,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 
     char* __new_last = __first + __n;
 
-    ::cuda::std::__to_chars_int_generic(__new_last, __value, __base);
+    (void) ::cuda::std::__to_chars_int_generic(__new_last, __value, __base);
 
     return {__new_last, errc{}};
   }
