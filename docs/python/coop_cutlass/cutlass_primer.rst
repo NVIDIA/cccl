@@ -470,10 +470,9 @@ Shared memory
 A CUB primitive's ``TempStorage`` has a size and alignment that only the C++
 compiler knows. Two routes exist. A wrapper can declare its own
 ``__shared__`` storage in C++, which the device link lays out alongside the
-kernel's shared memory. Warp Scan and the other wrappers that own their
-storage use this route. The deferred route serves every call whose scratch
-comes from a ``TempStorage`` descriptor, whether the caller supplies it or
-the lowering constructs one. Tracing emits placeholder ``arith.constant``
+kernel's shared memory. Exchange and Shuffle use this route. The deferred
+route serves every call whose scratch comes from a ``TempStorage`` descriptor,
+whether the caller supplies it or the lowering constructs one. Tracing emits placeholder ``arith.constant``
 operands for the address and size. The NVRTC program that compiles the
 wrappers reports the exact layout through ``nvrtcAddNameExpression`` and
 ``nvrtcGetLoweredName``. Finalization then inserts a

@@ -78,7 +78,11 @@ def test_full_reduce_uses_cub_and_root_owned_results(group, op):
         else GroupLoweringTarget.CUB_WARP
     )
     assert plan.target is expected
-    assert plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    assert plan.temp_storage.ownership is (
+        StorageOwnership.IMPLEMENTATION
+        if group.kind == "block"
+        else StorageOwnership.NONE
+    )
     assert plan.result.visibility is ResultVisibility.GROUP_ROOT
 
 
@@ -98,16 +102,31 @@ def test_block_algorithm_selects_cub(algorithm):
         plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
     )
     assert request.items_per_thread == 2
+    assert "temp_storage_bytes <= 0" in "\n".join(
+        _reduce._render_cub_reduce(request)
+    )
 
 
-@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
+@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 17, 31, 32))
 def test_partial_warp_plan(width):
     plan = _plan(
-        this_warp().group_by(width),
+        this_warp().group_by(width, exhaustive=False),
         valid_items=ArgumentBinding.runtime(),
     )
     assert plan.target is GroupLoweringTarget.CUB_WARP
-    assert _reduce._warp_instances(plan) == (64 // width, width)
+    request = _reduce._CubReduceRequest(plan, "sum", cutlass.Int32)
+    assert plan.topology.instances == (64 // 32) * (32 // width)
+    source = "\n".join(_reduce._render_cub_reduce(request))
+    if width in (17, 31):
+        assert _reduce._scratch_layout_probe(request) is not None
+        assert f"thread_rank % 32u >= {width}u" in source
+        assert "[thread_rank / 32u]" in source
+        assert f"__syncwarp({(1 << width) - 1}u)" in source
+    else:
+        assert _reduce._scratch_layout_probe(request) is None
+        assert _reduce._scratch_arguments(request, None) == ((), ())
+        assert "temp_storage_smem_addr" not in source
+        assert "__syncwarp" not in source
     assert plan.result.visibility is ResultVisibility.GROUP_ROOT
     assert plan.participation.argument_preconditions[0].minimum == 1
     assert plan.participation.argument_preconditions[0].maximum == width

@@ -21,7 +21,11 @@ from typing import Any
 from .._algorithm import Algorithm
 from .._symbols import semantic_token
 from .._types import Array, Dependency, TemplateParameter, TempStorageParameter
-from ._common import normalize_block_dim, normalize_positive_int
+from ._common import (
+    checked_tile_size,
+    normalize_block_dim,
+    normalize_positive_int,
+)
 
 
 class BlockExchangeMode(str, Enum):
@@ -367,6 +371,7 @@ def make_block_exchange_specialization(
         rank_dtype=rank_dtype,
         valid_flag_dtype=valid_flag_dtype,
     )
+    checked_tile_size(block_dim, call.items_per_thread)
     template_arguments = {
         "T": dtype,
         "BLOCK_DIM_X": block_dim[0],

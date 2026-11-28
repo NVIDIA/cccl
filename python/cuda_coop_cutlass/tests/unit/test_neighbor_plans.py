@@ -46,6 +46,13 @@ def _request(**options):
     )
 
 
+def test_tile_size_must_fit_cub_indices():
+    with pytest.raises(
+        ValueError, match="tile size must fit a signed 32-bit integer"
+    ):
+        _request(items=1 << 25)
+
+
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 @pytest.mark.parametrize(
     "operation,mode",

@@ -82,6 +82,11 @@ def normalize_thread_dim(
             raise TypeError(f"{scope} {label} dimensions must be integers")
         if dim <= 0:
             raise ValueError(f"{scope} {label} dimensions must be positive")
+        if dim > (1 << 32) - 1:
+            raise ValueError(
+                f"{scope} {label} dimensions must fit "
+                "an unsigned 32-bit integer"
+            )
         normalized.append(dim)
 
     while len(normalized) < 3:

@@ -246,6 +246,7 @@ def reduce(
         other calls, such as Load and Store. A barrier then follows the
         call only if the ``TempStorage`` was created with
         ``auto_sync=True``. Warps and groups of lanes take ``None``.
+        Power-of-two warp groups use register shuffles.
 
     Returns
     -------

@@ -99,7 +99,7 @@ each of the two calls. ``_BLOCK`` is ``(8, 4, 2)``, which is 64 threads.
 These block primitives take a ``temp_storage`` argument: transpose Load and
 Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
 Discontinuity, Histogram and Run Length Decode. Exchange, Shuffle, Radix
-Rank and the warp primitives always manage their own scratch.
+Rank and the warp primitives manage any scratch they use.
 
 You can also use the region for your own data.
 :meth:`~cuda.coop.cutlass.TempStorage.reserve` returns a typed shared tensor

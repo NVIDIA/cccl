@@ -82,21 +82,25 @@ def test_deferred_storage_extends_explicit_launch_size(requested):
         thread, _, _ = cute.arch.thread_idx()
         allocator = SmemAllocator()
         buffer = allocator.allocate_tensor(
-            cutlass.Float32, cute.make_layout(32), byte_alignment=16
+            cutlass.Float32, cute.make_layout(64), byte_alignment=16
         )
         buffer[thread] = cutlass.Float32(thread)
         cute.arch.barrier()
-        total = coop.sum(coop.this_warp(), cutlass.Float32(thread))
+        total = coop.sum(
+            coop.this_block(),
+            cutlass.Float32(thread),
+            temp_storage=coop.TempStorage(64, alignment=16),
+        )
         if thread == 0:
             output = cute.make_tensor(memory, cute.make_layout(1))
-            output[0] = total + buffer[31]
+            output[0] = total + buffer[63]
 
     @cute.jit
     def launch(memory: cute.Pointer, runtime_size: cutlass.Int64):
         if cutlass.const_expr(requested == "runtime"):
-            kernel(memory).launch(grid=1, block=32, smem=runtime_size)
+            kernel(memory).launch(grid=1, block=64, smem=runtime_size)
         else:
-            kernel(memory).launch(grid=1, block=32, smem=requested)
+            kernel(memory).launch(grid=1, block=64, smem=requested)
 
     pointer = make_ptr(
         cutlass.Float32, 0, cute.AddressSpace.gmem, assumed_align=16
@@ -112,6 +116,8 @@ def test_deferred_storage_extends_explicit_launch_size(requested):
     )
     assert store is not None
     value = store[1]
+    # 64 floats in the CuTe buffer plus 64 aligned bytes for BlockReduce.
+    kernel_bytes = 64 * 4 + 64
     if requested == "runtime":
         maximum = re.search(
             re.escape(value) + r" = llvm.select (%\w+), %arg1, (%\w+)",
@@ -126,7 +132,8 @@ def test_deferred_storage_extends_explicit_launch_size(requested):
             host_ir,
         )
         assert re.search(
-            re.escape(inferred) + r" = llvm.mlir.constant\(144 : i64\)",
+            re.escape(inferred)
+            + rf" = llvm.mlir.constant\({kernel_bytes} : i64\)",
             host_ir,
         )
     # The compiler's explicit-size diagnostic compares the same kernel query
@@ -147,7 +154,7 @@ def test_deferred_storage_extends_explicit_launch_size(requested):
         assert hardware_warning is not None
         assert f"llvm.mlir.addressof @{hardware_warning[1]} " in host_ir
     else:
-        expected = 512 if requested == 512 else 144
+        expected = 512 if requested == 512 else kernel_bytes
         assert re.search(
             re.escape(value) + rf" = llvm.mlir.constant\({expected} : i64\)",
             host_ir,

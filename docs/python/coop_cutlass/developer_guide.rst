@@ -387,7 +387,10 @@ generated function and cached artifact.
 Other primitive families use the same approach. For Reduce, the planner
 selects CUB BlockReduce or WarpReduce, checks scalar or per-thread payload
 support, and records scratch requirements. Block reductions accept an explicit
-``TempStorage`` descriptor. Warp reductions use compiler-owned storage.
+``TempStorage`` descriptor. A warp reduction at a power-of-two width uses
+register shuffles. For a group of 17 to 31 lanes, the wrapper reserves one
+scratch slice per physical warp to support CUB implementations that use
+shared memory at those widths.
 The Reduce lowering generates the wrapper and adapts CuTe's values to its
 arguments. The returned scalar is defined only at group rank zero.
 
@@ -404,9 +407,10 @@ fails if the primitive needs the missing value.
 
 For the prefix sum, block dimensions determine both the CUB specialization
 and linear rank: ``x + block_x * (y + block_y * z)``. Warp primitives also
-need the exact block size to establish complete physical warps and allocate
-one scratch slice per group. Cluster and grid queries and cluster ``sync``
-need consistent cluster dimensions and launch mode.
+need the exact block size to establish complete physical warps. A primitive
+that uses shared scratch needs the number of groups to size its allocation.
+Cluster and grid queries and cluster ``sync`` need consistent cluster dimensions
+and launch mode.
 
 Do not substitute ``maxntid`` for exact dimensions: an upper bound does not
 prove the number of participating threads. The adapter takes every launch
@@ -467,9 +471,10 @@ reuse barrier and leaves the storage-free provider's identity unchanged.
 Calls with deferred scratch record its use while tracing. The finalizer
 adds ``sizeof`` and ``alignof`` probes to the same NVRTC program as the
 provider bundle. The resulting C++ layouts determine the allocation. The
-size each of these calls needs comes only from its probe. Other
-providers, including Warp Scan, declare their shared storage inside the
-generated C++ wrapper, so they skip this placeholder-replacement step.
+size each of these calls needs comes only from its probe. Exchange and
+Shuffle declare their shared storage inside the generated C++ wrapper.
+Warp Scan and power-of-two Warp Reduce use shuffles and skip the scratch
+allocation and reuse barrier.
 
 Deferred events let one explicit descriptor serve several calls. Shared
 storage uses enough capacity for the largest requirement, while exclusive
@@ -516,10 +521,10 @@ Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
 ``auto_sync=True`` to insert automatic trailing synchronization.
-Compiler-managed scratch synchronizes automatically. Physical and logical
-warp primitives use independent per-group storage and a warp barrier masked
-to the group's lanes. See the :doc:`API reference <api>` for each family's
-explicit-storage support and participation rules.
+Compiler-managed scratch synchronizes automatically. When a physical or
+logical warp primitive uses shared scratch, each group has its own slice.
+Its reuse barrier covers the lanes of that group. The :doc:`API reference
+<api>` lists each family's explicit-storage support and participation rules.
 
 Finding the implementation
 ---------------------------
@@ -1126,10 +1131,10 @@ requires shared-memory ``LDS`` and ``STS``. It does not check warp
 reductions, shared-memory size, registers, or barriers.
 
 The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
-block and logical-Warp Scan, and block barriers for the logical-Warp path.
-It also rejects generic ``LD`` and ``ST`` accesses and requires ``LDS`` and
-``STS`` on the block path. It saves resource reports but does not check
-them.
+block and logical-Warp Scan. It rejects generic ``LD`` and ``ST`` accesses
+on both paths. It requires shared-memory ``LDS`` and ``STS`` on the block
+path and rejects them and block barriers on the logical-warp path. It saves
+resource reports for inspection.
 
 The final-cubin checks in ``runtime/test_exchange.py`` and
 ``runtime/test_shuffle.py`` reject provider calls for block and logical-Warp

@@ -12,6 +12,7 @@ importing a compiler or NumPy.
 
 from __future__ import annotations
 
+from math import prod
 from numbers import Integral
 from typing import Any
 
@@ -40,6 +41,17 @@ def normalize_positive_int(name: str, value: Any) -> int:
     if not isinstance(value, Integral) or isinstance(value, bool) or value < 1:
         raise ValueError(f"{name} must be a positive integer")
     return int(value)
+
+
+def checked_tile_size(
+    dimensions: tuple[int, ...], items_per_thread: int
+) -> int:
+    """Return the normalized tile extent representable by CUB's int indices."""
+
+    tile_items = prod(dimensions) * items_per_thread
+    if tile_items > (1 << 31) - 1:
+        raise ValueError("tile size must fit a signed 32-bit integer")
+    return tile_items
 
 
 def normalize_block_dim(value: Any) -> tuple[int, int, int]:

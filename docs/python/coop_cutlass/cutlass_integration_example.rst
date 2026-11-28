@@ -324,7 +324,8 @@ bookkeeping a library needs:
 * **Scratch policy.** ``TempStorage`` descriptors let several calls share
   one allocation or receive exclusive slices, with explicit or automatic
   reuse barriers, typed reservations, and a lifetime check across branches
-  and loops. Warp primitives size one storage instance per logical warp.
+  and loops. Warp primitives that need shared scratch reserve one slice per
+  group.
   When a launch passes ``smem=``, the package's hook raises that operand
   to at least ``cute.kernel_smem_size`` after it inserts the deferred
   scratch.

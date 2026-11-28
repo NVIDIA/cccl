@@ -248,7 +248,8 @@ def scan(
         Pass a :ref:`TempStorage <coop-temp-storage>` to share the bytes
         with other calls, such as Load and Store. A barrier then follows
         the call only if the ``TempStorage`` was created with
-        ``auto_sync=True``. Warps and groups of lanes take ``None``.
+        ``auto_sync=True``. Warps and groups of lanes take ``None`` and
+        exchange values through register shuffles.
 
     Returns
     -------

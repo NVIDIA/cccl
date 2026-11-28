@@ -38,6 +38,7 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
+from ..block._common import checked_tile_size
 
 _MAX_WARP_THREADS = 32
 _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
@@ -425,8 +426,8 @@ def make_warp_load_store_semantics(
     algorithm = _normalize_algorithm(kind, algorithm)
     valid_items = _normalize_optional_binding(valid_items, name="valid_items")
     valid_items = normalize_i32_binding(valid_items, name="valid_items")
+    tile_items = checked_tile_size((threads_in_warp,), items_per_thread)
     if valid_items.kind is BindingKind.STATIC:
-        tile_items = items_per_thread * threads_in_warp
         if not 0 <= int(valid_items.value) <= tile_items:
             raise ValueError(
                 "static valid_items must be between zero and the warp tile "

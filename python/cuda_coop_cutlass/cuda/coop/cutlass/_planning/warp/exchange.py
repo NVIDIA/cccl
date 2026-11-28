@@ -19,7 +19,7 @@ from typing import Any
 
 from .._algorithm import Algorithm
 from .._types import Array, Dependency, TemplateParameter, TempStorageParameter
-from ..block._common import normalize_positive_int
+from ..block._common import checked_tile_size, normalize_positive_int
 from ..block.exchange import (
     BlockExchangeSemantics,
     make_block_exchange_semantics,
@@ -186,6 +186,7 @@ def make_warp_exchange_specialization(
         items_per_thread,
     )
     threads_in_warp = _normalize_logical_warp_threads(threads_in_warp)
+    checked_tile_size((threads_in_warp,), items_per_thread)
     uses_ranks = mode is WarpExchangeMode.SCATTER_TO_STRIPED
     if uses_ranks and rank_dtype is None:
         raise ValueError("rank_dtype is required for scatter_to_striped")

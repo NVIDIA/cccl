@@ -748,7 +748,7 @@ def test_final_cubin(tmp_path, warp):
     symbols. Compiler synchronization and shuffle helper calls may remain.
     Block scratch must use LDS/STS rather than generic LD/ST;
     global input/output accesses may use LDG/STG. The logical-warp path must
-    contain no block barrier (BAR).
+    contain no block barrier or shared-memory load/store.
     Resource reports are saved for inspection but have no assertions here.
     """
 
@@ -799,7 +799,9 @@ def test_final_cubin(tmp_path, warp):
         assert "cuda_coop_cutlass_" not in sass
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
         if warp:
-            assert re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is None
+            assert (
+                re.search(r"\b(?:BAR|LDS|STS)(?:\.[A-Z0-9_]+)*\b", sass) is None
+            )
         else:
             assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
             assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None

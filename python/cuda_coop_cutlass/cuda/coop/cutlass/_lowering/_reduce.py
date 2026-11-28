@@ -193,34 +193,6 @@ def _validate_reduce_request_plan(
     return operation
 
 
-def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
-    """Render a barrier before wrapper-owned scratch is reused, or no line.
-
-    CUB plans get a block barrier or a warp barrier. The warp mask covers only
-    the logical group's lanes. NONE means the caller selected manual
-    synchronization for explicit block scratch.
-    """
-
-    synchronization = plan.synchronization
-    if synchronization is None:
-        raise ValueError("Reduce plan requires a synchronization contract")
-    if synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK:
-        return "  __syncthreads();"
-    if synchronization.storage_reuse_barrier is SynchronizationScope.WARP:
-        _, logical_width = _warp_instances(plan)
-        mask = "0xffffffffu"
-        if logical_width < 32:
-            mask = (
-                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
-                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
-                f"{logical_width}u * {logical_width}u)"
-            )
-        return f"  __syncwarp({mask});"
-    if synchronization.storage_reuse_barrier is SynchronizationScope.NONE:
-        return ""
-    raise ValueError("Reduce plan requires a storage reuse barrier")
-
-
 _BLOCK_ALGORITHM_TOKENS = {
     BlockReduceAlgorithm.RAKING_COMMUTATIVE_ONLY: "raking_commutative",
     BlockReduceAlgorithm.RAKING: "raking",
@@ -308,14 +280,6 @@ class _CubReduceRequest:
         return _BLOCK_ALGORITHM_TOKENS[algorithm]
 
     @property
-    def group_instances(self) -> int:
-        return (
-            _warp_instances(self.plan)[0]
-            if self.plan.target is GroupLoweringTarget.CUB_WARP
-            else 1
-        )
-
-    @property
     def cpp_type(self) -> str:
         implementation = self.plan.implementation
         assert isinstance(implementation, Algorithm)
@@ -326,13 +290,23 @@ class _CubReduceRequest:
         return f"::cub::{implementation.struct_name}<{arguments}>"
 
     @property
+    def storage_free(self) -> bool:
+        assert self.plan.temp_storage is not None
+        return self.plan.temp_storage.ownership is StorageOwnership.NONE
+
+    @property
+    def storage_instances(self) -> int:
+        assert self.plan.topology is not None
+        return self.plan.topology.instances
+
+    @property
     def scratch_requirement_key(self) -> tuple[Any, ...]:
         implementation = self.plan.implementation
         assert isinstance(implementation, Algorithm)
         return (
             "cub_reduce_layout",
             implementation.semantic_key,
-            self.group_instances,
+            self.storage_instances,
         )
 
     @property
@@ -377,38 +351,14 @@ def _render_cub_template_argument(
     )
 
 
-def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
-    """Find complete logical warp instances and their width.
-
-    Use the exact enclosing block and the bound CUB warp width to size
-    storage. Each instance needs its own scratch slice.
-    """
-
-    participation = plan.participation
-    if participation is None:
-        raise ValueError("WarpReduce plan requires a participation contract")
-    block_dim = participation.exact_block_dim
-    block_threads = block_dim[0] * block_dim[1] * block_dim[2]
-    implementation = plan.implementation
-    assert isinstance(implementation, Algorithm)
-    logical_width = implementation.template_arguments.get(
-        "VIRTUAL_WARP_THREADS"
-    )
-    if not isinstance(logical_width, int) or logical_width < 1:
-        raise ValueError("WarpReduce plan requires a static logical warp width")
-    if block_threads < 32 or block_threads % 32 != 0:
-        raise ValueError("WarpReduce plan requires complete physical warps")
-    return (block_threads // 32) * (32 // logical_width), logical_width
-
-
 def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     """Render a CUB call with deferred scratch and root-only results.
 
     Item scalars come before an optional runtime count in the extern ABI. If
     a runtime count is outside 1 through the group size, the wrapper traps;
     the planner already checked static counts. Select one scratch object per
-    block or logical warp from the deferred region, and emit the planned
-    barrier before that scratch can be reused.
+    block or incomplete warp partition from the deferred region. Power-of-two
+    warp reductions use no shared memory.
     """
 
     implementation = request.plan.implementation
@@ -427,9 +377,6 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
             for index in range(request.items_per_thread)
         ),
         *(["int valid_items"] if runtime_valid_items else []),
-        "unsigned int temp_storage_smem_addr",
-        "int temp_storage_bytes",
-        "int temp_storage_auto_sync",
     ]
     input_name = "item0"
     input_lines: list[str] = []
@@ -465,37 +412,57 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     elif request.operation.valid_items.kind is BindingKind.STATIC:
         call_arguments.append(str(request.operation.valid_items.value))
 
-    storage_lines = [
-        "  using storage_type = typename implementation_type::TempStorage;",
-        (
-            f"  if (temp_storage_bytes < {request.group_instances}u "
-            "* sizeof(storage_type) ||"
-        ),
-        "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
-        '    asm volatile("trap;");',
-        "  }",
-        "  auto* const generic_addr =",
-        "      __cvta_shared_to_generic(temp_storage_smem_addr);",
-    ]
-    instance = "0"
-    if request.plan.target is GroupLoweringTarget.CUB_WARP:
-        _, logical_width = _warp_instances(request.plan)
-        storage_lines.extend(
-            [
-                "  unsigned int thread_rank = threadIdx.x + blockDim.x *",
-                "      (threadIdx.y + blockDim.y * threadIdx.z);",
-                "  unsigned int storage_instance =",
-                f"      (thread_rank / 32u) * {32 // logical_width}u +",
-                f"      (thread_rank % 32u) / {logical_width}u;",
-            ]
+    if request.storage_free:
+        # Power-of-two WarpReduce uses shuffles.
+        storage_lines = ["  typename implementation_type::TempStorage storage;"]
+    else:
+        params.extend(
+            (
+                "unsigned int temp_storage_smem_addr",
+                "int temp_storage_bytes",
+                "int temp_storage_auto_sync",
+            )
         )
-        instance = "storage_instance"
-    storage_lines.append(
-        "  auto& storage = reinterpret_cast<storage_type*>(generic_addr)"
-        f"[{instance}];"
-    )
-
-    barrier_line = _storage_reuse_barrier_line(request.plan)
+        storage_lines = [
+            "  using storage_type = typename implementation_type::TempStorage;",
+            "  if (temp_storage_bytes <= 0 ||",
+            "      static_cast<unsigned int>(temp_storage_bytes) < "
+            f"{request.storage_instances}u * sizeof(storage_type) ||",
+            "      (temp_storage_smem_addr & "
+            "(alignof(storage_type) - 1)) != 0) {",
+            '    asm volatile("trap;");',
+            "  }",
+            "  auto* const generic_addr =",
+            "      __cvta_shared_to_generic(temp_storage_smem_addr);",
+        ]
+        instance = "0"
+        if request.plan.target is GroupLoweringTarget.CUB_WARP:
+            # Each physical warp has one complete group of 17 to 31 lanes.
+            width = request.group.static_size
+            storage_lines.extend(
+                (
+                    "  const unsigned int thread_rank = "
+                    "threadIdx.x + blockDim.x *",
+                    "      (threadIdx.y + blockDim.y * threadIdx.z);",
+                    f"  if (thread_rank % 32u >= {width}u) {{",
+                    '    asm volatile("trap;");',
+                    "  }",
+                )
+            )
+            instance = "thread_rank / 32u"
+        storage_lines.append(
+            "  auto& storage = reinterpret_cast<storage_type*>(generic_addr)"
+            f"[{instance}];"
+        )
+    synchronization = request.plan.synchronization
+    assert synchronization is not None
+    barrier = ""
+    if synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK:
+        barrier = "__syncthreads();"
+    elif synchronization.storage_reuse_barrier is SynchronizationScope.WARP:
+        width = request.group.static_size
+        assert width is not None
+        barrier = f"__syncwarp({(1 << width) - 1}u);"
 
     return [
         (
@@ -527,8 +494,8 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
             f"{implementation.method_name}({', '.join(call_arguments)});"
         ),
         *(
-            [f"  if (temp_storage_auto_sync != 0) {{ {barrier_line.strip()} }}"]
-            if barrier_line
+            [f"  if (temp_storage_auto_sync != 0) {{ {barrier} }}"]
+            if barrier
             else []
         ),
         "  return result;",
@@ -539,9 +506,12 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
 def _scratch_layout_probe(request: _CubReduceRequest):
     """Resolve CUB size and alignment for every independent group instance."""
 
+    if request.storage_free:
+        return None
     return _provider_rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
-        f"typename {request.cpp_type}::TempStorage[{request.group_instances}]",
+        f"typename {request.cpp_type}::TempStorage"
+        f"[{request.storage_instances}]",
     )
 
 
@@ -551,6 +521,8 @@ def _scratch_arguments(request: _CubReduceRequest, temp_storage):
     from .._compiler._storage import register_deferred_temp_storage_event
     from .._temp_storage import TempStorage
 
+    if request.storage_free:
+        return (), ()
     if temp_storage is None:
         temp_storage = TempStorage(auto_sync=True)
     elif not isinstance(temp_storage, TempStorage):

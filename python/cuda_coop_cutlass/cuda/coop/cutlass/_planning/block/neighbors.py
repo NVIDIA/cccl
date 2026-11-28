@@ -29,6 +29,7 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
+from ._common import checked_tile_size
 
 
 def validate_neighbor_options(
@@ -155,6 +156,7 @@ def make_block_neighbor_specialization(
         for d in block_dim
     ):
         raise ValueError("block_dim must contain three positive dimensions")
+    checked_tile_size(block_dim, call.items_per_thread)
     dtype = Dependency("T")
     extent = Dependency("ItemsPerThread")
     parameters = [
