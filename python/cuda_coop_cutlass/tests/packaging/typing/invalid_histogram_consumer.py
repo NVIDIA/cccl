@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 from cutlass import Int32
 
@@ -37,6 +39,23 @@ counters = coop.histogram_init(block, bins=70)
 coop.histogram_init(block, counters, bins=70)  # expected-error: [call-overload]
 coop.histogram_init(block)  # expected-error: [call-overload]
 coop.histogram_composite(warp, values, counters)  # expected-error: [arg-type]
-coop.histogram_composite(  # expected-error: [call-arg]
+coop.histogram_composite(  # expected-error: [call-overload]
     block, values, counters, bins_per_thread=2
 )
+
+
+def reject_atomic_scratch(algorithm: Literal["atomic", "sort"]) -> None:
+    scratch = coop.TempStorage()
+    coop.histogram_composite(  # expected-error: [call-overload]
+        block, values, counters, temp_storage=scratch
+    )
+    coop.histogram_composite(  # expected-error: [call-overload]
+        block, values, counters, algorithm="atomic", temp_storage=scratch
+    )
+    coop.histogram_composite(
+        block,
+        values,
+        counters,
+        algorithm=algorithm,  # expected-error: [arg-type]
+        temp_storage=scratch,
+    )

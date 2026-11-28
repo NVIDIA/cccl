@@ -326,11 +326,14 @@ def histogram_composite(
     algorithm : {"atomic", "sort"}, optional
         The counting algorithm. The default is ``"atomic"``.
     temp_storage : TempStorage, optional
-        Scratch separate from the live counters. With automatic scratch or
-        ``auto_sync=True``, the block synchronizes after either algorithm
-        and any thread may then read the counters. With ``auto_sync=False``,
-        synchronize before reading or resetting the counters, changing the
-        algorithm, or reusing scratch.
+        Optional scratch for ``algorithm="sort"``, separate from the live
+        counters. The default atomic algorithm increments the counters
+        directly. Passing explicit scratch with atomic raises ``ValueError``.
+        With ``temp_storage=None``, the block synchronizes after either
+        algorithm. With explicit sort scratch, ``auto_sync=True`` gives
+        the same barrier. With ``auto_sync=False``, synchronize before
+        reading or resetting the counters, changing the algorithm, or
+        reusing scratch.
 
     Notes
     -----
@@ -360,6 +363,12 @@ def histogram_composite(
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
         raise TypeError(
             "histogram_composite temp_storage must be CUTLASS TempStorage"
+        )
+    if temp_storage is not None and algorithm == "atomic":
+        raise ValueError(
+            'histogram_composite with algorithm="atomic" updates counters '
+            "directly. Omit temp_storage or select "
+            'algorithm="sort" to supply scratch.'
         )
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._histogram import provider_histogram_composite

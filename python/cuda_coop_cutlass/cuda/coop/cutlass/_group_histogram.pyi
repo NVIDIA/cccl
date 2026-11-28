@@ -97,6 +97,7 @@ def histogram_init(
 def histogram_init(
     group: BlockGroup, counters: cute.Tensor, /
 ) -> cute.Tensor: ...
+@overload
 def histogram_composite(
     group: BlockGroup,
     samples: _Samples[_Sample],
@@ -104,5 +105,15 @@ def histogram_composite(
     /,
     *,
     algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: None = None,
+) -> None: ...
+@overload
+def histogram_composite(
+    group: BlockGroup,
+    samples: _Samples[_Sample],
+    counters: cute.Tensor,
+    /,
+    *,
+    algorithm: Literal["sort"],
+    temp_storage: TempStorageLike | None,
 ) -> None: ...

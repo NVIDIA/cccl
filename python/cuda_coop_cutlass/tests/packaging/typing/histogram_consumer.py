@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 from cutlass import (
     Int32,
@@ -17,7 +19,10 @@ from typing_extensions import assert_type
 import cuda.coop.cutlass as coop
 
 
-def check_cutlass_histogram() -> None:
+def check_cutlass_histogram(
+    algorithm: Literal["atomic", "sort"],
+    optional_storage: coop.TempStorage | None,
+) -> None:
     """Infer counters from their selector independently of the sample dtype.
 
     NumPy and CuTe selectors retain their annotation type. The default and
@@ -78,6 +83,17 @@ def check_cutlass_histogram() -> None:
     assert_type(counters, cute.Tensor)
     assert_type(coop.histogram_init(block, counters), cute.Tensor)
     coop.histogram_composite(block, samples, counters)
+    coop.histogram_composite(block, samples, counters, algorithm=algorithm)
+    coop.histogram_composite(
+        block, samples, counters, algorithm="atomic", temp_storage=None
+    )
+    coop.histogram_composite(
+        block,
+        samples,
+        counters,
+        algorithm="sort",
+        temp_storage=optional_storage,
+    )
     coop.histogram_composite(
         block,
         samples.to_register_tensor(),

@@ -244,6 +244,32 @@ def test_composite_sort_tile_limit():
     assert _composite_request(items=1024).plan.result is None
 
 
+@pytest.mark.parametrize("options", [{}, {"algorithm": "atomic"}])
+def test_composite_rejects_explicit_atomic_scratch(options):
+    with pytest.raises(ValueError) as error:
+        histogram_composite(
+            this_block(),
+            object(),
+            object(),
+            temp_storage=TempStorage(),
+            **options,
+        )
+    assert str(error.value) == (
+        'histogram_composite with algorithm="atomic" updates counters '
+        "directly. Omit temp_storage or select "
+        'algorithm="sort" to supply scratch.'
+    )
+
+
+def test_composite_rejects_invalid_storage_type():
+    with pytest.raises(
+        TypeError, match="temp_storage must be CUTLASS TempStorage"
+    ):
+        histogram_composite(
+            this_block(), object(), object(), temp_storage=object()
+        )
+
+
 def test_histogram_init_requires_one_source_of_counters():
     block = this_block()
     with pytest.raises(TypeError, match="requires counters or bins"):
