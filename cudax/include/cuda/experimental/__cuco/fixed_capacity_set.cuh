@@ -387,7 +387,7 @@ public:
   //! @param[in] __last End of the sequence of keys to count
   //!
   //! @return The sum of total occurrences of all keys in `[__first, __last)`
-  template <typename _InputIt>
+  template <class _InputIt>
   [[nodiscard]] _CCCL_HOST_API size_type count(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last) const
   {
     return __impl_->count(__stream, __first, __last, ref());

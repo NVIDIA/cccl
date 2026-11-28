@@ -2,20 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cuda/__cccl_config>
+#include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_ref_impl.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_set.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
+#include <cooperative_groups.h>
 #include <testing.cuh>
 
 #include "test_common.cuh"
+#include <cooperative_groups/reduce.h>
 
 using key_types     = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::int32_t, cuda::std::int64_t>;
 using cg_sizes      = c2h::type_list<int_c<1>, int_c<2>>;
@@ -83,6 +90,73 @@ C2H_TEST("fixed_capacity_set count", "[container]", key_types, cg_sizes, bucket_
   // Clearing the set resets the count.
   set.clear(context.stream);
   REQUIRE(set.count(context.stream, first, first + num_keys) == 0);
+}
+
+struct zero_hash
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(int) const noexcept
+  {
+    return 0;
+  }
+};
+
+template <int CgSize>
+struct exercise_duplicate_count
+{
+  _CCCL_DEVICE_API void operator()(int* result) const
+  {
+    using namespace cudax::cuco::__open_addressing;
+    using probing_type     = cudax::cuco::linear_probing<CgSize, zero_hash>;
+    constexpr int capacity = 8;
+    constexpr int empty    = -1;
+    using storage_ref      = __slot_storage_ref<int, 2, capacity>;
+    using ref_type =
+      __open_addressing_ref_impl<int, cuda::thread_scope_block, cuda::std::equal_to<int>, probing_type, storage_ref, true>;
+    using count_type = typename ref_type::__size_type;
+
+    __shared__ int slots[capacity];
+    const auto group = cooperative_groups::tiled_partition<CgSize>(cooperative_groups::this_thread_block());
+    const ref_type ref{empty, {}, probing_type{}, storage_ref{slots, capacity}};
+    bool success = true;
+    // Both keys hash to zero. Matches span buckets, including the bucket with the empty slot.
+    for (int occupied = capacity - 1; occupied <= capacity; ++occupied)
+    {
+      constexpr int values[capacity] = {7, 9, 7, 7, 9, 7, 7, 7};
+      for (int i = static_cast<int>(group.thread_rank()); i < capacity; i += CgSize)
+      {
+        slots[i] = i < occupied ? values[i] : empty;
+      }
+      group.sync();
+
+      const auto expected = static_cast<count_type>(occupied - 2);
+      const auto matches =
+        cooperative_groups::reduce(group, ref.count(group, 7), cooperative_groups::plus<count_type>{});
+      const auto missing =
+        cooperative_groups::reduce(group, ref.count(group, 11), cooperative_groups::plus<count_type>{});
+      success = matches == expected && missing == 0 && success;
+      if constexpr (CgSize == 1)
+      {
+        success = ref.count(7) == expected && ref.count(11) == 0 && success;
+      }
+      group.sync();
+    }
+    if (group.thread_rank() == 0)
+    {
+      *result = static_cast<int>(success);
+    }
+  }
+};
+
+C2H_TEST("open addressing ref counts stored duplicates", "[container][ref]", cg_sizes)
+{
+  [[maybe_unused]] constexpr int cg_size = c2h::get<0, TestType>::value;
+  test_context context;
+  auto result = cuda::make_buffer<int>(context.stream, context.mr, 1, 0);
+  cuda::launch(context.stream,
+               cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<cg_size>()),
+               exercise_duplicate_count<cg_size>{},
+               result.data());
+  REQUIRE(context.all_equal(result.data(), 1, 1));
 }
 
 struct insert_key

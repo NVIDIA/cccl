@@ -863,12 +863,12 @@ public:
     {
       auto __probing_iter =
         __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
-      auto const __init_idx = *__probing_iter;
+      const auto __init_idx = *__probing_iter;
       __size_type __count   = 0;
 
       while (true)
       {
-        auto const __bucket_slots                    = __storage_ref[*__probing_iter];
+        const auto __bucket_slots                    = __storage_ref[*__probing_iter];
         ::cuda::std::int32_t __equals[__bucket_size] = {0};
         bool __empty_found                           = false;
 
@@ -906,12 +906,12 @@ public:
   {
     auto __probing_iter =
       __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
-    auto const __init_idx = *__probing_iter;
+    const auto __init_idx = *__probing_iter;
     __size_type __count   = 0;
 
     while (true)
     {
-      auto const __bucket_slots                    = __storage_ref[*__probing_iter];
+      const auto __bucket_slots                    = __storage_ref[*__probing_iter];
       ::cuda::std::int32_t __equals[__bucket_size] = {0};
       bool __should_return                         = false;
 
