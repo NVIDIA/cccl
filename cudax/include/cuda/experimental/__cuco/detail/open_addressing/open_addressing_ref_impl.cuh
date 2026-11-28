@@ -852,7 +852,7 @@ public:
   //! @param __key The key to count for
   //!
   //! @return Number of occurrences found by the current thread
-  template <typename _ProbeKey>
+  template <class _ProbeKey>
   [[nodiscard]] _CCCL_DEVICE_API __size_type count(_ProbeKey __key) const noexcept
   {
     if constexpr (!__allows_duplicates)
@@ -900,7 +900,7 @@ public:
   //! @param __key The key to count for
   //!
   //! @return Number of occurrences found by the current thread
-  template <typename _ProbeKey, typename _ParentCG>
+  template <class _ProbeKey, class _ParentCG>
   [[nodiscard]] _CCCL_DEVICE_API __size_type
   count(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
