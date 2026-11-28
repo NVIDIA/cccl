@@ -72,7 +72,7 @@ from ._thread_data import (
     CutlassTensorSSASample,
     ThreadData,
 )
-from ._typing import BlockGroup, ReadableThreadDataLike, TempStorageLike
+from ._typing import BlockGroup, ReadableThreadDataLike
 
 _Counter = TypeVar(
     "_Counter",
@@ -103,7 +103,7 @@ def histogram(
     bins_per_thread: int = 1,
     counter_dtype: type[int | _Counter] | np.dtype | None = None,
     algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Count how many of a block's samples equal each bin index.
 

@@ -141,14 +141,14 @@ from cuda.coop.cutlass._typing import (
     BlockLoadStoreAlgorithm,
     IntegerValue,
     ReadableThreadDataLike,
-    TempStorageLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
     _NumericT,
 )
 from cuda.coop.cutlass._validation import _validate_temp_storage
 
-from ._thread_data import ThreadData
+from ._temp_storage import TempStorage
+from ._thread_data import ThreadData, _copy_readable_payload
 from ._thread_group import (
     _require_complete_warp_partition,
     _resolve_primitive_group_from_launch,
@@ -185,10 +185,8 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     if temp_storage is not None:
         _validate_temp_storage(operation, temp_storage)
         from ._compiler._lifetime import register_use
-        from ._temp_storage import TempStorage
 
-        if isinstance(temp_storage, TempStorage):
-            register_use(temp_storage, operation)
+        register_use(temp_storage, operation)
     from ._compiler._launch import current_kernel_launch_facts
 
     launch = current_kernel_launch_facts()
@@ -213,7 +211,7 @@ def load(
     valid_items: ValidItems | None = None,
     oob_default: _NumericT | float | None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Read a group's tile from memory into a payload in each thread.
 
@@ -449,7 +447,7 @@ def store(
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> None:
     """Write each thread's payload to a group's tile in memory.
 
@@ -465,7 +463,7 @@ def store(
         element type, as CuTe reports it or as ``dtype`` declares it, is
         the element type of ``value``. Nothing is converted, and two
         different types are rejected when the kernel is compiled.
-    value : ThreadData or CuTe scalar
+    value : readable payload or CuTe scalar
         This thread's payload. Every item must be assigned, and a payload
         with an unassigned item is rejected when the kernel is compiled.
         One scalar per thread, such as ``cutlass.Int32(x)``, is stored as
@@ -534,6 +532,10 @@ def store(
     )
     from ._lowering._load_store import provider_store
 
+    if not isinstance(value, ThreadData) and isinstance(
+        value, ReadableThreadDataLike
+    ):
+        value = _copy_readable_payload(value, name="value", primitive="store")
     provider_store(
         group=group,
         launch=launch,

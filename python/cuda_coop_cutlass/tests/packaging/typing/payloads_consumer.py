@@ -30,6 +30,17 @@ def check_payloads() -> None:
         coop.ThreadData.from_values(np.int32(1), np.int32(2)),
         coop.ThreadData[np.int32],
     )
+    assert_type(
+        coop.ThreadData(1, dtype=np.dtype(np.uint8)), coop.ThreadData[np.uint8]
+    )
+    assert_type(
+        coop.ThreadData.from_fn(2, lambda i: i, dtype=np.dtype(np.int32)),
+        coop.ThreadData[np.int32],
+    )
+    assert_type(
+        coop.ThreadData(1, dtype=np.dtype(np.uint8), values=[1]),
+        coop.ThreadData[int],
+    )
     fragment = values.to_register_tensor()
     vector = values.to_tensor_ssa()
     assert_type(
@@ -40,6 +51,10 @@ def check_payloads() -> None:
         coop.ThreadData.from_vector(vector, dtype=np.int32),
         coop.ThreadData[np.int32],
     )
+
+
+def check_device_operator(operator: coop.DeviceOperator) -> None:
+    assert_type(operator.cpp_definition, str)
 
 
 def check_storage() -> None:

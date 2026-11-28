@@ -29,6 +29,7 @@ from cutlass import (
     Uint64,
 )
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -38,8 +39,6 @@ from ._typing import (
     BlockGroup,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
-    ThreadDataLike,
 )
 
 _IntegerKey: TypeAlias = (
@@ -77,7 +76,7 @@ _BitBound: TypeAlias = (
     | Uint16
     | Uint32
 )
-_PrefixOutput: TypeAlias = ThreadDataLike[np.int32] | ThreadDataLike[Int32]
+_PrefixOutput: TypeAlias = ThreadData[np.int32] | ThreadData[Int32]
 
 @overload
 def radix_sort_keys(
@@ -88,7 +87,7 @@ def radix_sort_keys(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> ThreadData[_KeyT]: ...
 @overload
@@ -100,7 +99,7 @@ def radix_sort_keys(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> ThreadData[Any]: ...
 @overload
@@ -112,7 +111,7 @@ def radix_sort_keys(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> _KeyT: ...
 @overload
@@ -125,7 +124,7 @@ def radix_sort_pairs(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[ThreadData[_KeyT], ThreadData[_ValueT]]: ...
 @overload
@@ -138,7 +137,7 @@ def radix_sort_pairs(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
@@ -151,7 +150,7 @@ def radix_sort_pairs(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[ThreadData[_KeyT], ThreadData[Any]]: ...
 @overload
@@ -164,7 +163,7 @@ def radix_sort_pairs(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...
 @overload
@@ -177,7 +176,7 @@ def radix_sort_pairs(
     begin_bit: _BitBound = 0,
     end_bit: _BitBound | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[_KeyT, _ValueT]: ...
 @overload

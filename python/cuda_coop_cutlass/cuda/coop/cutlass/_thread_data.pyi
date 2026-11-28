@@ -12,12 +12,14 @@ or compiler support; runtime tracing checks those requirements.
 from collections.abc import Callable, Iterator
 from typing import Any, Generic, Protocol, TypeAlias, overload
 
+import numpy as np
 from typing_extensions import TypeVar
 
 from ._typing import ThreadDataLike
 
 _ItemT = TypeVar("_ItemT", default=Any)
 _ValueT = TypeVar("_ValueT")
+_NumpyT = TypeVar("_NumpyT", bound=np.generic)
 _SourceT_co = TypeVar("_SourceT_co", covariant=True)
 _ProducerT = TypeVar("_ProducerT")
 
@@ -120,20 +122,40 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
     dtype: object | None
     alignment: int | None
 
+    @overload
+    def __init__(
+        self,
+        items_per_thread: int,
+        dtype: type[Any] | np.dtype[Any] | None = None,
+        *,
+        values: tuple[_ItemT, ...] | list[_ItemT],
+        alignment: int | None = None,
+    ) -> None: ...
+    @overload
     def __init__(
         self,
         items_per_thread: int,
         dtype: type[_ItemT] | None = None,
         *,
-        values: tuple[_ItemT, ...] | list[_ItemT] | None = None,
+        values: None = None,
+        alignment: int | None = None,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self: ThreadData[_NumpyT],
+        items_per_thread: int,
+        dtype: np.dtype[_NumpyT],
+        *,
+        values: None = None,
         alignment: int | None = None,
     ) -> None: ...
     @classmethod
     def from_values(
         cls,
         first: _ValueT,
+        /,
         *rest: _ValueT,
-        dtype: type[Any] | None = None,
+        dtype: type[Any] | np.dtype[Any] | None = None,
     ) -> ThreadData[_ValueT]: ...
     @overload
     @classmethod
@@ -144,6 +166,15 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         *,
         dtype: type[_ValueT],
     ) -> ThreadData[_ValueT]: ...
+    @overload
+    @classmethod
+    def from_fn(
+        cls,
+        items_per_thread: int,
+        fn: Callable[[int], object],
+        *,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]: ...
     @overload
     @classmethod
     def from_fn(
@@ -169,6 +200,15 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         fragment: CutlassTensorSample,
         *,
         items_per_thread: int | None = None,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]: ...
+    @overload
+    @classmethod
+    def from_register_tensor(
+        cls,
+        fragment: CutlassTensorSample,
+        *,
+        items_per_thread: int | None = None,
         dtype: None = None,
     ) -> ThreadData[Any]: ...
     @overload
@@ -180,6 +220,15 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         items_per_thread: int | None = None,
         dtype: type[_ValueT],
     ) -> ThreadData[_ValueT]: ...
+    @overload
+    @classmethod
+    def from_vector(
+        cls,
+        vector: object,
+        *,
+        items_per_thread: int | None = None,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]: ...
     @overload
     @classmethod
     def from_vector(
@@ -214,6 +263,15 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         payload: object,
         *,
         items_per_thread: int | None = None,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]: ...
+    @overload
+    @classmethod
+    def from_payload(
+        cls,
+        payload: object,
+        *,
+        items_per_thread: int | None = None,
         dtype: None = None,
     ) -> ThreadData[Any]: ...
     @overload
@@ -231,11 +289,33 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
     @classmethod
     def load(
         cls,
+        source: ThreadDataLoadSource[Any],
+        *,
+        items_per_thread: int | None = None,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]:
+        """Load and cast a statically sized producer payload to ``dtype``."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
         source: _ThreadDataIndexableLoadSource[Any],
         *,
         items_per_thread: int,
         dtype: type[_ValueT],
     ) -> ThreadData[_ValueT]:
+        """Load and cast an explicitly sized producer payload to ``dtype``."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: _ThreadDataIndexableLoadSource[Any],
+        *,
+        items_per_thread: int,
+        dtype: np.dtype[_NumpyT],
+    ) -> ThreadData[_NumpyT]:
         """Load and cast an explicitly sized producer payload to ``dtype``."""
 
     @overload

@@ -17,6 +17,7 @@ from typing_extensions import TypeVar
 
 from cutlass import Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -26,7 +27,6 @@ from ._typing import (
     BlockGroup,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _KeyT = TypeVar("_KeyT", bound=NumericScalar)
@@ -58,7 +58,7 @@ def topk_min_keys(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_KeyT]: ...
 @overload
 def topk_min_keys(
@@ -68,7 +68,7 @@ def topk_min_keys(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def topk_min_pairs(
@@ -79,7 +79,7 @@ def topk_min_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[_ValueT]]: ...
 @overload
 def topk_min_pairs(
@@ -90,7 +90,7 @@ def topk_min_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def topk_min_pairs(
@@ -101,7 +101,7 @@ def topk_min_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[Any]]: ...
 @overload
 def topk_min_pairs(
@@ -112,7 +112,7 @@ def topk_min_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...
 @overload
 def topk_max_keys(
@@ -122,7 +122,7 @@ def topk_max_keys(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_KeyT]: ...
 @overload
 def topk_max_keys(
@@ -132,7 +132,7 @@ def topk_max_keys(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def topk_max_pairs(
@@ -143,7 +143,7 @@ def topk_max_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[_ValueT]]: ...
 @overload
 def topk_max_pairs(
@@ -154,7 +154,7 @@ def topk_max_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def topk_max_pairs(
@@ -165,7 +165,7 @@ def topk_max_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[Any]]: ...
 @overload
 def topk_max_pairs(
@@ -176,5 +176,5 @@ def topk_max_pairs(
     *,
     k: _Count,
     valid_items: _Count | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...

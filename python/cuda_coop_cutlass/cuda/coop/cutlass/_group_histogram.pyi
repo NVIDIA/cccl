@@ -14,8 +14,9 @@ from typing import Literal, TypeAlias, overload
 import numpy as np
 from typing_extensions import TypeVar
 
-from cutlass import Int32, Int64, Uint32, Uint64
+from cutlass import Int32, Int64, Uint8, Uint32, Uint64
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -23,12 +24,22 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
-_Sample = TypeVar("_Sample", bound=NumericScalar)
+_Sample: TypeAlias = (
+    int
+    | np.uint8
+    | np.int32
+    | np.uint32
+    | np.int64
+    | np.uint64
+    | Uint8
+    | Int32
+    | Uint32
+    | Int64
+    | Uint64
+)
 
 _Samples: TypeAlias = (
     ReadableThreadDataLike[_Sample]
@@ -53,36 +64,36 @@ _NumpyCounter = TypeVar(
 @overload
 def histogram(
     group: BlockGroup,
-    samples: _Samples[_Sample],
+    samples: _Samples,
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: None | type[int] = None,
     algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
 def histogram(
     group: BlockGroup,
-    samples: _Samples[_Sample],
+    samples: _Samples,
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: np.dtype[_NumpyCounter],
     algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_NumpyCounter]: ...
 @overload
 def histogram(
     group: BlockGroup,
-    samples: _Samples[_Sample],
+    samples: _Samples,
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: type[_Counter],
     algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_Counter]: ...

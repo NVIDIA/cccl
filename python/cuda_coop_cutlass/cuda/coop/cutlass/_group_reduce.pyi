@@ -19,11 +19,11 @@ from cuda.coop.cutlass._typing import (
     ReadableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
-    TempStorageLike,
     ValidItems,
 )
 
 from ._device_operator import DeviceOperator
+from ._temp_storage import TempStorage
 from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
 from ._typing import BlockGroup, WarpGroup
 
@@ -67,7 +67,7 @@ def reduce(
     binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Return a reduced scalar defined only at group rank zero."""
 
@@ -80,7 +80,7 @@ def reduce(
     binary_op: _ReduceOperator | None = None,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Return a reduced scalar defined only at group rank zero."""
 
@@ -119,7 +119,7 @@ def reduce(
     binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> Any:
     """Return a reduced scalar whose dtype is known during tracing."""
 
@@ -144,7 +144,7 @@ def sum(
     *,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Return a reduced scalar defined only at group rank zero."""
 
@@ -156,7 +156,7 @@ def sum(
     *,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Return a reduced scalar defined only at group rank zero."""
 
@@ -192,7 +192,7 @@ def sum(
     *,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> Any:
     """Return a reduced scalar whose dtype is known during tracing."""
 

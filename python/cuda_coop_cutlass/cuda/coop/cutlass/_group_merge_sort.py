@@ -70,6 +70,7 @@ from cuda.coop.cutlass._validation import (
     _validate_temp_storage,
 )
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -84,7 +85,6 @@ from ._typing import (
     BlockGroup,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
     WarpGroup,
 )
 
@@ -174,7 +174,7 @@ def merge_sort_keys(
     descending: bool = False,
     valid_items: IntegerValue | None = None,
     oob_default: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Sort a group's keys into ascending or descending order.
 
@@ -337,7 +337,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: IntegerValue | None = None,
     oob_default: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData, ThreadData]:
     """Sort a group's keys and move each key's value with it.
 

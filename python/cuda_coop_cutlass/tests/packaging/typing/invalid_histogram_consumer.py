@@ -32,3 +32,8 @@ coop.histogram(
 coop.histogram(  # expected-error: [call-overload]
     block, values, bins=32, algorithm="other"
 )
+
+floats = coop.ThreadData.from_values(np.float32(1))
+shorts = coop.ThreadData.from_values(np.int16(1))
+coop.histogram(block, floats, bins=2)  # expected-error: [arg-type]
+coop.histogram(block, shorts, bins=2)  # expected-error: [arg-type]

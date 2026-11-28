@@ -113,7 +113,6 @@ from ._typing import (
     BlockGroup,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _ValueT = TypeVar("_ValueT", bound=NumericScalar)
@@ -174,7 +173,7 @@ def topk_min_keys(
     *,
     k: IntegralScalar,
     valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Select the smallest keys of a block's tile.
 
@@ -297,7 +296,7 @@ def topk_max_keys(
     *,
     k: IntegralScalar,
     valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Select the largest keys of a block's tile.
 
@@ -355,7 +354,7 @@ def topk_min_pairs(
     *,
     k: IntegralScalar,
     valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData, ThreadData]:
     """Select the smallest keys of a block's tile, each with its value.
 
@@ -434,7 +433,7 @@ def topk_max_pairs(
     *,
     k: IntegralScalar,
     valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData, ThreadData]:
     """Select the largest keys of a block's tile, each with its value.
 

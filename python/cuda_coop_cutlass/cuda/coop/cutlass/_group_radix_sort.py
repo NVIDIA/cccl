@@ -135,8 +135,6 @@ from ._typing import (
     BlockGroup,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
-    ThreadDataLike,
 )
 
 _KeyT = TypeVar(
@@ -260,7 +258,7 @@ def radix_sort_keys(
     begin_bit: IntegerValue = 0,
     end_bit: IntegerValue | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> ThreadData | _KeyT:
     """Sort the keys of a block's tile by their bits.
@@ -404,7 +402,7 @@ def radix_sort_pairs(
     begin_bit: IntegerValue = 0,
     end_bit: IntegerValue | None = None,
     descending: bool = False,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
 ) -> tuple[ThreadData, ThreadData] | tuple[_KeyT, _ValueT]:
     """Sort the keys of a block's tile and move each key's value with it.
@@ -488,9 +486,7 @@ def radix_rank_keys(
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: ThreadDataLike[np.int32]
-    | ThreadDataLike[CompilerIntegerLike]
-    | None = None,
+    exclusive_digit_prefix: ThreadData | None = None,
 ) -> ThreadData | CompilerIntegerLike:
     """Find where each key of a block's tile goes in a sort by one digit.
 

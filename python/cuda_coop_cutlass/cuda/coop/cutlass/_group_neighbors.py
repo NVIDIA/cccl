@@ -99,7 +99,6 @@ from ._typing import (
     IntegerValue,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _T = TypeVar("_T", bound=NumericScalar)
@@ -174,7 +173,7 @@ def adjacent_difference(
     valid_items: IntegerValue | None = None,
     tile_predecessor_item: NumericScalar | None = None,
     tile_successor_item: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Subtract the neighboring item from each item of a block's tile.
 
@@ -304,7 +303,7 @@ def discontinuity(
     mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
     tile_predecessor_item: NumericScalar | None = None,
     tile_successor_item: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData | tuple[ThreadData, ThreadData]:
     """Flag the items of a block's tile that differ from their neighbor.
 

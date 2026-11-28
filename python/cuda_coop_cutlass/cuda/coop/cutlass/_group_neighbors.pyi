@@ -16,6 +16,7 @@ from typing_extensions import TypeVar
 
 from cutlass import Int32
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -27,7 +28,6 @@ from ._typing import (
     IntegerValue,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _T = TypeVar("_T", bound=NumericScalar)
@@ -43,7 +43,7 @@ def adjacent_difference(
     valid_items: IntegerValue | None = None,
     tile_predecessor_item: ContextualInitialValue[_T] | None = None,
     tile_successor_item: ContextualInitialValue[_T] | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_T]: ...
 @overload
 def adjacent_difference(
@@ -55,7 +55,7 @@ def adjacent_difference(
     valid_items: IntegerValue | None = None,
     tile_predecessor_item: NumericScalar | None = None,
     tile_successor_item: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def discontinuity(
@@ -66,7 +66,7 @@ def discontinuity(
     mode: Literal["heads", "tails"] = "heads",
     tile_predecessor_item: ContextualInitialValue[_T] | None = None,
     tile_successor_item: ContextualInitialValue[_T] | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
 def discontinuity(
@@ -77,7 +77,7 @@ def discontinuity(
     mode: Literal["heads", "tails"] = "heads",
     tile_predecessor_item: NumericScalar | None = None,
     tile_successor_item: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
 def discontinuity(
@@ -88,7 +88,7 @@ def discontinuity(
     mode: Literal["heads_and_tails"],
     tile_predecessor_item: ContextualInitialValue[_T] | None = None,
     tile_successor_item: ContextualInitialValue[_T] | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Int32], ThreadData[Int32]]: ...
 @overload
 def discontinuity(
@@ -99,5 +99,5 @@ def discontinuity(
     mode: Literal["heads_and_tails"],
     tile_predecessor_item: NumericScalar | None = None,
     tile_successor_item: NumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Int32], ThreadData[Int32]]: ...

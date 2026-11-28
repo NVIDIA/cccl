@@ -67,12 +67,11 @@ from cuda.coop.cutlass._typing import (
     ScanAlgorithm,
     ScanOperator,
     SumScanOperator,
-    TempStorageLike,
-    ThreadDataLike,
     ValidItems,
 )
 
 from ._device_operator import DeviceOperator
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -117,9 +116,9 @@ _SeededScanOperator: TypeAlias = (
 class _BlockSeededScanOptions(TypedDict, Generic[_ItemT], total=False):
     scan_op: _ScanOperator | None
     algorithm: ScanAlgorithm | None
-    temp_storage: TempStorageLike | None
+    temp_storage: TempStorage | None
     valid_items: None
-    aggregate_output: ThreadDataLike[_ItemT] | None
+    aggregate_output: ThreadData[_ItemT] | None
 
 class _BlockSeededScanModeOptions(_BlockSeededScanOptions[_ItemT], total=False):
     mode: Literal["exclusive"]
@@ -129,7 +128,7 @@ class _WarpSeededScanOptions(TypedDict, Generic[_ItemT], total=False):
     algorithm: None
     temp_storage: None
     valid_items: ValidItems | None
-    aggregate_output: ThreadDataLike[_ItemT] | None
+    aggregate_output: ThreadData[_ItemT] | None
 
 class _WarpSeededScanModeOptions(_WarpSeededScanOptions[_ItemT], total=False):
     mode: Literal["exclusive"]
@@ -144,9 +143,9 @@ def scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -338,9 +337,9 @@ def scan(
     scan_op: _SeededScanOperator,
     initial_value: ContextualInitialValue[_ScalarT],
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -352,9 +351,9 @@ def scan(
     scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -366,9 +365,9 @@ def scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: ContextualInitialValue[_ItemT] | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def scan(
@@ -560,9 +559,9 @@ def scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def scan(
@@ -574,9 +573,9 @@ def scan(
     scan_op: _SeededScanOperator,
     initial_value: ContextualInitialValue[_ItemT],
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def scan(
@@ -588,9 +587,9 @@ def scan(
     scan_op: _SeededScanOperator,
     initial_value: NumericScalar,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def scan(
@@ -602,9 +601,9 @@ def scan(
     scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def scan(
@@ -616,9 +615,9 @@ def scan(
     scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def scan(
@@ -632,7 +631,7 @@ def scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -826,7 +825,7 @@ def scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -840,7 +839,7 @@ def scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -849,9 +848,9 @@ def exclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -860,9 +859,9 @@ def exclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def exclusive_sum(
@@ -871,9 +870,9 @@ def exclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def exclusive_sum(
@@ -884,7 +883,7 @@ def exclusive_sum(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -893,9 +892,9 @@ def inclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -904,9 +903,9 @@ def inclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def inclusive_sum(
@@ -915,9 +914,9 @@ def inclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def inclusive_sum(
@@ -928,7 +927,7 @@ def inclusive_sum(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -939,9 +938,9 @@ def exclusive_scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -1132,9 +1131,9 @@ def exclusive_scan(
     scan_op: _SeededScanOperator,
     initial_value: ContextualInitialValue[_ScalarT],
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -1145,9 +1144,9 @@ def exclusive_scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: ContextualInitialValue[_ItemT] | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -1338,9 +1337,9 @@ def exclusive_scan(
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
     initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def exclusive_scan(
@@ -1351,9 +1350,9 @@ def exclusive_scan(
     scan_op: _SeededScanOperator,
     initial_value: ContextualInitialValue[_ItemT],
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -1364,9 +1363,9 @@ def exclusive_scan(
     scan_op: _SeededScanOperator,
     initial_value: NumericScalar,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def exclusive_scan(
@@ -1379,7 +1378,7 @@ def exclusive_scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -1572,7 +1571,7 @@ def exclusive_scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -1582,9 +1581,9 @@ def inclusive_scan(
     *,
     scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -1594,9 +1593,9 @@ def inclusive_scan(
     *,
     scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | None = None,
+    aggregate_output: ThreadData[_ItemT] | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def inclusive_scan(
@@ -1606,9 +1605,9 @@ def inclusive_scan(
     *,
     scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData[Any] | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def inclusive_scan(
@@ -1620,5 +1619,5 @@ def inclusive_scan(
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ScalarT] | None = None,
+    aggregate_output: ThreadData[_ScalarT] | None = None,
 ) -> _ScalarT: ...

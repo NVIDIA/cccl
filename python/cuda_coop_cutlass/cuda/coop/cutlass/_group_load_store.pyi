@@ -11,11 +11,11 @@ from cuda.coop.cutlass._typing import (
     IntegerValue,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
 )
 
+from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._typing import BlockGroup, WarpGroup
 
@@ -34,7 +34,7 @@ def load(
     valid_items: ValidItems | None = None,
     oob_default: None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]:
     """Return a fresh payload containing one cooperative block tile."""
 
@@ -51,7 +51,7 @@ def load(
     valid_items: ValidItems,
     oob_default: NumericScalar | float,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]:
     """Return a partial block tile with invalid items filled."""
 
@@ -100,7 +100,7 @@ def store(
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> None:
     """Store one scalar or per-thread payload cooperatively across a block."""
 

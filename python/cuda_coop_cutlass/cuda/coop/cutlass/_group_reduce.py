@@ -100,13 +100,13 @@ from cuda.coop.cutlass._typing import (
     ReadableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
-    TempStorageLike,
     ValidItems,
 )
 
 from ._compiler._launch import current_kernel_launch_facts
 from ._device_operator import DeviceOperator
 from ._group_load_store import _is_boolean
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -184,7 +184,7 @@ def reduce(
     | None = None,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Combine a group's values into one result with an operator.
 
@@ -204,7 +204,7 @@ def reduce(
         Make it with ``group_by(n, exhaustive=False)`` and put the call
         inside ``if group.is_member():``, so that the other lanes skip it.
         :meth:`~cuda.coop.cutlass.ThreadGroup.group_by` has an example.
-    value : scalar, ThreadData, CuTe register tensor or TensorSSA
+    value : scalar, readable payload, CuTe register tensor or TensorSSA
         One scalar per thread or a payload. Every item of a payload goes
         into the result. A register tensor or ``TensorSSA`` is read as a
         payload. A scalar or an item has one of the ten element types
@@ -352,7 +352,7 @@ def sum(
     *,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> _ItemT:
     """Add a group's values into one result.
 

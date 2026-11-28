@@ -17,6 +17,7 @@ from typing_extensions import TypeVar
 
 from cutlass import Uint32
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -27,7 +28,6 @@ from ._typing import (
     IntegralScalar,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _ItemT = TypeVar("_ItemT", bound=NumericScalar)
@@ -43,7 +43,7 @@ def run_length_decode(
     *,
     decoded_items_per_thread: int,
     decoded_window_offset: IntegralScalar = 0,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_ItemT]: ...
 @overload
 def run_length_decode(
@@ -54,7 +54,7 @@ def run_length_decode(
     *,
     decoded_items_per_thread: int,
     decoded_window_offset: IntegralScalar = 0,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 def run_length_decode_into(
     group: BlockGroup,
@@ -65,5 +65,5 @@ def run_length_decode_into(
     *,
     decoded_items_per_thread: int,
     destination_offset: IntegralScalar = 0,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> Uint32: ...

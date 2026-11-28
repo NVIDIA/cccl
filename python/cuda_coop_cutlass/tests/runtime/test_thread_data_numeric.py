@@ -110,3 +110,56 @@ def test_numpy_scalar_values_and_nested_shape_export(numpy_values):
     with device_array(output) as destination:
         launch(destination)
     np.testing.assert_array_equal(output, [1, 2, 3, 4])
+
+
+class _ReadonlyOnes:
+    dtype = cutlass.Int32
+    items_per_thread = 2
+
+    def __len__(self):
+        return self.items_per_thread
+
+    def __getitem__(self, index):
+        return cutlass.Int32((1, 1)[index])
+
+
+@pytest.mark.parametrize(
+    "operation", ("store", "exchange", "shuffle", "scan", "sum")
+)
+def test_readonly_collective_input(operation):
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        block = coop.this_block()
+        values = _ReadonlyOnes()
+        if cutlass.const_expr(operation == "store"):
+            coop.store(block, destination, values)
+        elif cutlass.const_expr(operation == "exchange"):
+            coop.store(block, destination, coop.exchange(block, values))
+        elif cutlass.const_expr(operation == "shuffle"):
+            result = coop.shuffle(block, values, mode="down")
+            if cute.arch.thread_idx()[0] == 31:
+                result[1] = cutlass.Int32(0)
+            coop.store(block, destination, result)
+        elif cutlass.const_expr(operation == "scan"):
+            coop.store(block, destination, coop.inclusive_sum(block, values))
+        else:
+            total = coop.sum(block, values)
+            if cute.arch.thread_idx()[0] == 0:
+                cute.make_tensor(destination, cute.make_layout(1))[0] = total
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    observed = np.zeros(64, dtype=np.int32)
+    with device_array(observed) as destination:
+        launch(destination)
+    expected = np.ones_like(observed)
+    if operation == "sum":
+        expected[:] = 0
+        expected[0] = 64
+    elif operation == "scan":
+        expected = np.arange(1, 65)
+    elif operation == "shuffle":
+        expected[-1] = 0
+    np.testing.assert_array_equal(observed, expected)

@@ -216,7 +216,7 @@ def exchange(
         whose items a scatter skips. On a warp or a group of lanes, the
         other groups of the block can skip the call. A warp group needs a
         block whose size is a multiple of 32.
-    value : ThreadData, CuTe register tensor or TensorSSA
+    value : readable payload, CuTe register tensor or TensorSSA
         A payload. A register tensor or ``TensorSSA`` is read as a payload,
         and the result is a ``ThreadData`` that ``to_register_tensor`` or
         ``to_tensor_ssa`` converts back. One scalar per thread is rejected

@@ -233,11 +233,12 @@ def _numeric_dtype_name(dtype: Any) -> str:
 
 
 def _validate_temp_storage(operation: str, value: Any) -> None:
-    """Check the descriptor interface before planning its shared region."""
-    if not isinstance(value, TempStorageLike):
+    """Require the descriptor whose identity owns the shared allocation."""
+    from ._temp_storage import TempStorage
+
+    if not isinstance(value, TempStorage):
         raise TypeError(
-            f"cuda.coop.cutlass.{operation} temp_storage must satisfy "
-            "TempStorageLike; construct it with cuda.coop.cutlass.TempStorage()"
+            f"cuda.coop.cutlass.{operation} temp_storage must be TempStorage"
         )
 
 
