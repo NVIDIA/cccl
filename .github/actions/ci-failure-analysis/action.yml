@@ -28,18 +28,17 @@ runs:
   steps:
     - name: Collect workflow logs
       id: collect-logs
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       env:
-        GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ inputs.pr_number }}
         RUN_ID: ${{ inputs.run_id }}
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        "${GITHUB_ACTION_PATH}/collect-logs.sh" \
-          /tmp/ci-logs \
-          "${RUN_ID}" \
-          "${PR_NUMBER}"
-        has_evidence="$(jq 'any(.[]; .log_path != "" or (.annotations | length > 0))' /tmp/ci-logs/jobs.json)"
-        echo "has_evidence=${has_evidence}" >> "${GITHUB_OUTPUT}"
+        COLLECTOR_PATH: ${{ github.action_path }}/collect-logs.js
+      with:
+        # Try each request up to three times: GitHub's API sometimes fails.
+        retries: 2
+        script: |
+          const collect = require(process.env.COLLECTOR_PATH);
+          await collect({ github, context, core });
 
     - name: Prepare analysis environment
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -75,6 +74,7 @@ runs:
       id: assemble-analysis
       env:
         HAS_EVIDENCE: ${{ steps.collect-logs.outputs.has_evidence }}
+        UNLISTED_FAILED_JOB_COUNT: ${{ steps.collect-logs.outputs.unlisted_failed_job_count }}
         MODEL_OUTPUT_FILE: ${{ runner.temp }}/ci-failure-analysis/model-output.json
         ANALYSIS_FILE: ${{ runner.temp }}/ci-failure-analysis/analysis.json
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -85,6 +85,7 @@ runs:
         fi
         jq --null-input \
           --argjson has_evidence "${HAS_EVIDENCE}" \
+          --argjson unlisted_failed_job_count "${UNLISTED_FAILED_JOB_COUNT}" \
           --slurpfile model_output "${model_output_file}" \
           --slurpfile run /tmp/ci-logs/run.json \
           --slurpfile jobs /tmp/ci-logs/jobs.json \
@@ -99,6 +100,7 @@ runs:
             ],
             groups: (if $has_evidence then $model_output[0].groups else [] end),
             missing_log_job_count: ([$jobs[0][] | select(.log_path == "")] | length),
+            unlisted_failed_job_count: $unlisted_failed_job_count,
             analysis_skipped: ($has_evidence | not)
           }' > "${ANALYSIS_FILE}"
         test -s "${ANALYSIS_FILE}"
