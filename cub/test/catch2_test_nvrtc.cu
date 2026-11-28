@@ -77,6 +77,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/warp/warp_load.cuh>
     #include <cub/warp/warp_store.cuh>
     #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/warp/warp_shuffle_sort.cuh>
     #include <cub/util_arch.cuh>
     #include <cub/util_cpp_dialect.cuh>
     #include <cub/util_debug.cuh>
@@ -178,6 +179,23 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
           items,
           [](int a, int b) { return a < b; });
 
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (items[i] != (i + threadIdx.x * items_per_thread))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp shuffle sort
+        // Re-sort reversed blocked keys to instantiate and exercise the
+        // stateless shuffle primitive through NVRTC as well.
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          items[i] = 32 * items_per_thread - 1 - (threadIdx.x * items_per_thread + i);
+        }
+        cub::detail::WarpShuffleSort<int, items_per_thread>{}.Sort(
+          items, [](int a, int b) { return a < b; });
         for (int i = 0; i < items_per_thread; i++)
         {
           if (items[i] != (i + threadIdx.x * items_per_thread))
