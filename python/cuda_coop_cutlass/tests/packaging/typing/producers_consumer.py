@@ -93,12 +93,16 @@ def check_producers(opaque_dtype: object) -> None:
     )
     assert_type(coop.ThreadData.load(PayloadProducer()), coop.ThreadData[Int32])
     assert_type(
+        coop.ThreadData.load(PayloadProducer(), dtype=np.dtype(np.uint8)),
+        coop.ThreadData[Int32] | coop.ThreadData[np.uint8],
+    )
+    assert_type(
         coop.ThreadData.load(shaped, dtype=np.float32),
-        coop.ThreadData[np.float32],
+        coop.ThreadData[Int32] | coop.ThreadData[np.float32],
     )
     assert_type(
         coop.ThreadData.load(indexed, items_per_thread=2, dtype=np.float64),
-        coop.ThreadData[np.float64],
+        coop.ThreadData[Int32] | coop.ThreadData[np.float64],
     )
     assert_type(
         coop.ThreadData.load(shaped, dtype=opaque_dtype), coop.ThreadData[Any]
@@ -113,10 +117,14 @@ def check_producers(opaque_dtype: object) -> None:
     )
     assert_type(
         coop.ThreadData.load(shaped, dtype=UserScalar),
-        coop.ThreadData[UserScalar],
+        coop.ThreadData[Int32] | coop.ThreadData[UserScalar],
     )
     source: coop.ThreadDataLoadSource[Int32] = shaped
     assert_type(coop.ThreadData.load(source), coop.ThreadData[Int32])
+    assert_type(
+        coop.ThreadData.load(source, dtype=np.dtype(np.int32)),
+        coop.ThreadData[Int32] | coop.ThreadData[np.int32],
+    )
     combined: coop.ThreadDataSource[Int32] = CombinedProducer(Int32(1))
     metadata: coop.ThreadDataTensorMetadata = Metadata()
     payload = coop.ThreadData.load(combined)

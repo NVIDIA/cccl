@@ -60,3 +60,9 @@ coop.store(  # expected-error: [call-overload]
 coop.store(  # expected-error: [call-overload]
     block, object(), values.to_register_tensor()
 )
+
+
+def reject_structural_storage(storage: coop.TempStorageLike) -> None:
+    coop.store(  # expected-error: [call-overload]
+        block, object(), values, temp_storage=storage
+    )

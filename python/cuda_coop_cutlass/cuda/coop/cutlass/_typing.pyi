@@ -275,29 +275,9 @@ class TempStorageLike(Protocol):
         """Consume the descriptor and return its complete shared array."""
 
 __all__ = [
-    "BlockExchangeMode",
-    "BlockLoadStoreAlgorithm",
-    "ArrayShuffleMode",
-    "ContextualInitialValue",
-    "ExchangeMode",
-    "LoadStoreAlgorithm",
-    "NonSumScanOperator",
-    "ReduceAlgorithm",
-    "ReduceOperator",
-    "ScalarShuffleMode",
-    "ScanAlgorithm",
-    "ScanMode",
-    "ScanOperator",
-    "ShuffleMode",
-    "SumScanOperator",
-    "SynchronizableGroupKind",
+    "ReadableThreadDataLike",
     "TempStorageLike",
-    "TempStorageSharing",
     "ThreadDataLike",
-    "ThreadGroupKind",
-    "ThreadLevel",
-    "WarpExchangeMode",
-    "WarpLoadStoreAlgorithm",
     "WritableArrayLike",
     "_NumericT",
 ]
@@ -307,13 +287,3 @@ MemoryGroup: TypeAlias = ThreadGroup[
 ]
 BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
 WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
-
-_Sample: TypeAlias = (
-    int
-    | numpy.uint8
-    | numpy.int32
-    | numpy.uint32
-    | numpy.int64
-    | numpy.uint64
-    | CompilerIntegerLike
-)

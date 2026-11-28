@@ -17,6 +17,7 @@ from typing_extensions import TypeVar
 
 from cutlass import Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32
 
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -27,7 +28,6 @@ from ._typing import (
     ContextualInitialValue,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
     WarpGroup,
 )
 
@@ -61,7 +61,7 @@ def merge_sort_keys(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_KeyT]: ...
 @overload
 def merge_sort_keys(
@@ -72,7 +72,7 @@ def merge_sort_keys(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def merge_sort_keys(
@@ -83,7 +83,7 @@ def merge_sort_keys(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: ContextualInitialValue[_KeyT],
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[_KeyT]: ...
 @overload
 def merge_sort_keys(
@@ -94,7 +94,7 @@ def merge_sort_keys(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: NumericScalar,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def merge_sort_keys(
@@ -150,7 +150,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
@@ -162,7 +162,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
@@ -174,7 +174,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[Any]]: ...
 @overload
 def merge_sort_pairs(
@@ -186,7 +186,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: None = None,
     oob_default: None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...
 @overload
 def merge_sort_pairs(
@@ -198,7 +198,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: ContextualInitialValue[_KeyT],
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
@@ -210,7 +210,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: NumericScalar,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
@@ -222,7 +222,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: ContextualInitialValue[_KeyT],
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_KeyT], ThreadData[Any]]: ...
 @overload
 def merge_sort_pairs(
@@ -234,7 +234,7 @@ def merge_sort_pairs(
     descending: bool = False,
     valid_items: _ValidItems,
     oob_default: NumericScalar,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...
 @overload
 def merge_sort_pairs(

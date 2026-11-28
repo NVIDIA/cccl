@@ -24,6 +24,38 @@ from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
+@pytest.mark.parametrize("operation", ["store", "sum"])
+def test_memory_backed_readable_payload_requires_explicit_load(operation):
+    class Memory:
+        items_per_thread = 2
+        dtype = cutlass.Int32
+        memspace = cute.AddressSpace.gmem
+
+        def __len__(self):
+            return self.items_per_thread
+
+        def __getitem__(self, index):
+            raise AssertionError(
+                "collective indexed global memory before a load"
+            )
+
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        block = coop.this_block()
+        if cutlass.const_expr(operation == "store"):
+            coop.store(block, destination, Memory())
+        else:
+            coop.sum(block, Memory())
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem)
+    with pytest.raises(TypeError, match="group-first load"):
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer)
+
+
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_dynamic_payload(dtype):
     """Carry a payload through a runtime loop, branch, and nested JIT helper.

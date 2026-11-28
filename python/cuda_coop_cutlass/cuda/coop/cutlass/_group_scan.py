@@ -109,7 +109,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Literal, TypeVar
+from typing import Literal, TypeVar
 
 from cuda.coop.cutlass._planning.thread_group import ThreadGroup
 from cuda.coop.cutlass._typing import (
@@ -117,13 +117,12 @@ from cuda.coop.cutlass._typing import (
     ReadableThreadDataLike,
     ScanAlgorithm,
     ScanOperator,
-    TempStorageLike,
-    ThreadDataLike,
     ValidItems,
 )
 from cuda.coop.cutlass._validation import _validate_temp_storage
 
 from ._device_operator import DeviceOperator
+from ._temp_storage import TempStorage
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -166,9 +165,9 @@ def scan(
     | None = None,
     initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData | None = None,
 ) -> ThreadData | _ItemT:
     """Scan a group's values with an operator.
 
@@ -184,7 +183,7 @@ def scan(
         with ``n`` of 1, 2, 4, 8, 16 or 32. Every thread of the group makes
         the call, on every trip of a loop that contains it. A warp group
         needs a block whose size is a multiple of 32.
-    value : scalar, ThreadData, CuTe register tensor or TensorSSA
+    value : scalar, readable payload, CuTe register tensor or TensorSSA
         On a block, one scalar per thread or a payload, with the same
         element type and item count in every thread. A register tensor or
         ``TensorSSA`` is read as a payload, and the result is a
@@ -357,9 +356,9 @@ def exclusive_scan(
     | None = None,
     initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData | None = None,
 ) -> ThreadData | _ItemT:
     """Combine the items before each item, starting from ``initial_value``.
 
@@ -423,9 +422,9 @@ def inclusive_scan(
     | Callable[[object, object], object]
     | None = None,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData | None = None,
 ) -> ThreadData | _ItemT:
     """Combine each item with the items before it.
 
@@ -480,9 +479,9 @@ def exclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData | None = None,
 ) -> ThreadData | _ItemT:
     """Sum the items before each item, starting from zero.
 
@@ -536,9 +535,9 @@ def inclusive_sum(
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
     valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[Any] | None = None,
+    aggregate_output: ThreadData | None = None,
 ) -> ThreadData | _ItemT:
     """Sum each item and the items before it.
 

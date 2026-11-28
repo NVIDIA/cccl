@@ -106,7 +106,7 @@ def shuffle(
         compiled. Every thread of the block makes the call, on every trip
         of a loop that contains it, including a thread that does not use
         its result.
-    value : scalar, ThreadData, CuTe register tensor or TensorSSA
+    value : scalar, readable payload, CuTe register tensor or TensorSSA
         A payload for ``"down"`` and ``"up"``, or one scalar per thread for
         ``"offset"`` and ``"rotate"``. A register tensor or ``TensorSSA``
         is read as a payload, and so is a ``ThreadData`` of one item. A

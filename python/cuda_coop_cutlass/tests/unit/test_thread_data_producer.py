@@ -54,6 +54,14 @@ def test_producer_load_once_and_existing_payload_identity():
     assert original.alignment == 128
 
 
+def test_matching_dtype_preserves_existing_host_items():
+    dtype = np.dtype(np.uint8)
+    original = coop.ThreadData(1, dtype=dtype, values=[1])
+    assert coop.ThreadData.from_payload(original, dtype=dtype) is original
+    assert coop.ThreadData.load(_Producer(original), dtype=dtype) is original
+    assert type(original[0]) is int
+
+
 @pytest.mark.parametrize("count", (True, 0, -1, 1.5))
 def test_invalid_extent_does_not_consume_producer(count):
     source = _Producer(_Vector())

@@ -42,6 +42,10 @@ This kernel squares the items it loaded and sums the squares over the block:
   payload the kernel fills, a primitive takes the type from the items,
   which must all have the same type. Wrap an expression in a CUTLASS type, as in
   ``cutlass.Int32(x)``, to give an item that type.
+* A read-only input can supply its own payload. Give it
+  ``items_per_thread``, ``dtype``, ``__len__`` and integer indexing. Its
+  length must match its item count. The primitive reads its items in order.
+  For an output written in place, pass a ``ThreadData``.
 * A primitive that returns a payload returns a new one and leaves its input
   unchanged. Two arguments are written in place: ``aggregate_output`` of a
   scan and ``exclusive_digit_prefix`` of ``radix_rank_keys``. ``store`` with
@@ -118,7 +122,11 @@ from collections.abc import Callable, Iterator
 from copy import deepcopy as _deepcopy
 from typing import Any, Protocol, TypeVar
 
-from cuda.coop.cutlass._validation import _normalize_alignment
+from cuda.coop.cutlass._validation import (
+    _normalize_alignment,
+    _ReadableThreadDataLike,
+    _validate_numeric_value,
+)
 
 
 class CutlassTensorSample(Protocol):
@@ -1452,7 +1460,15 @@ def _coerce_thread_payload(
 ) -> Any:
     """Adapt supported register containers, retaining existing payloads."""
 
-    if isinstance(value, ThreadData) or not _is_thread_payload_candidate(value):
+    if isinstance(value, ThreadData):
+        return value
+    if isinstance(value, _ReadableThreadDataLike) and (
+        not _is_memory_backed_payload(value) or _is_register_fragment(value)
+    ):
+        return _copy_readable_payload(
+            value, name=arg_name, primitive=primitive_name
+        )
+    if not _is_thread_payload_candidate(value):
         return value
     try:
         return ThreadData.from_payload(value)
@@ -1461,6 +1477,23 @@ def _coerce_thread_payload(
             f"{scope}.{primitive_name} could not auto-convert "
             f"'{arg_name}' payload to ThreadData: {exc}"
         ) from exc
+
+
+def _copy_readable_payload(value, *, name, primitive):
+    """Read the items and metadata of a structural payload into ThreadData."""
+    _validate_numeric_value(
+        primitive,
+        name,
+        value,
+        require_thread_data=True,
+        allow_readonly_thread_data=True,
+    )
+    return ThreadData(
+        value.items_per_thread,
+        dtype=value.dtype,
+        values=[value[index] for index in range(value.items_per_thread)],
+        alignment=getattr(value, "alignment", None),
+    )
 
 
 def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
@@ -1473,25 +1506,8 @@ def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
     reads items and the operation writes fresh results.
     """
 
-    from cuda.coop.cutlass._validation import (
-        _ReadableThreadDataLike,
-        _validate_numeric_value,
-    )
-
-    if isinstance(value, _ReadableThreadDataLike):
-        _validate_numeric_value(
-            primitive,
-            name,
-            value,
-            require_thread_data=True,
-            allow_readonly_thread_data=True,
-        )
-        return ThreadData(
-            value.items_per_thread,
-            dtype=value.dtype,
-            values=[value[index] for index in range(value.items_per_thread)],
-            alignment=getattr(value, "alignment", None),
-        )
+    if isinstance(value, ThreadData):
+        return _copy_readable_payload(value, name=name, primitive=primitive)
     value = _coerce_thread_payload(
         value, scope=_ROOT_SCOPE, primitive_name=primitive, arg_name=name
     )

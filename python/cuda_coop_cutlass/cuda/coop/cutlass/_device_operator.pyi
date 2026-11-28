@@ -8,6 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+
 @dataclass(frozen=True)
 class DeviceOperator:
     """A typed device operator produced by compile_operator."""
@@ -18,9 +20,12 @@ class DeviceOperator:
     arch: str
     _ltoir: bytes = field(repr=False)
 
+    @property
+    def cpp_definition(self) -> str: ...
+
 def compile_operator(
     func: Callable[..., object],
-    dtype: type[Any],
+    dtype: type[Any] | np.dtype[Any],
     *,
     arch: str | None = None,
 ) -> DeviceOperator:

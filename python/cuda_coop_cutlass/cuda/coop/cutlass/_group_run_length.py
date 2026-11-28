@@ -83,7 +83,6 @@ from ._typing import (
     IntegralScalar,
     NumericScalar,
     ReadableThreadDataLike,
-    TempStorageLike,
 )
 
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
@@ -158,7 +157,7 @@ def run_length_decode(
     *,
     decoded_items_per_thread: int,
     decoded_window_offset: IntegralScalar = 0,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> ThreadData:
     """Decode one window of a block's runs into a payload.
 
@@ -306,7 +305,7 @@ def run_length_decode_into(
     *,
     decoded_items_per_thread: int,
     destination_offset: IntegralScalar = 0,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: TempStorage | None = None,
 ) -> CompilerIntegerLike:
     """Decode all of a block's runs into a tensor in global memory.
 
