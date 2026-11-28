@@ -19,6 +19,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
@@ -245,8 +246,8 @@ _CCCL_HOST_API cudaError_t launch_radix_overflow(
   EndIterator ends,
   const Key* in,
   Key* out,
-  Key* intermediate,
-  ::cuda::compute_capability cc,
+  device_double_buffer<Key> radix_buffers,
+  int threads_per_block,
   cudaStream_t stream,
   KernelLauncherFactory launcher_factory)
 {
@@ -264,15 +265,11 @@ _CCCL_HOST_API cudaError_t launch_radix_overflow(
   using offset_t        = choose_signed_offset_t<common_iterator_value_t<BeginIterator, EndIterator>>;
   constexpr auto kernel = segmented_sort::
     DeviceSegmentedSortKernelLarge<Order, selector_t, Key, NullType, BeginIterator, EndIterator, offset_t>;
-  const auto policy = selector_t{}(cc).large_segment;
-  const int passes  = ::cuda::ceil_div(int{sizeof(Key) * 8}, policy.radix_bits);
-  // The first radix pass writes to current(). Choose it so the last pass writes to out.
-  const device_double_buffer<Key> radix_buffers(passes % 2 ? out : intermediate, passes % 2 ? intermediate : out);
   for (unsigned i = bounds[0]; i < bounds[1];)
   {
     const unsigned grid_size = (::cuda::std::min) (bounds[1] - i, unsigned{(::cuda::std::numeric_limits<int>::max)()});
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, policy.threads_per_block, 0, stream)
+          launcher_factory(grid_size, threads_per_block, 0, stream)
             .doit(kernel,
                   segment_ids + i,
                   in,
@@ -296,7 +293,7 @@ _CCCL_HOST_API cudaError_t launch_radix_overflow(
 }
 
 // Host-launched keys-only backend. GroupMerge handles bounded bins and radix handles overflow.
-// num_items is the size of in and out and must cover every exclusive end offset because radix passes use the same
+// num_items is the size of both key buffers and must cover every exclusive end offset because radix passes use the same
 // offsets in scratch. When overflow is possible, dispatch reads the overflow range back to the host and synchronizes
 // the stream, which prevents graph capture.
 template <SortOrder Order,
@@ -312,8 +309,8 @@ _CCCL_HOST_API cudaError_t dispatch(
   EndIterator ends,
   unsigned num_segments,
   ::cuda::std::int64_t num_items,
-  const Key* in,
-  Key* out,
+  DoubleBuffer<Key>& keys,
+  bool is_overwrite_okay,
   partition_result& result,
   cudaStream_t stream                    = 0,
   KernelLauncherFactory launcher_factory = {})
@@ -347,7 +344,8 @@ _CCCL_HOST_API cudaError_t dispatch(
         return error;
       }
       const bool may_have_overflow = num_segments && num_items > capacities_t::bounds.back();
-      const size_t sizes[] = {partition_bytes, may_have_overflow ? static_cast<size_t>(num_items) * sizeof(Key) : 0};
+      const size_t sizes[]         = {
+        partition_bytes, may_have_overflow && !is_overwrite_okay ? static_cast<size_t>(num_items) * sizeof(Key) : 0};
       void* allocations[2]{};
       if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
       {
@@ -361,39 +359,86 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return error;
       }
-      if (!num_segments)
+      if (!num_segments || !num_items)
       {
         return cudaSuccess;
       }
+      const auto policy        = segmented_sort::policy_selector_from_types<Key, NullType>{}(cc).large_segment;
+      const int passes         = ::cuda::ceil_div(int{sizeof(Key) * 8}, policy.radix_bits);
+      const int final_selector = (keys.selector + (is_overwrite_okay ? passes : 1)) % 2;
+      Key* out                 = keys.d_buffers[final_selector];
       if (may_have_overflow)
       {
+        // The radix outputs alternate. Arrange them so the last pass and GroupMerge write the same buffer.
+        Key* other = is_overwrite_okay ? keys.d_buffers[1 - final_selector] : static_cast<Key*>(allocations[1]);
+        const device_double_buffer<Key> radix_buffers(passes % 2 ? out : other, passes % 2 ? other : out);
         if (const auto error = launch_radix_overflow<Order>(
               result.segment_ids,
               result.bin_offsets + capacities_t::size,
               begins,
               ends,
-              in,
+              keys.Current(),
               out,
-              static_cast<Key*>(allocations[1]),
-              cc,
+              radix_buffers,
+              policy.threads_per_block,
               stream,
               launcher_factory))
         {
           return error;
         }
       }
-      return launch_sort_kernel_list<kernels_t, Order>(
-        result,
-        begins,
-        ends,
-        in,
-        out,
-        stream,
-        launcher_factory,
-        ::cuda::std::make_index_sequence<kernels_t::size>{},
-        policy_getter);
+      if (const auto error = launch_sort_kernel_list<kernels_t, Order>(
+            result,
+            begins,
+            ends,
+            keys.Current(),
+            out,
+            stream,
+            launcher_factory,
+            ::cuda::std::make_index_sequence<kernels_t::size>{},
+            policy_getter))
+      {
+        return error;
+      }
+      keys.selector = final_selector;
+      return cudaSuccess;
     });
   }
+}
+
+template <SortOrder Order,
+          typename Key,
+          typename BeginIterator,
+          typename EndIterator,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
+          typename PolicySelector        = policy_selector<Key>>
+_CCCL_HOST_API cudaError_t dispatch(
+  void* temp_storage,
+  size_t& temp_storage_bytes,
+  BeginIterator begins,
+  EndIterator ends,
+  unsigned num_segments,
+  ::cuda::std::int64_t num_items,
+  const Key* in,
+  Key* out,
+  partition_result& result,
+  cudaStream_t stream                    = 0,
+  KernelLauncherFactory launcher_factory = {})
+{
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+  DoubleBuffer<Key> keys(const_cast<Key*>(in), out);
+  return dispatch<Order, Key, BeginIterator, EndIterator, KernelLauncherFactory, PolicySelector>(
+    temp_storage,
+    temp_storage_bytes,
+    begins,
+    ends,
+    num_segments,
+    num_items,
+    keys,
+    false,
+    result,
+    stream,
+    launcher_factory);
 }
 } // namespace detail::segmented_sort_lrb
 
