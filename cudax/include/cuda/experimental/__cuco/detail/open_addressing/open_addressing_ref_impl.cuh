@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/device_reference.h>
+#include <thrust/reduce.h>
 
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
@@ -841,6 +843,121 @@ public:
       }
     }
   }
+
+  //!
+  //! @brief Counts the occurrence of a given key contained in the container
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //!
+  //! @param __key The key to count for
+  //!
+  //! @return Number of occurrences found by the current thread
+  template <class _ProbeKey>
+  [[nodiscard]] _CCCL_DEVICE_API __size_type count(_ProbeKey __key) const noexcept
+  {
+    if constexpr (!__allows_duplicates)
+    {
+      return static_cast<__size_type>(contains(__key));
+    }
+    else
+    {
+      auto __probing_iter =
+        __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
+      const auto __init_idx = *__probing_iter;
+      __size_type __count   = 0;
+
+      while (true)
+      {
+        const auto __bucket_slots                    = __storage_ref[*__probing_iter];
+        ::cuda::std::int32_t __equals[__bucket_size] = {0};
+        bool __empty_found                           = false;
+
+        ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __empty_found);
+
+        __count += ::thrust::reduce(::thrust::seq, __equals, __equals + __bucket_size);
+
+        if (__empty_found)
+        {
+          return __count;
+        }
+
+        ++__probing_iter;
+        if (*__probing_iter == __init_idx)
+        {
+          return __count;
+        }
+      }
+    }
+  }
+
+  //!
+  //! @brief Counts the occurrence of a given key contained in the container
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _ParentCG Type of parent Cooperative Group
+  //!
+  //! @param __group The Cooperative Group used to perform group count
+  //! @param __key The key to count for
+  //!
+  //! @return Number of occurrences found by the current thread
+  template <class _ProbeKey, class _ParentCG>
+  [[nodiscard]] _CCCL_DEVICE_API __size_type
+  count(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+    __size_type __count   = 0;
+
+    while (true)
+    {
+      const auto __bucket_slots                    = __storage_ref[*__probing_iter];
+      ::cuda::std::int32_t __equals[__bucket_size] = {0};
+      bool __should_return                         = false;
+
+      ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __should_return);
+
+      __count += ::thrust::reduce(::thrust::seq, __equals, __equals + __bucket_size);
+      if constexpr (!__allows_duplicates)
+      {
+        __should_return |= (__count != 0);
+      }
+
+      if (__group.any(__should_return))
+      {
+        return __count;
+      }
+
+      ++__probing_iter;
+      if (*__probing_iter == __init_idx)
+      {
+        return __count;
+      }
+    }
+  }
+
+  struct __check_bucket_fn
+  {
+    template <class _Index, class _ProbeKey, class _Equals>
+    _CCCL_DEVICE_API void operator()(
+      _Index __i,
+      const __open_addressing_ref_impl& __self,
+      const _ProbeKey& __key,
+      const __bucket_type& __bucket_slots,
+      _Equals& __equals,
+      bool& __empty_found) const noexcept
+    {
+      const auto __result = __self.__predicate.template operator()<detail::__is_insert::__no>(
+        __key, __self.__extract_key(__bucket_slots[__i()]));
+
+      __equals[__i()] = (__result == detail::__equal_result::__equal);
+
+      if (__result == detail::__equal_result::__empty)
+      {
+        __empty_found = true;
+      }
+    }
+  };
 
   //!
   //! @brief Applies `__callback_op` to a copy of every slot whose key is equivalent to `__key`.

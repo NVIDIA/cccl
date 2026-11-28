@@ -6,9 +6,10 @@ import os
 # mypy targets Python 3.10 (for cuda.compute), which lacks StrEnum
 from enum import StrEnum  # type: ignore[attr-defined]
 
-import cccl
 import numpy as np
 import pandas as pd
+
+import cccl
 
 
 def get_filenames_map(arr):

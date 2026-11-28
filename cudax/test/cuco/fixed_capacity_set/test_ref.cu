@@ -111,6 +111,13 @@ template <bool Cooperative, class Ref, class Group>
   return cooperative_groups::reduce(group, callback.count, cooperative_groups::plus<int>{});
 }
 
+// The cooperative count returns a per-thread contribution.
+template <class Ref, class Group>
+[[nodiscard]] _CCCL_DEVICE_API auto count_across_group(const Ref& ref, const Group& group, typename Ref::key_type key)
+{
+  return cooperative_groups::reduce(group, ref.count(group, key), cooperative_groups::plus<typename Ref::size_type>{});
+}
+
 struct exercise_ref
 {
   template <class Ref>
@@ -123,10 +130,12 @@ struct exercise_ref
     for (int i = 0; i < capacity; ++i)
     {
       const auto key = make_ref_key<key_type>(i);
+      success        = count_across_group(ref, group, key) == 0 && success;
       bool inserted;
       if constexpr (Ref::cg_size == 1)
       {
         success  = !ref.contains(key) && success;
+        success  = ref.count(key) == 0 && success;
         success  = count_for_each<false>(ref, group, key) == 0 && success;
         inserted = ref.insert(key);
       }
@@ -141,9 +150,11 @@ struct exercise_ref
       // Also exercise the cooperative overloads when cg_size is one.
       success = ref.contains(group, key) && success;
       success = !ref.insert(group, key) && success;
+      success = count_across_group(ref, group, key) == 1 && success;
       success = count_for_each<true>(ref, group, key) == 1 && success;
       if constexpr (Ref::cg_size == 1)
       {
+        success = ref.count(key) == 1 && success;
         success = count_for_each<false>(ref, group, key) == 1 && success;
       }
       group.sync();
@@ -152,11 +163,13 @@ struct exercise_ref
     const auto absent = make_ref_key<key_type>(capacity);
     success           = !ref.insert(group, absent) && success;
     success           = !ref.contains(group, absent) && success;
+    success           = count_across_group(ref, group, absent) == 0 && success;
     success           = count_for_each<true>(ref, group, absent) == 0 && success;
     if constexpr (Ref::cg_size == 1)
     {
       success = !ref.insert(absent) && success;
       success = !ref.contains(absent) && success;
+      success = ref.count(absent) == 0 && success;
       success = count_for_each<false>(ref, group, absent) == 0 && success;
     }
     group.sync();
