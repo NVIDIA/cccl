@@ -24,9 +24,12 @@ def _validate_output_region(output: Any, *, name: str) -> None:
     except ValueError:
         return
     while True:
-        if block.region == output._creation_region:
+        if (
+            output._creation_region is not None
+            and block.region == output._creation_region
+        ):
             return
-        owner = block.owner
+        owner = block.owner.operation
         if owner.name.startswith("scf."):
             raise DSLUserCodeError(
                 f"{name} must be created inside the current runtime branch "
@@ -36,7 +39,7 @@ def _validate_output_region(output: Any, *, name: str) -> None:
             )
         if owner.parent is None:
             return
-        block = owner.operation.block
+        block = owner.block
 
 
 @runtime_checkable

@@ -289,3 +289,28 @@ def test_prefix_type_error(value):
         TypeError, match=r"cutlass\.scan valid_items must be an integer"
     ):
         _plan(this_warp(), valid_items=value)
+
+
+def test_host_created_output_in_function_and_scf_region():
+    from cutlass._mlir import ir
+    from cutlass._mlir.dialects import func, scf
+    from cutlass.base_dsl.common import DSLUserCodeError
+
+    from cuda.coop.cutlass._validation import _validate_output_region
+
+    output = ThreadData(1)
+    with ir.Context(), ir.Location.unknown():
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            function = func.FuncOp("test", ([], []))
+            with ir.InsertionPoint(function.add_entry_block()):
+                _validate_output_region(output, name="aggregate_output")
+                region = scf.ExecuteRegionOp([]).regions[0]
+                with ir.InsertionPoint(region.blocks.append()):
+                    with pytest.raises(
+                        DSLUserCodeError, match="must be created"
+                    ):
+                        _validate_output_region(output, name="aggregate_output")
+                    scf.YieldOp([])
+                func.ReturnOp([])
+        assert module.operation.verify()
