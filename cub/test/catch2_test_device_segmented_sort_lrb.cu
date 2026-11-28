@@ -374,6 +374,13 @@ CUB_TEST("LRB partition storage is capped at one window", "[segmented][sort][dev
     REQUIRE(query(count) == cudaSuccess);
     REQUIRE(bytes == at_limit);
   }
+
+  // An empty input never fills the ID queue, so its query must not reserve a full window of IDs.
+  size_t empty_bytes = 0;
+  REQUIRE(
+    capacity::dispatch<cub::SortOrder::Ascending>(nullptr, empty_bytes, ptr, ptr, uint_max + 1, 0, ptr, ptr, result)
+    == cudaSuccess);
+  REQUIRE(empty_bytes < sizeof(unsigned) * static_cast<size_t>(int_max));
 }
 
 CUB_TEST("LRB reuses partition storage across segment windows",
@@ -404,7 +411,8 @@ CUB_TEST("LRB reuses partition storage across segment windows",
     begins.push_back(static_cast<int>(input.size()));
     for (int i = 0; i < length; ++i)
     {
-      input.push_back(static_cast<key_t>((i * 73) % 997));
+      // Full-width keys make every radix pass change the order, so a wrong final buffer is visible.
+      input.push_back(static_cast<key_t>(static_cast<std::uint32_t>(i) * 2654435761u));
     }
     ends.push_back(static_cast<int>(input.size()));
   }

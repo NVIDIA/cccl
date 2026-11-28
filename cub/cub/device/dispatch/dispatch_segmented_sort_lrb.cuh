@@ -356,8 +356,10 @@ _CCCL_HOST_API cudaError_t dispatch(
             launcher_factory,
             policy_getter().partition);
         };
-      size_t partition_bytes = 0;
-      if (const auto error = partition(nullptr, partition_bytes, begins, ends, window_size(num_segments)))
+      // An empty input never fills the ID queue, so its query must not reserve a full window of IDs.
+      const unsigned query_num_segments = num_items != 0 ? window_size(num_segments) : 0u;
+      size_t partition_bytes            = 0;
+      if (const auto error = partition(nullptr, partition_bytes, begins, ends, query_num_segments))
       {
         return error;
       }
