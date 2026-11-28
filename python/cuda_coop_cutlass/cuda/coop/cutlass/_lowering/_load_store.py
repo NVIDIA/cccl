@@ -633,10 +633,13 @@ def provider_store(
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_type,
         )
-        values = tuple(values)
     else:
         value_type = _resolve_type(value, feature="store")
         values = (value,)
+    values = tuple(
+        _types.as_provider_scalar(item, value_type, name="store value")
+        for item in values
+    )
     memory_type = _resolve_memory_type(
         destination, primitive_name="store", dtype=dtype
     )

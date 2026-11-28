@@ -488,6 +488,46 @@ def _is_ordinary_scalar_dtype(dtype: Any) -> bool:
     return issubclass(dtype, np.generic)
 
 
+def _reject_scalar_dtype(dtype: Any) -> None:
+    """Keep producer metadata opaque while rejecting values used as types."""
+    if dtype is None or isinstance(dtype, type):
+        return
+
+    from numbers import Number
+
+    import numpy as np
+
+    from cutlass import Numeric
+
+    if isinstance(dtype, (Number, np.generic, Numeric)):
+        raise TypeError("ThreadData dtype must be a scalar type")
+
+
+def _check_host_cast(
+    value: Any, dtype: type, *, source: str, index: int
+) -> None:
+    """Check representability before a host constructor narrows the value."""
+    import numpy as np
+
+    if not isinstance(value, (int, float, complex, np.inexact)):
+        return
+    # NumPy real constructors discard the imaginary part of NumPy scalars.
+    # Preserve the original constructor's handling of complex inputs below.
+    real = value.real
+    if isinstance(real, (float, np.floating)) and not np.isfinite(real):
+        fits = dtype.is_float
+    elif dtype.is_integer:
+        fits = dtype.min <= int(real) <= dtype.max
+    else:
+        limit = float(np.finfo(dtype.numpy_dtype).max)
+        fits = -limit <= real <= limit
+    if not fits:
+        raise ValueError(
+            f"{source} payload item {index} is not representable "
+            f"in {dtype.__name__}"
+        )
+
+
 def _coerce_payload_values_to_dtype(
     values: tuple[Any, ...],
     dtype: Any,
@@ -511,23 +551,27 @@ def _coerce_payload_values_to_dtype(
     ):
         return values
 
+    resolved = canonical_dsl_type(dtype)
     coerced = []
     for idx, value in enumerate(values):
         if value is _UNSET:
             coerced.append(value)
             continue
+        host_value = value.item() if isinstance(value, np.generic) else value
+        if resolved in ALL_PROVIDER_TYPES:
+            _check_host_cast(host_value, resolved, source=source, index=idx)
         try:
             # Host constructors cannot consume traced CuTe values. Resolve
             # their dtype spelling before casting a device expression.
             cast_dtype = scalar_dtype
-            if not isinstance(value, (bool, int, float, complex, np.generic)):
-                resolved = canonical_dsl_type(dtype)
-                if resolved in ALL_PROVIDER_TYPES:
-                    cast_dtype = resolved
+            if resolved in ALL_PROVIDER_TYPES and not isinstance(
+                value, (bool, int, float, complex, np.generic)
+            ):
+                cast_dtype = resolved
             if _is_cutlass_dsl_dtype(cast_dtype) and isinstance(
                 value, np.generic
             ):
-                value = value.item()
+                value = host_value
             if type(value) is cast_dtype:
                 coerced.append(value)
             else:
@@ -620,8 +664,12 @@ def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
         raise TypeError(
             f"{source} requires dtype when ThreadData.dtype is not set"
         )
+    import numpy as np
+
     from ._compiler._types import ALL_PROVIDER_TYPES, canonical_dsl_type
 
+    if not isinstance(dtype, (type, np.dtype)):
+        raise TypeError(f"{source} dtype must be a supported numeric type")
     resolved = canonical_dsl_type(dtype)
     if resolved not in ALL_PROVIDER_TYPES:
         raise TypeError(f"{source} dtype must be a supported numeric type")
@@ -700,6 +748,7 @@ class ThreadData:
 
         self.alignment = _normalize_alignment(alignment)
         self.items_per_thread = items_per_thread
+        _reject_scalar_dtype(dtype)
         self.dtype = dtype
         self._values = (
             list(values)
@@ -709,9 +758,9 @@ class ThreadData:
         from cutlass._mlir import ir
 
         try:
-            self._creation_block = ir.InsertionPoint.current.block
+            self._creation_region = ir.InsertionPoint.current.block.region
         except ValueError:
-            self._creation_block = None
+            self._creation_region = None
 
     @classmethod
     def from_values(cls, *values: Any, dtype: Any = None) -> ThreadData:
@@ -755,7 +804,8 @@ class ThreadData:
             that index and may build it from CuTe values.
         dtype : type, optional
             Element type. Each item is cast to it, which makes ``from_fn``
-            the way to change a payload's element type.
+            the way to change a payload's element type. Host numbers must
+            fit the selected numeric type after any truncation to integer.
 
         Returns
         -------
@@ -974,6 +1024,7 @@ class ThreadData:
                     )
             from ._compiler._types import ALL_PROVIDER_TYPES, canonical_dsl_type
 
+            _reject_scalar_dtype(dtype)
             if dtype is None or payload.dtype == dtype:
                 return payload
             if (
@@ -1259,21 +1310,12 @@ class ThreadData:
             scope=_ROOT_SCOPE,
             resolve_type=resolve_type,
         )
-        converted = []
-        for value in values:
-            plain = _types.coerce_plain_scalar(
-                value,
-                value_type,
-                name=f"{feature} value",
-                scope=_ROOT_SCOPE,
-                allow_nonfinite=True,
+        return value_type, tuple(
+            _types.as_provider_scalar(
+                value, value_type, name=f"{feature} value"
             )
-            converted.append(
-                value_type(value)
-                if plain is _types._NOT_PLAIN_SCALAR
-                else plain
-            )
-        return value_type, tuple(converted)
+            for value in values
+        )
 
     def _control_flow_metadata(self, value_type: type) -> Any:
         """Keep dtype signedness and alignment in the control-flow type.
@@ -1357,6 +1399,8 @@ class ThreadData:
             values=[value_type(value) for value in values[1:]],
             alignment=self.alignment,
         )
+        # A loop-carried SSA value still represents the original payload.
+        result._creation_region = self._creation_region
         return result
 
     def __copy__(self) -> ThreadData:

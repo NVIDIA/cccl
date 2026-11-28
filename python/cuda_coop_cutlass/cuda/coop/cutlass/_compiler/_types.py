@@ -299,6 +299,14 @@ def coerce_plain_scalar(
     return _NOT_PLAIN_SCALAR
 
 
+def as_provider_scalar(value: Any, value_type: type, *, name: str) -> Any:
+    """Check host literals before narrowing them to a wrapper argument."""
+    plain = coerce_plain_scalar(
+        value, value_type, name=name, scope=ROOT_SCOPE, allow_nonfinite=True
+    )
+    return value_type(value) if plain is _NOT_PLAIN_SCALAR else plain
+
+
 def as_valid_items_arg(value: Any, *, scope: str) -> Any:
     """Convert a runtime count to the provider's signed 32-bit ABI.
 
@@ -362,6 +370,10 @@ def resolve_thread_data_value_type(
 
     values = value.values(feature)
     if value.dtype is not None:
+        if not isinstance(value.dtype, (type, np.dtype)):
+            raise TypeError(
+                f"{scope}.{feature} ThreadData dtype must be a scalar type"
+            )
         value_type = resolve_type(value.dtype, allowed=allowed, feature=feature)
         converted: list[Any] = []
         for idx, item in enumerate(values):
@@ -576,6 +588,7 @@ __all__ = [
     "Uint8",
     "Uint32",
     "Uint64",
+    "as_provider_scalar",
     "as_valid_items_arg",
     "canonical_dsl_type",
     "coerce_plain_scalar",

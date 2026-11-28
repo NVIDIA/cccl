@@ -71,6 +71,8 @@ def test_algorithm_selector_spellings(algorithm, items_per_thread):
     (
         ("store-dtype", "dtype"),
         ("scalar-dtype", "dtype"),
+        ("store-overflow", "not representable in Int32"),
+        ("store-payload-overflow", "not representable in Int32"),
         ("boolean-count", "integer"),
         ("dynamic-items", "integer"),
         ("dynamic-alignment", "alignment"),
@@ -100,6 +102,10 @@ def test_invalid_movement_inputs(case, message):
             coop.store(group, memory, payload)
         elif cutlass.const_expr(case == "scalar-dtype"):
             coop.store(group, memory, cutlass.Float32(1))
+        elif cutlass.const_expr(case == "store-overflow"):
+            coop.store(group, memory, 1 << 40)
+        elif cutlass.const_expr(case == "store-payload-overflow"):
+            coop.store(group, memory, coop.ThreadData.from_values(1 << 40))
         elif cutlass.const_expr(case == "boolean-count"):
             coop.load(group, memory, valid_items=True, items_per_thread=1)
         elif cutlass.const_expr(case == "dynamic-items"):
