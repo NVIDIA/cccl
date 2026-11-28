@@ -11,7 +11,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.reductions], reduce
 //
@@ -22,9 +22,9 @@
 //   constexpr T reduce(const basic_vec<T, Abi>&, const typename basic_vec<T, Abi>::mask_type&,
 //                      BinaryOperation = {}, type_identity_t<T> identity_element = see below);
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

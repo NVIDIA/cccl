@@ -47,7 +47,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -59,7 +59,7 @@ using thrust::complex;
 // is 0/0, which produces a NaN and raises the invalid flag. C99 Annex G specifies the
 // complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> csqrt(const complex<double>& z)
 {
   complex<double> result{};
   double a;
@@ -99,10 +99,8 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
     {
       return (complex<double>(::cuda::std::fabs(b - b), ::cuda::std::copysign(a, b)));
     }
-    else
-    {
-      return (complex<double>(a, ::cuda::std::copysign(b - b, b)));
-    }
+
+    return (complex<double>(a, ::cuda::std::copysign(b - b, b)));
   }
   /*
    * The remaining special case (b is NaN) is handled just fine by
@@ -145,26 +143,24 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   {
     return (result * 2.0);
   }
-  else if (scale == 2)
+  if (scale == 2)
   {
     return (result * 0.5);
   }
-  else
-  {
-    return result;
-  }
+
+  return result;
 }
 // NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> sqrt(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> sqrt(const complex<ValueType>& z)
 {
   return thrust::polar(::cuda::std::sqrt(thrust::abs(z)), thrust::arg(z) / ValueType(2));
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> sqrt(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> sqrt(const complex<double>& z)
 {
   return detail::complex::csqrt(z);
 }

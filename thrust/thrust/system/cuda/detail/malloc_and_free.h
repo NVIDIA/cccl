@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,10 +18,12 @@
 #include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/seq.h>
 #include <thrust/system/cuda/detail/util.h>
+#include <thrust/system/cuda/error.h>
 #include <thrust/system/detail/bad_alloc.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 #ifdef THRUST_CACHING_DEVICE_MALLOC
 #  include <cub/util_allocator.cuh>
@@ -46,7 +48,7 @@ inline cub::CachingDeviceAllocator& get_allocator()
 // note that malloc returns a raw pointer to avoid
 // depending on the heavyweight thrust/system/cuda/memory.h header
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
+_CCCL_HOST_DEVICE_API void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
   void* result = nullptr;
 
@@ -81,7 +83,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 } // end malloc()
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(execution_policy<DerivedPolicy>&, Pointer ptr)
+_CCCL_HOST_DEVICE_API void free(execution_policy<DerivedPolicy>&, Pointer ptr)
 {
   // need to repeat a lot of code here because we can't use #if inside of the
   // NV_IF_TARGET macro.

@@ -50,7 +50,7 @@ TEST_FUNC constexpr bool test()
   test_container_iterators(cuda::std::span<const char>("abc"));
 
 #if _CCCL_HAS_HOST_STD_LIB()
-#  if defined(__cpp_lib_span)
+#  ifdef __cpp_lib_span
   NV_IF_TARGET(NV_IS_HOST, ({ test_container_iterators(std::span<const char>("abc")); }))
 #  endif //__cpp_lib_span
   NV_IF_TARGET(NV_IS_HOST, ({

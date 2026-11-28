@@ -24,7 +24,7 @@
 # error C++ standard library is incompatible with <stdatomic.h>
 #endif
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,13 +38,13 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__atomic/wait/notify_wait.h>
 #include <cuda/std/__atomic/api/owned.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__atomic/api/reference.h>
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
@@ -150,13 +150,13 @@ _CCCL_HOST_DEVICE_API inline bool atomic_is_lock_free(const atomic<_Tp>* __o) no
 template <class _Tp>
 _CCCL_HOST_DEVICE_API inline void atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
-  __atomic_init_dispatch(&__o->__a, __d);
+  __atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API inline void atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 {
-  __atomic_init_dispatch(&__o->__a, __d);
+  __atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
 }
 
 // atomic_store
@@ -373,14 +373,18 @@ _CCCL_HOST_DEVICE_API inline void atomic_notify_all(atomic<_Tp>* __o) noexcept
 // atomic_fetch_add
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
 }
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
@@ -401,14 +405,18 @@ _CCCL_HOST_DEVICE_API inline _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t 
 // atomic_fetch_add_explicit
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
@@ -430,14 +438,18 @@ _CCCL_HOST_DEVICE_API inline _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __o, p
 // atomic_fetch_sub
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
@@ -458,14 +470,18 @@ _CCCL_HOST_DEVICE_API inline _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t 
 // atomic_fetch_sub_explicit
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
 
 template <class _Tp>
-_CCCL_HOST_DEVICE_API inline enable_if_t<(is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || is_floating_point_v<_Tp>, _Tp>
+_CCCL_HOST_DEVICE_API inline enable_if_t<
+  (is_integral_v<_Tp> && !is_same_v<_Tp, bool>) || __atomic_is_floating_point_v<_Tp>,
+  _Tp>
 atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);

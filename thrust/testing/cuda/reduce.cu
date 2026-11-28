@@ -1,7 +1,12 @@
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -96,7 +101,7 @@ TEST_CASE("TestReduceCudaStreamsNoSync", "[reduce]")
   test_reduce_cuda_streams(thrust::cuda::par_nosync);
 }
 
-#if defined(THRUST_RDC_ENABLED)
+#ifdef THRUST_RDC_ENABLED
 TEST_CASE("TestReduceLargeInput", "[reduce]")
 {
   using T                 = unsigned long long;

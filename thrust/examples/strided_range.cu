@@ -5,8 +5,12 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/reduce.h>
+
+#include <cuda/std/iterator>
 
 #include <iostream>
+#include <iterator>
 
 // this example illustrates how to make strided access to a range of values
 // examples:
@@ -56,7 +60,7 @@ public:
 
   iterator end() const
   {
-    return begin() + ((last - first) + (stride - 1)) / stride;
+    return begin() + (((last - first) + (stride - 1)) / stride);
   }
 
 private:

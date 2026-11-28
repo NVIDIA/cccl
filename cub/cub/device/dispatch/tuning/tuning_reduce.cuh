@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,7 +24,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -54,7 +54,9 @@ struct ReducePassPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReducePassPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReducePassPolicy& p)
   {
     return os << "ReducePassPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
@@ -83,7 +85,9 @@ struct ReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReducePolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReducePolicy& p)
   {
     return os << "ReducePolicy { .multi_tile = " << p.multi_tile << ", .single_tile = " << p.single_tile << " }";
   }
@@ -112,7 +116,7 @@ concept reduce_policy_selector = policy_selector<T, ReducePolicy>;
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
 {
-  _CCCL_HOST_DEVICE ReducePolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE_API ReducePolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -123,7 +127,7 @@ struct ReducePolicyWrapper<
   StaticPolicyT,
   ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy, typename StaticPolicyT::SingleTilePolicy>> : StaticPolicyT
 {
-  _CCCL_HOST_DEVICE ReducePolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE_API ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
@@ -135,7 +139,7 @@ struct ReducePolicyWrapper<
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
 template <typename PolicyT>
-_CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
 {
   return ReducePolicyWrapper<PolicyT>{policy};
 }
@@ -162,7 +166,7 @@ enum class accum_size
   unknown
 };
 template <class AccumT>
-_CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -173,7 +177,7 @@ _CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 template <class OffsetT>
-_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -193,8 +197,8 @@ inline constexpr auto classify_accum_input<argminmax_accum_t<T, IndexT>> = class
 template <class AccumT,
           class OffsetT,
           op_kind_t OpTypeT      = classify_op<OffsetT>,
-          offset_size OffsetSize = classify_offset_size<OffsetT>(),
-          accum_size AccumSize   = classify_accum_size<AccumT>()>
+          offset_size OffsetSize = _CUB::detail::reduce::classify_offset_size<OffsetT>(),
+          accum_size AccumSize   = _CUB::detail::reduce::classify_accum_size<AccumT>()>
 struct sm100_tuning;
 
 // sum
@@ -490,8 +494,8 @@ struct policy_hub
       decltype(select_agent_policy<sm100_tuning<AccumT,
                                                 OffsetT,
                                                 classify_op<ReductionOpT>,
-                                                classify_offset_size<OffsetT>(),
-                                                classify_accum_size<AccumT>()>>(0));
+                                                _CUB::detail::reduce::classify_offset_size<OffsetT>(),
+                                                _CUB::detail::reduce::classify_accum_size<AccumT>()>>(0));
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
@@ -546,7 +550,7 @@ struct policy_selector
       if (accum_t == type_t::float32)
       {
         // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
-        const auto scaled = scale_mem_bound(224, 13, accum_size);
+        const auto scaled = _CUB::detail::scale_mem_bound(224, 13, accum_size);
         return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
                 {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
       }
@@ -558,14 +562,14 @@ struct policy_selector
       if (accum_t == type_t::float32)
       {
         // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
-        const auto scaled = scale_mem_bound(224, 6, accum_size);
+        const auto scaled = _CUB::detail::scale_mem_bound(224, 6, accum_size);
         return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
                 {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
       }
       if (accum_t == type_t::float64)
       {
         // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
-        const auto scaled = scale_mem_bound(128, 11, accum_size);
+        const auto scaled = _CUB::detail::scale_mem_bound(128, 11, accum_size);
         return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
                 {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
       }
@@ -573,12 +577,12 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
-      const auto scaled = scale_mem_bound(256, 16, accum_size);
+      const auto scaled = _CUB::detail::scale_mem_bound(256, 16, accum_size);
       return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
               {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
     }
 
-    const auto scaled = scale_mem_bound(256, 20, accum_size);
+    const auto scaled = _CUB::detail::scale_mem_bound(256, 20, accum_size);
     return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
             {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
   }
@@ -590,7 +594,7 @@ struct policy_selector
     {
       if (operation_t == op_kind_t::argminmax)
       {
-        if (const auto sm107_tuning = get_sm107_argminmax_tuning(offset_size, input_t))
+        if (const auto sm107_tuning = _CUB::detail::reduce::get_sm107_argminmax_tuning(offset_size, input_t))
         {
           const auto rp = ReducePassPolicy{
             sm107_tuning->threads,
@@ -603,7 +607,8 @@ struct policy_selector
       }
       if (operation_t == op_kind_t::arg_extremum)
       {
-        if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size, input_t))
+        if (const auto sm107_tuning =
+              _CUB::detail::reduce::get_argextremum_sm107_tuning(accum_t, offset_size, accum_size, input_t))
         {
           const auto rp = ReducePassPolicy{
             sm107_tuning->threads,
@@ -616,10 +621,10 @@ struct policy_selector
       }
       if (operation_t == op_kind_t::min || operation_t == op_kind_t::max)
       {
-        if (const auto sm107_tuning = get_extremum_sm107_tuning(accum_t, accum_size))
+        if (const auto sm107_tuning = _CUB::detail::reduce::get_extremum_sm107_tuning(accum_t, accum_size))
         {
           const auto [scaled_items, scaled_threads] =
-            scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
+            _CUB::detail::scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
           const auto rp = ReducePassPolicy{
             scaled_threads, scaled_items, sm107_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
           return {rp, rp};
@@ -627,10 +632,10 @@ struct policy_selector
       }
       if (operation_t == op_kind_t::plus)
       {
-        if (const auto sm107_tuning = get_sum_sm107_tuning(accum_t, offset_size))
+        if (const auto sm107_tuning = _CUB::detail::reduce::get_sum_sm107_tuning(accum_t, offset_size))
         {
           const auto [scaled_items, scaled_threads] =
-            scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
+            _CUB::detail::scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
           const auto rp = ReducePassPolicy{
             scaled_threads, scaled_items, sm107_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
           return {rp, rp};
@@ -640,12 +645,13 @@ struct policy_selector
     }
 
     // if we don't have a tuning for sm100, fall through
-    auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
+    auto sm100_tuning = _CUB::detail::reduce::get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
     if (cc >= ::cuda::compute_capability{10, 0} && sm100_tuning)
     {
       ReducePassPolicy rp{};
-      auto [scaled_items, scaled_threads] = scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
-      rp                                  = ReducePassPolicy{
+      auto [scaled_items,
+            scaled_threads] = _CUB::detail::scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
+      rp                    = ReducePassPolicy{
         scaled_threads, scaled_items, sm100_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
       return {rp, rp};
     }
@@ -657,7 +663,8 @@ struct policy_selector
       constexpr int items_per_vec_load = 4;
 
       // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-      auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+      auto [scaled_items,
+            scaled_threads] = _CUB::detail::scale_mem_bound(threads_per_block, items_per_thread, accum_size);
       const auto rp =
         ReducePassPolicy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
       return {rp, rp};
@@ -669,7 +676,8 @@ struct policy_selector
     constexpr int items_per_thread   = 20;
     constexpr int items_per_vec_load = 4;
 
-    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+    auto [scaled_items,
+          scaled_threads] = _CUB::detail::scale_mem_bound(threads_per_block, items_per_thread, accum_size);
     const auto rp =
       ReducePassPolicy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
     return {rp, rp};

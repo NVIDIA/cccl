@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +31,15 @@
 #include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
-#  include <iterator>
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/stl_iterator_base_types.h>)
+#    include <bits/stl_iterator_base_types.h> // for ::std::iterator_traits
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__iterator/iterator_traits.h>)
+#    include <__iterator/iterator_traits.h> // for ::std::iterator_traits
+#  elif _CCCL_HOST_STD_LIB(STL) && __has_include(<__msvc_iter_core.hpp>)
+#    include <__msvc_iter_core.hpp> // for ::std::iterator_traits
+#  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv other host standard library vvv
+#    include <iterator> // for ::std::iterator_traits
+#  endif // ^^^ other host standard library ^^^
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -91,8 +99,10 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
 using __test_for_primary_std_template = enable_if_t<is_same_v<_Traits, typename _Traits::__primary_template>>;
+// This must be a class template and not an alias template, because we need to specialize it for `common_iterator`
 template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
+struct __is_primary_std_template : _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>
+{};
 
 #  elif _CCCL_HOST_STD_LIB(STL)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20

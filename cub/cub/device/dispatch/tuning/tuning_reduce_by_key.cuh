@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +56,9 @@ struct ReduceByKeyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReduceByKeyLookbackPolicy& p)
   {
     return os
         << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -86,9 +88,11 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
+template <class CharT, class Traits>
+_CCCL_HOST_API ::std::basic_ostream<CharT, Traits>&
+operator<<(::std::basic_ostream<CharT, Traits>& os, ReduceByKeyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -112,7 +116,9 @@ struct ReduceByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const ReduceByKeyPolicy& p)
   {
     return os << "ReduceByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -215,10 +221,10 @@ _CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
-          key_size KeySize               = classify_key_size<KeyT>(),
-          accum_size AccumSize           = classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm80_tuning;
 
 // 8-bit key
@@ -455,10 +461,10 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
-          key_size KeySize               = classify_key_size<KeyT>(),
-          accum_size AccumSize           = classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm90_tuning;
 
 // 8-bit key
@@ -695,10 +701,10 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
-          key_size KeySize               = classify_key_size<KeyT>(),
-          accum_size AccumSize           = classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm100_tuning;
 
 // 8-bit key
@@ -992,7 +998,8 @@ struct policy_hub
   struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT =
-      decltype(select_agent_policy<sm80_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
+      decltype(select_agent_policy<
+               sm80_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1006,7 +1013,8 @@ struct policy_hub
   struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ReduceByKeyPolicyT =
-      decltype(select_agent_policy<sm90_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
+      decltype(select_agent_policy<
+               sm90_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1025,7 +1033,8 @@ struct policy_hub
     static auto select_agent_policy(long) -> typename Policy900::ReduceByKeyPolicyT;
 
     using ReduceByKeyPolicyT =
-      decltype(select_agent_policy<sm100_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
+      decltype(select_agent_policy<
+               sm100_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
   using MaxPolicy = Policy1000;
 };
@@ -1069,7 +1078,7 @@ private:
       prefer_thrust_tuning ? thrust_load_algorithm : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
+      _CUB::detail::default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
   }
 
   // The policy of the former thrust::reduce_by_key implementation, optionally with a different tile size or load
@@ -1191,6 +1200,31 @@ private:
                 {LookbackDelayAlgorithm::no_delay, 0, 895}};
       }
       // no tuning found (e.g. 16-byte keys), fall through to the SM100 tunings
+    }
+
+    // thrust::reduce_by_key accumulates 1- and 2-byte values without promotion. Those, as well as some 8-byte
+    // accumulators, are faster on SM100 with the following policies. SM120 still falls through to the SM100 tunings
+    // below.
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (key_size == 8 && accum_size == 1)
+      {
+        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      if (((key_size == 2 || key_size == 4) && accum_size == 2)
+          || (key_size == 4 && accum_size == 4 && accum_t == type_t::float32))
+      {
+        return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      // F32 or I64 with 8-byte keys, and F64 with 2- or 4-byte keys on SM100 (but not SM103), keep the SM100 tunings
+      // below
+      if ((key_size == 8 && accum_size == 8 && accum_t != type_t::int64)
+          || ((key_size == 2 || key_size == 4) && accum_size == 8
+              && (accum_t != type_t::float64 || cc >= ::cuda::compute_capability{10, 3}))
+          || (key_size == 8 && accum_size == 4 && accum_t != type_t::float32))
+      {
+        return get_lookback_policy(::cuda::compute_capability{9, 0});
+      }
     }
 
     if (cc >= ::cuda::compute_capability{10, 0}) // if we don't have a tuning, fall back to SM90
@@ -1380,6 +1414,11 @@ private:
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
                 {LookbackDelayAlgorithm::no_delay, 0, 735}};
+      }
+      // F64 uses more registers with the shuffle-add warp reduction and would lose a block per SM with the row below
+      if (key_size == 1 && accum_size == 8 && accum_t == type_t::float64)
+      {
+        return __make_thrust_policy(11);
       }
       if (key_size == 1 && accum_size == 8)
       {

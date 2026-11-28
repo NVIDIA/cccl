@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -58,7 +58,7 @@ struct BlockRakingLayout
   static constexpr int SHARED_ELEMENTS = ThreadsPerBlock;
 
   /// Maximum number of warp-synchronous raking threads
-  static constexpr int MAX_RAKING_THREADS = ::cuda::std::min(ThreadsPerBlock, detail::warp_threads);
+  static constexpr int MAX_RAKING_THREADS = (::cuda::std::min) (ThreadsPerBlock, detail::warp_threads);
 
   /// Number of raking elements per warp-synchronous raking thread (rounded up)
   static constexpr int SEGMENT_LENGTH = ::cuda::ceil_div(ThreadsPerBlock, MAX_RAKING_THREADS);
@@ -98,7 +98,7 @@ struct BlockRakingLayout
   /**
    * @brief Returns the location for the calling thread to place data into the grid
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     // Offset for partial
     unsigned int offset = linear_tid;
@@ -116,7 +116,7 @@ struct BlockRakingLayout
   /**
    * @brief Returns the location for the calling thread to begin sequential raking
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
   }

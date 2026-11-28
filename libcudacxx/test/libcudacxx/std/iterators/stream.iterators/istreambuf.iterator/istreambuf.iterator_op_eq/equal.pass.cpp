@@ -16,7 +16,7 @@
 //                   const istreambuf_iterator<charT,traits>& b);
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_SSTREAM)
+#ifdef _LIBCUDACXX_HAS_SSTREAM
 #  include <cuda/std/cassert>
 #  include <cuda/std/sstream>
 

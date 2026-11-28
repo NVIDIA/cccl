@@ -109,7 +109,7 @@ void test_reduce_init(const Policy& policy, const thrust::device_vector<int>& da
     static_assert(cuda::std::is_same_v<decltype(res), int>);
 #endif // !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
 
-    constexpr int expected = size * (size + 1) / 2 + 42;
+    constexpr int expected = (size * (size + 1) / 2) + 42;
     CHECK(res == expected);
   }
 
@@ -119,7 +119,7 @@ void test_reduce_init(const Policy& policy, const thrust::device_vector<int>& da
     static_assert(cuda::std::is_same_v<decltype(res), unsigned long>);
 #endif // !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
 
-    constexpr int expected = size * (size + 1) / 2 + 42;
+    constexpr int expected = (size * (size + 1) / 2) + 42;
     CHECK(res == expected);
   }
 }
@@ -185,7 +185,7 @@ void test_reduce_init_fn(const Policy& policy, const thrust::device_vector<int>&
     static_assert(cuda::std::is_same_v<decltype(res), int>);
 #endif // !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
 
-    constexpr int expected = size * (size + 1) / 2 + 42 + size * 2;
+    constexpr int expected = (size * (size + 1) / 2) + 42 + (size * 2);
     CHECK(res == expected);
   }
 
@@ -196,7 +196,7 @@ void test_reduce_init_fn(const Policy& policy, const thrust::device_vector<int>&
     static_assert(cuda::std::is_same_v<decltype(res), unsigned long>);
 #endif // !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
 
-    constexpr int expected = size * (size + 1) / 2 + 42 + size * 2;
+    constexpr int expected = (size * (size + 1) / 2) + 42 + (size * 2);
     CHECK(res == expected);
   }
 }

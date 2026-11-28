@@ -19,7 +19,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/max.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,19 +27,30 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // reorderer_payload uses task_dep_vector_untyped
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <algorithm> // ::std::shuffle
-#include <functional> // ::std::function
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <memory> // ::std::unique_ptr
 #include <queue>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved
@@ -377,7 +388,7 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
     return ::std::make_unique<post_mortem_reorderer>(order_file);
   }
 
-  _CCCL_THROW(::std::invalid_argument,
-              ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'"));
+  _CCCL_THROW_STD(invalid_argument,
+                  ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'").c_str());
 }
 } // namespace cuda::experimental::stf::reserved

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 namespace cuda::experimental::coop
 {
@@ -138,7 +138,11 @@ inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
 // tags
 
+struct by_group_rank_t;
+struct by_unit_count_t;
 struct non_exhaustive_t;
+struct parent_group_t;
+struct __private_tag;
 
 inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental::coop
@@ -148,7 +152,7 @@ _CG_BEGIN_NAMESPACE
 
 class thread_group;
 class grid_group;
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 class cluster_group;
 #    endif // _CG_HAS_CLUSTER_GROUP
 class thread_block;

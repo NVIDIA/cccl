@@ -2,7 +2,16 @@
 
 #include <thrust/mr/disjoint_pool.h>
 #include <thrust/mr/disjoint_sync_pool.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/pool_options.h>
+#include <thrust/system/detail/bad_alloc.h>
+
+#include <cuda/std/memory>
+
+#include <algorithm>
+#include <cstddef>
+#include <vector>
 
 #include <unittest/unittest.h>
 
@@ -314,9 +323,9 @@ void test_disjoint_pool_squeeze()
   opts.cache_oversized          = true;
 
   const std::size_t not_enough_bytes      = 3u; // free bytes that should trigger OOM
-  const std::size_t small_block           = opts.min_bytes_per_chunk / 8u - 3u;
+  const std::size_t small_block           = (opts.min_bytes_per_chunk / 8u) - 3u;
   const std::size_t medium_block          = opts.min_bytes_per_chunk + 3u;
-  const std::size_t large_block           = opts.min_bytes_per_chunk * 8u - 3u;
+  const std::size_t large_block           = (opts.min_bytes_per_chunk * 8u) - 3u;
   const std::size_t extra_large_block     = opts.largest_block_size - 3u;
   const std::size_t oversized_block       = opts.largest_block_size + 1u;
   const std::size_t many_chunks_of_blocks = 2048;

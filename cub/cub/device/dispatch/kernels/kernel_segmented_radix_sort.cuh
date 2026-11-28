@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,7 +31,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr SegmentedRadixSortPolicy policy = current_policy<PolicySelector>();
+  constexpr SegmentedRadixSortPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   return AltDigitBits ? policy.alternate_pass.threads_per_block : policy.regular_pass.threads_per_block;
 }
 
@@ -107,7 +107,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
+__launch_bounds__(
+  _CUB::detail::segmented_radix_sort::segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* const d_keys_in,
     KeyT* const d_keys_out,
@@ -123,7 +124,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr SegmentedRadixSortPolicy policy        = current_policy<PolicySelector>();
+  static constexpr SegmentedRadixSortPolicy policy        = _CUB::detail::current_policy<PolicySelector>();
   static constexpr RadixSortDownsweepPolicy active_policy = AltDigitBits ? policy.alternate_pass : policy.regular_pass;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;
@@ -186,7 +187,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
 
   // Ensure the size of the current segment does not overflow SegmentSizeT
   _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(
-                 ::cuda::std::numeric_limits<SegmentSizeT>::max())
+                 (::cuda::std::numeric_limits<SegmentSizeT>::max)())
                  > (d_end_offsets[segment_id] - d_begin_offsets[segment_id]),
                "A single segment size is limited to the maximum value representable by SegmentSizeT");
   const auto num_items = static_cast<SegmentSizeT>(d_end_offsets[segment_id] - d_begin_offsets[segment_id]);

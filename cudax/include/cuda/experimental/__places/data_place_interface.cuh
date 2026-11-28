@@ -22,7 +22,7 @@
 #include <cuda/__cccl_config>
 #include <cuda/std/limits>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,22 +30,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 #include <cstddef>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <typeinfo>
 #include <utility>
 
 #include <cuda.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 namespace cuda::experimental::places
 {

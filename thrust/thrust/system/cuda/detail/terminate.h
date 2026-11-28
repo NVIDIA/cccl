@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,7 +20,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cuda::detail
 {
-inline _CCCL_HOST_DEVICE void terminate_with_message(const char* message)
+_CCCL_HOST_DEVICE_API inline void terminate_with_message(const char* message)
 {
   printf("%s\n", message);
   ::cuda::std::terminate();

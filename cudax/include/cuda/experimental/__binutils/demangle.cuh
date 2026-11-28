@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,11 +23,9 @@
 
 #if _CCCL_HOSTED() && __has_include(<nv_decode.h>)
 
-#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__host_stdlib/new>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/cstdlib>
 #  include <cuda/std/string_view>
 
@@ -71,13 +69,13 @@ template <class _Dummy = void>
         return __ret;
       }
       case -1:
-        _CCCL_THROW(::std::bad_alloc);
+        _CCCL_THROW_STD(bad_alloc);
       case -2:
-        _CCCL_THROW(::std::runtime_error, "invalid mangled name passed to cuda::demangle function");
+        _CCCL_THROW_STD(runtime_error, "invalid mangled name passed to cuda::demangle function");
       case -3:
         _CCCL_VERIFY(false, "cccl internal error - invalid argument passed to __cu_demangle");
       default:
-        _CCCL_THROW(::std::runtime_error, "an unknown error occurred during demangling operation");
+        _CCCL_THROW_STD(runtime_error, "an unknown error occurred during demangling operation");
     }
   }
   _CCCL_CATCH_ALL

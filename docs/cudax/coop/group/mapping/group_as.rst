@@ -55,7 +55,7 @@ Examples
     const cuda::std::array unit_counts{4, 12, 16};
 
     // Mapping that splits every group from the previous mapping result into 3 subgroups of 4, 12 and 16 units.
-    cudax::coop::group_as m{unit_counts};
+    const cudax::coop::group_as m{unit_counts};
 
     // Split a single warp into groups of threads as defined by mapping m.
     cudax::coop::this_warp warp{config};

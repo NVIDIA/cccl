@@ -12,7 +12,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,6 +25,7 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/cstdint>
 
@@ -121,9 +122,9 @@ struct DeviceMerge
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::merge::dispatch(
+        return _CUB::detail::merge::dispatch(
           storage,
           bytes,
           keys_in1,
@@ -228,9 +229,9 @@ struct DeviceMerge
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::merge::dispatch(
+        return _CUB::detail::merge::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           keys_in1,
@@ -324,9 +325,9 @@ struct DeviceMerge
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::merge::dispatch(
+        return _CUB::detail::merge::dispatch(
           storage,
           bytes,
           keys_in1,
@@ -458,9 +459,9 @@ struct DeviceMerge
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::merge::dispatch(
+        return _CUB::detail::merge::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           keys_in1,

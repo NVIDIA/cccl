@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024-26 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,8 +24,13 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_scalar.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,7 +41,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
 #  define _CCCL_CONSTEXPR_BIT_CAST       constexpr
 #  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 1
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
@@ -50,12 +55,12 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
 template <class _To, class _From>
-[[nodiscard]] _CCCL_API inline _To __bit_cast_memcpy(const _From& __from) noexcept
+[[nodiscard]] _CCCL_API _To __bit_cast_memcpy(const _From& __from) noexcept
 {
   static_assert(::cuda::std::is_default_constructible_v<_To>,
                 "bit_cast memcpy fallback requires the destination type to be default constructible");
   _To __temp;
-  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(::cuda::std::addressof(__temp), ::cuda::std::addressof(__from), sizeof(_To));
   return __temp;
 }
 
@@ -63,26 +68,50 @@ template <class _To, class _From>
 _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017
+
+// NVCC + MSVC C++17 fails for guaranteed copy elision
+template <class _To, class _From>
+_CCCL_CONCEPT __can_be_directly_returned =
+  ::cuda::std::is_scalar_v<_To>
+  && ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>;
+
+#else // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
+
+template <class _To,
+          class _From,
+          bool = ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>>
+inline constexpr bool __can_be_directly_returned = false;
+
+template <class _To, class _From>
+inline constexpr bool __can_be_directly_returned<_To, _From, true> =
+  ::cuda::std::is_trivially_constructible_v<_To, const _From&>;
+
+#endif // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
+
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) _CCCL_AND(::cuda::is_trivially_copyable_v<_To>)
                  _CCCL_AND(::cuda::is_trivially_copyable_v<_From>))
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+  if constexpr (__can_be_directly_returned<_To, _From>)
+  {
+    return _To(__from); // this also allows explicit _To(const _To&) = default
+  }
+#ifdef _CCCL_BUILTIN_BIT_CAST
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
   // C++ law, and will emit errors if the builtin is called on types that aren't
   // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
-  if constexpr (::cuda::std::is_trivially_copyable_v<_To> && ::cuda::std::is_trivially_copyable_v<_From>)
+  else if constexpr (::cuda::std::is_trivially_copyable_v<_To> && ::cuda::std::is_trivially_copyable_v<_From>)
   {
     return _CCCL_BUILTIN_BIT_CAST(_To, __from);
   }
+#endif // _CCCL_BUILTIN_BIT_CAST
   else
   {
     return ::cuda::std::__bit_cast_memcpy<_To>(__from);
   }
-#else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
-  return ::cuda::std::__bit_cast_memcpy<_To>(__from);
-#endif // _CCCL_BUILTIN_BIT_CAST
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

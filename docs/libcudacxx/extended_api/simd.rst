@@ -3,6 +3,8 @@
 SIMD
 ====
 
+Include ``<cuda/simd>`` for the ``cuda::simd`` operations listed below. This header also includes :ref:`<cuda/std/simd> <libcudacxx-standard-api-numerics-simd>`.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -17,7 +19,7 @@ SIMD
    :widths: 25 45 30 30
    :header-rows: 1
 
-   * - **Header**
+   * - **Function**
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**

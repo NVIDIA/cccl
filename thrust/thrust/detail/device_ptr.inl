@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,21 +13,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
-#include <thrust/device_reference.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/device_reference.h> // IWYU pragma: keep
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr)
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(T* ptr)
 {
   return device_ptr<T>(ptr);
 } // end device_pointer_cast()
 
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(const device_ptr<T>& ptr)
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(const device_ptr<T>& ptr)
 {
   return ptr;
 } // end device_pointer_cast()

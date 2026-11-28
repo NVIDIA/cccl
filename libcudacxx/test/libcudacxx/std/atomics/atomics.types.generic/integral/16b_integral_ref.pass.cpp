@@ -97,7 +97,7 @@
 #include <cmpxchg_loop.h>
 
 #include "test_macros.h"
-#if !defined(TEST_COMPILER_MSVC)
+#ifndef TEST_COMPILER_MSVC
 #  include "placement_new.h"
 #endif
 #include "cuda_space_selector.h"

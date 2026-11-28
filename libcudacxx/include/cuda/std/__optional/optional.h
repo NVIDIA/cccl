@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -209,8 +209,8 @@ public:
     return *this;
   }
 
-  constexpr optional& operator=(const optional&) = default;
-  constexpr optional& operator=(optional&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(const optional&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional& operator=(optional&&)      = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = value_type)

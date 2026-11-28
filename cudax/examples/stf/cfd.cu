@@ -13,6 +13,8 @@
  * @brief Simulation of a fluid over a regular grid with an implicit Jacobi solver
  */
 
+#include <cuda/cmath>
+
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
@@ -72,14 +74,11 @@ double colfunc(double x)
   {
     return 0.0;
   }
-  else if (absx < x1)
+  if (absx < x1)
   {
     return 1.0;
   }
-  else
-  {
-    return 1.0 - pow((absx - x1) / (x2 - x1), 2);
-  }
+  return 1.0 - pow((absx - x1) / (x2 - x1), 2);
 }
 
 void hue2rgb(double hue, int& r, int& g, int& b)
@@ -112,7 +111,7 @@ void writedatafiles(context& ctx, logical_data<slice<double, 2>> lpsi, int m, in
                 const double v1 = vel(i, j, 0);
                 const double v2 = vel(i, j, 1);
 
-                const double modvsq = v1 * v1 + v2 * v2;
+                const double modvsq = (v1 * v1) + (v2 * v2);
 
                 const double hue = pow(modvsq, 0.4);
 
@@ -459,10 +458,7 @@ int main(int argc, char** argv)
   }
   r_iter.end();
 
-  if (iter > numiter)
-  {
-    iter = numiter;
-  }
+  iter = (cuda::min) (iter, numiter);
 
   const double tstop = gettime();
 

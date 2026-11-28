@@ -7,6 +7,7 @@
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -37,6 +38,7 @@
 #include <c2h/vector.h>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_tostring.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
@@ -579,11 +581,11 @@ auto Equals(const cuda::buffer<T, Props...>& expected) -> c2h::detail::vector_ma
 #include <cuda/std/utility>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename T1,
-          typename T2,
-          // provide this operator only when the pair's content is also streamable
-          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
-                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
+template <
+  typename T1,
+  typename T2,
+  enable_if_t<(::Catch::Detail::IsStreamInsertable_v<const T1&> && ::Catch::Detail::IsStreamInsertable_v<const T2&>),
+              int> = 0>
 ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";

@@ -32,7 +32,7 @@
 //! environment-based APIs (using the wrapper macros suffixed with `_ENV`). See the "Launch wrappers" section of
 //! docs/cub/developer/test_overview.rst for usage.
 
-#if !defined(TEST_LAUNCH)
+#ifndef TEST_LAUNCH
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 
@@ -292,7 +292,7 @@ inline void check_device_launch_completion(cuda::stream_ref stream, const cuda::
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
   cuda::std::uint8_t* d_temp_storage,
-  std::size_t* temp_storage_bytes,
+  std::size_t* temp_storage_bytes, // NOLINT(readability-non-const-parameter)
   cudaError_t* d_error,
   ActionT action,
   Args... args)
@@ -399,7 +399,7 @@ void launch(ActionT action, Args&&... args)
   launch_helper_detail::launch_impl(action, cuda::std::forward<Args>(args)...);
 }
 
-struct get_expected_allocation_size_t
+struct get_expected_allocation_size_t : cuda::std::execution::__basic_query<get_expected_allocation_size_t>
 {};
 
 [[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
@@ -547,7 +547,7 @@ void launch_env(ActionT action, Args... args)
 
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
-  const auto stream = cuda::std::execution::__query_or(env, cuda::get_stream_t{}, c2h::default_stream_ref());
+  const auto stream = cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), env);
 
   auto d_error        = c2h::make_device_buffer<cudaError_t>(stream, 1, cudaErrorInvalidValue);
   auto d_temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, expected_bytes_allocated, cuda::no_init);

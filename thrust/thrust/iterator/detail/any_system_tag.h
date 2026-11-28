@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,7 @@ struct any_system_tag : execution_policy<any_system_tag>
   // allow any_system_tag to convert to any type at all
   // XXX make this safer using enable_if<is_tag<T>> upon c++11
   template <typename T>
-  _CCCL_HOST_DEVICE operator T() const
+  _CCCL_HOST_DEVICE_API operator T() const
   {
     return T();
   }

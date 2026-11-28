@@ -14,10 +14,67 @@
 #include <cuda/barrier>
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
+#include <cuda/std/ranges>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/warp>
 
 #include "testing.cuh"
+
+// A borrowed view that requires mutable access to obtain its iterators.
+template <class T>
+struct NonConstView : cuda::std::ranges::view_base
+{
+  T* values;
+  cuda::std::size_t count;
+
+  __host__ __device__ constexpr NonConstView(T* data, cuda::std::size_t size)
+      : values{data}
+      , count{size}
+  {}
+
+  __host__ __device__ constexpr T* begin()
+  {
+    return values;
+  }
+
+  __host__ __device__ constexpr T* end()
+  {
+    return values + count;
+  }
+};
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
+template <class T>
+inline constexpr bool enable_borrowed_range<NonConstView<T>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
+
+template <class Mapping, class, class... Args>
+inline constexpr bool can_map_group_impl = false;
+
+template <class Mapping, class... Args>
+inline constexpr bool can_map_group_impl<
+  Mapping,
+  cuda::std::void_t<decltype(cuda::std::declval<Mapping&>().map(cuda::std::declval<const Args&>()...))>,
+  Args...> = true;
+
+template <class Mapping, class... Args>
+inline constexpr bool can_map_group = can_map_group_impl<Mapping, void, Args...>;
+
+template <class Synchronizer, class Unit, class Parent, class Result, class = void>
+inline constexpr bool can_make_synchronizer_instance = false;
+
+template <class Synchronizer, class Unit, class Parent, class Result>
+inline constexpr bool can_make_synchronizer_instance<
+  Synchronizer,
+  Unit,
+  Parent,
+  Result,
+  cuda::std::void_t<decltype(cuda::std::declval<Synchronizer&>().make_instance(
+    cuda::std::declval<const Unit&>(), cuda::std::declval<const Parent&>(), cuda::std::declval<const Result&>()))>> =
+  true;
 
 // global_barriers_storage is mutable device state. The unnamed namespace gives each
 // translation unit its own barrier storage; sharing one copy across translation units
@@ -43,14 +100,14 @@ inline constexpr auto minimum_thread_scope_for_v<cuda::grid_level> = cuda::threa
 template <class T, cuda::std::size_t Id>
 __device__ T global_barriers_storage;
 
-//! @brief Returns reference to an array of N cuda::barrier objects with suitable thread scope for level allocated in
-//!        suitable address space (shared or device memory). Id parameter can be used to create unique object.
+//! @brief Returns a reference to N cuda::barrier objects with the thread scope required by the hierarchy level.
+//!        Allocates in suitable address space (shared or device memory). Id can be used to create unique object.
 template <cuda::std::size_t N, cuda::std::size_t Id = 0, class Level>
-__device__ auto& get_barriers(const Level& level) noexcept
+__device__ auto& get_barriers(const Level&) noexcept
 {
-  constexpr auto scope = minimum_thread_scope_for_v<Level>;
+  constexpr auto thread_scope = minimum_thread_scope_for_v<Level>;
 
-  using Barrier         = cuda::barrier<scope>;
+  using Barrier         = cuda::barrier<thread_scope>;
   using BarriersStorage = cuda::std::aligned_storage_t<N * sizeof(Barrier), alignof(Barrier)>;
 
   if constexpr (cuda::std::is_same_v<Level, cuda::thread_level> || cuda::std::is_same_v<Level, cuda::warp_level>
@@ -75,6 +132,11 @@ struct ThreadsInWarpMappingResult
   __device__ unsigned group_count() const
   {
     return 1;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_group_rank()
+  {
+    return 0;
   }
 
   __device__ unsigned group_rank() const

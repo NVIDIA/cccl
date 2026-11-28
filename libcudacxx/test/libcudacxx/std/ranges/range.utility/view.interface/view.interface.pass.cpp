@@ -21,6 +21,10 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+#if TEST_HAS_EXCEPTIONS()
+#  include <stdexcept>
+#endif // TEST_HAS_EXCEPTIONS()
+
 #if TEST_STD_VER > 2017
 template <class T>
 concept ValidViewInterfaceType = requires { typename cuda::std::ranges::view_interface<T>; };

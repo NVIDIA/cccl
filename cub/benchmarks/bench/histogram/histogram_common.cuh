@@ -59,7 +59,7 @@ struct bench_policy_selector
 #endif // !TUNE_BASE
 
 template <class SampleT, class OffsetT>
-SampleT get_upper_level(OffsetT bins, OffsetT elements)
+_CCCL_HOST_API SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
   if constexpr (cuda::std::is_integral_v<SampleT>)
   {

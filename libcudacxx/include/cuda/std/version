@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config> // IWYU pragma: export
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@
 #define __cccl_lib_is_null_pointer              201309L
 #define __cccl_lib_is_scoped_enum               202011L
 #define __cccl_lib_is_swappable                 201603L
-#if defined(_CCCL_BUILTIN_IS_VIRTUAL_BASE_OF)
+#ifdef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
 #  define __cccl_lib_is_virtual_base_of 202406L
 #endif // _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
 #define __cccl_lib_launder        201606L
@@ -60,6 +60,7 @@
 #  define __cccl_lib_reference_from_temporary 202202L
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY && _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 #define __cccl_lib_shift                        201806L
+#define __cccl_lib_simd_bitops                  202607L
 #define __cccl_lib_to_address                   201711L
 #define __cccl_lib_to_array                     201907L
 #define __cccl_lib_to_underlying                202102L
@@ -152,7 +153,7 @@
 #define __cccl_lib_ranges_indices 202506L
 
 #define __cccl_lib_saturation_arithmetic 202603L
-#if defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)
+#ifdef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
 #  define __cccl_lib_is_implicit_lifetime 202302L
 #endif // _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
 

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,11 +24,13 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/__utility/immovable.h>
-#include <cuda/std/__utility/forward_like.h>
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
@@ -36,6 +38,8 @@
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
+
+#include <nv/target>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,7 +27,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -61,7 +61,9 @@ struct SegmentedSortRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortRadixSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortRadixSortPolicy& p)
   {
     return os
         << "SegmentedSortRadixSortPolicy { .threads_per_block = " << p.threads_per_block
@@ -107,7 +109,9 @@ struct SegmentedSortSubWarpMergeSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortSubWarpMergeSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortSubWarpMergeSortPolicy& p)
   {
     return os
         << "SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = " << p.threads_per_block
@@ -141,7 +145,9 @@ struct SegmentedSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortPolicy& p)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const SegmentedSortPolicy& p)
   {
     return os << "SegmentedSortPolicy { .large_segment = " << p.large_segment
               << ", .medium_segment = " << p.medium_segment << ", .small_segment = " << p.small_segment
@@ -165,7 +171,7 @@ struct policy_selector
 
   _CCCL_HOST_DEVICE_API constexpr auto __dominant_size() const
   {
-    return ::cuda::std::max(key_size, value_size);
+    return (::cuda::std::max) (key_size, value_size);
   }
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_scaled_segmented_radix_sort_policy(
@@ -177,7 +183,8 @@ struct policy_selector
     BlockScanAlgorithm scan_algorithm,
     int radix_bits) const
   {
-    const auto scaled = scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
+    const auto scaled =
+      _CUB::detail::scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
     return SegmentedSortRadixSortPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
@@ -192,7 +199,7 @@ struct policy_selector
     -> SegmentedSortPolicy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
-      return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
+      return _CUB::detail::nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
     };
 
     if (cc >= ::cuda::compute_capability{8, 6})
@@ -307,7 +314,7 @@ struct policy_selector_from_types
 template <typename PolicyT, typename = void>
 struct SegmentedSortPolicyWrapper : PolicyT
 {
-  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE_API SegmentedSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -319,81 +326,81 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
                                                       typename StaticPolicyT::SmallSegmentPolicy,
                                                       typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
 {
-  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE_API SegmentedSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
+  _CCCL_HOST_DEVICE_API static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
+  _CCCL_HOST_DEVICE_API static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int LargeSegmentThreadsPerBlock()
+  _CCCL_HOST_DEVICE_API static constexpr int LargeSegmentThreadsPerBlock()
   {
     return StaticPolicyT::LargeSegmentPolicy::BLOCK_THREADS;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int LargeSegmentItemsPerThread()
+  _CCCL_HOST_DEVICE_API static constexpr int LargeSegmentItemsPerThread()
   {
     return StaticPolicyT::LargeSegmentPolicy::ITEMS_PER_THREAD;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int SmallSegmentThreadsPerBlock()
+  _CCCL_HOST_DEVICE_API static constexpr int SmallSegmentThreadsPerBlock()
   {
     return StaticPolicyT::SmallSegmentPolicy::BLOCK_THREADS;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()
+  _CCCL_HOST_DEVICE_API static constexpr int SegmentsPerSmallBlock()
   {
     return StaticPolicyT::SmallSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int SegmentsPerMediumBlock()
+  _CCCL_HOST_DEVICE_API static constexpr int SegmentsPerMediumBlock()
   {
     return StaticPolicyT::MediumSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int SmallPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE_API static constexpr int SmallPolicyItemsPerTile()
   {
     return StaticPolicyT::SmallSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int MediumPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE_API static constexpr int MediumPolicyItemsPerTile()
   {
     return StaticPolicyT::MediumSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  _CCCL_HOST_DEVICE static constexpr CacheLoadModifier LargeSegmentLoadModifier()
+  _CCCL_HOST_DEVICE_API static constexpr CacheLoadModifier LargeSegmentLoadModifier()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER;
   }
 
-  _CCCL_HOST_DEVICE static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE_API static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE_API static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE_API static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE_API static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM;
   }
 
-  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE_API static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
@@ -401,7 +408,7 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
 
 // TODO(bgruber): remove when we drop the CUB dispatchers in CCCL 4.0
 template <typename PolicyT>
-_CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
 {
   return SegmentedSortPolicyWrapper<PolicyT>{policy};
 }
@@ -429,8 +436,8 @@ struct policy_hub
       BLOCK_SCAN_RAKING_MEMOIZE,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -462,8 +469,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -495,8 +502,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -528,8 +535,8 @@ struct policy_hub
       BLOCK_SCAN_RAKING_MEMOIZE,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -561,8 +568,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -592,8 +599,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -624,8 +631,8 @@ struct policy_hub
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
     static constexpr bool LARGE_ITEMS            = sizeof(DominantT) > 4;
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,

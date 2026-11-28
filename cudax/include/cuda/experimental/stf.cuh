@@ -21,6 +21,7 @@
 
 #pragma once
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -40,3 +41,4 @@
 #include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/__stf/utility/run_once.cuh>
+// IWYU pragma: end_exports

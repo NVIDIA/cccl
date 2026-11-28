@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,19 +24,21 @@
 #if _CCCL_CTK_AT_LEAST(12, 2)
 
 #  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
+#  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/cstddef>
 #  include <cuda/std/span>
 
 #  include <cuda/experimental/__driver/driver_api.cuh>
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
+
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -52,7 +54,7 @@ __copy_bytes_graph_impl(path_builder& __pb, ::cuda::std::span<_SrcTy> __src, ::c
 
   if (__src.size_bytes() > __dst.size_bytes())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+    _CCCL_THROW_STD(invalid_argument, "Copy destination is too small to fit the source data");
   }
 
   if (__src.size_bytes() == 0)
@@ -98,12 +100,12 @@ _CCCL_HOST_API graph_node_ref __copy_bytes_graph_impl(
 
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(::std::invalid_argument, "copy_bytes supports only exhaustive mdspans");
+    _CCCL_THROW_STD(invalid_argument, "copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination size differs from the source");
+    _CCCL_THROW_STD(invalid_argument, "Copy destination size differs from the source");
   }
 
   return __copy_bytes_graph_impl(

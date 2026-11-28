@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -222,7 +222,7 @@ public:
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
       _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                   "::cuda::std::cuda::std::ranges::subrange was passed an invalid size hint");
+                   "::cuda::std::ranges::subrange was passed an invalid size hint");
     }
   }
 

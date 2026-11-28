@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,9 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -177,6 +180,43 @@ public:
     return __impl_.probing_scheme();
   }
 
+  //! @brief Returns a copy of this ref that compares keys with `__predicate`.
+  //!
+  //! The copy references the same slot storage and does not rehash stored keys, so `__predicate` must be compatible
+  //! with the predicate used to insert them.
+  //! @tparam _NewKeyEqual Key equality predicate type
+  //! @param[in] __predicate Key equality predicate
+  //! @return A ref over the same storage using `__predicate`
+  template <class _NewKeyEqual>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto rebind_key_eq(const _NewKeyEqual& __predicate) const
+  {
+    using __rebound_ref = fixed_capacity_set_ref<_Key, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+    return __rebound_ref{
+      empty_key<_Key>{empty_key_sentinel()}, __predicate, probing_scheme(), storage_span_type{data(), capacity()}};
+  }
+
+  //! @brief Returns a copy of this ref that hashes keys with `__hash`.
+  //!
+  //! The copy references the same slot storage and keeps the probing scheme kind and CG size. Stored keys are not
+  //! rehashed, so `__hash` (both hashes for double hashing) must be compatible with the hash used to insert them.
+  //! @tparam _NewHash Hash function type, or a tuple-like of two hash functions for double hashing
+  //! @param[in] __hash Hash function
+  //! @return A ref over the same storage using `__hash`
+  template <class _NewHash>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto rebind_hash_function(const _NewHash& __hash) const
+  {
+    const auto __probing_scheme = probing_scheme().rebind_hash_function(__hash);
+    using __rebound_ref =
+      fixed_capacity_set_ref<_Key,
+                             _Scope,
+                             _KeyEqual,
+                             ::cuda::std::decay_t<decltype(__probing_scheme)>,
+                             _BucketSize,
+                             _Capacity>;
+    return __rebound_ref{
+      empty_key<_Key>{empty_key_sentinel()}, key_eq(), __probing_scheme, storage_span_type{data(), capacity()}};
+  }
+
   //! @brief Returns a pointer to the slot storage, including empty slots.
   //! @return The slot storage pointer; stored keys must not be modified directly
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr value_type* data() const noexcept
@@ -251,6 +291,42 @@ public:
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl_.contains(__group, __key);
+  }
+
+  //! @brief Applies `__callback_op` to a copy of the stored key equivalent to a query using one thread.
+  //!
+  //! The callback is not invoked if no equivalent key is present.
+  //! @pre `cg_size == 1` and the key differs from the empty sentinel.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __key Key to query
+  //! @param[in] __callback_op Function applied to the matching stored key
+  template <class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(_ProbeKey __key, _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl_.for_each(__key, ::cuda::std::forward<_CallbackOp>(__callback_op));
+  }
+
+  //! @brief Cooperatively applies `__callback_op` to a copy of the stored key equivalent to a query.
+  //!
+  //! The callback is not invoked if no equivalent key is present. The group member that finds the
+  //! match invokes the callback.
+  //! @pre All group members participate with the same query, which differs from the empty sentinel.
+  //! @note Synchronizing `__group` inside `__callback_op` is undefined behavior.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __group Cooperative group of size `cg_size`
+  //! @param[in] __key Key to query
+  //! @param[in] __callback_op Function applied to the matching stored key
+  template <class _ParentCG, class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                                 _ProbeKey __key,
+                                 _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl_.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

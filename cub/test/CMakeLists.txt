@@ -266,6 +266,18 @@ function(
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
+    # MSVC 19.52's host inliner can use 20 GiB expanding nested policy dispatch across the CI architectures.
+    if (
+      test_name STREQUAL "device.segmented_sort_custom_policy_hub"
+      AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+      AND MSVC_VERSION EQUAL 1952
+    )
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Ob0>
+      )
+    endif()
+
     if (
       CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
       AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"

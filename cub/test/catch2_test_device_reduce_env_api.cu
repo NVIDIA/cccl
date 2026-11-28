@@ -11,11 +11,127 @@
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution>
+#include <cuda/memory_resource>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include "catch2_test_memory_resources.h"
 #include "cub_test_macros.h"
+
+struct custom_stream_env
+{
+  cuda::stream_ref stream;
+
+  cuda::stream_ref query(cuda::get_stream_t) const noexcept
+  {
+    return stream;
+  }
+};
+
+struct other_query_t : cuda::std::execution::__basic_query<other_query_t>
+{};
+
+struct custom_resource_env
+{
+  device_memory_resource resource;
+
+  device_memory_resource query(cuda::mr::get_memory_resource_t) const noexcept
+  {
+    return resource;
+  }
+};
+
+using gpu_to_gpu_requirements = cuda::std::execution::env<cuda::execution::determinism::gpu_to_gpu_t>;
+
+struct custom_requirements_env : custom_stream_env
+{
+  using custom_stream_env::query;
+
+  gpu_to_gpu_requirements query(cuda::execution::__get_requirements_t) const noexcept
+  {
+    return {};
+  }
+};
+
+CUB_TEST("DeviceReduce dispatch preserves unadvertised streams", "[reduce][env]", CUB_SMALL)
+{
+  const cuda::stream_ref expected{cudaStreamPerThread};
+  const auto check = [&](const auto& env) {
+    cudaStream_t observed{};
+    size_t bytes{};
+    const auto algorithm = [&](auto, void*, size_t&, cudaStream_t stream) {
+      observed = stream;
+      return cudaSuccess;
+    };
+    REQUIRE(cub::detail::dispatch_with_env_validation(nullptr, bytes, env, algorithm) == cudaSuccess);
+    REQUIRE(observed == expected.get());
+  };
+
+  const custom_stream_env raw{expected};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::std::execution::prop{other_query_t{}, 42}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<other_query_t>(mixed));
+  check(cuda::checked_env<>(raw));
+
+  const auto fallback =
+    cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, cuda::std::execution::env<>{});
+  REQUIRE(fallback.get() == cudaStream_t{});
+}
+
+CUB_TEST("DeviceReduce dispatch preserves unadvertised resources", "[reduce][env]", CUB_SMALL)
+{
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  const device_memory_resource expected{cudaStreamPerThread, &bytes_allocated, &bytes_deallocated};
+  const auto check = [&](const auto& env) {
+    const auto resource = cuda::__call_or(cuda::mr::get_memory_resource, cub::detail::device_memory_resource{}, env);
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(resource)>, device_memory_resource>);
+    REQUIRE(resource == expected);
+  };
+
+  const custom_resource_env raw{expected};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::stream_ref{cudaStreamPerThread}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<cuda::get_stream_t>(mixed));
+  check(cuda::checked_env<>(raw));
+}
+
+CUB_TEST("DeviceReduce preserves unadvertised determinism requirements", "[reduce][env]", CUB_SMALL)
+{
+  const auto check = [](const auto& env) {
+    using env_type = cuda::std::remove_cvref_t<decltype(env)>;
+    using requirements =
+      cuda::__call_result_or_t<cuda::execution::__get_requirements_t, cuda::std::execution::env<>, const env_type&>;
+    using determinism =
+      cuda::__call_result_or_t<cuda::execution::determinism::__get_determinism_t,
+                               cuda::execution::determinism::run_to_run_t,
+                               const requirements&>;
+    static_assert(cuda::std::is_same_v<determinism, cuda::execution::determinism::gpu_to_gpu_t>);
+  };
+
+  const custom_requirements_env raw{{cuda::stream_ref{cudaStreamPerThread}}};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::stream_ref{cudaStreamPerThread}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<cuda::get_stream_t>(mixed));
+  check(cuda::checked_env<>(raw));
+}
 
 CUB_TEST("cub::DeviceReduce::Reduce accepts run_to_run determinism requirements", "[reduce][env]", CUB_SMALL)
 {
@@ -87,6 +203,36 @@ CUB_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]", CUB_SMALL)
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceReduce::Reduce accepts a checked custom environment", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(1);
+
+  const cuda::stream stream{cuda::devices[0]};
+  auto env = cuda::checked_env<cuda::get_stream_t>(custom_stream_env{cuda::stream_ref{stream}});
+
+  const auto error =
+    cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, 0, env);
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 10);
+}
+
+CUB_TEST("cub::DeviceReduce::Reduce accepts a stream object", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(1);
+
+  const cuda::stream stream{cuda::devices[0]};
+  const auto error =
+    cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, 0, stream.get());
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 10);
 }
 
 CUB_TEST("cub::DeviceReduce::Sum accepts run_to_run determinism requirements", "[reduce][env]", CUB_SMALL)
@@ -654,6 +800,41 @@ CUB_TEST("cub::DeviceReduce::Sum queries both stream and resource from composed 
   auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), env);
 
   stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 15);
+  REQUIRE(bytes_allocated > 0);
+  REQUIRE(bytes_deallocated == bytes_allocated);
+}
+
+CUB_TEST("cub::DeviceReduce::Sum accepts a memory resource", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1);
+
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  auto mr = device_memory_resource{nullptr, &bytes_allocated, &bytes_deallocated};
+
+  const auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), mr);
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 15);
+  REQUIRE(bytes_allocated > 0);
+  REQUIRE(bytes_deallocated == bytes_allocated);
+}
+
+CUB_TEST("cub::DeviceReduce::Sum accepts a memory resource reference", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1);
+
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  auto mr     = device_memory_resource{nullptr, &bytes_allocated, &bytes_deallocated};
+  auto mr_ref = cuda::mr::resource_ref<>{mr};
+
+  const auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), mr_ref);
+
   REQUIRE(error == cudaSuccess);
   REQUIRE(output[0] == 15);
   REQUIRE(bytes_allocated > 0);

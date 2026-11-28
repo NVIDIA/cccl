@@ -12,7 +12,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,38 +70,38 @@ struct streaming_context
   GlobalOffsetT* d_num_previous_uniques_in;
   GlobalOffsetT* d_num_accumulated_uniques_out;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
   {
     return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
   };
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE RunLengthT prefix() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API RunLengthT prefix() const
   {
     return *preceding_length;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(RunLengthT prefix) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API void write_prefix(RunLengthT prefix) const
   {
     *length_out = prefix;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
   {
     return d_num_previous_uniques_in;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT num_uniques() const
   {
     return num_accumulated_uniques_out();
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT base_offset() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT base_offset() const
   {
     return current_base_offset;
   }
 
   template <typename NumUniquesT>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 
@@ -183,7 +183,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     const InputIteratorT d_in,
     const OffsetsOutputIteratorT d_offsets_out,
@@ -195,7 +195,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
+  static constexpr RleNonTrivialRunsPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentRlePolicyT =
     agent_rle_policy<policy.lookback.threads_per_block,
                      policy.lookback.items_per_thread,
@@ -297,8 +297,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
-                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = (::cuda::std::numeric_limits<OffsetT>::max)()
+                                                 > (::cuda::std::numeric_limits<local_offset_t>::max)();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -383,14 +383,14 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     if constexpr (use_streaming_invocation)
     {
       capped_num_items_per_invocation =
-        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+        static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -413,7 +413,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     // the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error =
+      CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
@@ -446,7 +447,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Log init_kernel configuration
-      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
       _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
@@ -459,7 +460,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -531,7 +532,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -606,7 +607,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
+    error           = CubDebug(_CUB::PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;
@@ -662,20 +663,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
   static constexpr bool use_streaming_invocation =
-    ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
+    (::cuda::std::numeric_limits<OffsetT>::max)() > (::cuda::std::numeric_limits<local_offset_t>::max)();
   using streaming_context_t = ::cuda::std::
     conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, LengthT, global_offset_t>, NullType>;
   using ScanTileStateT                     = ReduceByKeyScanTileState<LengthT, local_offset_t>;
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceRle", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceRle", cc, active_policy);
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
   const int items_per_thread  = active_policy.lookback.items_per_thread;
@@ -685,12 +686,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
   {
-    capped_num_items_per_invocation = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+    capped_num_items_per_invocation =
+      static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
     capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
   }
 
   const auto max_num_items_per_invocation =
-    use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+    use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
   const auto num_partitions =
     (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
@@ -706,7 +708,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   void* allocations[3] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -729,7 +731,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
@@ -740,7 +742,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -799,7 +801,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

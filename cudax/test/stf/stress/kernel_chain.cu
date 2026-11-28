@@ -16,7 +16,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void swap_kernel(slice<double> dst, slice<double> src)
 {
-  const size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
+  const size_t tid      = threadIdx.x + (blockIdx.x * blockDim.x);
   const size_t nthreads = blockDim.x * gridDim.x;
   const size_t n        = dst.size();
 

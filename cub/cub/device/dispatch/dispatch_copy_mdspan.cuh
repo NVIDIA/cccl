@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,7 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__fwd/mdspan.h>
@@ -82,9 +83,9 @@ template <class MDSpanIn, class MDSpanOut, class Env>
 __copy_with_cub(MDSpanIn __mdspan_in, MDSpanOut __mdspan_out, const Env& __env)
 {
   if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive()
-      && cub::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
+      && _CUB::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
   {
-    return cub::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
+    return _CUB::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
   }
   using extents_t = typename MDSpanIn::extents_type;
   const ::cuda::std::layout_right::mapping<extents_t> mapping{__mdspan_in.extents()};
@@ -115,14 +116,14 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
     ::cuda::std::mdspan<TOut, EOut, LOut, AOut> output;
     const EnvT& environment;
 
-    _CCCL_HOST ::cudaError_t operator()() const
+    _CCCL_HOST_API ::cudaError_t operator()() const
     {
       _CCCL_TRY
       {
 #if _CCCL_HOSTED()
         if (input.extents() != output.extents())
         {
-          _CCCL_THROW(::std::invalid_argument, "mdspan extents must be equal");
+          _CCCL_THROW_STD(invalid_argument, "mdspan extents must be equal");
         }
         if (input.size() == 0)
         {
@@ -142,7 +143,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
         // cuda::copy performs context/device queries, breaking graph capture
         else if (::cuda::__driver::__streamIsCapturing(stream.get()) == ::CU_STREAM_CAPTURE_STATUS_ACTIVE)
         {
-          return cub::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+          return _CUB::detail::copy_mdspan::__copy_with_cub(input, output, environment);
         }
         else
         {
@@ -150,7 +151,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
           ::cuda::copy(mdspan_in, mdspan_out, stream);
         }
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-        return cub::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+        return _CUB::detail::copy_mdspan::__copy_with_cub(input, output, environment);
 #endif // !_CCCL_HOSTED()
       }
 #if _CCCL_HOSTED()
@@ -190,7 +191,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
         _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
       }
 
-      return cub::detail::copy_mdspan::__copy_with_cub(mdspan_in, mdspan_out, env);
+      return _CUB::detail::copy_mdspan::__copy_with_cub(mdspan_in, mdspan_out, env);
     }));
 }
 } // namespace detail::copy_mdspan

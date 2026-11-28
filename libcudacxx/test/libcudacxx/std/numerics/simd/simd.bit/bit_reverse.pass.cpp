@@ -11,11 +11,11 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.bit], bit_reverse
 
-#include <cuda/bit>
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -37,7 +37,7 @@ struct test_bit_reverse
     Vec result = simd::bit_reverse(vec);
     for (int i = 0; i < N; ++i)
     {
-      assert(result[i] == cuda::bit_reverse(vec[i]));
+      assert(result[i] == cuda::std::bit_reverse(vec[i]));
     }
 
     constexpr T all_bits = cuda::std::numeric_limits<T>::max();

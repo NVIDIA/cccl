@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include "base.cuh"
+#include "nvbench_helper.cuh"
 
 struct op_t
 {

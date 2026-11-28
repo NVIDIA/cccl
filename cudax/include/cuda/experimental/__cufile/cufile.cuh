@@ -11,7 +11,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,22 +19,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/string_view>
 
 #include <cuda/experimental/__cufile/cufile_ref.cuh>
 #include <cuda/experimental/__cufile/driver.cuh>
-#include <cuda/experimental/__cufile/exception.cuh>
 #include <cuda/experimental/__cufile/open_mode.cuh>
-
-#include <string>
 
 #include <cufile.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <sys/types.h>
 
 namespace cuda::experimental
 {
@@ -99,7 +97,7 @@ private:
     if (__fd == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to open file.");
+      _CCCL_THROW_STD(runtime_error, "Failed to open file.");
     }
 
     return __fd;
@@ -113,7 +111,7 @@ private:
     if (__oflags == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to retrieve open flags.");
+      _CCCL_THROW_STD(runtime_error, "Failed to retrieve open flags.");
     }
 
     cufile_open_mode __om{};
@@ -147,7 +145,7 @@ private:
     if (!__close_file_no_throw(__native_handle))
     {
       errno = 0; // clear errno
-      _CCCL_THROW(::std::runtime_error, "Failed to close file.");
+      _CCCL_THROW_STD(runtime_error, "Failed to close file.");
     }
   }
 
@@ -258,7 +256,7 @@ public:
   {
     if (is_open())
     {
-      _CCCL_THROW(::std::runtime_error, "File is already opened.");
+      _CCCL_THROW_STD(runtime_error, "File is already opened.");
     }
 
     __native_handle_ = __open_file(__filename, __make_oflags(__open_mode));
