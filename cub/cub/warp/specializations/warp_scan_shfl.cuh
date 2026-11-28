@@ -585,8 +585,8 @@ struct WarpScanShfl
 
     unsigned int ballot = __ballot_sync(member_mask, (pred_key != inclusive_output.key));
 
-    // Mask away all lanes greater than ours
-    ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
+    // Mask away all lanes greater than ours and use logical lane IDs, as expected by InclusiveScanStep.
+    ballot = (ballot & ::cuda::ptx::get_sreg_lanemask_le()) >> _CUB::detail::logical_warp_base_id<LogicalWarpThreads>();
 
     // The highest set bit is the first lane of our segment. No bit is set for the first segment, which begins at
     // lane 0, so clamp to 0 (bit_msb(0) == -1). `ballot == 0 ? 0 : static_cast<int>(::cuda::std::__bit_log2(ballot))`
