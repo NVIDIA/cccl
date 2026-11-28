@@ -5,6 +5,8 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/bit>
+
 #include <bitset>
 #include <climits>
 #include <limits>
@@ -59,6 +61,7 @@ digit_bits_t buffer_to_digit_bits(const char* buffer, int current_bit, int num_b
 
 using fundamental_types       = c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>;
 using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
+using fp_types                = c2h::type_list<float, double>;
 
 /**
  * This test checks that radix operations can extract certain bits out of unsigned integers.
@@ -602,6 +605,38 @@ CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations
 
     REQUIRE(digit_positive == digit_negative);
   }
+}
+
+/**
+ * This test checks that -0/+0 are mapped to the same bit pattern for keys that are bitwise-complemented after
+ * twiddling (descending onesweep), and that this pattern is the complement of the one used for keys that are not
+ * (all other implementations), so that every bit window extracts the same digits for both zeros.
+ */
+CUB_TEST("Radix operations treat -0/+0 as being equal for inverted keys", "[radix][operations]", CUB_SMALL, fp_types)
+{
+  using key_t        = c2h::get<0, TestType>;
+  using bit_ordered  = typename cub::Traits<key_t>::UnsignedBits;
+  using plain_t      = cub::BaseDigitExtractor<key_t, true, false>;
+  using inverted_t   = cub::BaseDigitExtractor<key_t, true, true>;
+  using ascending_t  = cub::RadixSortTwiddle<false, key_t>;
+  using descending_t = cub::RadixSortTwiddle<true, key_t>;
+
+  const key_t positive_zero = cuda::std::bit_cast<key_t>(bit_ordered{0});
+  const key_t negative_zero = cuda::std::bit_cast<key_t>(bit_ordered(bit_ordered{1} << (sizeof(key_t) * CHAR_BIT - 1)));
+
+  const auto plain = [](bit_ordered key) {
+    return plain_t::ProcessFloatMinusZero(ascending_t::In(key));
+  };
+  const auto inverted = [](bit_ordered key) {
+    return inverted_t::ProcessFloatMinusZero(descending_t::In(key));
+  };
+
+  const bit_ordered pos = cuda::std::bit_cast<bit_ordered>(positive_zero);
+  const bit_ordered neg = cuda::std::bit_cast<bit_ordered>(negative_zero);
+
+  REQUIRE(plain(pos) == plain(neg));
+  REQUIRE(inverted(pos) == inverted(neg));
+  REQUIRE(inverted(pos) == static_cast<bit_ordered>(~plain(pos)));
 }
 
 /**

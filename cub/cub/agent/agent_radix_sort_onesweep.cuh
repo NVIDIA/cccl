@@ -184,7 +184,7 @@ struct AgentRadixSortOnesweep
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-  using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
+  using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT, IsDescending>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
   using AtomicOffsetT = PortionOffsetT;

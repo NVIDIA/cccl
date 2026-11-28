@@ -8,6 +8,7 @@
 
 #include <thrust/memory.h>
 
+#include <cuda/std/bit>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -165,6 +166,79 @@ void do_large_offset_test(std::size_t num_items)
   {
     c2h::skip_if_allocation_failure();
   }
+}
+
+using fp_key_types = c2h::type_list<float, double>;
+
+CUB_TEST("DeviceRadixSort::SortPairs: negative zero handling with bit windows",
+         "[pairs][radix][sort][device]",
+         CUB_SMALL,
+         fp_key_types)
+{
+  using key_t   = c2h::get<0, TestType>;
+  using bits_t  = typename cub::Traits<key_t>::UnsignedBits;
+  using value_t = cuda::std::uint32_t;
+
+  constexpr int num_bits    = sizeof(key_t) * CHAR_BIT;
+  const key_t positive_zero = cuda::std::bit_cast<key_t>(bits_t(0));
+  const key_t negative_zero = cuda::std::bit_cast<key_t>(bits_t(bits_t(1) << (num_bits - 1)));
+
+  // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040. The sizes are chosen to cover both the
+  // single-tile and the multi-pass implementations:
+  const std::size_t num_items = GENERATE_COPY(values<std::size_t>({1000, 30000, 300000}));
+  const int begin_bit         = GENERATE_COPY(values<int>({0, num_bits / 4, num_bits - 1}));
+  const int end_bit           = GENERATE_COPY(values<int>({num_bits / 2, num_bits}));
+  if (end_bit <= begin_bit || (begin_bit == 0 && end_bit == num_bits))
+  {
+    return;
+  }
+
+  // Zeros of both signs interleaved with nonzero keys of both signs. The values are the input positions, so the
+  // order of equal keys is visible:
+  const key_t pattern[] = {positive_zero, key_t(1), key_t(-1), negative_zero, key_t(2), key_t(-2), positive_zero};
+  c2h::host_vector<key_t> h_keys(num_items);
+  c2h::host_vector<value_t> h_values(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    h_keys[i]   = pattern[i % (sizeof(pattern) / sizeof(pattern[0]))];
+    h_values[i] = static_cast<value_t>(i);
+  }
+  c2h::device_vector<key_t> in_keys(h_keys);
+  c2h::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<value_t> in_values(h_values);
+  c2h::device_vector<value_t> out_values(num_items);
+
+  const bool is_descending = GENERATE(false, true);
+
+  auto refs        = radix_sort_reference(in_keys, in_values, is_descending, begin_bit, end_bit);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
+
+  if (is_descending)
+  {
+    sort_pairs_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      thrust::raw_pointer_cast(in_values.data()),
+      thrust::raw_pointer_cast(out_values.data()),
+      num_items,
+      begin_bit,
+      end_bit);
+  }
+  else
+  {
+    sort_pairs(thrust::raw_pointer_cast(in_keys.data()),
+               thrust::raw_pointer_cast(out_keys.data()),
+               thrust::raw_pointer_cast(in_values.data()),
+               thrust::raw_pointer_cast(out_values.data()),
+               num_items,
+               begin_bit,
+               end_bit);
+  }
+
+  // Perform a bitwise comparison to ensure that 0 != -0:
+  REQUIRE_BITWISE_EQ(ref_keys, out_keys);
+  REQUIRE(ref_values == out_values);
 }
 
 CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
