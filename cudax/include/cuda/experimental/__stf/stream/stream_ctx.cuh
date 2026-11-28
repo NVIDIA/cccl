@@ -159,12 +159,16 @@ public:
  *
  * Default-constructed `stream_ctx` instances synchronize the submission
  * stream from `finalize()` and only return once all queued work has
- * completed. Instances constructed with `stream_ctx(user_stream, handle)`
- * instead bind the context to the caller-provided CUDA stream, set
- * `blocking_finalize = false`, and make `finalize()` non-blocking: the
- * remaining work and the context's resource-release callback are enqueued on
- * `user_stream` and `finalize()` returns without synchronizing it. The
- * caller must therefore drive `user_stream` to completion (e.g. via
+ * completed. An explicit `submit()` on these contexts keeps automatic host
+ * registrations until `finalize()`, so independent contexts can overlap.
+ * Instances constructed with `stream_ctx(user_stream, handle)`
+ * instead enqueue the remaining work and the context's resource-release
+ * callback on the caller-provided stream. If STF registered a caller's host
+ * buffer, explicit `submit()` or `finalize()` waits for outstanding uses of
+ * that buffer before unregistering it. Supplying already-pinned host buffers
+ * avoids this wait. When capturing a caller stream, keep host buffers
+ * registered through the last graph replay. The caller must drive
+ * `user_stream` to completion (e.g. via
  * `cudaStreamSynchronize(user_stream)`) before observing results on the
  * host or destroying any shared `async_resources_handle` that was passed
  * to the context.
@@ -230,6 +234,17 @@ public:
 
   _CCCL_HOST_API void set_user_stream(cudaStream_t user_stream)
   {
+    if (is_stream_capturing(user_stream))
+    {
+      auto& st = state();
+      ::std::scoped_lock guard(st.logical_data_ids_mutex);
+      for (const auto& entry : st.logical_data_ids)
+      {
+        EXPECT(!entry.second.owns_host_registration(),
+               "Register host buffers before binding a capturing stream and keep them registered through replay.");
+      }
+    }
+
     // TODO first introduce the user stream in our pool
     auto dstream = augmented_stream(user_stream);
 
@@ -516,7 +531,7 @@ public:
     if (!state.submitted_stream)
     {
       // Wasn't submitted yet
-      submit();
+      submit_impl();
       assert(state.submitted_stream);
     }
 
@@ -538,10 +553,15 @@ public:
       set_phase(backend_ctx_untyped::phase::finalized);
     };
 
+    SCOPE(fail)
+    {
+      state.try_unpin_remaining();
+    };
     if (state.blocking_finalize)
     {
       cuda_try<cudaStreamSynchronize>(state.submitted_stream);
     }
+    state.unpin_remaining(state.blocking_finalize);
   }
 
   _CCCL_HOST_API float get_submission_time_ms() const
@@ -551,6 +571,22 @@ public:
   }
 
   _CCCL_HOST_API void submit()
+  {
+    auto& state = this->state();
+    submit_impl();
+    if (!state.blocking_finalize)
+    {
+      // The caller may use its own stream to await completion and then release the host buffers.
+      SCOPE(fail)
+      {
+        state.try_unpin_remaining();
+      };
+      state.unpin_remaining(false);
+    }
+  }
+
+private:
+  _CCCL_HOST_API void submit_impl()
   {
     auto& state = this->state();
     _CCCL_ASSERT(!state.submitted_stream, "");
@@ -634,7 +670,7 @@ public:
     }
 
     // Write-back data and erase automatically created data instances
-    state.erase_all_logical_data();
+    state.erase_all_logical_data(&state.pending_unpins);
     state.detach_allocators(*this);
 
     state.submitted_stream = fence();
@@ -643,6 +679,7 @@ public:
     set_phase(backend_ctx_untyped::phase::submitted);
   }
 
+public:
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
   _CCCL_HOST_API void change_stage() {}
 
@@ -702,6 +739,38 @@ private:
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
 
+    ~impl() override
+    {
+      // A default-stream context can be destroyed after submit() without finalize().
+      try_unpin_remaining();
+    }
+
+    _CCCL_HOST_API void unpin_remaining(bool stream_synchronized)
+    {
+      while (!pending_unpins.empty())
+      {
+        auto registration = mv(pending_unpins.back());
+        pending_unpins.pop_back();
+        if (!stream_synchronized)
+        {
+          wait_for_host_unpin(registration.prereqs);
+        }
+        registration.dinterface->unpin_host_memory(registration.instance_id);
+      }
+    }
+
+    _CCCL_HOST_API void try_unpin_remaining() noexcept
+    {
+      while (!pending_unpins.empty())
+      {
+        // Each attempt consumes at least one registration. A failing wait must leave its buffer pinned.
+        ON_THROW(notify)
+        {
+          unpin_remaining(false);
+        };
+      }
+    }
+
     _CCCL_HOST_API void cleanup()
     {
       // Reset this object
@@ -723,6 +792,28 @@ private:
       return event_list(mv(e));
     }
 
+    _CCCL_HOST_API bool capturing_user_stream() const override
+    {
+      return user_dstream && is_stream_capturing(user_dstream->stream);
+    }
+
+    _CCCL_HOST_API void wait_for_host_unpin(const event_list& prereqs) const override
+    {
+      for (const auto& prereq : prereqs)
+      {
+        const auto& stream_event = dynamic_cast<const stream_and_event&>(*prereq);
+        if (const cudaEvent_t recorded = stream_event.get_cuda_event())
+        {
+          cuda_try<cudaEventSynchronize>(recorded);
+        }
+        else
+        {
+          // A stream dependency can lack a recorded event. Its stream still orders the access.
+          cuda_try<cudaStreamSynchronize>(stream_event.get_stream());
+        }
+      }
+    }
+
     _CCCL_HOST_API ::std::string to_string() const override
     {
       return "stream backend context";
@@ -735,6 +826,7 @@ private:
       return true;
     }
 
+    reserved::host_registrations pending_unpins;
     ::std::vector<int> deferred_tasks; // vector of mapping_ids
     ::std::unordered_map<int, deferred_stream_task<>> task_map; // maps from a mapping_id to the deferred_task
     cudaStream_t submitted_stream = nullptr; // stream used in submit

@@ -777,6 +777,17 @@ achieves this goal (whereas calling
 would wait for the completion of the first task before starting the
 second).
 
+When a ``stream_ctx`` wraps caller-owned host storage, keep that storage
+alive through ``finalize()``. A default context keeps host memory it
+registered pinned across ``submit()`` so that a GPU can finish writing
+back to it. On a caller-provided stream, releasing an STF-owned registration
+can make ``submit()`` or ``finalize()`` wait for accesses to that buffer.
+Use caller-pinned storage when these calls must return asynchronously.
+For stream capture, register host buffers before binding the capturing
+stream and keep them registered through the last graph execution.
+This also applies to custom host views. STF can check their storage type
+when the data interface implements ``get_memory_type()``.
+
 To wait for the completion of all pending operations (tasks, transfers, ...),
 an asynchronous fence mechanism is available :
 
