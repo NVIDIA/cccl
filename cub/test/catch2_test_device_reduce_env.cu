@@ -7,22 +7,44 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
 #include <thrust/functional.h>
-#include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__functional/call_or.h>
+#include <cuda/algorithm>
+#include <cuda/buffer>
+#include <cuda/cmath>
 #include <cuda/devices>
+#include <cuda/execution>
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
+#include <cuda/std/array>
+#include <cuda/std/concepts>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/numeric>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
+
+#include <cstddef>
+#include <sstream>
+
+#include <cuda_runtime_api.h>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
+#include "stream_registry_factory.h"
+#include <c2h/buffer_utils.cuh>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/device_and_stream.h>
+#include <c2h/device_policy.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Sum, device_reduce_sum);
@@ -43,16 +65,19 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key_two_
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__functional/call_or.h>
-#include <cuda/std/cstdint>
-
-#include <sstream>
-
-#include "cub_test_macros.h"
-
 namespace stdexec = cuda::std::execution;
+
+template <typename T>
+void check_output_prefix(cuda::stream_ref stream,
+                         cuda::device_ref device,
+                         const cuda::device_buffer<T>& output,
+                         const cuda::host_buffer<T>& expected)
+{
+  auto result = c2h::make_host_buffer<T>(stream, device, expected.size(), cuda::no_init);
+  c2h::copy_to_host(stream, output.first(expected.size()), result);
+  REQUIRE(cuda::std::equal(result.begin(), result.end(), expected.begin()));
+}
+
 using cuda::execution::determinism::__determinism_t;
 
 template <int ThreadsPerBlock>
@@ -123,6 +148,9 @@ using block_size_check_plus_t = block_size_extracting_op<cuda::std::plus<>>;
 #if TEST_LAUNCH == 0
 CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   using num_items_t = int;
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
@@ -135,270 +163,327 @@ CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]"
       .single_tile.threads_per_block;
 
   const num_items_t num_items = 1;
-  c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_check_plus_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  auto d_block_size           = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const block_size_check_plus_t block_size_check{d_block_size.data()};
   auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = thrust::device_vector<value_t>(1);
+  auto d_out = c2h::make_device_buffer<value_t>(stream, device, 1, cuda::no_init);
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.data(), num_items, block_size_check, value_t{0}));
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 
   // Make sure we use default tuning
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST_CASE("Device Sum works with default environment", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   using num_items_t           = int;
   using value_t               = int;
   const num_items_t num_items = 1;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = thrust::device_vector<value_t>(1);
+  auto d_out = c2h::make_device_buffer<value_t>(stream, device, 1, cuda::no_init);
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.data(), num_items));
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 }
 #endif
 
 #if TEST_LAUNCH != 1
 CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
-  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST_CASE("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1, thrust::no_init);
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
 
   {
-    device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, stdexec::env<>{});
-    const unsigned int default_block_size = d_block_size[0];
+    stream.sync();
+    device_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, stdexec::env<>{});
+    const unsigned int default_block_size = c2h::read_single(stream, d_block_size);
     REQUIRE(default_block_size != target_block_size);
-    d_block_size[0] = 0;
+    cuda::fill_bytes(stream, d_block_size, 0);
   }
 
-  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                                        cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{})};
 
-  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 CUB_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::run_to_run),
                                        cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{})};
 
-  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
                                        cuda::execution::tune(unrelated_tuning{}, reduce_tuning<target_block_size>{})};
 
-  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<float>{}, 0, env); // make accum_t float to select RFA
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce(d_in, d_out.data(), 1, cuda::std::plus<float>{}, 0, env); // make accum_t float to select RFA
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Sum can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = c2h::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_sum(d_in, d_out.begin(), 1, env);
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce_sum(d_in, d_out.data(), 1, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Min can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = c2h::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(42, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_min(d_in, d_out.begin(), 1, env);
-  REQUIRE(d_out[0] == 42);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce_min(d_in, d_out.data(), 1, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 42);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Max can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = c2h::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(42, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_max(d_in, d_out.begin(), 1, env);
-  REQUIRE(d_out[0] == 42);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_reduce_max(d_in, d_out.data(), 1, env);
+  REQUIRE(c2h::read_single(stream, d_out) == 42);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device TransformReduce can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = c2h::device_vector<int>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  auto d_in  = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
-  device_transform_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
-  REQUIRE(d_out[0] == -1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_transform_reduce(d_in, d_out.data(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
+  REQUIRE(c2h::read_single(stream, d_out) == -1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device ArgMin can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
-  using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
-  auto min_output   = c2h::device_vector<int>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  using compare_t                          = block_size_extracting_op<cuda::std::less<>>;
+  const compare_t compare_op{d_block_size.data()};
+
+  auto input        = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 0, 2});
+  auto min_output   = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_arg_min(
-    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), compare_op, env);
-  REQUIRE(min_output[0] == 0);
-  REQUIRE(index_output[0] == 3);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_arg_min(input.data(), min_output.data(), index_output.data(), static_cast<int>(input.size()), compare_op, env);
+  REQUIRE(c2h::read_single(stream, min_output) == 0);
+  REQUIRE(c2h::read_single(stream, index_output) == 3);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1);
-  using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
-  auto max_output   = c2h::device_vector<int>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  using compare_t                          = block_size_extracting_op<cuda::std::less<>>;
+  const compare_t compare_op{d_block_size.data()};
+
+  auto input        = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 0, 2});
+  auto max_output   = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_arg_max(
-    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), compare_op, env);
-  REQUIRE(max_output[0] == 4);
-  REQUIRE(index_output[0] == 2);
-  REQUIRE(d_block_size[0] == target_block_size);
+  stream.sync();
+  device_arg_max(input.data(), max_output.data(), index_output.data(), static_cast<int>(input.size()), compare_op, env);
+  REQUIRE(c2h::read_single(stream, max_output) == 4);
+  REQUIRE(c2h::read_single(stream, index_output) == 2);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST_CASE("Device reduce not_guaranteed accepts a nondeterministic tuning when falling back to run_to_run",
               "[reduce][device]",
               CUB_SMALL)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           cuda::execution::tune(nondeterministic_reduce_tuning{})};
 
   SECTION("non-plus operator on floats")
   {
-    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-    auto output = c2h::device_vector<float>(1);
+    auto input  = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+    auto output = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+    stream.sync();
     device_reduce(
-      input.begin(),
-      output.begin(),
+      input.data(),
+      output.data(),
       static_cast<int>(input.size()),
       cuda::maximum<>{},
       cuda::std::numeric_limits<float>::lowest(),
       env);
-    REQUIRE(output[0] == 4.0f);
+    REQUIRE(c2h::read_single(stream, output) == 4.0f);
   }
   SECTION("custom operator on ints")
   {
-    auto input  = c2h::device_vector<int>{3, 1, 4, 0, 2};
-    auto output = c2h::device_vector<int>(1);
-    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), custom_max_op{}, 0, env);
-    REQUIRE(output[0] == 4);
+    auto input  = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 0, 2});
+    auto output = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+    stream.sync();
+    device_reduce(input.data(), output.data(), static_cast<int>(input.size()), custom_max_op{}, 0, env);
+    REQUIRE(c2h::read_single(stream, output) == 4);
   }
   SECTION("output type differs from the accumulator type")
   {
-    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-    auto output = c2h::device_vector<double>(1);
-    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::plus<>{}, 0.0f, env);
-    REQUIRE(output[0] == 10.0);
+    auto input  = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+    auto output = c2h::make_device_buffer<double>(stream, device, 1, cuda::no_init);
+    stream.sync();
+    device_reduce(input.data(), output.data(), static_cast<int>(input.size()), cuda::std::plus<>{}, 0.0f, env);
+    REQUIRE(c2h::read_single(stream, output) == 10.0);
   }
 }
 
 CUB_TEST_CASE("Device Min and Max not_guaranteed accept a nondeterministic tuning", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           cuda::execution::tune(nondeterministic_reduce_tuning{})};
 
-  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto output = c2h::device_vector<float>(1);
+  auto input  = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto output = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
 
   SECTION("Min")
   {
-    device_reduce_min(input.begin(), output.begin(), static_cast<int>(input.size()), env);
-    REQUIRE(output[0] == 0.0f);
+    stream.sync();
+    device_reduce_min(input.data(), output.data(), static_cast<int>(input.size()), env);
+    REQUIRE(c2h::read_single(stream, output) == 0.0f);
   }
   SECTION("Max")
   {
-    device_reduce_max(input.begin(), output.begin(), static_cast<int>(input.size()), env);
-    REQUIRE(output[0] == 4.0f);
+    stream.sync();
+    device_reduce_max(input.data(), output.data(), static_cast<int>(input.size()), env);
+    REQUIRE(c2h::read_single(stream, output) == 4.0f);
   }
 }
 
@@ -406,36 +491,42 @@ CUB_TEST_CASE("Device ArgMin, ArgMax and ArgMinMax not_guaranteed accept a nonde
               "[reduce][device]",
               CUB_SMALL)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           cuda::execution::tune(nondeterministic_reduce_tuning{})};
 
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto input        = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
   const auto n      = static_cast<int>(input.size());
-  auto extremum_out = c2h::device_vector<float>(1);
-  auto index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+  auto extremum_out = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+  auto index_out    = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   SECTION("ArgMin")
   {
-    device_arg_min(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
-    REQUIRE(extremum_out[0] == 0.0f);
-    REQUIRE(index_out[0] == 3);
+    stream.sync();
+    device_arg_min(input.data(), extremum_out.data(), index_out.data(), n, env);
+    REQUIRE(c2h::read_single(stream, extremum_out) == 0.0f);
+    REQUIRE(c2h::read_single(stream, index_out) == 3);
   }
   SECTION("ArgMax")
   {
-    device_arg_max(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
-    REQUIRE(extremum_out[0] == 4.0f);
-    REQUIRE(index_out[0] == 2);
+    stream.sync();
+    device_arg_max(input.data(), extremum_out.data(), index_out.data(), n, env);
+    REQUIRE(c2h::read_single(stream, extremum_out) == 4.0f);
+    REQUIRE(c2h::read_single(stream, index_out) == 2);
   }
   SECTION("ArgMinMax")
   {
-    auto max_extremum_out = c2h::device_vector<float>(1);
-    auto max_index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+    auto max_extremum_out = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+    auto max_index_out    = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
+    stream.sync();
     device_arg_minmax(
-      input.begin(), extremum_out.begin(), index_out.begin(), max_extremum_out.begin(), max_index_out.begin(), n, env);
-    REQUIRE(extremum_out[0] == 0.0f);
-    REQUIRE(index_out[0] == 3);
-    REQUIRE(max_extremum_out[0] == 4.0f);
-    REQUIRE(max_index_out[0] == 2);
+      input.data(), extremum_out.data(), index_out.data(), max_extremum_out.data(), max_index_out.data(), n, env);
+    REQUIRE(c2h::read_single(stream, extremum_out) == 0.0f);
+    REQUIRE(c2h::read_single(stream, index_out) == 3);
+    REQUIRE(c2h::read_single(stream, max_extremum_out) == 4.0f);
+    REQUIRE(c2h::read_single(stream, max_index_out) == 2);
   }
 }
 
@@ -471,76 +562,83 @@ using block_size_extracting_minimum_t = block_size_extracting_op<cuda::minimum<i
 
 CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto d_unique_out                        = c2h::device_vector<int>(8);
-  auto d_aggregates_out                    = c2h::device_vector<int>(8);
-  auto d_num_runs_out                      = c2h::device_vector<int>(1);
-  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_keys_in                           = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  auto d_values_in                         = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out                        = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_aggregates_out                    = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_num_runs_out                      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  const block_size_extracting_minimum_t reduction_op{d_block_size.data()};
   auto env = cuda::execution::tune(reduce_by_key_tuning<target_block_size>{});
 
+  stream.sync();
   device_reduce_by_key(
-    d_keys_in.begin(),
-    d_unique_out.begin(),
-    d_values_in.begin(),
-    d_aggregates_out.begin(),
-    d_num_runs_out.begin(),
+    d_keys_in.data(),
+    d_unique_out.data(),
+    d_values_in.data(),
+    d_aggregates_out.data(),
+    d_num_runs_out.data(),
     reduction_op,
     static_cast<int>(d_keys_in.size()),
     env);
 
-  REQUIRE(d_num_runs_out[0] == 5);
-  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
-  d_unique_out.resize(5);
-  d_aggregates_out.resize(5);
-  REQUIRE(d_unique_out == expected_keys);
-  REQUIRE(d_aggregates_out == expected_aggregates);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  const auto expected_keys       = c2h::make_host_buffer<int>(stream, device, {0, 2, 9, 5, 8});
+  const auto expected_aggregates = c2h::make_host_buffer<int>(stream, device, {0, 1, 6, 2, 4});
+  check_output_prefix(stream, device, d_unique_out, expected_keys);
+  check_output_prefix(stream, device, d_aggregates_out, expected_aggregates);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST_CASE("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
-  auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto d_unique_out                        = c2h::device_vector<int>(8);
-  auto d_aggregates_out                    = c2h::device_vector<int>(8);
-  auto d_num_runs_out                      = c2h::device_vector<int>(1, thrust::no_init);
-  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_keys_in                           = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  auto d_values_in                         = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out                        = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_aggregates_out                    = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_num_runs_out                      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+
+  const block_size_extracting_minimum_t reduction_op{d_block_size.data()};
   auto env = cuda::execution::tune(reduce_by_key_tuning_transform<target_block_size>{});
 
   {
+    stream.sync();
     device_reduce_by_key(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       reduction_op,
       static_cast<int>(d_keys_in.size()),
       stdexec::env<>{});
-    const unsigned int default_block_size = d_block_size[0];
+    const unsigned int default_block_size = c2h::read_single(stream, d_block_size);
     REQUIRE(default_block_size != target_block_size);
-    d_block_size[0] = 0;
+    cuda::fill_bytes(stream, d_block_size, 0);
   }
 
+  stream.sync();
   device_reduce_by_key(
-    d_keys_in.begin(),
-    d_unique_out.begin(),
-    d_values_in.begin(),
-    d_aggregates_out.begin(),
-    d_num_runs_out.begin(),
+    d_keys_in.data(),
+    d_unique_out.data(),
+    d_values_in.data(),
+    d_aggregates_out.data(),
+    d_num_runs_out.data(),
     reduction_op,
     static_cast<int>(d_keys_in.size()),
     env);
-  REQUIRE(d_num_runs_out[0] == 5);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 // The agent's temporary storage for 32 threads x 100 items exceeds the static shared memory limit, so the kernel falls
@@ -549,37 +647,42 @@ CUB_TEST_CASE("Device ReduceByKey can be tuned with a small block size that need
               "[reduce][device]",
               CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   constexpr int num_items = 10000;
   constexpr int run_size  = 7;
   constexpr int num_runs  = cuda::ceil_div(num_items, run_size);
 
   // runs of run_size equal keys 0, 0, ..., 1, 1, ..., 2, ...; all values are 1
-  auto d_keys_in = c2h::device_vector<long long>(num_items, thrust::no_init);
-  thrust::tabulate(d_keys_in.begin(), d_keys_in.end(), thrust::placeholders::_1 / run_size);
-  auto d_values_in      = c2h::device_vector<double>(num_items, 1.0);
-  auto d_unique_out     = c2h::device_vector<long long>(num_runs, thrust::no_init);
-  auto d_aggregates_out = c2h::device_vector<double>(num_runs, thrust::no_init);
-  auto d_num_runs_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_keys_in = c2h::make_device_buffer<long long>(stream, num_items, cuda::no_init);
+  thrust::tabulate(c2h::device_policy.on(stream.get()),
+                   d_keys_in.data(),
+                   d_keys_in.data() + d_keys_in.size(),
+                   thrust::placeholders::_1 / run_size);
+  auto d_values_in      = c2h::make_device_buffer<double>(stream, num_items, 1.0);
+  auto d_unique_out     = c2h::make_device_buffer<long long>(stream, num_runs, cuda::no_init);
+  auto d_aggregates_out = c2h::make_device_buffer<double>(stream, num_runs, cuda::no_init);
+  auto d_num_runs_out   = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
 
-  auto env = cuda::execution::tune(reduce_by_key_tuning<32, 100>{});
+  auto env = stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(reduce_by_key_tuning<32, 100>{})};
 
   device_reduce_by_key(
-    d_keys_in.begin(),
-    d_unique_out.begin(),
-    d_values_in.begin(),
-    d_aggregates_out.begin(),
-    d_num_runs_out.begin(),
+    d_keys_in.data(),
+    d_unique_out.data(),
+    d_values_in.data(),
+    d_aggregates_out.data(),
+    d_num_runs_out.data(),
     cuda::std::plus<>{},
     num_items,
     env);
 
-  REQUIRE(d_num_runs_out[0] == num_runs);
-  auto expected_keys = c2h::device_vector<long long>(num_runs, thrust::no_init);
-  thrust::sequence(expected_keys.begin(), expected_keys.end());
-  auto expected_aggregates   = c2h::device_vector<double>(num_runs, run_size);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == num_runs);
+  auto expected_keys = c2h::make_host_buffer<long long>(stream, num_runs, cuda::no_init);
+  cuda::std::iota(expected_keys.begin(), expected_keys.end(), 0LL);
+  auto expected_aggregates   = c2h::make_host_buffer<double>(stream, num_runs, run_size);
   expected_aggregates.back() = num_items - ((num_runs - 1) * run_size); // the last run is shorter
-  REQUIRE(d_unique_out == expected_keys);
-  REQUIRE(d_aggregates_out == expected_aggregates);
+  REQUIRE_THAT(d_unique_out, c2h::Equals(stream, expected_keys));
+  REQUIRE_THAT(d_aggregates_out, c2h::Equals(stream, expected_aggregates));
 }
 
 #endif // TEST_LAUNCH != 1
@@ -591,6 +694,8 @@ using requirements =
 
 CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requirements)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using determinism_t = c2h::get<0, TestType>;
   using accumulator_t = float;
   using op_t          = cuda::std::plus<>;
@@ -601,24 +706,24 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = thrust::device_vector<accumulator_t>(1);
+  auto d_out            = c2h::make_device_buffer<accumulator_t>(stream, 1, cuda::no_init);
 
   init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
-  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.begin())` when `d_in`/`d_out` are ODR-used inside
+  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.data())` when `d_in`/`d_out` are ODR-used inside
   // the by-reference-capturing lambda, which would select different kernel instantiations than the ones dispatched
   // below. Hoisting the decltypes and decay-ing them to make the aliases position independent.
   using input_it_t  = ::cuda::std::decay_t<decltype(d_in)>;
-  using output_it_t = ::cuda::std::decay_t<decltype(d_out.begin())>;
+  using output_it_t = ::cuda::std::decay_t<decltype(d_out.data())>;
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
+    if constexpr (cuda::std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(
         cudaSuccess
-        == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
+        == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.data(), num_items, op_t{}, init));
 
       using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
@@ -658,7 +763,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
     {
       using policy_t =
         cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t, __determinism_t::__not_guaranteed>;
-      auto* raw_ptr = thrust::raw_pointer_cast(d_out.data());
+      auto* raw_ptr = d_out.data();
 
       REQUIRE(
         cudaSuccess
@@ -697,7 +802,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
       REQUIRE(
         cudaSuccess
         == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
-          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+          nullptr, expected_bytes_allocated, d_in, d_out.data(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
@@ -727,41 +832,38 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
 
   // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
   //               `cuexec::require(cuexec::determinism::not_guaranteed)`
-  auto env = stdexec::env{cuda::execution::require(determinism_t{}), // determinism
-                          allowed_kernels(kernels), // allowed kernels for the given determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(determinism_t{}), // determinism
+    allowed_kernels(kernels), // allowed kernels for the given determinism
+    expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_reduce(d_in, d_out.begin(), num_items, op_t{}, init, env);
+  device_reduce(d_in, d_out.data(), num_items, op_t{}, init, env);
 
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 
 #if TEST_LAUNCH == 0
   // The two-phase overload uses the same kernels for the requested determinism
   const kernel_scope two_phase_kernels{kernels};
-  const auto requirements   = cuda::execution::require(determinism_t{});
+  const auto requirements   = stdexec::env{cuda::stream_ref{stream}, cuda::execution::require(determinism_t{})};
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess
           == cub::DeviceReduce::Reduce(
-            nullptr, temp_storage_bytes, d_in, d_out.begin(), num_items, op_t{}, init, requirements));
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_in,
-      d_out.begin(),
-      num_items,
-      op_t{},
-      init,
-      requirements));
+            nullptr, temp_storage_bytes, d_in, d_out.data(), num_items, op_t{}, init, requirements));
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, temp_storage_bytes, cuda::no_init);
+  cuda::fill_bytes(stream, d_out, 0x5a);
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(
+            temp_storage.data(), temp_storage_bytes, d_in, d_out.data(), num_items, op_t{}, init, requirements));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 #endif // TEST_LAUNCH == 0
 }
 
 CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requirements)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using determinism_t = c2h::get<0, TestType>;
   using accumulator_t = float;
   using op_t          = cuda::std::plus<>;
@@ -772,22 +874,22 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = thrust::device_vector<accumulator_t>(1);
+  auto d_out            = c2h::make_device_buffer<accumulator_t>(stream, 1, cuda::no_init);
 
-  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.begin())` when `d_in`/`d_out` are ODR-used inside
+  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.data())` when `d_in`/`d_out` are ODR-used inside
   // the by-reference-capturing lambda, which would select different kernel instantiations than the ones dispatched
   // below. Hoisting the decltypes and decay-ing them to make the aliases position independent.
   using input_it_t  = ::cuda::std::decay_t<decltype(d_in)>;
-  using output_it_t = ::cuda::std::decay_t<decltype(d_out.begin())>;
+  using output_it_t = ::cuda::std::decay_t<decltype(d_out.data())>;
 
   [[maybe_unused]] const init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
+    if constexpr (cuda::std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
-      REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
+      REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.data(), num_items));
 
       using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
@@ -827,7 +929,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
     {
       using policy_t =
         cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t, __determinism_t::__not_guaranteed>;
-      auto* raw_ptr = thrust::raw_pointer_cast(d_out.data());
+      auto* raw_ptr = d_out.data();
 
       REQUIRE(
         cudaSuccess
@@ -866,7 +968,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
       REQUIRE(
         cudaSuccess
         == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
-          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+          nullptr, expected_bytes_allocated, d_in, d_out.data(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
@@ -896,28 +998,30 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
 
   // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
   //               `cuexec::require(cuexec::determinism::not_guaranteed)`
-  auto env = stdexec::env{cuda::execution::require(determinism_t{}), // determinism
-                          allowed_kernels(kernels), // allowed kernels for the given determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(determinism_t{}), // determinism
+    allowed_kernels(kernels), // allowed kernels for the given determinism
+    expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_reduce_sum(d_in, d_out.begin(), num_items, env);
+  device_reduce_sum(d_in, d_out.data(), num_items, env);
 
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 
 #if TEST_LAUNCH == 0
   // The two-phase overload uses the same kernels for the requested determinism
   const kernel_scope two_phase_kernels{kernels};
-  const auto requirements   = cuda::execution::require(determinism_t{});
+  const auto requirements   = stdexec::env{cuda::stream_ref{stream}, cuda::execution::require(determinism_t{})};
   size_t temp_storage_bytes = 0;
   REQUIRE(
-    cudaSuccess == cub::DeviceReduce::Sum(nullptr, temp_storage_bytes, d_in, d_out.begin(), num_items, requirements));
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    cudaSuccess == cub::DeviceReduce::Sum(nullptr, temp_storage_bytes, d_in, d_out.data(), num_items, requirements));
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, temp_storage_bytes, cuda::no_init);
+  cuda::fill_bytes(stream, d_out, 0x5a);
   REQUIRE(
     cudaSuccess
-    == cub::DeviceReduce::Sum(
-      thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, d_in, d_out.begin(), num_items, requirements));
+    == cub::DeviceReduce::Sum(temp_storage.data(), temp_storage_bytes, d_in, d_out.data(), num_items, requirements));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(d_out[0] == num_items);
+  REQUIRE(c2h::read_single(stream, d_out) == num_items);
 #endif // TEST_LAUNCH == 0
 }
 
@@ -925,6 +1029,8 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
          "[reduce][device]",
          CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using input_t       = cuda::std::uint8_t;
   using output_t      = cuda::std::uint8_t;
   using accumulator_t = int;
@@ -934,23 +1040,23 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
 
-  const auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
-  auto d_out                  = thrust::device_vector<output_t>(1);
+  const auto d_in             = c2h::make_device_buffer<input_t>(stream, {0, 1, 2, 3});
+  auto d_out                  = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
   const num_items_t num_items = static_cast<num_items_t>(d_in.size());
   const init_value_t init{};
   size_t expected_bytes_allocated{};
 
   REQUIRE(cudaSuccess
           == cub::DeviceReduce::Reduce(
-            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items, op_t{}, init));
+            nullptr, expected_bytes_allocated, d_in.data(), d_out.data(), num_items, op_t{}, init));
 
   using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in.begin()),
-        decltype(d_out.begin()),
+        decltype(d_in.data()),
+        decltype(d_out.data()),
         offset_t,
         op_t,
         init_value_t,
@@ -960,7 +1066,7 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
       cub::detail::reduce::DeviceReduceKernel<
         policy_t,
         /* StableReductionOrder */ true,
-        decltype(d_in.begin()),
+        decltype(d_in.data()),
         accumulator_t*,
         offset_t,
         offset_t,
@@ -972,23 +1078,27 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
       cub::detail::reduce::DeviceReduceSingleTileKernel<
         policy_t,
         accumulator_t*,
-        decltype(d_out.begin()),
+        decltype(d_out.data()),
         int, // always used with int offset
         op_t,
         init_value_t,
         accumulator_t>)};
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                          allowed_kernels(kernels),
-                          expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+    allowed_kernels(kernels),
+    expected_allocation_size(expected_bytes_allocated)};
 
-  device_reduce(d_in.begin(), d_out.begin(), num_items, op_t{}, init, env);
+  device_reduce(d_in.data(), d_out.data(), num_items, op_t{}, init, env);
 
-  REQUIRE(d_out[0] == output_t{6});
+  REQUIRE(c2h::read_single(stream, d_out) == output_t{6});
 }
 
 CUB_TEST("Device sum not_guaranteed falls back when output type differs from accumulator", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using input_t       = cuda::std::uint8_t;
   using output_t      = cuda::std::uint8_t;
   using accumulator_t = int;
@@ -998,21 +1108,21 @@ CUB_TEST("Device sum not_guaranteed falls back when output type differs from acc
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
 
-  auto d_in                   = thrust::device_vector<input_t>{0, 1, 2, 3};
-  auto d_out                  = thrust::device_vector<output_t>(1);
+  auto d_in                   = c2h::make_device_buffer<input_t>(stream, {0, 1, 2, 3});
+  auto d_out                  = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
   const num_items_t num_items = static_cast<num_items_t>(d_in.size());
   size_t expected_bytes_allocated{};
 
   REQUIRE(
-    cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
+    cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.data(), d_out.data(), num_items));
 
   using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in.begin()),
-        decltype(d_out.begin()),
+        decltype(d_in.data()),
+        decltype(d_out.data()),
         offset_t,
         op_t,
         init_value_t,
@@ -1022,7 +1132,7 @@ CUB_TEST("Device sum not_guaranteed falls back when output type differs from acc
       cub::detail::reduce::DeviceReduceKernel<
         policy_t,
         /* StableReductionOrder */ true,
-        decltype(d_in.begin()),
+        decltype(d_in.data()),
         accumulator_t*,
         offset_t,
         offset_t,
@@ -1034,143 +1144,169 @@ CUB_TEST("Device sum not_guaranteed falls back when output type differs from acc
       cub::detail::reduce::DeviceReduceSingleTileKernel<
         policy_t,
         accumulator_t*,
-        decltype(d_out.begin()),
+        decltype(d_out.data()),
         int, // always used with int offset
         op_t,
         init_value_t,
         accumulator_t>)};
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                          allowed_kernels(kernels),
-                          expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+    allowed_kernels(kernels),
+    expected_allocation_size(expected_bytes_allocated)};
 
-  device_reduce_sum(d_in.begin(), d_out.begin(), num_items, env);
+  device_reduce_sum(d_in.data(), d_out.data(), num_items, env);
 
-  REQUIRE(d_out[0] == output_t{6});
+  REQUIRE(c2h::read_single(stream, d_out) == output_t{6});
 }
 
 #if TEST_LAUNCH == 0
 
 CUB_TEST_CASE("Device Min works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto output = c2h::device_vector<float>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto error = cub::DeviceReduce::Min(input.begin(), output.begin(), static_cast<int>(input.size()));
+  auto input  = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto output = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+
+  auto error = cub::DeviceReduce::Min(input.data(), output.data(), static_cast<int>(input.size()));
   REQUIRE(error == cudaSuccess);
-  REQUIRE(output[0] == 0.0f);
+  REQUIRE(c2h::read_single(stream, output) == 0.0f);
 }
 
 CUB_TEST_CASE("Device Max works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto output = c2h::device_vector<float>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
-  auto error = cub::DeviceReduce::Max(input.begin(), output.begin(), static_cast<int>(input.size()));
+  auto input  = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto output = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+
+  auto error = cub::DeviceReduce::Max(input.data(), output.data(), static_cast<int>(input.size()));
   REQUIRE(error == cudaSuccess);
-  REQUIRE(output[0] == 4.0f);
+  REQUIRE(c2h::read_single(stream, output) == 4.0f);
 }
 
 CUB_TEST_CASE("Device TransformReduce works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
-  auto d_out = thrust::device_vector<int>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto d_in  = c2h::make_device_buffer<int>(stream, device, {1, 2, 3, 4});
+  auto d_out = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   auto negate = cuda::std::negate<int>{};
 
   REQUIRE(cudaSuccess
           == cub::DeviceReduce::TransformReduce(
-            d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0));
+            d_in.data(), d_out.data(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0));
 
-  REQUIRE(d_out[0] == -10);
+  REQUIRE(c2h::read_single(stream, d_out) == -10);
 }
 
 CUB_TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto d_unique_out     = c2h::device_vector<int>(8);
-  auto d_aggregates_out = c2h::device_vector<int>(8);
-  auto d_num_runs_out   = c2h::device_vector<int>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto d_keys_in        = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  auto d_values_in      = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out     = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_aggregates_out = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto d_num_runs_out   = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
   REQUIRE(
     cudaSuccess
     == cub::DeviceReduce::ReduceByKey(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       cuda::minimum<int>{},
       static_cast<int>(d_keys_in.size())));
 
-  REQUIRE(d_num_runs_out[0] == 5);
-  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
-  d_unique_out.resize(5);
-  d_aggregates_out.resize(5);
-  REQUIRE(d_unique_out == expected_keys);
-  REQUIRE(d_aggregates_out == expected_aggregates);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  const auto expected_keys       = c2h::make_host_buffer<int>(stream, device, {0, 2, 9, 5, 8});
+  const auto expected_aggregates = c2h::make_host_buffer<int>(stream, device, {0, 1, 6, 2, 4});
+  check_output_prefix(stream, device, d_unique_out, expected_keys);
+  check_output_prefix(stream, device, d_aggregates_out, expected_aggregates);
 }
 
 CUB_TEST_CASE("Device ArgMin works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto input        = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto min_output   = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()));
+    cub::DeviceReduce::ArgMin(input.data(), min_output.data(), index_output.data(), static_cast<int>(input.size()));
   REQUIRE(error == cudaSuccess);
-  REQUIRE(min_output[0] == 0.0f);
-  REQUIRE(index_output[0] == 3);
+  REQUIRE(c2h::read_single(stream, min_output) == 0.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 3);
 }
 
 CUB_TEST_CASE("Device ArgMax works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto max_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto input        = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto max_output   = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()));
+    cub::DeviceReduce::ArgMax(input.data(), max_output.data(), index_output.data(), static_cast<int>(input.size()));
   REQUIRE(error == cudaSuccess);
-  REQUIRE(max_output[0] == 4.0f);
-  REQUIRE(index_output[0] == 2);
+  REQUIRE(c2h::read_single(stream, max_output) == 4.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 2);
 }
 
 CUB_TEST_CASE("Device ArgMin with compare_op works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto input        = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto min_output   = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto error = cub::DeviceReduce::ArgMin(
-    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
+    input.data(), min_output.data(), index_output.data(), static_cast<int>(input.size()), cuda::std::less{});
   REQUIRE(error == cudaSuccess);
-  REQUIRE(min_output[0] == 0.0f);
-  REQUIRE(index_output[0] == 3);
+  REQUIRE(c2h::read_single(stream, min_output) == 0.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 3);
 }
 
 CUB_TEST_CASE("Device ArgMax with compare_op works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto max_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  auto input        = c2h::make_device_buffer<float>(stream, device, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto max_output   = c2h::make_device_buffer<float>(stream, device, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, device, 1, cuda::no_init);
 
   auto error = cub::DeviceReduce::ArgMax(
-    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
+    input.data(), max_output.data(), index_output.data(), static_cast<int>(input.size()), cuda::std::less{});
   REQUIRE(error == cudaSuccess);
-  REQUIRE(max_output[0] == 4.0f);
-  REQUIRE(index_output[0] == 2);
+  REQUIRE(c2h::read_single(stream, max_output) == 4.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 2);
 }
 
 #endif
 
 CUB_TEST("Device TransformReduce uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
-  auto d_out = thrust::device_vector<int>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto d_in  = c2h::make_device_buffer<int>(stream, {1, 2, 3, 4});
+  auto d_out = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
 
   auto negate = cuda::std::negate<int>{};
 
@@ -1180,62 +1316,69 @@ CUB_TEST("Device TransformReduce uses environment", "[reduce][device]", CUB_SMAL
     == cub::DeviceReduce::TransformReduce(
       nullptr,
       expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
+      d_in.data(),
+      d_out.data(),
       static_cast<int>(d_in.size()),
       cuda::std::plus<int>{},
       negate,
       0));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_transform_reduce(
-    d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0, env);
+    d_in.data(), d_out.data(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0, env);
 
-  REQUIRE(d_out[0] == -10);
+  REQUIRE(c2h::read_single(stream, d_out) == -10);
 }
 
 CUB_TEST("Device Min uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto output = c2h::device_vector<float>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input  = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto output = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
           == cub::DeviceReduce::Min(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+            nullptr, expected_bytes_allocated, input.data(), output.data(), static_cast<int>(input.size())));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
-  device_reduce_min(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+  device_reduce_min(input.data(), output.data(), static_cast<int>(input.size()), env);
 
-  REQUIRE(output[0] == 0.0f);
+  REQUIRE(c2h::read_single(stream, output) == 0.0f);
 }
 
 CUB_TEST("Device Max uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto output = c2h::device_vector<float>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input  = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto output = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
           == cub::DeviceReduce::Max(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+            nullptr, expected_bytes_allocated, input.data(), output.data(), static_cast<int>(input.size())));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
-  device_reduce_max(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+  device_reduce_max(input.data(), output.data(), static_cast<int>(input.size()), env);
 
-  REQUIRE(output[0] == 4.0f);
+  REQUIRE(c2h::read_single(stream, output) == 4.0f);
 }
 
 CUB_TEST("Device ReduceByKey uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto d_unique_out     = c2h::device_vector<int>(8);
-  auto d_aggregates_out = c2h::device_vector<int>(8);
-  auto d_num_runs_out   = c2h::device_vector<int>(1);
+  const auto stream = c2h::make_current_device_stream();
+  const auto device = c2h::current_device();
+
+  auto d_keys_in        = c2h::make_device_buffer<int>(stream, {0, 2, 2, 9, 5, 5, 5, 8});
+  auto d_values_in      = c2h::make_device_buffer<int>(stream, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out     = c2h::make_device_buffer<int>(stream, 8, cuda::no_init);
+  auto d_aggregates_out = c2h::make_device_buffer<int>(stream, 8, cuda::no_init);
+  auto d_num_runs_out   = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1243,40 +1386,40 @@ CUB_TEST("Device ReduceByKey uses environment", "[reduce][device]", CUB_SMALL)
     == cub::DeviceReduce::ReduceByKey(
       nullptr,
       expected_bytes_allocated,
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       cuda::minimum<int>{},
       static_cast<int>(d_keys_in.size())));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_reduce_by_key(
-    d_keys_in.begin(),
-    d_unique_out.begin(),
-    d_values_in.begin(),
-    d_aggregates_out.begin(),
-    d_num_runs_out.begin(),
+    d_keys_in.data(),
+    d_unique_out.data(),
+    d_values_in.data(),
+    d_aggregates_out.data(),
+    d_num_runs_out.data(),
     cuda::minimum<int>{},
     static_cast<int>(d_keys_in.size()),
     env);
 
-  REQUIRE(d_num_runs_out[0] == 5);
-  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
-  d_unique_out.resize(5);
-  d_aggregates_out.resize(5);
-  REQUIRE(d_unique_out == expected_keys);
-  REQUIRE(d_aggregates_out == expected_aggregates);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  const auto expected_keys       = c2h::make_host_buffer<int>(stream, {0, 2, 9, 5, 8});
+  const auto expected_aggregates = c2h::make_host_buffer<int>(stream, {0, 1, 6, 2, 4});
+  check_output_prefix(stream, device, d_unique_out, expected_keys);
+  check_output_prefix(stream, device, d_aggregates_out, expected_aggregates);
 }
 
 CUB_TEST("Device ArgMin uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input        = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto min_output   = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1284,24 +1427,26 @@ CUB_TEST("Device ArgMin uses environment", "[reduce][device]", CUB_SMALL)
     == cub::DeviceReduce::ArgMin(
       nullptr,
       expected_bytes_allocated,
-      input.begin(),
-      min_output.begin(),
-      index_output.begin(),
+      input.data(),
+      min_output.data(),
+      index_output.data(),
       static_cast<int>(input.size())));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
-  device_arg_min(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), env);
+  device_arg_min(input.data(), min_output.data(), index_output.data(), static_cast<int>(input.size()), env);
 
-  REQUIRE(min_output[0] == 0.0f);
-  REQUIRE(index_output[0] == 3);
+  REQUIRE(c2h::read_single(stream, min_output) == 0.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 3);
 }
 
 CUB_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input        = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto min_output   = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1309,26 +1454,28 @@ CUB_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]", C
     == cub::DeviceReduce::ArgMin(
       nullptr,
       expected_bytes_allocated,
-      input.begin(),
-      min_output.begin(),
-      index_output.begin(),
+      input.data(),
+      min_output.data(),
+      index_output.data(),
       static_cast<int>(input.size()),
       cuda::std::less{}));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_arg_min(
-    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}, env);
+    input.data(), min_output.data(), index_output.data(), static_cast<int>(input.size()), cuda::std::less{}, env);
 
-  REQUIRE(min_output[0] == 0.0f);
-  REQUIRE(index_output[0] == 3);
+  REQUIRE(c2h::read_single(stream, min_output) == 0.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 3);
 }
 
 CUB_TEST("Device ArgMax uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto max_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input        = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto max_output   = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1336,24 +1483,26 @@ CUB_TEST("Device ArgMax uses environment", "[reduce][device]", CUB_SMALL)
     == cub::DeviceReduce::ArgMax(
       nullptr,
       expected_bytes_allocated,
-      input.begin(),
-      max_output.begin(),
-      index_output.begin(),
+      input.data(),
+      max_output.data(),
+      index_output.data(),
       static_cast<int>(input.size())));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
-  device_arg_max(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), env);
+  device_arg_max(input.data(), max_output.data(), index_output.data(), static_cast<int>(input.size()), env);
 
-  REQUIRE(max_output[0] == 4.0f);
-  REQUIRE(index_output[0] == 2);
+  REQUIRE(c2h::read_single(stream, max_output) == 4.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 2);
 }
 
 CUB_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
-  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto max_output   = c2h::device_vector<float>(1);
-  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input        = c2h::make_device_buffer<float>(stream, {3.0f, 1.0f, 4.0f, 0.0f, 2.0f});
+  auto max_output   = c2h::make_device_buffer<float>(stream, 1, cuda::no_init);
+  auto index_output = c2h::make_device_buffer<cuda::std::int64_t>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1361,25 +1510,27 @@ CUB_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]", C
     == cub::DeviceReduce::ArgMax(
       nullptr,
       expected_bytes_allocated,
-      input.begin(),
-      max_output.begin(),
-      index_output.begin(),
+      input.data(),
+      max_output.data(),
+      index_output.data(),
       static_cast<int>(input.size()),
       cuda::std::less{}));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_arg_max(
-    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}, env);
+    input.data(), max_output.data(), index_output.data(), static_cast<int>(input.size()), cuda::std::less{}, env);
 
-  REQUIRE(max_output[0] == 4.0f);
-  REQUIRE(index_output[0] == 2);
+  REQUIRE(c2h::read_single(stream, max_output) == 4.0f);
+  REQUIRE(c2h::read_single(stream, index_output) == 2);
 }
 
 CUB_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]", CUB_SMALL)
 {
-  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
-  auto output = thrust::device_vector<int>(1, thrust::no_init);
+  const auto stream = c2h::make_current_device_stream();
+
+  auto input  = c2h::make_device_buffer<int>(stream, {1, 2, 3, 4, 5});
+  auto output = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -1387,16 +1538,16 @@ CUB_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][
     == cub::DeviceReduce::Reduce(
       nullptr,
       expected_bytes_allocated,
-      input.begin(),
-      output.begin(),
+      input.data(),
+      output.data(),
       input.size(),
       cuda::std::plus<>{},
       cub::detail::reduce::no_init));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
-  device_reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, cub::detail::reduce::no_init, env);
-  REQUIRE(output[0] == 15);
+  device_reduce(input.data(), output.data(), input.size(), cuda::std::plus<>{}, cub::detail::reduce::no_init, env);
+  REQUIRE(c2h::read_single(stream, output) == 15);
 }
 
 #if TEST_LAUNCH == 0
@@ -1404,117 +1555,149 @@ CUB_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][
 template <class EnvT, class TwoPhaseFn>
 void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
 {
-  const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
+  const auto stream = cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), env);
+  const stream_scope scope{stream.get()};
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes));
 
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
+  auto temp_storage =
+    c2h::make_device_buffer<cuda::std::uint8_t>(stream, c2h::current_device(), temp_storage_bytes, cuda::no_init);
+  REQUIRE(cudaSuccess == two_phase(temp_storage.data(), temp_storage_bytes));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
 // The launch wrappers copy their arguments, which the non-copyable streams of test_with_custom_streams do not allow
 CUB_TEST_CASE("Device Reduce two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
       return cub::DeviceReduce::Reduce(
-        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, 10, env);
+        d_temp_storage, temp_storage_bytes, d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, 10, env);
     });
-    REQUIRE(d_out[0] == 48);
+    REQUIRE(c2h::read_single(stream, d_out) == 48);
   });
 }
 
 CUB_TEST_CASE("Device Sum two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
-      return cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), 7, env);
+      return cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in.data(), d_out.data(), 7, env);
     });
-    REQUIRE(d_out[0] == 38);
+    REQUIRE(c2h::read_single(stream, d_out) == 38);
   });
 }
 
 CUB_TEST_CASE("Device Min two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
-      return cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), 7, env);
+      return cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes, d_in.data(), d_out.data(), 7, env);
     });
-    REQUIRE(d_out[0] == 0);
+    REQUIRE(c2h::read_single(stream, d_out) == 0);
   });
 }
 
 CUB_TEST_CASE("Device Max two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
-      return cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), 7, env);
+      return cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in.data(), d_out.data(), 7, env);
     });
-    REQUIRE(d_out[0] == 9);
+    REQUIRE(c2h::read_single(stream, d_out) == 9);
   });
 }
 
 CUB_TEST_CASE("Device TransformReduce two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
       return cub::DeviceReduce::TransformReduce(
         d_temp_storage,
         temp_storage_bytes,
-        d_in.begin(),
-        d_out.begin(),
+        d_in.data(),
+        d_out.data(),
         7,
         cuda::std::plus<>{},
         cuda::std::negate<int>{},
         0,
         env);
     });
-    REQUIRE(d_out[0] == -38);
+    REQUIRE(c2h::read_single(stream, d_out) == -38);
   });
 }
 
 CUB_TEST_CASE("Device ReduceByKey two-phase works with custom streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_keys_in{0, 2, 2, 9, 5, 5, 5, 8};
-  const c2h::device_vector<int> d_values_in{0, 7, 1, 6, 2, 5, 3, 4};
-  c2h::device_vector<int> d_unique_out(5, thrust::no_init);
-  c2h::device_vector<int> d_aggregates_out(5, thrust::no_init);
-  c2h::device_vector<int> d_num_runs_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
 
+  const auto d_keys_in   = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  const auto d_values_in = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out      = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_aggregates_out  = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_num_runs_out    = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+  stream.sync();
   test_with_custom_streams([&](const auto& env) {
     run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
       return cub::DeviceReduce::ReduceByKey(
         d_temp_storage,
         temp_storage_bytes,
-        d_keys_in.begin(),
-        d_unique_out.begin(),
-        d_values_in.begin(),
-        d_aggregates_out.begin(),
-        d_num_runs_out.begin(),
+        d_keys_in.data(),
+        d_unique_out.data(),
+        d_values_in.data(),
+        d_aggregates_out.data(),
+        d_num_runs_out.data(),
         cuda::minimum<>{},
         8,
         env);
     });
-    REQUIRE(d_num_runs_out[0] == 5);
-    REQUIRE(d_unique_out == c2h::device_vector<int>{0, 2, 9, 5, 8});
-    REQUIRE(d_aggregates_out == c2h::device_vector<int>{0, 1, 6, 2, 4});
+    REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+    {
+      const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 2, 9, 5, 8});
+      REQUIRE_THAT(d_unique_out, c2h::Equals(stream, expected));
+    }
+    {
+      const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 6, 2, 4});
+      REQUIRE_THAT(d_aggregates_out, c2h::Equals(stream, expected));
+    }
   });
 }
 
@@ -1525,166 +1708,207 @@ CUB_TEST_CASE("Device ReduceByKey two-phase works with custom streams", "[reduce
 
 CUB_TEST_CASE("Device Reduce two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
-    device_reduce_two_phase(d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, 10, nullptr);
+    stream.sync();
+    device_reduce_two_phase(d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, 10, nullptr);
   }
   SECTION("literal 0")
   {
-    device_reduce_two_phase(d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, 10, 0);
+    stream.sync();
+    device_reduce_two_phase(d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, 10, 0);
   }
   SECTION("cudaStream_t{}")
   {
-    device_reduce_two_phase(d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, 10, cudaStream_t{});
+    stream.sync();
+    device_reduce_two_phase(d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, 10, cudaStream_t{});
   }
 
-  REQUIRE(d_out[0] == 48);
+  REQUIRE(c2h::read_single(stream, d_out) == 48);
 }
 
 CUB_TEST_CASE("Device Sum two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
-    device_reduce_sum_two_phase(d_in.begin(), d_out.begin(), 7, nullptr);
+    stream.sync();
+    device_reduce_sum_two_phase(d_in.data(), d_out.data(), 7, nullptr);
   }
   SECTION("literal 0")
   {
-    device_reduce_sum_two_phase(d_in.begin(), d_out.begin(), 7, 0);
+    stream.sync();
+    device_reduce_sum_two_phase(d_in.data(), d_out.data(), 7, 0);
   }
   SECTION("cudaStream_t{}")
   {
-    device_reduce_sum_two_phase(d_in.begin(), d_out.begin(), 7, cudaStream_t{});
+    stream.sync();
+    device_reduce_sum_two_phase(d_in.data(), d_out.data(), 7, cudaStream_t{});
   }
 
-  REQUIRE(d_out[0] == 38);
+  REQUIRE(c2h::read_single(stream, d_out) == 38);
 }
 
 CUB_TEST_CASE("Device Min two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
-    device_reduce_min_two_phase(d_in.begin(), d_out.begin(), 7, nullptr);
+    stream.sync();
+    device_reduce_min_two_phase(d_in.data(), d_out.data(), 7, nullptr);
   }
   SECTION("literal 0")
   {
-    device_reduce_min_two_phase(d_in.begin(), d_out.begin(), 7, 0);
+    stream.sync();
+    device_reduce_min_two_phase(d_in.data(), d_out.data(), 7, 0);
   }
   SECTION("cudaStream_t{}")
   {
-    device_reduce_min_two_phase(d_in.begin(), d_out.begin(), 7, cudaStream_t{});
+    stream.sync();
+    device_reduce_min_two_phase(d_in.data(), d_out.data(), 7, cudaStream_t{});
   }
 
-  REQUIRE(d_out[0] == 0);
+  REQUIRE(c2h::read_single(stream, d_out) == 0);
 }
 
 CUB_TEST_CASE("Device Max two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
-    device_reduce_max_two_phase(d_in.begin(), d_out.begin(), 7, nullptr);
+    stream.sync();
+    device_reduce_max_two_phase(d_in.data(), d_out.data(), 7, nullptr);
   }
   SECTION("literal 0")
   {
-    device_reduce_max_two_phase(d_in.begin(), d_out.begin(), 7, 0);
+    stream.sync();
+    device_reduce_max_two_phase(d_in.data(), d_out.data(), 7, 0);
   }
   SECTION("cudaStream_t{}")
   {
-    device_reduce_max_two_phase(d_in.begin(), d_out.begin(), 7, cudaStream_t{});
+    stream.sync();
+    device_reduce_max_two_phase(d_in.data(), d_out.data(), 7, cudaStream_t{});
   }
 
-  REQUIRE(d_out[0] == 9);
+  REQUIRE(c2h::read_single(stream, d_out) == 9);
 }
 
 CUB_TEST_CASE("Device TransformReduce two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<int> d_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_in = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9});
+  auto d_out      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
+    stream.sync();
     device_transform_reduce_two_phase(
-      d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, nullptr);
+      d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, nullptr);
   }
   SECTION("literal 0")
   {
-    device_transform_reduce_two_phase(
-      d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, 0);
+    stream.sync();
+    device_transform_reduce_two_phase(d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, 0);
   }
   SECTION("cudaStream_t{}")
   {
+    stream.sync();
     device_transform_reduce_two_phase(
-      d_in.begin(), d_out.begin(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, cudaStream_t{});
+      d_in.data(), d_out.data(), 7, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, cudaStream_t{});
   }
 
-  REQUIRE(d_out[0] == -38);
+  REQUIRE(c2h::read_single(stream, d_out) == -38);
 }
 
 CUB_TEST_CASE("Device ReduceByKey two-phase accepts legacy null streams", "[reduce][device]", CUB_SMALL)
 {
-  const c2h::device_vector<int> d_keys_in{0, 2, 2, 9, 5, 5, 5, 8};
-  const c2h::device_vector<int> d_values_in{0, 7, 1, 6, 2, 5, 3, 4};
-  c2h::device_vector<int> d_unique_out(5, thrust::no_init);
-  c2h::device_vector<int> d_aggregates_out(5, thrust::no_init);
-  c2h::device_vector<int> d_num_runs_out(1, thrust::no_init);
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
+  const auto d_keys_in   = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  const auto d_values_in = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out      = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_aggregates_out  = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_num_runs_out    = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
+    stream.sync();
     device_reduce_by_key_two_phase(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       cuda::minimum<>{},
       8,
       nullptr);
   }
   SECTION("literal 0")
   {
+    stream.sync();
     device_reduce_by_key_two_phase(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       cuda::minimum<>{},
       8,
       0);
   }
   SECTION("cudaStream_t{}")
   {
+    stream.sync();
     device_reduce_by_key_two_phase(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
+      d_keys_in.data(),
+      d_unique_out.data(),
+      d_values_in.data(),
+      d_aggregates_out.data(),
+      d_num_runs_out.data(),
       cuda::minimum<>{},
       8,
       cudaStream_t{});
   }
 
-  REQUIRE(d_num_runs_out[0] == 5);
-  REQUIRE(d_unique_out == c2h::device_vector<int>{0, 2, 9, 5, 8});
-  REQUIRE(d_aggregates_out == c2h::device_vector<int>{0, 1, 6, 2, 4});
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  {
+    const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 2, 9, 5, 8});
+    REQUIRE_THAT(d_unique_out, c2h::Equals(stream, expected));
+  }
+  {
+    const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 6, 2, 4});
+    REQUIRE_THAT(d_aggregates_out, c2h::Equals(stream, expected));
+  }
 }
 
 // The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
@@ -1693,100 +1917,130 @@ CUB_TEST_CASE("Device ReduceByKey two-phase accepts legacy null streams", "[redu
 
 CUB_TEST("Device Reduce two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_out(1, thrust::no_init);
-  const auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto d_in                          = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  const auto env                           = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_two_phase(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
+  stream.sync();
+  device_reduce_two_phase(d_in, d_out.data(), 1, cuda::std::plus<>{}, 0, env);
 
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Sum two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_out(1, thrust::no_init);
-  const auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto d_in                          = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  const auto env                           = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_sum_two_phase(d_in, d_out.begin(), 1, env);
+  stream.sync();
+  device_reduce_sum_two_phase(d_in, d_out.data(), 1, env);
 
-  REQUIRE(d_out[0] == 1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_out) == 1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Min two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const auto d_in = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_out(1, thrust::no_init);
-  const auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto d_in                          = block_size_extracting_constant_iterator(42, d_block_size.data());
+  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  const auto env                           = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_min_two_phase(d_in, d_out.begin(), 1, env);
+  stream.sync();
+  device_reduce_min_two_phase(d_in, d_out.data(), 1, env);
 
-  REQUIRE(d_out[0] == 42);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_out) == 42);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device Max two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const auto d_in = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_out(1, thrust::no_init);
-  const auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto d_in                          = block_size_extracting_constant_iterator(42, d_block_size.data());
+  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  const auto env                           = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_reduce_max_two_phase(d_in, d_out.begin(), 1, env);
+  stream.sync();
+  device_reduce_max_two_phase(d_in, d_out.data(), 1, env);
 
-  REQUIRE(d_out[0] == 42);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_out) == 42);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device TransformReduce two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_out(1, thrust::no_init);
-  const auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto d_in                          = block_size_extracting_constant_iterator(1, d_block_size.data());
+  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  const auto env                           = cuda::execution::tune(reduce_tuning<target_block_size>{});
 
-  device_transform_reduce_two_phase(d_in, d_out.begin(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
+  stream.sync();
+  device_transform_reduce_two_phase(d_in, d_out.data(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
 
-  REQUIRE(d_out[0] == -1);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_out) == -1);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device ReduceByKey two-phase can be tuned", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
 {
+  const auto stream = c2h::default_stream_ref();
+  const auto device = c2h::current_device();
+
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const c2h::device_vector<int> d_keys_in{0, 2, 2, 9, 5, 5, 5, 8};
-  const c2h::device_vector<int> d_values_in{0, 7, 1, 6, 2, 5, 3, 4};
-  c2h::device_vector<int> d_unique_out(5, thrust::no_init);
-  c2h::device_vector<int> d_aggregates_out(5, thrust::no_init);
-  c2h::device_vector<int> d_num_runs_out(1, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, 0u);
-  const block_size_extracting_op<cuda::minimum<int>> reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto d_keys_in                     = c2h::make_device_buffer<int>(stream, device, {0, 2, 2, 9, 5, 5, 5, 8});
+  const auto d_values_in                   = c2h::make_device_buffer<int>(stream, device, {0, 7, 1, 6, 2, 5, 3, 4});
+  auto d_unique_out                        = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_aggregates_out                    = c2h::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto d_num_runs_out                      = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const block_size_extracting_op<cuda::minimum<int>> reduction_op{d_block_size.data()};
   const auto env = cuda::execution::tune(reduce_by_key_tuning<target_block_size>{});
 
+  stream.sync();
   device_reduce_by_key_two_phase(
-    d_keys_in.begin(),
-    d_unique_out.begin(),
-    d_values_in.begin(),
-    d_aggregates_out.begin(),
-    d_num_runs_out.begin(),
+    d_keys_in.data(),
+    d_unique_out.data(),
+    d_values_in.data(),
+    d_aggregates_out.data(),
+    d_num_runs_out.data(),
     reduction_op,
     8,
     env);
 
-  REQUIRE(d_num_runs_out[0] == 5);
-  REQUIRE(d_unique_out == c2h::device_vector<int>{0, 2, 9, 5, 8});
-  REQUIRE(d_aggregates_out == c2h::device_vector<int>{0, 1, 6, 2, 4});
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_num_runs_out) == 5);
+  {
+    const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 2, 9, 5, 8});
+    REQUIRE_THAT(d_unique_out, c2h::Equals(stream, expected));
+  }
+  {
+    const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 6, 2, 4});
+    REQUIRE_THAT(d_aggregates_out, c2h::Equals(stream, expected));
+  }
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 #  endif // TEST_LAUNCH == 0

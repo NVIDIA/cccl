@@ -2,23 +2,44 @@
 // SPDX-License-Identifier: BSD-3
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_reduce.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/sequence.h>
 
-#include <cuda/__cmath/uabs.h>
-#include <cuda/std/__algorithm/max_element.h>
-#include <cuda/std/__algorithm/min_element.h>
+#include <cuda/algorithm>
+#include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/std/algorithm>
+#include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/utility>
+#include <cuda/stream>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+
+#include <cuda_runtime_api.h>
+#include <vector_types.h>
 
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
+#include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/device_and_stream.h>
+#include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
+#include <c2h/utility.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -97,51 +118,57 @@ struct abs_less_t
 
 CUB_TEST("Device reduce handles vectorized 16-bit input", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using input_t  = std::int16_t;
   using output_t = std::int32_t;
 
   constexpr int num_items = 8192;
-  c2h::device_vector<input_t> input(num_items, input_t{1});
-  c2h::device_vector<output_t> output(1, thrust::no_init);
+  auto input              = c2h::make_device_buffer<input_t>(stream, num_items, input_t{1});
+  auto output             = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
 
-  device_sum(thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()), num_items);
+  device_sum(input.data(), output.data(), num_items, stream);
 
-  REQUIRE(output[0] == num_items);
+  REQUIRE(c2h::read_single(stream, output) == num_items);
 }
 
 CUB_TEST("Device ArgMin and ArgMax compare input values before conversion", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using input_t  = float;
   using output_t = int;
   using index_t  = cuda::std::int64_t;
 
   SECTION("ArgMin")
   {
-    c2h::device_vector<input_t> input{1.9f, 1.2f};
-    c2h::device_vector<output_t> output(1, thrust::no_init);
-    c2h::device_vector<index_t> index(1, thrust::no_init);
+    auto input  = c2h::make_device_buffer<input_t>(stream, {1.9f, 1.2f});
+    auto output = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
+    auto index  = c2h::make_device_buffer<index_t>(stream, 1, cuda::no_init);
 
-    device_arg_min(input.data(), output.data(), index.data(), static_cast<int>(input.size()));
+    device_arg_min(input.data(), output.data(), index.data(), static_cast<int>(input.size()), stream);
 
-    REQUIRE(output[0] == 1);
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == 1);
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 
   SECTION("ArgMax")
   {
-    c2h::device_vector<input_t> input{1.2f, 1.9f};
-    c2h::device_vector<output_t> output(1, thrust::no_init);
-    c2h::device_vector<index_t> index(1, thrust::no_init);
+    auto input  = c2h::make_device_buffer<input_t>(stream, {1.2f, 1.9f});
+    auto output = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
+    auto index  = c2h::make_device_buffer<index_t>(stream, 1, cuda::no_init);
 
-    device_arg_max(input.data(), output.data(), index.data(), static_cast<int>(input.size()));
+    device_arg_max(input.data(), output.data(), index.data(), static_cast<int>(input.size()), stream);
 
-    REQUIRE(output[0] == 1);
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == 1);
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 }
 
 CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using input_t  = int;
   using index_t  = cuda::std::int64_t;
   using limits_t = cuda::std::numeric_limits<input_t>;
@@ -149,49 +176,40 @@ CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_
   constexpr input_t sentinel_value = 42;
   constexpr index_t sentinel_index = 42;
 
-  c2h::device_vector<input_t> input(1, input_t{7});
-  c2h::device_vector<input_t> output(1, sentinel_value);
-  c2h::device_vector<index_t> index(1, sentinel_index);
+  auto input  = c2h::make_device_buffer<input_t>(stream, 1, input_t{7});
+  auto output = c2h::make_device_buffer<input_t>(stream, 1, sentinel_value);
+  auto index  = c2h::make_device_buffer<index_t>(stream, 1, sentinel_index);
 
   SECTION("ArgMin")
   {
-    device_arg_min(input.data(), output.data(), index.data(), 0);
+    device_arg_min(input.data(), output.data(), index.data(), 0, stream);
 
-    REQUIRE(output[0] == limits_t::max());
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == limits_t::max());
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 
   SECTION("ArgMin with custom comparison operator")
   {
-    // abs_less_t only accepts integers, not thrust::device_reference, so pass raw pointers
-    device_arg_min(thrust::raw_pointer_cast(input.data()),
-                   thrust::raw_pointer_cast(output.data()),
-                   thrust::raw_pointer_cast(index.data()),
-                   0,
-                   abs_less_t{});
+    device_arg_min(input.data(), output.data(), index.data(), 0, abs_less_t{}, stream);
 
-    REQUIRE(output[0] == input_t{});
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == input_t{});
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 
   SECTION("ArgMax")
   {
-    device_arg_max(input.data(), output.data(), index.data(), 0);
+    device_arg_max(input.data(), output.data(), index.data(), 0, stream);
 
-    REQUIRE(output[0] == limits_t::lowest());
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == limits_t::lowest());
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 
   SECTION("ArgMax with custom comparison operator")
   {
-    device_arg_max(thrust::raw_pointer_cast(input.data()),
-                   thrust::raw_pointer_cast(output.data()),
-                   thrust::raw_pointer_cast(index.data()),
-                   0,
-                   abs_less_t{});
+    device_arg_max(input.data(), output.data(), index.data(), 0, abs_less_t{}, stream);
 
-    REQUIRE(output[0] == input_t{});
-    REQUIRE(index[0] == 1);
+    REQUIRE(c2h::read_single(stream, output) == input_t{});
+    REQUIRE(c2h::read_single(stream, index) == 1);
   }
 }
 
@@ -217,19 +235,23 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
   // Input data generation to test
   const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
 
-  // Generate input data
-  c2h::device_vector<item_t> in_items(num_items);
-  if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
-  {
-    c2h::gen(C2H_SEED(2), in_items);
-  }
-  else
-  {
-    item_t default_constant{};
-    init_default_constant(default_constant);
-    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
-  }
-  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+  const auto stream     = c2h::make_current_device_stream();
+  const auto item_count = static_cast<std::size_t>(num_items);
+  auto input_buffers    = [&] {
+    if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
+    {
+      return c2h::gen_buffers<item_t>(stream, C2H_SEED(2), item_count);
+    }
+
+    item_t value{};
+    init_default_constant(value);
+    auto host_items   = c2h::make_host_buffer<item_t>(stream, item_count, value);
+    auto device_items = c2h::make_device_buffer<item_t>(stream, host_items);
+    return c2h::device_host_buffers<item_t>{cuda::std::move(device_items), cuda::std::move(host_items)};
+  }();
+  auto& in_items         = input_buffers.d_items;
+  const auto& host_items = input_buffers.h_items;
+  auto d_in_it           = in_items.data();
 
   CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items);
 
@@ -242,18 +264,19 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
-    const output_t expected_result =
-      static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
+    using accum_t                  = cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    const output_t expected_result = static_cast<output_t>(
+      compute_single_problem_reference(host_items.cbegin(), host_items.cend(), reduction_op, accum_t{}));
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
-    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_value_t{});
+    auto out_result = c2h::make_device_buffer<output_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it      = out_result.data();
+    using init_value_t = unwrap_value_t<output_t>;
+    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_value_t{}, stream);
 
     // Verify result
-    REQUIRE(expected_result == out_result[0]);
+    REQUIRE(expected_result == c2h::read_single(stream, out_result));
   }
 #endif // TEST_TYPES != 4
 
@@ -266,66 +289,67 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
-    const output_t expected_result =
-      static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
+    const output_t expected_result = static_cast<output_t>(
+      compute_single_problem_reference(host_items.cbegin(), host_items.cend(), op_t{}, accum_t{}));
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
-    device_sum(d_in_it, d_out_it, num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = unwrap_it(out_result.data());
+    device_sum(d_in_it, d_out_it, num_items, stream);
 
     // Verify result
-    REQUIRE(expected_result == out_result[0]);
+    REQUIRE(expected_result == c2h::read_single(stream, out_result));
   }
 #endif
 
   SECTION("min")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = *std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_min(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
+    device_min(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, stream);
 
     // Verify result
-    REQUIRE(expected_result == out_result[0]);
+    REQUIRE(expected_result == c2h::read_single(stream, out_result));
   }
 
   SECTION("max")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = *std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_max(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items);
+    auto out_result = c2h::make_device_buffer<output_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_out_it = out_result.data();
+    device_max(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, stream);
 
     // Verify result
-    REQUIRE(expected_result == out_result[0]);
+    REQUIRE(expected_result == c2h::read_single(stream, out_result));
   }
 
 #if TEST_TYPES != 4
   SECTION("argmax")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
-    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
+    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, stream);
 
     // Verify result
-    const result_t gpu_result   = out_result[0];
+    const result_t gpu_result   = c2h::read_single(stream, out_result);
     const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
@@ -334,13 +358,13 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
   SECTION("argmax with user provided memory and environment")
   {
     // Prepare verification data
-    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
 
@@ -351,8 +375,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     REQUIRE(cudaSuccess == cudaPeekAtLastError());
     REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-    auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+    auto d_temp        = c2h::make_device_buffer<std::uint8_t>(stream, expected_allocation_size, cuda::no_init);
+    void* temp_storage = d_temp.data();
 
     auto test_argmax = [&](const auto& env) {
       size_t num_bytes = 0;
@@ -370,31 +394,32 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
       // Verify result
-      const result_t gpu_result   = out_result[0];
+      const result_t gpu_result   = c2h::read_single(stream, out_result);
       const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
       REQUIRE(expected_result[0] == gpu_extremum);
       REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
     };
 
+    stream.sync();
     test_with_custom_streams(test_argmax);
   }
 
   SECTION("argmin")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
-    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
+    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, stream);
 
     // Verify result
-    const result_t gpu_result   = out_result[0];
+    const result_t gpu_result   = c2h::read_single(stream, out_result);
     const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
@@ -403,13 +428,13 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
   SECTION("argmin with user provided memory and environment")
   {
     // Prepare verification data
-    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
 
@@ -420,8 +445,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     REQUIRE(cudaSuccess == cudaPeekAtLastError());
     REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-    auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+    auto d_temp        = c2h::make_device_buffer<std::uint8_t>(stream, expected_allocation_size, cuda::no_init);
+    void* temp_storage = d_temp.data();
 
     auto test_argmin = [&](const auto& env) {
       size_t num_bytes = 0;
@@ -439,28 +464,29 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
       // Verify result
-      const result_t gpu_result   = out_result[0];
+      const result_t gpu_result   = c2h::read_single(stream, out_result);
       const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
       REQUIRE(expected_result[0] == gpu_extremum);
       REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
     };
 
+    stream.sync();
     test_with_custom_streams(test_argmin);
   }
 
   SECTION("argmax deprecated interface")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test using the deprecated interface
-    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    device_arg_max_old(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+    using result_t  = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    device_arg_max_old(unwrap_it(d_in_it), out_result.data(), num_items, stream);
 
     // Verify result for the deprecated interface
-    const result_t gpu_result = out_result[0];
+    const result_t gpu_result = c2h::read_single(stream, out_result);
     const output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
@@ -469,16 +495,16 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
   SECTION("argmin deprecated interface")
   {
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test using the deprecated interface
-    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    device_arg_min_old(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+    using result_t  = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    device_arg_min_old(unwrap_it(d_in_it), out_result.data(), num_items, stream);
 
     // Verify result for the deprecated interface
-    const result_t gpu_result = out_result[0];
+    const result_t gpu_result = c2h::read_single(stream, out_result);
     const output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
@@ -490,19 +516,19 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     const abs_less_t compare_op;
 
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
-    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op, stream);
 
     // Verify result
-    const result_t gpu_result   = out_result[0];
+    const result_t gpu_result   = c2h::read_single(stream, out_result);
     const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
@@ -513,19 +539,19 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
     const abs_less_t compare_op;
 
     // Prepare verification data
-    const c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = cuda::std::max_element(host_items.cbegin(), host_items.cend(), compare_op);
 
     // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    using result_t  = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    auto out_result = c2h::make_device_buffer<result_t>(stream, num_segments, cuda::no_init);
+    cuda::fill_bytes(stream, out_result, 0x5a);
+    auto d_result_ptr   = out_result.data();
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
-    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op, stream);
 
     // Verify result
-    const result_t gpu_result   = out_result[0];
+    const result_t gpu_result   = c2h::read_single(stream, out_result);
     const output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
@@ -564,28 +590,31 @@ struct non_copy_assignable_less
 
 CUB_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using item_t   = int;
   using output_t = int;
 
   constexpr int num_items = 1000;
 
-  c2h::device_vector<item_t> input(num_items, 42);
-  thrust::sequence(input.begin(), input.end(), 1);
+  auto input = c2h::make_device_buffer<item_t>(stream, num_items, 42);
+  thrust::sequence(c2h::device_policy.on(stream.get()), input.data(), input.data() + input.size(), 1);
 
   SECTION("reduce")
   {
-    c2h::device_vector<output_t> output(1);
-    device_reduce(input.data(), output.data(), num_items, non_copy_assignable_plus{}, 0);
-    CHECK((num_items * (num_items + 1)) / 2 == output[0]);
+    auto output = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
+    device_reduce(input.data(), output.data(), num_items, non_copy_assignable_plus{}, 0, stream);
+    CHECK((num_items * (num_items + 1)) / 2 == c2h::read_single(stream, output));
   }
 
   SECTION("argmin")
   {
-    c2h::device_vector<output_t> output_extremum(1);
-    c2h::device_vector<int> output_index(1);
-    device_arg_min(input.data(), output_extremum.data(), output_index.data(), num_items, non_copy_assignable_less{});
-    REQUIRE(1 == output_extremum[0]);
-    REQUIRE(0 == output_index[0]);
+    auto output_extremum = c2h::make_device_buffer<output_t>(stream, 1, cuda::no_init);
+    auto output_index    = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
+    device_arg_min(
+      input.data(), output_extremum.data(), output_index.data(), num_items, non_copy_assignable_less{}, stream);
+    REQUIRE(1 == c2h::read_single(stream, output_extremum));
+    REQUIRE(0 == c2h::read_single(stream, output_index));
   }
 }
 
@@ -612,18 +641,20 @@ struct faulting_reduce
 
 CUB_TEST("Device reduce works without initial value", "[reduce][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   constexpr int num_items = 1000;
-  c2h::device_vector<int> input(num_items, checking_reduce::sentinel);
+  auto input              = c2h::make_device_buffer<int>(stream, num_items, checking_reduce::sentinel);
 
   SECTION("for some elements")
   {
-    c2h::device_vector<int> output(1);
-    device_reduce(input.data(), output.data(), num_items, checking_reduce{}, cub::detail::reduce::no_init);
-    CHECK(output[0] == checking_reduce::sentinel);
+    auto output = c2h::make_device_buffer<int>(stream, 1, cuda::no_init);
+    device_reduce(input.data(), output.data(), num_items, checking_reduce{}, cub::detail::reduce::no_init, stream);
+    CHECK(c2h::read_single(stream, output) == checking_reduce::sentinel);
   }
   SECTION("for no elements")
   {
-    device_reduce(input.data(), static_cast<int*>(nullptr), 0, faulting_reduce{}, cub::detail::reduce::no_init);
+    device_reduce(input.data(), static_cast<int*>(nullptr), 0, faulting_reduce{}, cub::detail::reduce::no_init, stream);
   }
 }
 #endif // TEST_TYPES == 0
