@@ -394,7 +394,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
                  "mdspan: operator[array] out of bounds access");
     return mapping()(__indices[_Idxs]...);
   }
@@ -405,7 +405,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
                  "mdspan: operator[span] out of bounds access");
     return mapping()(__indices[_Idxs]...);
   }
@@ -437,7 +437,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
                  "mdspan: operator() out of bounds access");
     return accessor().access(data_handle(), mapping()(__indices...));
   }
@@ -451,7 +451,7 @@ public:
       for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
         const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
-        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
         {
           return false;
         }
@@ -487,7 +487,7 @@ public:
 
   _CCCL_API friend constexpr void swap(mdspan& __x, mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y)); // NOLINT(cccl-avoid-adl)
   }
 
   [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept

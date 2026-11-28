@@ -281,7 +281,7 @@ public:
       using ::cuda::std::swap;
       if (this->has_value())
       {
-        swap(this->__get(), __opt.__get());
+        swap(this->__get(), __opt.__get()); // NOLINT(cccl-avoid-adl)
       }
     }
     else
@@ -348,7 +348,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      ::cuda::std::__throw_bad_optional_access();
     }
     return this->__get();
   }
@@ -357,7 +357,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      ::cuda::std::__throw_bad_optional_access();
     }
     return this->__get();
   }
@@ -366,7 +366,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      ::cuda::std::__throw_bad_optional_access();
     }
     return ::cuda::std::move(this->__get());
   }
@@ -375,7 +375,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      ::cuda::std::__throw_bad_optional_access();
     }
     return ::cuda::std::move(this->__get());
   }
@@ -546,7 +546,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES optional(_Tp) -> optional<_Tp>;
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() == declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() == ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (static_cast<bool>(__x) != static_cast<bool>(__y))
@@ -562,7 +564,9 @@ operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() != declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() != ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (static_cast<bool>(__x) != static_cast<bool>(__y))
@@ -578,7 +582,9 @@ operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() < declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() < ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (!static_cast<bool>(__y))
@@ -594,7 +600,9 @@ operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() > declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() > ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (!static_cast<bool>(__x))
@@ -610,7 +618,9 @@ operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() <= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (!static_cast<bool>(__x))
@@ -626,7 +636,9 @@ operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() >= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>=(const optional<_Tp>& __x, const optional<_Up>& __y)
 {
   if (!static_cast<bool>(__y))
@@ -716,7 +728,9 @@ _CCCL_API constexpr bool operator>=(nullopt_t, const optional<_Tp>& __x) noexcep
 // Comparisons with T
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() == declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() == ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator==(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x == __v : false;
@@ -724,7 +738,9 @@ operator==(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() == declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() == ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator==(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v == *__x : false;
@@ -732,7 +748,9 @@ operator==(const _Tp& __v, const optional<_Up>& __x)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() != declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() != ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator!=(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x != __v : true;
@@ -740,7 +758,9 @@ operator!=(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() != declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() != ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator!=(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v != *__x : true;
@@ -748,7 +768,9 @@ operator!=(const _Tp& __v, const optional<_Up>& __x)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() < declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() < ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x < __v : true;
@@ -756,7 +778,9 @@ operator<(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() < declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() < ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v < *__x : false;
@@ -764,7 +788,9 @@ operator<(const _Tp& __v, const optional<_Up>& __x)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() <= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<=(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x <= __v : true;
@@ -772,7 +798,9 @@ operator<=(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() <= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator<=(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v <= *__x : false;
@@ -780,7 +808,9 @@ operator<=(const _Tp& __v, const optional<_Up>& __x)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() > declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() > ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x > __v : false;
@@ -788,7 +818,9 @@ operator>(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() > declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() > ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v > *__x : true;
@@ -796,7 +828,9 @@ operator>(const _Tp& __v, const optional<_Up>& __x)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() >= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>=(const optional<_Tp>& __x, const _Up& __v)
 {
   return static_cast<bool>(__x) ? *__x >= __v : false;
@@ -804,7 +838,9 @@ operator>=(const optional<_Tp>& __x, const _Up& __v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_CCCL_API constexpr enable_if_t<is_convertible_v<decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool>, bool>
+_CCCL_API constexpr enable_if_t<
+  is_convertible_v<decltype(::cuda::std::declval<const _Tp&>() >= ::cuda::std::declval<const _Up&>()), bool>,
+  bool>
 operator>=(const _Tp& __v, const optional<_Up>& __x)
 {
   return static_cast<bool>(__x) ? __v >= *__x : true;

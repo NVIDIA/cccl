@@ -218,9 +218,9 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   {
     if (!this_lane_is_valid)
     {
-      regInput = cuda::identity_element<ScanOpT, Tp>();
+      regInput = ::cuda::identity_element<ScanOpT, Tp>();
     }
-    return __scan_detail::warpScanExclusive(regInput, scan_op);
+    return _CUB::detail::scan::__scan_detail::warpScanExclusive(regInput, scan_op);
   }
   else
   {
@@ -259,12 +259,12 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
   {
     if constexpr (IsInclusive)
     {
-      __cub_detail::ThreadScanInclusivePartial(
+      _CUB::detail::scan::__cub_detail::ThreadScanInclusivePartial(
         regAggrInclusive, regAggrInclusive, scan_op, valid_items, prefix, use_prefix);
     }
     else
     {
-      __cub_detail::ThreadScanExclusivePartial(
+      _CUB::detail::scan::__cub_detail::ThreadScanExclusivePartial(
         regAggrInclusive, regAggrInclusive, scan_op, valid_items, prefix, use_prefix);
     }
   }
@@ -272,11 +272,13 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
   {
     if constexpr (IsInclusive)
     {
-      __cub_detail::ThreadScanInclusive(regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
+      _CUB::detail::scan::__cub_detail::ThreadScanInclusive(
+        regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
     }
     else
     {
-      __cub_detail::ThreadScanExclusive(regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
+      _CUB::detail::scan::__cub_detail::ThreadScanExclusive(
+        regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
     }
   }
 }
@@ -338,9 +340,10 @@ struct lookahead_scan_closure
   load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW) const
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                      (__scan_detail::squadGetNextBlockIdx(squad, refNextBlockIdxW);),
-                      (__scan_detail::squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_100,
+      (__scan_detail::squadGetNextBlockIdx(squad, refNextBlockIdxW);),
+      (_CUB::detail::scan::__scan_detail::squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
@@ -402,9 +405,9 @@ struct lookahead_scan_closure
     int num_tiles) const
   {
     const int valid_items_this_thread =
-      cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
+      ::cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
     const int valid_threads_this_warp =
-      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
+      ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
     _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
@@ -425,13 +428,15 @@ struct lookahead_scan_closure
       if (is_last_tile)
       {
         // TODO(bgruber): for operators where we know the identity we can probably optimize this better
-        regThreadAggr = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
-        regWarpAggr   = __scan_detail::warpReducePartial(regThreadAggr, scan_op, valid_threads_this_warp);
+        regThreadAggr =
+          _CUB::detail::scan::__cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
+        regWarpAggr =
+          _CUB::detail::scan::__scan_detail::warpReducePartial(regThreadAggr, scan_op, valid_threads_this_warp);
       }
       else
       {
         regThreadAggr = _CUB::ThreadReduce(regInput, scan_op);
-        regWarpAggr   = __scan_detail::warpReduce(regThreadAggr, scan_op);
+        regWarpAggr   = _CUB::detail::scan::__scan_detail::warpReduce(regThreadAggr, scan_op);
       }
       _CCCL_IKET_RANGE_POP();
     }
@@ -527,7 +532,7 @@ struct lookahead_scan_closure
     AccumT regAggrInclusive[elemPerThread];
     if constexpr (IsLastTile)
     {
-      __scan_detail::fillWithIdentity<ScanOpT>(regAggrInclusive, valid_items_this_thread);
+      _CUB::detail::scan::__scan_detail::fillWithIdentity<ScanOpT>(regAggrInclusive, valid_items_this_thread);
     }
 
     // Aggregate of all threads up to but not including this one
@@ -594,7 +599,7 @@ struct lookahead_scan_closure
       if constexpr (IsLastTile) // this branch would cost up to 4% BW for I8 and I16 if it were at
                                 // runtime
       {
-        aggrExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
+        aggrExclusiveIntraWarp = _CUB::detail::scan::__scan_detail::warpScanExclusivePartial(
           regAggrThread,
           scan_op,
           valid_threads_this_warp,
@@ -602,7 +607,7 @@ struct lookahead_scan_closure
       }
       else
       {
-        aggrExclusiveIntraWarp = __scan_detail::warpScanExclusive(regAggrThread, scan_op);
+        aggrExclusiveIntraWarp = _CUB::detail::scan::__scan_detail::warpScanExclusive(regAggrThread, scan_op);
       }
 
       if (squad.warpRank() == 0)
@@ -704,7 +709,7 @@ struct lookahead_scan_closure
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit || !is_first_tile || squad.threadRank() != 0;
-    __scan_detail::threadScanPartial<isInclusive, IsLastTile>(
+    _CUB::detail::scan::__scan_detail::threadScanPartial<isInclusive, IsLastTile>(
       regAggrInclusive, scan_op, aggrExclusive, use_prefix, valid_items_this_thread);
 
     // Sync before storing to avoid data races on SMEM
@@ -841,7 +846,7 @@ struct lookahead_scan_closure
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
-        static_cast<int>((cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
+        static_cast<int>((::cuda::std::min) (params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
       const warpspeed::CpAsyncOobInfo loadInfo =
         _CUB::detail::warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
@@ -989,9 +994,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   auto res = [&] {
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
-    auto r = __scan_detail::allocResources<PolicySelector, InputT, OutputT, AccumT>(
+    auto r = _CUB::detail::scan::__scan_detail::allocResources<PolicySelector, InputT, OutputT, AccumT>(
       syncHandler, smemAllocator, params.numStages);
-    syncHandler.clusterInitSync<__scan_detail::num_total_threads(policy)>(specialRegisters);
+    syncHandler.clusterInitSync<_CUB::detail::scan::__scan_detail::num_total_threads(policy)>(specialRegisters);
     return r;
   }();
 

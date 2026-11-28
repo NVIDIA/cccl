@@ -41,15 +41,17 @@ struct __is_implicitly_default_constructible : false_type
 {};
 
 template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp,
-                                             decltype(__test_implicit_default_constructible<_Tp const&>({})),
-                                             true_type> : true_type
+struct __is_implicitly_default_constructible<
+  _Tp,
+  decltype(::cuda::std::__test_implicit_default_constructible<_Tp const&>({})),
+  true_type> : true_type
 {};
 
 template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp,
-                                             decltype(__test_implicit_default_constructible<_Tp const&>({})),
-                                             false_type> : false_type
+struct __is_implicitly_default_constructible<
+  _Tp,
+  decltype(::cuda::std::__test_implicit_default_constructible<_Tp const&>({})),
+  false_type> : false_type
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

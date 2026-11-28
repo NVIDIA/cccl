@@ -342,12 +342,12 @@ struct AgentRadixSortOnesweep
           AtomicOffsetT& loc_j   = d_lookback[block_jdx * RADIX_DIGITS + bin];
           do
           {
-            __threadfence_block(); // prevent hoisting loads from loop
+            ::__threadfence_block(); // prevent hoisting loads from loop
             value_j = _CUB::ThreadLoad<LOAD_VOLATILE>(&loc_j);
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
-          want_mask = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
+          want_mask = ::__ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
           if (value_j & LOOKBACK_GLOBAL_MASK)
           {
             break;
@@ -419,7 +419,7 @@ struct AgentRadixSortOnesweep
         short_circuit = short_circuit || bins[u] == TILE_ITEMS;
       }
     }
-    short_circuit = __syncthreads_or(short_circuit);
+    short_circuit = ::__syncthreads_or(short_circuit);
     if (!short_circuit)
     {
       return;
@@ -556,7 +556,7 @@ struct AgentRadixSortOnesweep
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
       }
-      __syncwarp(WARP_MASK);
+      ::__syncwarp(WARP_MASK);
     }
   }
 
@@ -575,7 +575,7 @@ struct AgentRadixSortOnesweep
       {
         d_values_out[global_idx] = value;
       }
-      __syncwarp(WARP_MASK);
+      ::__syncwarp(WARP_MASK);
     }
   }
 
@@ -601,7 +601,7 @@ struct AgentRadixSortOnesweep
       {
         num_writes -= int(global_idx + 1) % ALIGN;
       }
-      num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
+      num_writes = ::__shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
         _CUB::ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
@@ -750,7 +750,7 @@ struct AgentRadixSortOnesweep
     // initialization
     if (threadIdx.x == 0)
     {
-      s.block_idx = atomicAdd(d_ctrs, 1);
+      s.block_idx = ::atomicAdd(d_ctrs, 1);
     }
     __syncthreads();
     block_idx  = s.block_idx;

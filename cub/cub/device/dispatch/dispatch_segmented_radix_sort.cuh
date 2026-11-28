@@ -353,7 +353,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -826,7 +826,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
       {
         return err;
       }
-      if (const auto err = CubDebug(cudaPeekAtLastError()))
+      if (const auto err = CubDebug(::cudaPeekAtLastError()))
       {
         return err;
       }

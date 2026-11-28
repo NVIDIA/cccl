@@ -239,7 +239,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -307,7 +307,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -576,7 +576,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -644,7 +644,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }

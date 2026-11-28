@@ -59,6 +59,9 @@ struct __atomic_adl_float
 template <class _Tp>
 _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
@@ -86,11 +89,15 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
   {
     return __lhs + __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
@@ -118,11 +125,15 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
   {
     return __lhs - __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
 {
+  // There are intentional ADL shenanigans happening here, so we must not qualify these calls.
+  //
+  // NOLINTBEGIN(cccl-avoid-adl)
   if constexpr (__is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2)
   {
 #if _CCCL_HAS_CTK() && _CCCL_CTK_BELOW(12, 2)
@@ -149,6 +160,7 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
   {
     return __lhs < __rhs;
   }
+  // NOLINTEND(cccl-avoid-adl)
 }
 
 enum class __atomic_tag

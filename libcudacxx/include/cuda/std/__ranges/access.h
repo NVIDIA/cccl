@@ -77,6 +77,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(!__member_begin<_Tp>),
                       requires(__can_borrow<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
+                      // NOLINTNEXTLINE(cccl-avoid-adl)
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(begin(__t)))>)));
 
 template <class _Tp>
@@ -117,9 +118,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_begin<_Tp>)
   [[nodiscard]] _CCCL_API constexpr auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t)))) // NOLINT(cccl-avoid-adl)
   {
-    return _LIBCUDACXX_AUTO_CAST(begin(__t));
+    return _LIBCUDACXX_AUTO_CAST(begin(__t)); // NOLINT(cccl-avoid-adl)
   }
 
   _CCCL_TEMPLATE(class _Tp)
@@ -189,6 +190,7 @@ _CCCL_CONCEPT_FRAGMENT(
                       requires(__can_borrow<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
                       typename(iterator_t<_Tp>),
+                      // NOLINTNEXTLINE(cccl-avoid-adl)
                       requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(end(__t))), iterator_t<_Tp>>)));
 
 template <class _Tp>
@@ -218,9 +220,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_end<_Tp>)
   [[nodiscard]] _CCCL_API constexpr auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t)))) // NOLINT(cccl-avoid-adl)
   {
-    return _LIBCUDACXX_AUTO_CAST(end(__t));
+    return _LIBCUDACXX_AUTO_CAST(end(__t)); // NOLINT(cccl-avoid-adl)
   }
 
   _CCCL_TEMPLATE(class _Tp)

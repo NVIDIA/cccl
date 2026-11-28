@@ -1059,11 +1059,11 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     }
     if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {
-      __fill_n<_Tp, mr::__memory_accessibility ::__host>(__stream, __first, __count, __value);
+      ::cuda::__fill_n<_Tp, mr::__memory_accessibility ::__host>(__stream, __first, __count, __value);
     }
     else
     {
-      __fill_n<_Tp, mr::__memory_accessibility ::__device>(__stream, __first, __count, __value);
+      ::cuda::__fill_n<_Tp, mr::__memory_accessibility ::__device>(__stream, __first, __count, __value);
     }
   }
   else if constexpr (_Accessability == mr::__memory_accessibility ::__host)
@@ -1111,7 +1111,7 @@ _CCCL_REQUIRES(
   buffer<_Tp, _FirstProperty, _RestProperties...> __res{
     __stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};
 
-  __copy_cross_buffers(__stream, __res, __source);
+  ::cuda::__copy_cross_buffers(__stream, __res, __source);
 
   return __res;
 }
@@ -1150,7 +1150,7 @@ _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   auto __res          = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};
 
-  __copy_cross_buffers(__stream, __res, __source);
+  ::cuda::__copy_cross_buffers(__stream, __res, __source);
 
   return __res;
 }
@@ -1203,7 +1203,7 @@ _CCCL_REQUIRES(
 {
   auto __res =
     buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, mr::__memory_accessibility_from_properties_v<_FirstProperty, _RestProperties...>>(
+  ::cuda::__fill_n<_Tp, mr::__memory_accessibility_from_properties_v<_FirstProperty, _RestProperties...>>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -1229,7 +1229,7 @@ _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
   using __buffer_type     = __buffer_type_for_props<_Tp, __default_queries>;
   auto __res              = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, __default_queries::template rebind<mr::__memory_accessibility_from_properties>::value>(
+  ::cuda::__fill_n<_Tp, __default_queries::template rebind<mr::__memory_accessibility_from_properties>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }

@@ -90,9 +90,11 @@ inline constexpr bool is_warp_redux_op_supported =
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 Redux
 
+#if _CCCL_HOST_COMPILATION() || (_CCCL_PTX_ARCH() >= 800)
+
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
-warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE_API
+_CCCL_FORCEINLINE T warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
   static_assert(is_warp_redux_op_supported_sm80<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
@@ -101,27 +103,27 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
   const auto value  = static_cast<promotion_t>(input);
   if constexpr (::cuda::__is_cuda_maximum_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_max_sync(mask, value));
+    return static_cast<T>(::__reduce_max_sync(mask, value));
   }
   else if constexpr (::cuda::__is_cuda_minimum_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_min_sync(mask, value));
+    return static_cast<T>(::__reduce_min_sync(mask, value));
   }
   else if constexpr (::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_add_sync(mask, value));
+    return static_cast<T>(::__reduce_add_sync(mask, value));
   }
   else if constexpr (::cuda::__is_cuda_std_bit_and_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_and_sync(mask, value));
+    return static_cast<T>(::__reduce_and_sync(mask, value));
   }
   else if constexpr (::cuda::__is_cuda_std_bit_or_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_or_sync(mask, value));
+    return static_cast<T>(::__reduce_or_sync(mask, value));
   }
   else if constexpr (::cuda::__is_cuda_std_bit_xor_v<ReductionOp, T>)
   {
-    return static_cast<T>(__reduce_xor_sync(mask, value));
+    return static_cast<T>(::__reduce_xor_sync(mask, value));
   }
   else
   {
@@ -156,13 +158,13 @@ warp_redux_plus_64bit(const T input, const ::cuda::std::uint32_t mask, Reduction
   const auto low0 = low & 0x00FFFFFFu; // low 24 bits
 
   // the following reductions cannot overflow
-  const auto low0_sum = __reduce_add_sync(mask, low0);
-  const auto low1_sum = __reduce_add_sync(mask, low1);
+  const auto low0_sum = ::__reduce_add_sync(mask, low0);
+  const auto low1_sum = ::__reduce_add_sync(mask, low1);
   const auto low_sum  = low1_sum + (low0_sum >> 24); // the carry of low0_sum is added to low1_sum (24-31 bits)
 
   // concatenate the first 24 bits of low0_sum (0x210) with the last 8 bits of carry (0x4000)
-  const auto ret_lo = __byte_perm(low0_sum, low_sum, 0x4210);
-  const auto ret_hi = __reduce_add_sync(mask, high) + (low_sum >> 8); // low_sum >> 8 is the carry of the low bits
+  const auto ret_lo = ::__byte_perm(low0_sum, low_sum, 0x4210);
+  const auto ret_hi = ::__reduce_add_sync(mask, high) + (low_sum >> 8); // low_sum >> 8 is the carry of the low bits
 
   return _CUB::detail::from_words<T>(::cuda::std::array<::cuda::std::uint32_t, 2>{ret_lo, ret_hi});
 }
@@ -178,9 +180,9 @@ warp_redux_plus_128bit(const T input, const ::cuda::std::uint32_t mask, Reductio
   // 27-bit of word1: 32-58 bits
   // 27-bit of word2: 64-90 bits
   // each reduction cannot overflow
-  const auto low0 = __reduce_add_sync(mask, word0 & 0x07FF'FFFFu);
-  const auto low1 = __reduce_add_sync(mask, word1 & 0x07FF'FFFFu);
-  const auto low2 = __reduce_add_sync(mask, word2 & 0x07FF'FFFFu);
+  const auto low0 = ::__reduce_add_sync(mask, word0 & 0x07FF'FFFFu);
+  const auto low1 = ::__reduce_add_sync(mask, word1 & 0x07FF'FFFFu);
+  const auto low2 = ::__reduce_add_sync(mask, word2 & 0x07FF'FFFFu);
 
   // we extract the high 5 bits of each word
   // 5 bits max value=31, 31 * 32 lanes=992, that can be represented with 10 bits
@@ -194,10 +196,10 @@ warp_redux_plus_128bit(const T input, const ::cuda::std::uint32_t mask, Reductio
   // the previous code can be implemented slightly more efficiently with __funnelshift_l
   // __funnelshift_l(lo, hi, S) == (hi << S) | (lo >> (32 - S))
   const auto packed_a  = word2 >> 22; // top 10 bits of word2
-  const auto packed_b  = __funnelshift_l(word1, packed_a, 10); // concat(word2 top 10 bits, word1 low 22 bits)
-  const auto packed_c  = __funnelshift_l(word0, packed_b, 5); // concat(packed_b top 5 bits, word0 low 27 bits)
+  const auto packed_b  = ::__funnelshift_l(word1, packed_a, 10); // concat(word2 top 10 bits, word1 low 22 bits)
+  const auto packed_c  = ::__funnelshift_l(word0, packed_b, 5); // concat(packed_b top 5 bits, word0 low 27 bits)
   const auto packed    = packed_c & 0b00000'11111'00000'11111'00000'11111u; // select only the 5-bit fields
-  const auto high_sums = __reduce_add_sync(mask, packed);
+  const auto high_sums = ::__reduce_add_sync(mask, packed);
 
   const auto high_sum0 = high_sums & 0b11111'11111u; // extract first 10 bits
   const auto high_sum1 = (high_sums >> 10) & 0b11111'11111u; // extract next 10 bits
@@ -206,7 +208,7 @@ warp_redux_plus_128bit(const T input, const ::cuda::std::uint32_t mask, Reductio
   const auto ret0      = _CUB::detail::reconstruct_word_with_carry(low0, high_sum0, carry);
   const auto ret1      = _CUB::detail::reconstruct_word_with_carry(low1, high_sum1, carry);
   const auto ret2      = _CUB::detail::reconstruct_word_with_carry(low2, high_sum2, carry);
-  const auto ret3      = __reduce_add_sync(mask, word3) + carry;
+  const auto ret3      = ::__reduce_add_sync(mask, word3) + carry;
 
   return _CUB::detail::from_words<T>({ret0, ret1, ret2, ret3});
 }
@@ -219,7 +221,7 @@ warp_redux_bitwise_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   using unsigned_t          = ::cuda::std::make_unsigned_t<T>; // avoid signed shift UB
   constexpr int chunk_bits  = 32; // 32 bits
   constexpr int num_chunks  = sizeof(T) / sizeof(unsigned);
-  const auto generalized_op = cub::detail::generalize_operator(reduction_op); // map bit_and<uint64_t> to bit_and<>
+  const auto generalized_op = _CUB::detail::generalize_operator(reduction_op); // map bit_and<uint64_t> to bit_and<>
   const auto uinput         = static_cast<unsigned_t>(input);
   // do not use bit_cast/memcpy to avoid potential performance issues
   unsigned_t output{};
@@ -228,7 +230,7 @@ warp_redux_bitwise_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   {
     const int shift    = chunk * chunk_bits;
     const auto value   = static_cast<unsigned>(uinput >> shift);
-    const auto reduced = cub::detail::warp_redux_sm80(value, mask, generalized_op);
+    const auto reduced = _CUB::detail::warp_redux_sm80(value, mask, generalized_op);
     output |= static_cast<unsigned_t>(reduced) << shift;
   }
   return static_cast<T>(output);
@@ -245,23 +247,25 @@ warp_redux_min_max_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   constexpr auto identity       = ::cuda::identity_element<generalized_op_t, unsigned>();
   constexpr auto last           = (sizeof(T) / sizeof(unsigned)) - 1;
 
-  auto words = cub::detail::to_words(input);
+  auto words = _CUB::detail::to_words(input);
   // Perform the reduction from the most significant word. Only the top word is affected by the sign, lower words are
   // always compared as unsigned. When a warp lane doesn't have a max/min value, it falls back to the identity.
   const auto top_word   = static_cast<top_word_t>(words[last]);
-  const auto top_result = cub::detail::warp_redux_sm80(top_word, mask, generalized_op);
+  const auto top_result = _CUB::detail::warp_redux_sm80(top_word, mask, generalized_op);
   bool is_candidate     = top_word == top_result;
   words[last]           = static_cast<unsigned>(top_result);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = last - 1; i >= 0; --i)
   {
     const auto word   = is_candidate ? words[i] : identity;
-    const auto result = cub::detail::warp_redux_sm80(word, mask, generalized_op);
+    const auto result = _CUB::detail::warp_redux_sm80(word, mask, generalized_op);
     is_candidate      = is_candidate && word == result;
     words[i]          = result;
   }
-  return cub::detail::from_words<T>(words);
+  return _CUB::detail::from_words<T>(words);
 }
+
+#endif // _CCCL_HOST_COMPILATION() || (_CCCL_PTX_ARCH() >= 800)
 
 //----------------------------------------------------------------------------------------------------------------------
 // Floating-point Min/Max Redux
@@ -358,9 +362,9 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
 
     using op_t _CCCL_NODEBUG = _CUB::detail::generalize_operator_t<ReductionOp>;
     const auto value         = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
-    if (const auto output = cub::detail::warp_redux(value, mask, op_t{}))
+    if (const auto output = _CUB::detail::warp_redux(value, mask, op_t{}))
     {
-      return cub::detail::comparable_int_to_floating_point<T>(*output);
+      return _CUB::detail::comparable_int_to_floating_point<T>(*output);
     }
   }
   return ::cuda::std::nullopt;

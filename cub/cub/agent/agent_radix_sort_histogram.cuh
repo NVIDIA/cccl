@@ -217,7 +217,7 @@ struct AgentRadixSortHistogram
         const uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
-        atomicAdd(&s.bins[pass][bin][part], 1);
+        ::atomicAdd(&s.bins[pass][bin][part], 1);
       }
     }
   }
@@ -238,7 +238,7 @@ struct AgentRadixSortHistogram
           // (ExclusiveSum, Onesweep) don't need atomic
           // access. Therefore, atomicAdd() is used, until
           // cuda::atomic_ref<> becomes available.
-          atomicAdd(&d_bins_out[(pass * RADIX_DIGITS) + bin], count);
+          ::atomicAdd(&d_bins_out[(pass * RADIX_DIGITS) + bin], count);
         }
       }
     }

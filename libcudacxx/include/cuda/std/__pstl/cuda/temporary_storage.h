@@ -130,7 +130,7 @@ class __temporary_storage
                     && ::cuda::has_property<decltype(__resource), ::cuda::mr::dynamic_accessibility_property>)
       { //
         [[maybe_unused]] const ::cuda::mr::__memory_accessibility __dynamic_accessibility =
-          get_property(__resource, ::cuda::mr::dynamic_accessibility_property{});
+          get_property(__resource, ::cuda::mr::dynamic_accessibility_property{}); // NOLINT(cccl-avoid-adl)
         _CCCL_ASSERT(__dynamic_accessibility == ::cuda::mr::__memory_accessibility::__device
                        || __dynamic_accessibility == ::cuda::mr::__memory_accessibility::__host_device,
                      "Memory resources need to provide device accessible memory");

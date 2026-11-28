@@ -330,8 +330,8 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 
   template <class _To, class _From>
   inline constexpr bool __potentially_narrowing =
-    static_cast<make_unsigned_t<_To>>(numeric_limits<_To>::max())
-    < static_cast<make_unsigned_t<_From>>(numeric_limits<_From>::max());
+    static_cast<make_unsigned_t<_To>>(::cuda::std::numeric_limits<_To>::max())
+    < static_cast<make_unsigned_t<_From>>(::cuda::std::numeric_limits<_From>::max());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false
@@ -362,7 +362,7 @@ _CCCL_TEMPLATE(class _To, class... _From)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(_From... __values)
 {
-  return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
+  return (::cuda::std::__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
@@ -371,7 +371,7 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 {
   for (size_t __i = 0; __i != _Size; __i++)
   {
-    if (!__mdspan_detail::__is_representable_as<_To>(__values[__i]))
+    if (!::cuda::std::__mdspan_detail::__is_representable_as<_To>(__values[__i]))
     {
       return false;
     }
@@ -464,7 +464,7 @@ public:
   {
     // Not catching this could lead to out of bounds errors later
     // e.g. mdspan m(ptr, dextents<char, 1>(200u)); leads to an extent of -56 on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__dynvals...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__dynvals...),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -494,7 +494,7 @@ public:
     // Not catching this could lead to out of bounds errors later
     // e.g. array a{200u}; mdspan<int, dextents<char,1>> m(ptr, extents(span<unsigned,1>(a))); leads to an extent of -56
     // on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__exts),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__exts),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -507,7 +507,7 @@ public:
     // Not catching this could lead to out of bounds errors later
     // e.g. array a{200u}; mdspan<int, dextents<char,1>> m(ptr, extents(span<unsigned,1>(a))); leads to an extent of -56
     // on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__exts),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__exts),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -665,7 +665,7 @@ template <class _Extents>
     __index_type __prod = __ext.extent(0);
     for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
     {
-      if (__mul_overflow(__prod, __ext.extent(__r), ::cuda::std::addressof(__prod)))
+      if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, __ext.extent(__r), ::cuda::std::addressof(__prod)))
       {
         return false;
       }
@@ -710,13 +710,13 @@ template <size_t... _Idxs, class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
-  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
+  return (::cuda::std::__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
 }
 
 template <class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 {
-  return __mdspan_detail::__is_multidimensional_index_in_impl(
+  return ::cuda::std::__mdspan_detail::__is_multidimensional_index_in_impl(
     make_index_sequence<_Extents::rank()>(), __ext, __values...);
 }
 } // namespace __mdspan_detail

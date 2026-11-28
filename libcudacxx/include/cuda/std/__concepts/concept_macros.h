@@ -43,14 +43,14 @@ template <>
 struct __cccl_select<true>
 {
   template <class _Tp>
-  using type = _Tp;
+  using __type _CCCL_NODEBUG = _Tp;
 };
 
 template <bool _Bp, class _Tp = void>
-using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template __type<_Tp>;
 
 template <class _Tp, bool _Bp>
-using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template __type<_Tp>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
@@ -81,7 +81,7 @@ _CCCL_API constexpr bool __cccl_is_true()
 
 #if _CCCL_COMPILER(MSVC)
 template <bool _Bp>
-_CCCL_API inline __cccl_enable_if_t<_Bp> __cccl_requires()
+_CCCL_API __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
@@ -92,7 +92,7 @@ template <class _Tp, class... _Args>
 extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl _CCCL_NODEBUG = decltype(__cccl_make_dependent<_Impl, _Args...>);
+using __cccl_requires_expr_impl _CCCL_NODEBUG = decltype(::__cccl_make_dependent<_Impl, _Args...>);
 
 template <typename _Tp>
 _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
@@ -287,7 +287,8 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 // "_CCCL_FRAGMENT(Foo, Args...)" expands to
 // "(1 == sizeof(Foo_CCCL_CONCEPT_FRAGMENT_(static_cast<::__cccl_tag<Args...>*>(nullptr), nullptr)))"
-#  define _CCCL_FRAGMENT(_NAME, ...) \
+#  define _CCCL_FRAGMENT(_NAME, ...)     \
+    /* NOLINTNEXTLINE(cccl-avoid-adl) */ \
     (1 == sizeof(_NAME##_CCCL_CONCEPT_FRAGMENT_(static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr), nullptr)))
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^

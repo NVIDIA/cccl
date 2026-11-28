@@ -41,10 +41,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.and.b32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -83,10 +83,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_or_op (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.or.b32 [%0], [%1], %2, [%3]; // 1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -126,10 +126,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.xor.b32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -169,10 +169,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -212,10 +212,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -255,10 +255,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -298,10 +298,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.inc.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -341,10 +341,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.dec.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -384,10 +384,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -427,10 +427,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -470,10 +470,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -513,10 +513,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; // "
       "1."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -556,10 +556,10 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; // "
       "2."
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -597,14 +597,14 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b32  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
   else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b64  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
 }
@@ -643,14 +643,14 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b32  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
   else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b64  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
 }
@@ -689,14 +689,14 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b32  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
   else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b64  [%0], [%1], %2; // 3."
         :
-        : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+        : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
 }
@@ -733,7 +733,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -769,7 +769,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -805,7 +805,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -841,7 +841,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_inc (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.inc.u32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -877,7 +877,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_dec (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.dec.u32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -913,7 +913,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -949,7 +949,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -985,7 +985,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.s32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1021,7 +1021,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1057,7 +1057,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1093,7 +1093,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1129,7 +1129,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1165,7 +1165,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1201,7 +1201,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1237,7 +1237,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f64  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1273,7 +1273,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 6."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800

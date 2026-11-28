@@ -320,7 +320,7 @@ struct AgentReduceImpl
     }
     // Reduce items within each thread stripe
     thread_aggregate =
-      IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      IsFirstTile ? _CUB::ThreadReduce(items, reduction_op) : _CUB::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**

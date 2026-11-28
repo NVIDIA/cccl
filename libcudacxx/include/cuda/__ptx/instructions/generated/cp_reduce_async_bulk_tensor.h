@@ -39,56 +39,56 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_min)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_max)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_inc)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_dec)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_and_op)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_or_op)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_xor_op)
   {
     asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [%0, {%1}], [%2];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
 }
@@ -127,56 +127,56 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_min)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_max)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_inc)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_dec)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_and_op)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_or_op)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_xor_op)
   {
     asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2}], [%3];"
         :
-        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+        : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
 }
@@ -219,7 +219,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_min)
@@ -230,7 +230,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_max)
@@ -241,7 +241,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_inc)
@@ -252,7 +252,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_dec)
@@ -263,7 +263,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_and_op)
@@ -274,7 +274,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_or_op)
@@ -285,7 +285,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_xor_op)
@@ -296,7 +296,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
 }
@@ -340,7 +340,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_min)
@@ -352,7 +352,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_max)
@@ -364,7 +364,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_inc)
@@ -376,7 +376,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_dec)
@@ -388,7 +388,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_and_op)
@@ -400,7 +400,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_or_op)
@@ -412,7 +412,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_xor_op)
@@ -424,7 +424,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
 }
@@ -469,7 +469,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_min)
@@ -482,7 +482,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_max)
@@ -495,7 +495,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_inc)
@@ -508,7 +508,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_dec)
@@ -521,7 +521,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_and_op)
@@ -534,7 +534,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_or_op)
@@ -547,7 +547,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
   else if constexpr (__op == op_xor_op)
@@ -560,7 +560,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__srcMem))
+          "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
         : "memory");
   }
 }

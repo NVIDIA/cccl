@@ -172,7 +172,7 @@ _CCCL_HOST_DEVICE_API inline complex<float> exp(const complex<float>& __x)
 
   // exp(__r), but without the range-reduced re-combination:
   float __exp_r_ldexp_factor;
-  float __exp_r_reduced = __internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
+  float __exp_r_reduced = ::cuda::std::__internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
 
   // Get some close bounds when the answer is fully guaranteed to under/overflow.
   // Sometime close to but >= log(max_flt / min_denom_float):
@@ -257,7 +257,7 @@ _CCCL_HOST_DEVICE_API inline complex<double> exp<double>(const complex<double>& 
 
   // exp(__r), but without the range-reduced re-combination:
   double __exp_r_ldexp_factor;
-  double __exp_r_reduced = __internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
+  double __exp_r_reduced = ::cuda::std::__internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
 
   if (::cuda::std::fabs(__r) >= 1457.0)
   {

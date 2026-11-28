@@ -321,7 +321,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -426,7 +426,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -456,7 +456,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -784,7 +784,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
@@ -835,7 +835,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -984,7 +984,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         }
 
         // Check for failure to launch
-        if (const auto error = CubDebug(cudaPeekAtLastError()))
+        if (const auto error = CubDebug(::cudaPeekAtLastError()))
         {
           return error;
         }

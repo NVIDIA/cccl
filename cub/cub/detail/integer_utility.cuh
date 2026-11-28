@@ -75,7 +75,7 @@ reconstruct_word_with_carry(const unsigned low_sum, const unsigned high_sum, uns
   //   return (sum_lo & 0x07FF'FFFFu) | ((sum_hi & 0b11111u) << 27);
   const auto sum_hi = (high_sum << 3) + (sum_lo >> 24);
   carry             = sum_hi >> 8;
-  return __byte_perm(sum_lo, sum_hi, 0x4210);
+  return ::__byte_perm(sum_lo, sum_hi, 0x4210);
 }
 
 template <typename T>

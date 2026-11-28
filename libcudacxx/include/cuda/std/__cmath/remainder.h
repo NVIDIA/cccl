@@ -97,14 +97,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half remainder(__half __x, __half __y) noexcept
 {
-  return __float2half(::cuda::std::remainder(__half2float(__x), __half2float(__y)));
+  return ::__float2half(::cuda::std::remainder(::__half2float(__x), ::__half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 remainder(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  return __float2bfloat16(::cuda::std::remainder(__bfloat162float(__x), __bfloat162float(__y)));
+  return ::__float2bfloat16(::cuda::std::remainder(::__bfloat162float(__x), ::__bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -181,14 +181,14 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half remquo(__half __x, __half __y, int* __quotient) noexcept
 {
-  return __float2half(::cuda::std::remquo(__half2float(__x), __half2float(__y), __quotient));
+  return ::__float2half(::cuda::std::remquo(::__half2float(__x), ::__half2float(__y), __quotient));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 remquo(__nv_bfloat16 __x, __nv_bfloat16 __y, int* __quotient) noexcept
 {
-  return __float2bfloat16(::cuda::std::remquo(__bfloat162float(__x), __bfloat162float(__y), __quotient));
+  return ::__float2bfloat16(::cuda::std::remquo(::__bfloat162float(__x), ::__bfloat162float(__y), __quotient));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

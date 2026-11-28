@@ -268,7 +268,7 @@ public:
       {
         if (__strides()[__permute[__r]] > __strides()[__permute[__r + 1]])
         {
-          swap(__permute[__r], __permute[__r + 1]);
+          ::cuda::std::swap(__permute[__r], __permute[__r + 1]);
         }
         else
         {
@@ -277,7 +277,7 @@ public:
           if ((__strides()[__permute[__r]] == __strides()[__permute[__r + 1]])
               && (extents().extent(__permute[__r]) > index_type{1}))
           {
-            swap(__permute[__r], __permute[__r + 1]);
+            ::cuda::std::swap(__permute[__r], __permute[__r + 1]);
           }
         }
       }

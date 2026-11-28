@@ -192,7 +192,7 @@ template <class _Interface>
 struct __find_index_of_base
 {
   template <class... _Interfaces>
-  static constexpr size_t __index = __find_index({__subsumes<_Interface, _Interfaces>...});
+  static constexpr size_t __index = ::cuda::__find_index({__subsumes<_Interface, _Interfaces>...});
 
   template <class... _Interfaces>
   using __call _CCCL_NODEBUG = ::cuda::std::integral_constant<size_t, __index<_Interfaces...>>;

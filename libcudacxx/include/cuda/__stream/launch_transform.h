@@ -50,7 +50,7 @@ _CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(::cuda::std::is_
 
 template <typename _Tp>
 using __remove_rvalue_reference_t _CCCL_NODEBUG =
-  decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()) // NOLINT(modernize-type-traits)
+  decltype(::cuda::__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()) // NOLINT(modernize-type-traits)
   );
 
 namespace __tfx
@@ -78,8 +78,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   // Types that want to customize `launch_transform` should define overloads of
   // transform_launch_argument that are find-able by ADL.
   template <typename _Arg>
-  using __transform_result_t _CCCL_NODEBUG = __remove_rvalue_reference_t<decltype(transform_launch_argument(
-    ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::std::declval<_Arg>()))>;
+  using __transform_result_t _CCCL_NODEBUG =
+    __remove_rvalue_reference_t<decltype(transform_launch_argument( // NOLINT(cccl-avoid-adl)
+      ::cuda::stream_ref{::cudaStream_t{}},
+      ::cuda::std::declval<_Arg>()))>;
 
   template <typename _Arg>
   using __transformed_argument_t _CCCL_NODEBUG =
@@ -143,14 +145,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
-               return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+               return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg)); // NOLINT(cccl-avoid-adl)
              }))
         .transformed_argument();
     }
     else
     {
       return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
-        return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+        return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg)); // NOLINT(cccl-avoid-adl)
       }));
     }
   }
@@ -166,11 +168,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
     // Calls to transform_launch_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
+      // NOLINTNEXTLINE(cccl-avoid-adl)
       return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
     else
     {
-      return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+      return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg)); // NOLINT(cccl-avoid-adl)
     }
   }
 

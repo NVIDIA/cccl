@@ -21,7 +21,7 @@ mbarrier_arrive_no_complete(::cuda::std::uint64_t* __addr, const ::cuda::std::ui
   ::cuda::std::uint64_t __state;
   asm("mbarrier.arrive.noComplete.shared.b64                       %0,  [%1], %2;    // 5. "
       : "=l"(__state)
-      : "r"(__as_ptr_smem(__addr)), "r"(__count)
+      : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__count)
       : "memory");
   return __state;
 }

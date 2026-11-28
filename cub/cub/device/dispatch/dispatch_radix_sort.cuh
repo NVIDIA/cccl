@@ -310,7 +310,7 @@ private:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -383,7 +383,7 @@ public:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -405,7 +405,7 @@ public:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -447,7 +447,7 @@ public:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -629,12 +629,12 @@ private:
     int device                     = -1;
     int num_sms                    = 0;
 
-    if (const auto error = CubDebug(cudaGetDevice(&device)))
+    if (const auto error = CubDebug(::cudaGetDevice(&device)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device)))
+    if (const auto error = CubDebug(::cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device)))
     {
       return error;
     }
@@ -752,7 +752,7 @@ private:
         else
         {
           if (const auto error =
-                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+                CubDebug(::cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
           {
             return error;
           }
@@ -879,14 +879,15 @@ private:
   {
     // Get device ordinal
     int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+    if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
 
     // Get SM count
     int sm_count;
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+    if (const auto error =
+          CubDebug(::cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
     {
       return error;
     }
@@ -1044,7 +1045,7 @@ public:
 #else // CUB_DEBUG_LOG
     _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
-    if (const auto error = CubDebug(cudaMemcpyAsync(
+    if (const auto error = CubDebug(::cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
     {
       return error;
@@ -1065,7 +1066,7 @@ public:
       _CUB::detail::log(
         "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
-      if (const auto error = CubDebug(cudaMemcpyAsync(
+      if (const auto error = CubDebug(::cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
       {
         return error;
@@ -1378,7 +1379,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1412,7 +1413,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 #else // CUB_DEBUG_LOG
     _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
-    if (const auto error = CubDebug(cudaMemcpyAsync(
+    if (const auto error = CubDebug(::cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
     {
       return error;
@@ -1433,7 +1434,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       _CUB::detail::log(
         "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
-      if (const auto error = CubDebug(cudaMemcpyAsync(
+      if (const auto error = CubDebug(::cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
       {
         return error;
@@ -1495,7 +1496,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1517,7 +1518,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1559,7 +1560,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1894,7 +1895,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
         else
         {
           if (const auto error =
-                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+                CubDebug(::cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
           {
             return error;
           }

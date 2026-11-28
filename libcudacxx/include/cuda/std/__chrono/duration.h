@@ -121,11 +121,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
   }
   [[nodiscard]] _CCCL_API static constexpr _Rep max() noexcept
   {
-    return numeric_limits<_Rep>::max();
+    return ::cuda::std::numeric_limits<_Rep>::max();
   }
   [[nodiscard]] _CCCL_API static constexpr _Rep min() noexcept
   {
-    return numeric_limits<_Rep>::lowest();
+    return ::cuda::std::numeric_limits<_Rep>::lowest();
   }
 };
 

@@ -432,7 +432,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -498,7 +498,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -650,7 +650,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -684,7 +684,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -762,7 +762,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -828,7 +828,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -1161,7 +1161,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   }
 
   // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
@@ -1226,7 +1226,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1391,7 +1391,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -1424,7 +1424,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }

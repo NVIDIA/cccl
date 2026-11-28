@@ -146,7 +146,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
-      : pinned_memory_pool_ref(__create_cuda_mempool(
+      : pinned_memory_pool_ref(::cuda::__create_cuda_mempool(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST_NUMA, __numa_id}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {
     enable_access_from(cuda::devices);

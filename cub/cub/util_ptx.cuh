@@ -390,13 +390,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigne
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LogicalWarpThreads);
+  shuffle_word    = ::__shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LogicalWarpThreads);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LogicalWarpThreads);
+    shuffle_word       = ::__shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LogicalWarpThreads);
     output_alias[WORD] = shuffle_word;
   }
   return output;
@@ -493,7 +493,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32
 template <int LabelBits, int WarpActiveThreads = detail::warp_threads>
 _CCCL_DEVICE_API inline unsigned int MatchAny(unsigned int label)
 {
-  return detail::warp_matcher_t<LabelBits, WarpActiveThreads>::match_any(label);
+  return _CUB::detail::warp_matcher_t<LabelBits, WarpActiveThreads>::match_any(label);
 }
 
 CUB_NAMESPACE_END

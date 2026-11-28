@@ -28,7 +28,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 #if __cccl_ptx_isa >= 900
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_pragma_enable_smem_spilling_is_not_supported_before_SM_75__();
-_CCCL_DEVICE static _CCCL_FORCEINLINE void enable_smem_spilling() noexcept
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void enable_smem_spilling() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 750
   asm volatile(".pragma \"enable_smem_spilling\";");

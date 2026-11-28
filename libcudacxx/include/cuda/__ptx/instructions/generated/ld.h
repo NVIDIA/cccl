@@ -21,8 +21,8 @@ _CCCL_DEVICE_API _B8 ld(::cuda::ptx::space_global_t, const _B8* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -41,8 +41,8 @@ _CCCL_DEVICE_API _B8 ld_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -61,7 +61,7 @@ _CCCL_DEVICE_API _B16 ld(::cuda::ptx::space_global_t, const _B16* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -81,7 +81,7 @@ _CCCL_DEVICE_API _B16 ld_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -101,7 +101,7 @@ _CCCL_DEVICE_API _B32 ld(::cuda::ptx::space_global_t, const _B32* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -121,7 +121,7 @@ _CCCL_DEVICE_API _B32 ld_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -141,7 +141,7 @@ _CCCL_DEVICE_API _B64 ld(::cuda::ptx::space_global_t, const _B64* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -161,7 +161,7 @@ _CCCL_DEVICE_API _B64 ld_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -187,7 +187,7 @@ _CCCL_DEVICE_API _B128 ld(::cuda::ptx::space_global_t, const _B128* __addr)
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -214,7 +214,7 @@ _CCCL_DEVICE_API _B128 ld_L2_256B(::cuda::ptx::space_global_t, const _B128* __ad
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -239,7 +239,7 @@ _CCCL_DEVICE_API _B256 ld(::cuda::ptx::space_global_t, const _B256* __addr)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -264,9 +264,9 @@ _B8 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -289,9 +289,9 @@ _B8 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, ::c
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -314,7 +314,7 @@ _B16 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::s
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -339,7 +339,7 @@ _B16 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr, :
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -364,7 +364,7 @@ _B32 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::s
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -389,7 +389,7 @@ _B32 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr, :
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -414,7 +414,7 @@ _B64 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::s
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -439,7 +439,7 @@ _B64 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr, :
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -468,7 +468,7 @@ _B128 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda:
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -497,7 +497,7 @@ _B128 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr,
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -524,7 +524,7 @@ _B256 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda:
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -545,8 +545,8 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B8* _
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_first.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::evict_first.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -565,8 +565,11 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, cons
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_first.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::evict_first.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -585,7 +588,7 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B16*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::evict_first.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -605,7 +608,10 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::evict_first.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -625,7 +631,7 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B32*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_first.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -645,7 +651,10 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_first.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -665,7 +674,7 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B64*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::evict_first.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -685,7 +694,10 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::evict_first.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_first.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -711,7 +723,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B12
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -738,7 +750,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, co
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -763,7 +775,7 @@ _CCCL_DEVICE_API _B256 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B25
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_first.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -788,9 +800,9 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, 
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -813,9 +825,9 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -838,7 +850,7 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr,
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -863,7 +875,7 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -888,7 +900,7 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr,
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -913,7 +925,7 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -938,7 +950,7 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr,
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -963,7 +975,7 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -992,7 +1004,7 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1021,7 +1033,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_first_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1048,7 +1060,7 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -1069,8 +1081,8 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B8* __
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_last.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::evict_last.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1089,8 +1101,11 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_last.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::evict_last.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1109,7 +1124,7 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B16* 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::evict_last.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1129,7 +1144,10 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, cons
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::evict_last.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1149,7 +1167,7 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B32* 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_last.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1169,7 +1187,10 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, cons
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::evict_last.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1189,7 +1210,7 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B64* 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::evict_last.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1209,7 +1230,10 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, cons
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::evict_last.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::evict_last.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1235,7 +1259,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B128
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1262,7 +1286,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, con
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1287,7 +1311,7 @@ _CCCL_DEVICE_API _B256 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B256
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_last.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -1312,9 +1336,9 @@ _B8 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __add
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1337,9 +1361,9 @@ _CCCL_DEVICE_API _B8 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1362,7 +1386,7 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, 
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -1387,7 +1411,7 @@ _CCCL_DEVICE_API _B16 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -1412,7 +1436,7 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, 
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -1437,7 +1461,7 @@ _CCCL_DEVICE_API _B32 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -1462,7 +1486,7 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, 
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -1487,7 +1511,7 @@ _CCCL_DEVICE_API _B64 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -1516,7 +1540,7 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr,
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1545,7 +1569,7 @@ _CCCL_DEVICE_API _B128 ld_L1_evict_last_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1572,7 +1596,7 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr,
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -1593,8 +1617,8 @@ _CCCL_DEVICE_API _B8 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B8* _
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::no_allocate.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::no_allocate.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1613,8 +1637,11 @@ _CCCL_DEVICE_API _B8 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, cons
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::no_allocate.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.L1::no_allocate.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1633,7 +1660,7 @@ _CCCL_DEVICE_API _B16 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B16*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::no_allocate.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1653,7 +1680,10 @@ _CCCL_DEVICE_API _B16 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.L1::no_allocate.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1673,7 +1703,7 @@ _CCCL_DEVICE_API _B32 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B32*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::no_allocate.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1693,7 +1723,10 @@ _CCCL_DEVICE_API _B32 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.L1::no_allocate.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1713,7 +1746,7 @@ _CCCL_DEVICE_API _B64 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B64*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::no_allocate.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1733,7 +1766,10 @@ _CCCL_DEVICE_API _B64 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, con
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.L1::no_allocate.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.L1::no_allocate.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -1759,7 +1795,7 @@ _CCCL_DEVICE_API _B128 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B12
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1786,7 +1822,7 @@ _CCCL_DEVICE_API _B128 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, co
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -1811,7 +1847,7 @@ _CCCL_DEVICE_API _B256 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B25
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::no_allocate.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -1836,9 +1872,9 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, 
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1861,9 +1897,9 @@ _CCCL_DEVICE_API _B8 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1886,7 +1922,7 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr,
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -1911,7 +1947,7 @@ _CCCL_DEVICE_API _B16 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -1936,7 +1972,7 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr,
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -1961,7 +1997,7 @@ _CCCL_DEVICE_API _B32 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -1986,7 +2022,7 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr,
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -2011,7 +2047,7 @@ _CCCL_DEVICE_API _B64 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -2040,7 +2076,7 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2069,7 +2105,7 @@ _CCCL_DEVICE_API _B128 ld_L1_no_allocate_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2096,7 +2132,7 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -2117,8 +2153,8 @@ _CCCL_DEVICE_API _B8 ld_nc(::cuda::ptx::space_global_t, const _B8* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -2137,8 +2173,8 @@ _CCCL_DEVICE_API _B8 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B8* __add
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2157,7 +2193,7 @@ _CCCL_DEVICE_API _B16 ld_nc(::cuda::ptx::space_global_t, const _B16* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -2177,7 +2213,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B16* __a
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2197,7 +2233,7 @@ _CCCL_DEVICE_API _B32 ld_nc(::cuda::ptx::space_global_t, const _B32* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -2217,7 +2253,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B32* __a
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2237,7 +2273,7 @@ _CCCL_DEVICE_API _B64 ld_nc(::cuda::ptx::space_global_t, const _B64* __addr)
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
@@ -2257,7 +2293,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B64* __a
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2283,7 +2319,7 @@ _CCCL_DEVICE_API _B128 ld_nc(::cuda::ptx::space_global_t, const _B128* __addr)
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2310,7 +2346,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B128* _
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2335,7 +2371,7 @@ _CCCL_DEVICE_API _B256 ld_nc(::cuda::ptx::space_global_t, const _B256* __addr)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -2360,9 +2396,9 @@ _B8 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2385,9 +2421,9 @@ _B8 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, 
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2410,7 +2446,7 @@ _B16 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -2435,7 +2471,7 @@ _B16 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -2460,7 +2496,7 @@ _B32 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -2485,7 +2521,7 @@ _B32 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -2510,7 +2546,7 @@ _B64 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -2535,7 +2571,7 @@ _B64 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -2564,7 +2600,7 @@ _B128 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cu
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2593,7 +2629,7 @@ ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr, ::
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2620,7 +2656,7 @@ _B256 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cu
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -2641,8 +2677,8 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B8
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_first.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::evict_first.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2661,8 +2697,11 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, c
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_first.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::evict_first.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2681,7 +2720,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::evict_first.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2701,7 +2740,10 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::evict_first.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2721,7 +2763,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_first.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2741,7 +2783,10 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_first.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2761,7 +2806,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::evict_first.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2781,7 +2826,10 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::evict_first.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_first.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -2807,7 +2855,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2834,7 +2882,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t,
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -2859,7 +2907,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_first.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -2884,9 +2932,9 @@ ld_nc_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __add
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2909,9 +2957,9 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -2934,7 +2982,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -2959,7 +3007,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -2984,7 +3032,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -3009,7 +3057,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -3034,7 +3082,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -3059,7 +3107,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -3088,7 +3136,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_cache_hint(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3117,7 +3165,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3144,7 +3192,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -3165,8 +3213,8 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B8*
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_last.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::evict_last.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3185,8 +3233,11 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, co
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_last.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::evict_last.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3205,7 +3256,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B1
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::evict_last.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3225,7 +3276,10 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, c
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::evict_last.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3245,7 +3299,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B3
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_last.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3265,7 +3319,10 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, c
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::evict_last.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3285,7 +3342,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B6
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::evict_last.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3305,7 +3362,10 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, c
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::evict_last.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::evict_last.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3331,7 +3391,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3358,7 +3418,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, 
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3383,7 +3443,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_last.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -3408,9 +3468,9 @@ ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3433,9 +3493,9 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3458,7 +3518,7 @@ ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __add
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -3483,7 +3543,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -3508,7 +3568,7 @@ ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __add
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -3533,7 +3593,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -3558,7 +3618,7 @@ ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __add
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -3583,7 +3643,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -3612,7 +3672,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_cache_hint(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3641,7 +3701,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3668,7 +3728,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -3689,8 +3749,8 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B8
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::no_allocate.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::no_allocate.b8 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3709,8 +3769,11 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, c
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::no_allocate.L2::256B.b8 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  asm("ld.global.nc.L1::no_allocate.L2::256B.b8 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3729,7 +3792,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::no_allocate.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.b16 %0, [%1];" : "=h"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3749,7 +3812,10 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
   ::cuda::std::uint16_t __dest;
-  asm("ld.global.nc.L1::no_allocate.L2::256B.b16 %0, [%1];" : "=h"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.L2::256B.b16 %0, [%1];"
+      : "=h"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3769,7 +3835,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::no_allocate.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.b32 %0, [%1];" : "=r"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3789,7 +3855,10 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
-  asm("ld.global.nc.L1::no_allocate.L2::256B.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.L2::256B.b32 %0, [%1];"
+      : "=r"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3809,7 +3878,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::no_allocate.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.b64 %0, [%1];" : "=l"(__dest) : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3829,7 +3898,10 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, 
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
-  asm("ld.global.nc.L1::no_allocate.L2::256B.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm("ld.global.nc.L1::no_allocate.L2::256B.b64 %0, [%1];"
+      : "=l"(__dest)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
+      : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 740
@@ -3855,7 +3927,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3882,7 +3954,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t,
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -3907,7 +3979,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::no_allocate.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr))
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }
@@ -3932,9 +4004,9 @@ ld_nc_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __add
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3957,9 +4029,9 @@ _CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.L2::256B.b8 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
-  return __u32_as_b8<_B8>(__dest);
+  return ::cuda::ptx::__u32_as_b8<_B8>(__dest);
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -3982,7 +4054,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -4007,7 +4079,7 @@ _CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint16_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.L2::256B.b16 %0, [%1], %2;"
       : "=h"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B16*>(&__dest);
 }
@@ -4032,7 +4104,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -4057,7 +4129,7 @@ _CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint32_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.L2::256B.b32 %0, [%1], %2;"
       : "=r"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
 }
@@ -4082,7 +4154,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -4107,7 +4179,7 @@ _CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::std::uint64_t __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.L2::256B.b64 %0, [%1], %2;"
       : "=l"(__dest)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
 }
@@ -4136,7 +4208,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_cache_hint(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -4165,7 +4237,7 @@ _CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
       "mov.b128 {%0, %1}, B128_dest; \n"
       "}"
       : "=l"(__dest.x), "=l"(__dest.y)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B128*>(&__dest);
 }
@@ -4192,7 +4264,7 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
-      : "l"(__as_ptr_gmem(__addr)), "l"(__cache_policy)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__addr)), "l"(__cache_policy)
       : "memory");
   return *reinterpret_cast<_B256*>(&__dest);
 }

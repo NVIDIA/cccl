@@ -30,7 +30,9 @@ red_async(::cuda::ptx::op_inc_t,
   // __op == op_inc (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -59,7 +61,9 @@ red_async(::cuda::ptx::op_dec_t,
   // __op == op_dec (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -88,7 +92,9 @@ red_async(::cuda::ptx::op_min_t,
   // __op == op_min (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -117,7 +123,9 @@ red_async(::cuda::ptx::op_max_t,
   // __op == op_max (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -146,7 +154,9 @@ red_async(::cuda::ptx::op_add_t,
   // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -175,7 +185,9 @@ red_async(::cuda::ptx::op_min_t,
   // __op == op_min (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -204,7 +216,9 @@ red_async(::cuda::ptx::op_max_t,
   // __op == op_max (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -233,7 +247,9 @@ red_async(::cuda::ptx::op_add_t,
   // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -260,9 +276,9 @@ red_async(::cuda::ptx::op_and_op_t, _B32* __dest, const _B32& __value, ::cuda::s
   static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
-        "r"(__as_ptr_remote_dsmem(__remote_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -289,9 +305,9 @@ red_async(::cuda::ptx::op_or_op_t, _B32* __dest, const _B32& __value, ::cuda::st
   static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
-        "r"(__as_ptr_remote_dsmem(__remote_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -318,9 +334,9 @@ red_async(::cuda::ptx::op_xor_op_t, _B32* __dest, const _B32& __value, ::cuda::s
   static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
-        "r"(__as_ptr_remote_dsmem(__remote_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -349,7 +365,9 @@ red_async(::cuda::ptx::op_add_t,
   // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "l"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810
@@ -377,7 +395,9 @@ red_async(::cuda::ptx::op_add_t,
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 "
       "intentional"
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "l"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810

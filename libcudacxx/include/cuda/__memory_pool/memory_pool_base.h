@@ -298,7 +298,7 @@ _CCCL_HOST_API inline void __verify_device_supports_stream_ordered_allocations(
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #  if _CCCL_CTK_AT_LEAST(12, 9)
-  if (__location.type == ::CU_MEM_LOCATION_TYPE_HOST && !__is_host_memory_pool_supported())
+  if (__location.type == ::CU_MEM_LOCATION_TYPE_HOST && !::cuda::__is_host_memory_pool_supported())
   {
     _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "host memory pools are not supported");
   }
@@ -465,12 +465,12 @@ struct memory_pool_properties
   if (__properties.initial_pool_size != 0)
   {
     const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
-      __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
+      __properties.initial_pool_size, __cuda_pool_handle, ::cuda::__cccl_allocation_stream().get());
     _CCCL_TRY_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "Failed to allocate initial pool size",
       __ptr,
-      __cccl_allocation_stream().get());
+      ::cuda::__cccl_allocation_stream().get());
   }
   return __cuda_pool_handle;
 }
@@ -515,8 +515,8 @@ public:
     }
 
     const ::CUdeviceptr __ptr =
-      ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
-    __cccl_allocation_stream().sync();
+      ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, ::cuda::__cccl_allocation_stream().get());
+    ::cuda::__cccl_allocation_stream().sync();
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
@@ -540,7 +540,7 @@ public:
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
       reinterpret_cast<::CUdeviceptr>(__ptr),
-      __cccl_allocation_stream().get());
+      ::cuda::__cccl_allocation_stream().get());
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via

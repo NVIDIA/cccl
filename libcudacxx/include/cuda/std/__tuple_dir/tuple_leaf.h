@@ -84,7 +84,7 @@ template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _CCCL_API constexpr void
 swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
 {
-  swap(__x.__get(), __y.__get());
+  swap(__x.__get(), __y.__get()); // NOLINT(cccl-avoid-adl)
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -92,7 +92,7 @@ template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _CCCL_API constexpr void swap(const __tuple_leaf<_Ip, _Hp, _Ep>& __x,
                               const __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<const _Hp>)
 {
-  swap(__x.__get(), __y.__get());
+  swap(__x.__get(), __y.__get()); // NOLINT(cccl-avoid-adl)
 }
 
 _CCCL_DIAG_PUSH

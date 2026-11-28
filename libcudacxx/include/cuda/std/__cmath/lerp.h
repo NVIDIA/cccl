@@ -70,14 +70,15 @@ template <typename _Fp>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lerp(__half __a, __half __b, __half __t) noexcept
 {
-  return __float2half(::cuda::std::__lerp(__half2float(__a), __half2float(__b), __half2float(__t)));
+  return ::__float2half(::cuda::std::__lerp(::__half2float(__a), ::__half2float(__b), ::__half2float(__t)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 lerp(__nv_bfloat16 __a, __nv_bfloat16 __b, __nv_bfloat16 __t) noexcept
 {
-  return __float2bfloat16(::cuda::std::__lerp(__bfloat162float(__a), __bfloat162float(__b), __bfloat162float(__t)));
+  return ::__float2bfloat16(
+    ::cuda::std::__lerp(::__bfloat162float(__a), ::__bfloat162float(__b), ::__bfloat162float(__t)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

@@ -119,7 +119,7 @@ public:
 
     _CCCL_API constexpr explicit mapping(const __nested_mapping_type& __map)
         : __nested_mapping_(__map)
-        , __extents_(__detail::__transpose_extents(__map.extents()))
+        , __extents_(::cuda::std::linalg::__detail::__transpose_extents(__map.extents()))
     {}
 
     [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
@@ -250,7 +250,7 @@ struct __transposed_layout<layout_left>
     using __original_mapping_type = typename layout_left::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
-    return __return_mapping_type{__transpose_extents(__orig_map.extents())};
+    return __return_mapping_type{::cuda::std::linalg::__detail::__transpose_extents(__orig_map.extents())};
   }
 };
 
@@ -265,7 +265,7 @@ struct __transposed_layout<layout_right>
     using __original_mapping_type = typename layout_right::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
-    return __return_mapping_type{__transpose_extents(__orig_map.extents())};
+    return __return_mapping_type{::cuda::std::linalg::__detail::__transpose_extents(__orig_map.extents())};
   }
 };
 
@@ -282,7 +282,7 @@ struct __transposed_layout<layout_stride>
     using __extents_type          = __transpose_extents_t<__original_extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{
-      __transpose_extents(__orig_map.extents()),
+      ::cuda::std::linalg::__detail::__transpose_extents(__orig_map.extents()),
       array<typename __extents_type::index_type, _OriginalExtents::rank() /* __orig_map.rank() */>{
         __orig_map.stride(1), __orig_map.stride(0)}};
   }
@@ -303,8 +303,9 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;
   using __accessor_type = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor_type;
-  auto __mapping        = __detail::__transposed_layout<_Layout>::__mapping(__a.mapping());
-  auto __accessor       = __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor(__a.accessor());
+  auto __mapping        = ::cuda::std::linalg::__detail::__transposed_layout<_Layout>::__mapping(__a.mapping());
+  auto __accessor =
+    ::cuda::std::linalg::__detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor(__a.accessor());
   return mdspan<__element_type, typename decltype(__mapping)::extents_type, __layout_type, __accessor_type>{
     __a.data_handle(), __mapping, __accessor};
 }

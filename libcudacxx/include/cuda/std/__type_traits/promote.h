@@ -51,7 +51,7 @@ struct __numeric_type
   _CCCL_API inline static __float128 __test(__float128);
 #endif // _CCCL_HAS_FLOAT128()
 
-  using type              = decltype(__test(declval<_Tp>()));
+  using type              = decltype(__test(::cuda::std::declval<_Tp>()));
   static const bool value = !is_void_v<type>;
 };
 

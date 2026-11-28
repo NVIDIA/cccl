@@ -196,21 +196,21 @@ template <class _Backend, class _Fn, class _Sco, class... _Args>
     switch (::cuda::std::__atomic_order_to_int(__success))
     {
       case __ATOMIC_RELAXED:
-        return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_relaxed>(
+        return ::cuda::std::__cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_relaxed>(
           __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_CONSUME:
         [[fallthrough]];
       case __ATOMIC_ACQUIRE:
-        return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acquire>(
+        return ::cuda::std::__cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acquire>(
           __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_RELEASE:
-        return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_release>(
+        return ::cuda::std::__cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_release>(
           __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_ACQ_REL:
-        return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acq_rel>(
+        return ::cuda::std::__cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acq_rel>(
           __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_SEQ_CST:
-        return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_seq_cst>(
+        return ::cuda::std::__cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_seq_cst>(
           __backend, __fn, __failure_order, __scope, __args...);
       default:
         _CCCL_ASSERT(false, "invalid compare-exchange success memory order");
@@ -443,7 +443,7 @@ __cuda_atomic_fetch_add_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_add<_Backend, __proxy_pointee> __bound_add{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_add, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_add, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -483,7 +483,7 @@ __cuda_atomic_fetch_and_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_and<_Backend, __proxy_pointee> __bound_and{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_and, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_and, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -523,7 +523,7 @@ __cuda_atomic_fetch_max_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_max<_Backend, __proxy_pointee> __bound_max{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_max, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_max, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -563,7 +563,7 @@ __cuda_atomic_fetch_min_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_min<_Backend, __proxy_pointee> __bound_min{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_min, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_min, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -603,7 +603,7 @@ __cuda_atomic_fetch_or_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memo
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_or<_Backend, __proxy_pointee> __bound_or{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_or, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_or, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -643,7 +643,7 @@ __cuda_atomic_fetch_xor_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_xor<_Backend, __proxy_pointee> __bound_xor{__backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_xor, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_xor, __order, __scope, __proxy_tag{});
   return __dst;
 }
 

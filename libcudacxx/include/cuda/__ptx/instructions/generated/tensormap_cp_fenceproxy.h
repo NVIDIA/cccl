@@ -35,7 +35,7 @@ _CCCL_DEVICE_API void tensormap_cp_fenceproxy(
     asm volatile(
       "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned  [%0], [%1], %2;"
       :
-      : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dst)), "r"(::cuda::ptx::__as_ptr_smem(__src)), "n"(__size.value)
       : "memory");
   }
   else if constexpr (__scope == scope_cluster)
@@ -43,7 +43,7 @@ _CCCL_DEVICE_API void tensormap_cp_fenceproxy(
     asm volatile(
       "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [%0], [%1], %2;"
       :
-      : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dst)), "r"(::cuda::ptx::__as_ptr_smem(__src)), "n"(__size.value)
       : "memory");
   }
   else if constexpr (__scope == scope_gpu)
@@ -51,7 +51,7 @@ _CCCL_DEVICE_API void tensormap_cp_fenceproxy(
     asm volatile(
       "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [%0], [%1], %2;"
       :
-      : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dst)), "r"(::cuda::ptx::__as_ptr_smem(__src)), "n"(__size.value)
       : "memory");
   }
   else if constexpr (__scope == scope_sys)
@@ -59,7 +59,7 @@ _CCCL_DEVICE_API void tensormap_cp_fenceproxy(
     asm volatile(
       "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [%0], [%1], %2;"
       :
-      : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dst)), "r"(::cuda::ptx::__as_ptr_smem(__src)), "n"(__size.value)
       : "memory");
   }
 }

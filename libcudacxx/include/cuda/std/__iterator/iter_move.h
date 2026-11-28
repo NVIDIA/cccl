@@ -66,6 +66,7 @@ concept __just_deref = !__unqualified_iter_move<_Tp> && !__move_deref<_Tp> && re
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__unqualified_iter_move_,
                        requires(_Tp&& __t)(requires(__class_or_enum<remove_cvref_t<_Tp>>),
+                                           // NOLINTNEXTLINE(cccl-avoid-adl)
                                            ((void) iter_move(::cuda::std::forward<_Tp>(__t)))));
 
 template <class _Tp>
@@ -96,10 +97,10 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__unqualified_iter_move<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto)
-  _CCCL_STATIC_CALL_OPERATOR(_Ip&& __i) noexcept(noexcept(iter_move(::cuda::std::forward<_Ip>(__i))))
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) _CCCL_STATIC_CALL_OPERATOR(_Ip&& __i) noexcept(
+    noexcept(iter_move(::cuda::std::forward<_Ip>(__i)))) // NOLINT(cccl-avoid-adl)
   {
-    return iter_move(::cuda::std::forward<_Ip>(__i));
+    return iter_move(::cuda::std::forward<_Ip>(__i)); // NOLINT(cccl-avoid-adl)
   }
 
   _CCCL_EXEC_CHECK_DISABLE

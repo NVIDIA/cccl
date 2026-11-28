@@ -78,7 +78,7 @@ _CCCL_REQUIRES(__spannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
   ::cuda::__detail::__fill_bytes_impl(
-    __stream, ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
+    __stream, ::cuda::std::span(::cuda::launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
 //! @overload
@@ -88,7 +88,7 @@ _CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
   ::cuda::__detail::__fill_bytes_impl(
-    __stream, __as_mdspan(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
+    __stream, ::cuda::__as_mdspan(::cuda::launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
 _CCCL_END_NAMESPACE_CUDA

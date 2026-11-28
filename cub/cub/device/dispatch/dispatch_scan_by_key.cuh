@@ -385,7 +385,7 @@ struct dispatch_scan_by_key
   {
     // Get device ordinal
     int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+    if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
@@ -445,7 +445,7 @@ struct dispatch_scan_by_key
       return error;
     }
 
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -458,7 +458,7 @@ struct dispatch_scan_by_key
 
     // Get max x-dimension of grid
     int max_dim_x;
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+    if (const auto error = CubDebug(::cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
     {
       return error;
     }
@@ -497,7 +497,7 @@ struct dispatch_scan_by_key
         return error;
       }
 
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -716,7 +716,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Get device ordinal
   int device_ordinal;
-  if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+  if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
   {
     return error;
   }
@@ -776,7 +776,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
@@ -789,7 +789,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Get max x-dimension of grid
   int max_dim_x;
-  if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+  if (const auto error = CubDebug(::cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
   {
     return error;
   }
@@ -828,7 +828,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }

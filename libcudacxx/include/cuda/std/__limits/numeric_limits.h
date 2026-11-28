@@ -112,7 +112,7 @@ template <class _Tp>
 // { ... };
 //
 // and _Tp should be used everywhere instead of __nvfp_type.
-template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>(), class _Up = _Tp>
+template <class _Tp, __numeric_limits_type = ::cuda::std::__make_numeric_limits_type<_Tp>(), class _Up = _Tp>
 class __numeric_limits_impl
 {
 public:

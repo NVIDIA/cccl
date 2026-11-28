@@ -53,7 +53,7 @@ public:
 
   _CCCL_API friend constexpr void swap(restrict_mdspan& __x, restrict_mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y)); // NOLINT(cccl-avoid-adl)
   }
 };
 

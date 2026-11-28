@@ -103,14 +103,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half hypot(__half __x, __half __y) noexcept
 {
-  return __float2half(::cuda::std::hypotf(__half2float(__x), __half2float(__y)));
+  return ::__float2half(::cuda::std::hypotf(::__half2float(__x), ::__half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  return __float2bfloat16(::cuda::std::hypotf(__bfloat162float(__x), __bfloat162float(__y)));
+  return ::__float2bfloat16(::cuda::std::hypotf(::__bfloat162float(__x), ::__bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -190,7 +190,7 @@ template <class _Tp>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half hypot(__half __x, __half __y, __half __z) noexcept
 {
-  return __float2half(::cuda::std::__hypot(__half2float(__x), __half2float(__y), __half2float(__z)));
+  return ::__float2half(::cuda::std::__hypot(::__half2float(__x), ::__half2float(__y), ::__half2float(__z)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -198,7 +198,8 @@ template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16
 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 {
-  return __float2bfloat16(::cuda::std::__hypot(__bfloat162float(__x), __bfloat162float(__y), __bfloat162float(__z)));
+  return ::__float2bfloat16(
+    ::cuda::std::__hypot(::__bfloat162float(__x), ::__bfloat162float(__y), ::__bfloat162float(__z)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

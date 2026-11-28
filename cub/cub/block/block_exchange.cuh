@@ -299,7 +299,7 @@ private:
       _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    __syncwarp(0xffffffff);
+    ::__syncwarp(0xffffffff);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
@@ -340,7 +340,7 @@ private:
         _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
-      __syncwarp(0xffffffff);
+      ::__syncwarp(0xffffffff);
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
@@ -372,7 +372,7 @@ private:
           _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        __syncwarp(0xffffffff);
+        ::__syncwarp(0xffffffff);
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
@@ -524,7 +524,7 @@ private:
       _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    __syncwarp(0xffffffff);
+    ::__syncwarp(0xffffffff);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
@@ -570,7 +570,7 @@ private:
           _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        __syncwarp(0xffffffff);
+        ::__syncwarp(0xffffffff);
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)

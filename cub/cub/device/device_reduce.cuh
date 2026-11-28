@@ -1148,8 +1148,8 @@ private:
 
     return _CUB::detail::dispatch_with_env_validation(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
-                                                             __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
+        return _CUB::detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
+                                                                   __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
           storage,
           bytes,
           d_in,
@@ -1183,8 +1183,8 @@ private:
 
     return _CUB::detail::dispatch_with_env_validation(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
-                                                             __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
+        return _CUB::detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
+                                                                   __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
           storage,
           bytes,
           d_in,
@@ -2171,8 +2171,8 @@ private:
 
     return _CUB::detail::dispatch_with_env_validation(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT,
-                                                             __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
+        return _CUB::detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT,
+                                                                   __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
           storage,
           bytes,
           d_in,

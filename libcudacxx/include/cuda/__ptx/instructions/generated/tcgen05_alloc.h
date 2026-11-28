@@ -26,14 +26,14 @@ _CCCL_DEVICE_API void tcgen05_alloc(
   {
     asm volatile("tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32 [%0], %1;"
                  :
-                 : "r"(__as_ptr_smem(__dst)), "r"(__nCols)
+                 : "r"(::cuda::ptx::__as_ptr_smem(__dst)), "r"(__nCols)
                  : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile("tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32 [%0], %1;"
                  :
-                 : "r"(__as_ptr_smem(__dst)), "r"(__nCols)
+                 : "r"(::cuda::ptx::__as_ptr_smem(__dst)), "r"(__nCols)
                  : "memory");
   }
 }

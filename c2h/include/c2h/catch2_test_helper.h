@@ -619,7 +619,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename T, typename... Props>
 ::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
 {
-  const auto host_buf = cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
+  const auto host_buf = ::cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
 
   buffer.stream().sync();
   os << ::Catch::Detail::stringify(::std::vector<T>{host_buf.begin(), host_buf.end()});

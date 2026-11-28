@@ -20,7 +20,7 @@ _CCCL_DEVICE_API ::cuda::std::uint32_t getctarank(::cuda::ptx::space_cluster_t, 
 {
   // __space == space_cluster (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
-  asm("getctarank.shared::cluster.u32 %0, %1;" : "=r"(__dest) : "r"(__as_ptr_smem(__addr)) :);
+  asm("getctarank.shared::cluster.u32 %0, %1;" : "=r"(__dest) : "r"(::cuda::ptx::__as_ptr_smem(__addr)) :);
   return __dest;
 }
 #endif // __cccl_ptx_isa >= 780

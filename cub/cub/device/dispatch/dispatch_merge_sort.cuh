@@ -316,7 +316,7 @@ public:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -331,7 +331,7 @@ public:
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -364,7 +364,7 @@ public:
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -394,7 +394,7 @@ public:
       }
 
       // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -590,7 +590,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -603,7 +603,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -635,7 +635,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }
@@ -663,7 +663,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(::cudaPeekAtLastError()))
       {
         return error;
       }

@@ -21,7 +21,7 @@ _CCCL_DEVICE_API void cp_async_bulk_prefetch(
 {
   asm volatile("cp.async.bulk.prefetch.L2.global.L2::cache_hint [%0], %1, %2;"
                :
-               : "l"(__as_ptr_gmem(__srcMem)), "r"(__size), "l"(__cache_policy)
+               : "l"(::cuda::ptx::__as_ptr_gmem(__srcMem)), "r"(__size), "l"(__cache_policy)
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 800

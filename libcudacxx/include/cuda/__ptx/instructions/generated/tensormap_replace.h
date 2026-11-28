@@ -24,7 +24,8 @@ _CCCL_DEVICE_API void tensormap_replace_global_address(::cuda::ptx::space_global
   static_assert(sizeof(_B64) == 8, "");
   asm("tensormap.replace.tile.global_address.global.b1024.b64 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
+        "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -47,7 +48,8 @@ _CCCL_DEVICE_API void tensormap_replace_global_address(::cuda::ptx::space_shared
   static_assert(sizeof(_B64) == 8, "");
   asm("tensormap.replace.tile.global_address.shared::cta.b1024.b64 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
+        "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -70,7 +72,8 @@ _CCCL_DEVICE_API void tensormap_replace_rank(::cuda::ptx::space_global_t, void* 
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.rank.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -93,7 +96,8 @@ _CCCL_DEVICE_API void tensormap_replace_rank(::cuda::ptx::space_shared_t, void* 
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.rank.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -118,7 +122,7 @@ tensormap_replace_box_dim(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.box_dim.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)),
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -145,7 +149,7 @@ tensormap_replace_box_dim(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.box_dim.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -172,7 +176,7 @@ _CCCL_DEVICE_API void tensormap_replace_global_dim(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.global_dim.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)),
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -199,7 +203,7 @@ _CCCL_DEVICE_API void tensormap_replace_global_dim(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.global_dim.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -226,7 +230,7 @@ _CCCL_DEVICE_API void tensormap_replace_global_stride(
   static_assert(sizeof(_B64) == 8, "");
   asm("tensormap.replace.tile.global_stride.global.b1024.b64 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)),
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
@@ -253,7 +257,7 @@ _CCCL_DEVICE_API void tensormap_replace_global_stride(
   static_assert(sizeof(_B64) == 8, "");
   asm("tensormap.replace.tile.global_stride.shared::cta.b1024.b64 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
@@ -280,7 +284,7 @@ _CCCL_DEVICE_API void tensormap_replace_element_stride(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.element_stride.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)),
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -307,7 +311,7 @@ _CCCL_DEVICE_API void tensormap_replace_element_stride(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.element_stride.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -334,7 +338,7 @@ _CCCL_DEVICE_API void tensormap_replace_element_size(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.element_stride.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)),
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -361,7 +365,7 @@ _CCCL_DEVICE_API void tensormap_replace_element_size(
   static_assert(sizeof(_B32) == 4, "");
   asm("tensormap.replace.tile.element_stride.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
@@ -386,7 +390,7 @@ tensormap_replace_elemtype(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda:
   // __space == space_global (due to parameter type constraint)
   asm("tensormap.replace.tile.elemtype.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -409,7 +413,7 @@ tensormap_replace_elemtype(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda:
   // __space == space_shared (due to parameter type constraint)
   asm("tensormap.replace.tile.elemtype.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -432,7 +436,7 @@ tensormap_replace_interleave_layout(::cuda::ptx::space_global_t, void* __tm_addr
   // __space == space_global (due to parameter type constraint)
   asm("tensormap.replace.tile.interleave_layout.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -455,7 +459,7 @@ tensormap_replace_interleave_layout(::cuda::ptx::space_shared_t, void* __tm_addr
   // __space == space_shared (due to parameter type constraint)
   asm("tensormap.replace.tile.interleave_layout.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -478,7 +482,7 @@ tensormap_replace_swizzle_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::c
   // __space == space_global (due to parameter type constraint)
   asm("tensormap.replace.tile.swizzle_mode.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -501,7 +505,7 @@ tensormap_replace_swizzle_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::c
   // __space == space_shared (due to parameter type constraint)
   asm("tensormap.replace.tile.swizzle_mode.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -524,7 +528,7 @@ tensormap_replace_fill_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda
   // __space == space_global (due to parameter type constraint)
   asm("tensormap.replace.tile.fill_mode.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -547,7 +551,7 @@ tensormap_replace_fill_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda
   // __space == space_shared (due to parameter type constraint)
   asm("tensormap.replace.tile.fill_mode.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 830
@@ -570,7 +574,7 @@ tensormap_replace_swizzle_atomicity(::cuda::ptx::space_global_t, void* __tm_addr
   // __space == space_global (due to parameter type constraint)
   asm("tensormap.replace.tile.swizzle_atomicity.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -593,7 +597,7 @@ tensormap_replace_swizzle_atomicity(::cuda::ptx::space_shared_t, void* __tm_addr
   // __space == space_shared (due to parameter type constraint)
   asm("tensormap.replace.tile.swizzle_atomicity.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860

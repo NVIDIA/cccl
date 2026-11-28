@@ -186,7 +186,7 @@ extern __fn_ptr_t<__type_list<_Ret, _Args...>> __as_type_list_v<_Ret(_Args...)>;
 //! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
 //!     `_Fn<R, As...>`.
 template <class _List>
-using __as_type_list _CCCL_NODEBUG = decltype(__detail::__as_type_list_v<_List>());
+using __as_type_list _CCCL_NODEBUG = decltype(::cuda::std::__detail::__as_type_list_v<_List>());
 
 #  endif // if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
 
@@ -225,7 +225,7 @@ _CCCL_API inline auto __type_callable_fn(void*) -> false_type;
 //! otherwise.
 template <class _Fn, class... _Ts>
 using __type_callable _CCCL_NODEBUG =
-  decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
+  decltype(::cuda::std::__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
 
 //! \brief A composition of two meta-callables that will attempt to call the
 //! first, and if that fails, call the second.
@@ -518,8 +518,8 @@ _CCCL_API inline auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
 //! \brief Return a \c __type_list of \c _Size integral constants starting at
 //! \c _Start and incrementing by \c _Stride.
 template <class _Ty, _Ty _Start, _Ty _Size, _Ty _Stride = _Ty(1)>
-using __type_iota _CCCL_NODEBUG =
-  decltype(__detail::__type_iota_fn<_Ty, _Start, _Stride>(static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
+using __type_iota _CCCL_NODEBUG = decltype(::cuda::std::__detail::__type_iota_fn<_Ty, _Start, _Stride>(
+  static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

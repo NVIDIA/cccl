@@ -20,7 +20,7 @@ _CCCL_DEVICE_API void st_bulk(void* __addr, ::cuda::std::uint64_t __size, ::cuda
 {
   asm("st.bulk.weak.shared::cta [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__addr)), "l"(__size), "n"(__initval.value)
+      : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "l"(__size), "n"(__initval.value)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860

@@ -93,7 +93,7 @@ __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 _CCCL_HOST_API inline void
 __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment)
 {
-  if (!__is_valid_allocation_alignment(__alignment, __min_alignment))
+  if (!::cuda::__is_valid_allocation_alignment(__alignment, __min_alignment))
   {
     _CCCL_THROW_STD(invalid_argument,
                     "Invalid allocation alignment: must be a power of two and at least the "

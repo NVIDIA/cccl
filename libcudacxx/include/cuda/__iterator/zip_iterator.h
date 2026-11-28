@@ -150,7 +150,7 @@ public:
       : __current_(::cuda::std::move(__iters)...)
   {}
 
-  using iterator_concept = decltype(__get_zip_iterator_concept<_Iterators...>());
+  using iterator_concept = decltype(::cuda::__get_zip_iterator_concept<_Iterators...>());
   using value_type       = ::cuda::std::tuple<__zip_maybe_proxy_value_type_t<_Iterators>...>;
   using reference        = ::cuda::std::tuple<__zip_maybe_proxy_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;

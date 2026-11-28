@@ -90,7 +90,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
                       requires(!__member_size<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(size(__t)))>)));
+                      requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(size(__t)))>))); // NOLINT(cccl-avoid-adl)
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_size = _CCCL_FRAGMENT(__unqualified_size_, _Tp);
@@ -141,9 +141,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_size<_Tp>)
   [[nodiscard]] _CCCL_API constexpr auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t)))) // NOLINT(cccl-avoid-adl)
   {
-    return _LIBCUDACXX_AUTO_CAST(size(__t));
+    return _LIBCUDACXX_AUTO_CAST(size(__t)); // NOLINT(cccl-avoid-adl)
   }
 
   // [range.prim.size]: the `to-unsigned-like` case.

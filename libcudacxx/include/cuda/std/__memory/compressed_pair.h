@@ -226,8 +226,10 @@ public:
   swap(__compressed_pair& __x) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
+    // NOLINTBEGIN(cccl-avoid-adl)
     swap(first(), __x.first());
     swap(second(), __x.second());
+    // NOLINTEND(cccl-avoid-adl)
   }
 };
 

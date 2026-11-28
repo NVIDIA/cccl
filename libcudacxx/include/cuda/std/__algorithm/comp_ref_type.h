@@ -57,7 +57,8 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  _CCCL_API constexpr decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
+  _CCCL_API constexpr decltype((void) ::cuda::std::declval<_Compare&>()(
+    ::cuda::std::declval<_LHS&>(), ::cuda::std::declval<_RHS&>()))
   __do_compare_assert(int, [[maybe_unused]] _LHS& __l, [[maybe_unused]] _RHS& __r)
   {
     _CCCL_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");

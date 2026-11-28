@@ -36,10 +36,10 @@ _CCCL_DEVICE_API void cp_async_bulk(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [%0], [%1], %2, [%3], %4;"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
-        "l"(__as_ptr_gmem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+        "l"(::cuda::ptx::__as_ptr_gmem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_smem(__smem_bar)),
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar)),
         "h"(__ctaMask)
       : "memory");
 }

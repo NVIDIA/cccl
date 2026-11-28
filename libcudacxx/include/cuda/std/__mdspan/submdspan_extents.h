@@ -154,8 +154,9 @@ struct __get_subextent
   template <class _Extents, class... _Slices>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Extents& __src, _Slices... __slices) noexcept
   {
-    const auto __filtered_indices = __filter_slices_convertible_to_index<typename _Extents::index_type, _Slices...>(
-      index_sequence<>{}, ::cuda::std::index_sequence_for<_Slices...>());
+    const auto __filtered_indices =
+      ::cuda::std::__filter_slices_convertible_to_index<typename _Extents::index_type, _Slices...>(
+        index_sequence<>{}, ::cuda::std::index_sequence_for<_Slices...>());
     return __impl(__filtered_indices, __src, __slices...);
   }
 };

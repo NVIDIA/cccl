@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @endrst
 template <class _Resource, class _Property>
 _CCCL_CONCEPT has_property = _CCCL_REQUIRES_EXPR((_Resource, _Property), const _Resource& __res, _Property __prop)(
-  ((void) get_property(__res, __prop)));
+  ((void) get_property(__res, __prop))); // NOLINT(cccl-avoid-adl)
 
 template <class _Property>
 using __property_value_t _CCCL_NODEBUG = typename _Property::value_type;
@@ -93,7 +93,9 @@ _CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__
 #  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <class _Resource, class _Property, class _Return>
 _CCCL_CONCEPT has_property_with = _CCCL_REQUIRES_EXPR((_Resource, _Property, _Return), const _Resource& __res)(
-  requires(property_with_value<_Property>), _Same_as(_Return) get_property(__res, _Property{}));
+  requires(property_with_value<_Property>),
+  // NOLINTNEXTLINE(cccl-avoid-adl)
+  _Same_as(_Return) get_property(__res, _Property{}));
 
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_upstream_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstream), const _Resource& __res)(
@@ -123,11 +125,11 @@ struct __fn
   {
     if constexpr (__has_upstream_resource<_Derived, _Upstream>)
     {
-      return get_property(__res.upstream_resource(), __prop);
+      return get_property(__res.upstream_resource(), __prop); // NOLINT(cccl-avoid-adl)
     }
     else
     {
-      return get_property(__res.get(), __prop);
+      return get_property(__res.get(), __prop); // NOLINT(cccl-avoid-adl)
     }
   }
 
@@ -140,11 +142,11 @@ struct __fn
   {
     if constexpr (__has_upstream_resource<_Derived, _Upstream>)
     {
-      return get_property(__res.upstream_resource(), __prop);
+      return get_property(__res.upstream_resource(), __prop); // NOLINT(cccl-avoid-adl)
     }
     else
     {
-      return get_property(__res.get(), __prop);
+      return get_property(__res.get(), __prop); // NOLINT(cccl-avoid-adl)
     }
   }
 };
@@ -188,8 +190,8 @@ _CCCL_REQUIRES((!__disable_default_dynamic_accessibility_property<_Resource>) )
 _CCCL_API constexpr __memory_accessibility
 get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_property) noexcept
 {
-  return __memory_accessibility_from_static_properties<::cuda::has_property<_Resource, host_accessible>,
-                                                       ::cuda::has_property<_Resource, device_accessible>>();
+  return ::cuda::mr::__memory_accessibility_from_static_properties<::cuda::has_property<_Resource, host_accessible>,
+                                                                   ::cuda::has_property<_Resource, device_accessible>>();
 }
 _CCCL_END_NAMESPACE_CUDA_MR
 

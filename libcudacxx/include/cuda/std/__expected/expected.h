@@ -409,7 +409,7 @@ public:
       if (__rhs.__has_val_)
       {
         using ::cuda::std::swap;
-        swap(this->__union_.__val_, __rhs.__union_.__val_);
+        swap(this->__union_.__val_, __rhs.__union_.__val_); // NOLINT(cccl-avoid-adl)
       }
       else
       {
@@ -425,7 +425,7 @@ public:
       else
       {
         using ::cuda::std::swap;
-        swap(this->__union_.__unex_, __rhs.__union_.__unex_);
+        swap(this->__union_.__unex_, __rhs.__union_.__unex_); // NOLINT(cccl-avoid-adl)
       }
     }
   }
@@ -495,7 +495,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      ::cuda::std::__throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
     return this->__union_.__val_;
   }
@@ -505,7 +505,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() & requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_));
+      ::cuda::std::__throw_bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_));
     }
     return this->__union_.__val_;
   }
@@ -517,7 +517,7 @@ public:
                   "expected::value() const&& requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      ::cuda::std::__throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
     return ::cuda::std::move(this->__union_.__val_);
   }
@@ -529,7 +529,7 @@ public:
                   "expected::value() && requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      ::cuda::std::__throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
     return ::cuda::std::move(this->__union_.__val_);
   }
@@ -1330,7 +1330,7 @@ public:
       else
       {
         using ::cuda::std::swap;
-        swap(this->__union_.__unex_, __rhs.__union_.__unex_);
+        swap(this->__union_.__unex_, __rhs.__union_.__unex_); // NOLINT(cccl-avoid-adl)
       }
     }
   }
@@ -1369,7 +1369,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      ::cuda::std::__throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
   }
 
@@ -1379,7 +1379,7 @@ public:
     static_assert(is_move_constructible_v<_Err>, "expected::value() && requires is_move_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      ::cuda::std::__throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
   }
 

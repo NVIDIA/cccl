@@ -57,10 +57,10 @@ compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, C
   if (compare_op(key_rhs, key_lhs))
   {
     using ::cuda::std::swap;
-    swap(key_lhs, key_rhs);
+    swap(key_lhs, key_rhs); // NOLINT(cccl-avoid-adl)
     if constexpr (!::cuda::std::is_same_v<ValueT, NullType>)
     {
-      swap(item_lhs, item_rhs);
+      swap(item_lhs, item_rhs); // NOLINT(cccl-avoid-adl)
     }
   }
 }
@@ -85,8 +85,8 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int network_degree = cuda::ceil_ilog2(ItemsPerThread);
-  constexpr int network_size   = cuda::next_power_of_two(ItemsPerThread);
+  constexpr int network_degree = ::cuda::ceil_ilog2(ItemsPerThread);
+  constexpr int network_size   = ::cuda::next_power_of_two(ItemsPerThread);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int group_size = 1; group_size < network_size; group_size *= 2)

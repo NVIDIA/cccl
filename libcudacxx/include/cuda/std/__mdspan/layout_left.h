@@ -143,7 +143,7 @@ public:
     // layout_left::mapping<dextents<char, 1>> map(
     //           layout_right::mapping<dextents<unsigned, 1>>(dextents<unsigned, 1>(200))); map.extents().extent(0) ==
     //           -56
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }
@@ -226,7 +226,7 @@ public:
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
     // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_left::mapping: out of bounds indexing");
 
     const array<index_type, extents_type::rank()> __idx_a{static_cast<index_type>(__idx)...};

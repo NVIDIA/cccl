@@ -34,7 +34,10 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2}], [%3];"
       :
-      : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+        "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -64,7 +67,7 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   asm("cp.async.bulk.tensor.1d.global.shared::cta.tile.bulk_group [%0, {%1}], [%2];"
       :
-      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -97,11 +100,11 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3}], [%4];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -131,7 +134,7 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   asm("cp.async.bulk.tensor.2d.global.shared::cta.tile.bulk_group [%0, {%1, %2}], [%3];"
       :
-      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -164,12 +167,12 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4}], [%5];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -203,7 +206,7 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
-        "r"(__as_ptr_smem(__srcMem))
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -237,13 +240,13 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5}], "
       "[%6];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -278,7 +281,7 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
-        "r"(__as_ptr_smem(__srcMem))
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -312,14 +315,14 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5, "
       "%6}], [%7];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
         "r"(__tensorCoords[4]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -355,7 +358,7 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
         "r"(__tensorCoords[4]),
-        "r"(__as_ptr_smem(__srcMem))
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -388,7 +391,10 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2}], [%3];"
       :
-      : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+        "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -428,7 +434,10 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2}], "
         "[%3];"
         :
-        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
@@ -436,7 +445,10 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2}], "
         "[%3];"
         :
-        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
 }
@@ -470,11 +482,11 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3}], [%4];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -514,11 +526,11 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, "
         "%3}], [%4];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
@@ -526,11 +538,11 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2, "
         "%3}], [%4];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
 }
@@ -564,12 +576,12 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4}], [%5];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -609,12 +621,12 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
         "%4}], [%5];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
@@ -622,12 +634,12 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2, %3, "
         "%4}], [%5];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
 }
@@ -661,13 +673,13 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5}], [%6];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -707,13 +719,13 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
         "%4, %5}], [%6];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
@@ -721,13 +733,13 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2, %3, "
         "%4, %5}], [%6];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
 }
@@ -762,14 +774,14 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
   asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5, %6}], "
       "[%7];"
       :
-      : "r"(__as_ptr_smem(__dstMem)),
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
         "l"(__tensorMap),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
         "r"(__tensorCoords[3]),
         "r"(__tensorCoords[4]),
-        "r"(__as_ptr_smem(__smem_bar))
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -809,14 +821,14 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
         "%4, %5, %6}], [%7];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
@@ -824,14 +836,14 @@ _CCCL_DEVICE_API void cp_async_bulk_tensor(
     asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2, %3, "
         "%4, %5, %6}], [%7];"
         :
-        : "r"(__as_ptr_smem(__dstMem)),
+        : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
           "l"(__tensorMap),
           "r"(__tensorCoords[0]),
           "r"(__tensorCoords[1]),
           "r"(__tensorCoords[2]),
           "r"(__tensorCoords[3]),
           "r"(__tensorCoords[4]),
-          "r"(__as_ptr_smem(__smem_bar))
+          "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
         : "memory");
   }
 }

@@ -69,14 +69,17 @@ inline constexpr size_t __ambiguous = __not_found - 1;
 template <size_t _Nx>
 [[nodiscard]] _CCCL_API constexpr size_t __find_idx(size_t __i, const bool (&__matches)[_Nx]) noexcept
 {
-  return __i == _Nx ? __not_found : __find_idx_return(__i, __find_idx(__i + 1, __matches), __matches[__i]);
+  return __i == _Nx
+         ? __not_found
+         : ::cuda::std::__find_detail::__find_idx_return(
+             __i, ::cuda::std::__find_detail::__find_idx(__i + 1, __matches), __matches[__i]);
 }
 
 template <class _T1, class... _Args>
 struct __find_exactly_one_checked
 {
   static constexpr bool __matches[sizeof...(_Args)] = {is_same_v<_T1, _Args>...};
-  static constexpr size_t value                     = __find_detail::__find_idx(0, __matches);
+  static constexpr size_t value                     = ::cuda::std::__find_detail::__find_idx(0, __matches);
   static_assert(value != __not_found, "type not found in type list");
   static_assert(value != __ambiguous, "type occurs more than once in type list");
 };

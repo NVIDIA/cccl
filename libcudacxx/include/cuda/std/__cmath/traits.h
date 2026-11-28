@@ -93,7 +93,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
       if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return __hgt(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__hgt(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -155,7 +155,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
       if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return __hge(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__hge(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -218,7 +218,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
       if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return __hlt(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__hlt(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -280,7 +280,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
       if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return __hle(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__hle(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -343,7 +343,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
       if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (return __hne(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__hne(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()

@@ -97,8 +97,8 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  static constexpr size_t __size_  = __buffer_size(_Interface::size);
-  static constexpr size_t __align_ = __buffer_align(_Interface::align);
+  static constexpr size_t __size_  = ::cuda::__buffer_size(_Interface::size);
+  static constexpr size_t __align_ = ::cuda::__buffer_align(_Interface::align);
 
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
   alignas(__align_)::cuda::std::byte __buffer_[__size_];

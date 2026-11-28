@@ -91,7 +91,8 @@ struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator
 template <class _Iter, class _Sent>
 _CCCL_CONCEPT_FRAGMENT(
   __move_iter_comparable_,
-  requires()(requires(convertible_to<decltype(declval<const _Iter&>() == declval<_Sent>()), bool>)));
+  requires()(
+    requires(convertible_to<decltype(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<_Sent>()), bool>)));
 
 template <class _Iter, class _Sent>
 _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);

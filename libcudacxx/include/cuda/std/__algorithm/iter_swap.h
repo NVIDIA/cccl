@@ -39,12 +39,15 @@ void iter_swap(_ForwardIterator1, _ForwardIterator2) = delete;
 template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_CONCEPT __unqualified_iter_swap =
   _CCCL_REQUIRES_EXPR((_ForwardIterator1, _ForwardIterator2), _ForwardIterator1&& __a, _ForwardIterator2&& __b)(
+    // NOLINTNEXTLINE(cccl-avoid-adl)
     iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b)));
 
 template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_CONCEPT __readable_swappable =
   _CCCL_REQUIRES_EXPR((_ForwardIterator1, _ForwardIterator2), _ForwardIterator1 __a, _ForwardIterator2 __b)(
-    requires(!__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>), swap(*__a, *__b));
+    requires(!__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>),
+    // NOLINTNEXTLINE(cccl-avoid-adl)
+    swap(*__a, *__b));
 
 struct __fn
 {
@@ -52,8 +55,10 @@ struct __fn
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>)
   _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    // NOLINTNEXTLINE(cccl-avoid-adl)
     noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
   {
+    // NOLINTNEXTLINE(cccl-avoid-adl)
     (void) iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b));
   }
 
@@ -61,9 +66,10 @@ struct __fn
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__readable_swappable<_ForwardIterator1, _ForwardIterator2>)
   _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    // NOLINTNEXTLINE(cccl-avoid-adl)
     noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
   {
-    swap(*__a, *__b);
+    swap(*__a, *__b); // NOLINT(cccl-avoid-adl)
   }
 };
 

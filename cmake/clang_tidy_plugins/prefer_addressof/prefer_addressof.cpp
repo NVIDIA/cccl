@@ -239,21 +239,21 @@ public:
     const auto file_filter = ignore_test_files_ ? stmt(unless(util::isExpansionInTestOrExampleFile())) : stmt();
 
     finder->addMatcher(
-      mapAnyOf(unaryOperator, cxxOperatorCallExpr)
-        .with(isTypeDependent(),
-              hasOperatorName("&"),
-              file_filter,
-              hasUnaryOperand(operand),
-              // This is actually wrong (if you think about it, passing result of arbitrary
-              // operator&() to asm is exactly the kind of scenario we *should* be warning
-              // about), but we use this as a heuristic to avoid adding a bunch of NOLINT to
-              // the generated PTX wrappers.
-              //
-              // Those are templated, but due to a series of prior type unwrapping and checking
-              // we are pretty confident that the types passed to PTX are OK.
-              unless(hasAncestor(asmStmt())),
-              hasAncestor(util::isInNamespaceCudaStd()))
-        .bind(BIND),
+      util::namespaceCudaStd(forEachDescendant(
+        mapAnyOf(unaryOperator, cxxOperatorCallExpr)
+          .with(isTypeDependent(),
+                hasOperatorName("&"),
+                file_filter,
+                hasUnaryOperand(operand),
+                // This is actually wrong (if you think about it, passing result of arbitrary
+                // operator&() to asm is exactly the kind of scenario we *should* be warning
+                // about), but we use this as a heuristic to avoid adding a bunch of NOLINT to
+                // the generated PTX wrappers.
+                //
+                // Those are templated, but due to a series of prior type unwrapping and checking
+                // we are pretty confident that the types passed to PTX are OK.
+                unless(hasAncestor(asmStmt())))
+          .bind(BIND))),
       this);
   }
 

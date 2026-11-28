@@ -221,7 +221,7 @@ public:
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
     // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_right::mapping: out of bounds indexing");
     return __op_index(index_sequence_for<_Indices...>(), __idx...);
   }
