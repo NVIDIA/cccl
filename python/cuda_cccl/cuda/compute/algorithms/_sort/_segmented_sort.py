@@ -25,7 +25,6 @@ class _SegmentedSort(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_keys_cccl",
         "d_out_keys_cccl",
         "d_in_values_cccl",
@@ -107,7 +106,7 @@ class _SegmentedSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -140,7 +139,7 @@ class _SegmentedSort(Serializable):
         is_overwrite_okay = isinstance(d_in_keys, DoubleBuffer)
         selector = -1
 
-        temp_storage_bytes, selector = self.loaded_build_result.compute(
+        temp_storage_bytes, selector = loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,6 +28,7 @@
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
@@ -119,7 +120,7 @@ template <::cuda::std::size_t _Align, typename _Group>
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (
+    ({
       // Dispatch based on direction of the copy: global to shared, shared to
       // global, etc.
 
@@ -130,18 +131,23 @@ template <::cuda::std::size_t _Align, typename _Group>
       //
       // See nvbug 4074679 and also PR #478.
       if (::cuda::device::is_address_from(__src_char, ::cuda::device::address_space::global)
-          && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared)) {
+          && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared))
+      {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      } else {
-        return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
-          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      }),
-    (
+      }
+      return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
+        __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    }),
+    ({
       // Host code path:
-      if (__group.thread_rank() == 0) {
-        ::cuda::std::memcpy(__dest_char, __src_char, __size);
-      } return __completion_mechanism::__sync;));
+      if (__group.thread_rank() == 0)
+      {
+        ::cuda::std::memcpy(
+          ::cuda::std::assume_aligned<_Align>(__dest_char), ::cuda::std::assume_aligned<_Align>(__src_char), __size);
+      }
+      return __completion_mechanism::__sync;
+    }));
 }
 
 template <::cuda::std::size_t _Align, typename _Group>

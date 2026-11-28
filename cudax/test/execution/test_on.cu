@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/execution.cuh>
+#include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
 

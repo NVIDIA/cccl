@@ -1,5 +1,12 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/memory.h>
 #include <thrust/scan.h>
+#include <thrust/system/cuda/execution_policy.h>
+
+#include <cuda/std/functional>
 
 #include <cstdio>
 

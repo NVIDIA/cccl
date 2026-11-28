@@ -19,7 +19,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,6 +38,7 @@
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN
@@ -235,9 +236,9 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::rle::encode::dispatch(
+        return _CUB::detail::rle::encode::dispatch(
           storage,
           bytes,
           d_in,
@@ -353,9 +354,9 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::rle::encode::dispatch(
+        return _CUB::detail::rle::encode::dispatch(
           storage,
           bytes,
           d_in,
@@ -498,9 +499,9 @@ struct DeviceRunLengthEncode
     using key_t                   = detail::it_value_t<InputIteratorT>;
     using default_policy_selector = detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::rle::dispatch(
+        return _CUB::detail::rle::dispatch(
           storage,
           bytes,
           d_in,
@@ -609,9 +610,9 @@ struct DeviceRunLengthEncode
     using key_t                   = detail::it_value_t<InputIteratorT>;
     using default_policy_selector = detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::rle::dispatch(
+        return _CUB::detail::rle::dispatch(
           storage,
           bytes,
           d_in,

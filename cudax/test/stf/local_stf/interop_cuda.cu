@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 // B += alpha*A;
 __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < N; i += nthreads)

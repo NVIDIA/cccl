@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -64,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
@@ -102,7 +102,7 @@ sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forwa
  *  \endverbatim
  */
 template <typename ForwardIterator>
-void sequence(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last);
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
@@ -147,7 +147,7 @@ void sequence(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init);
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
@@ -187,7 +187,7 @@ _CCCL_HOST_DEVICE void sequence(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init);
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init);
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
@@ -233,7 +233,7 @@ void sequence(ForwardIterator first, ForwardIterator last, T init);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -278,11 +278,11 @@ _CCCL_HOST_DEVICE void sequence(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init, T step);
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init, T step);
 
 /*! \} // end transformations
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/sequence.inl>
+#include <thrust/detail/sequence.inl> // IWYU pragma: export

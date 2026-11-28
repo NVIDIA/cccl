@@ -43,6 +43,7 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include "test_macros.h"
@@ -62,6 +63,18 @@ static_assert(cuda::std::is_trivially_copyable_v<cuda::fp64mp2_stat>);
 // The wrapper reports the same characteristics as the wrapped type.
 static_assert(cuda::std::numeric_limits<stat_t>::digits == cuda::std::numeric_limits<base_t>::digits);
 static_assert(cuda::std::numeric_limits<stat_t>::is_specialized);
+
+// The compound forms accept exactly the scalars the wrapped type accepts.
+template <class T, class S, class = void>
+struct can_mul_assign : cuda::std::false_type
+{};
+template <class T, class S>
+struct can_mul_assign<T, S, cuda::std::void_t<decltype(cuda::std::declval<T&>() *= cuda::std::declval<S>())>>
+    : cuda::std::true_type
+{};
+static_assert(can_mul_assign<stat_t, float>::value && can_mul_assign<base_t, float>::value);
+static_assert(can_mul_assign<stat_t, int>::value == can_mul_assign<base_t, int>::value);
+static_assert(can_mul_assign<stat_t, double>::value == can_mul_assign<base_t, double>::value);
 
 // A pair of limbs, compared bitwise so that a sign of zero or a NaN payload cannot hide
 // a difference.
@@ -84,11 +97,19 @@ TEST_HOST_DEVICE_FUNC pair_t limbs(const _Tp& value)
 
 // Every operation below is computed on both types and the two results compared, so the
 // harness needs no expected values: the wrapped type is the reference.
+//
+// The operands are read through a volatile, so that both sides are computed when the test
+// runs. nvcc does not always fold the round-to-nearest intrinsics on constants to the bits
+// the device computes (a tie can go to the other neighbor), and it can fold an expression on
+// one type while leaving the same expression on the other type to the device.
 TEST_HOST_DEVICE_FUNC void test_parity()
 {
-  const float fa = 1.123456789f;
-  const float fb = 2.987654321f;
-  const float fc = 0.577215664f;
+  volatile float va = 1.123456789f;
+  volatile float vb = 2.987654321f;
+  volatile float vc = 0.577215664f;
+  const float fa    = va;
+  const float fb    = vb;
+  const float fc    = vc;
 
   const base_t ba(fa), bb(fb), bc(fc);
   const stat_t sa(fa), sb(fb), sc(fc);
@@ -115,7 +136,31 @@ TEST_HOST_DEVICE_FUNC void test_parity()
     s += fc;
     b -= fc;
     s -= fc;
+    b *= fc;
+    s *= fc;
+    b /= fb;
+    s /= fb;
     assert(same(limbs(b), limbs(s)));
+  }
+
+  { // a scalar that one limb cannot hold is converted to the pair, not narrowed to a limb
+    const int wide = 16777217; // 2^24 + 1
+    base_t b       = ba;
+    stat_t s       = sa;
+    b += wide;
+    s += wide;
+    assert(same(limbs(b), limbs(s)));
+    b *= wide;
+    s *= wide;
+    assert(same(limbs(b), limbs(s)));
+    b /= wide;
+    s /= wide;
+    assert(same(limbs(b), limbs(s)));
+    b -= wide;
+    s -= wide;
+    assert(same(limbs(b), limbs(s)));
+    assert(same(limbs(ba * wide), limbs(sa * wide)));
+    assert(same(limbs(wide - ba), limbs(wide - sa)));
   }
 
   { // increment and decrement, prefix and postfix
@@ -244,10 +289,12 @@ TEST_HOST_DEVICE_FUNC void test_parity()
   }
 
   { // the double-double instantiation, so both limb types are exercised
-    using dbase_t = cuda::fp64mp2;
-    using dstat_t = cuda::fp64mp2_stat;
-    const dbase_t db(1.25);
-    const dstat_t ds(1.25);
+    using dbase_t      = cuda::fp64mp2;
+    using dstat_t      = cuda::fp64mp2_stat;
+    volatile double vd = 1.25;
+    const double d     = vd;
+    const dbase_t db(d);
+    const dstat_t ds(d);
     const dbase_t br = (db + db) * db / db - db;
     const dstat_t sr = (ds + ds) * ds / ds - ds;
     assert(br.hi() == sr.hi() && br.lo() == sr.lo());
@@ -268,8 +315,8 @@ __global__ void parity_kernel()
 // A kernel by one thread with a hand-counted operation mix.
 constexpr unsigned long long int expected_add = 3ull;
 constexpr unsigned long long int expected_sub = 3ull;
-constexpr unsigned long long int expected_mul = 2ull;
-constexpr unsigned long long int expected_div = 2ull;
+constexpr unsigned long long int expected_mul = 4ull;
+constexpr unsigned long long int expected_div = 3ull;
 constexpr unsigned long long int expected_ops = expected_add + expected_sub + expected_mul + expected_div;
 
 __global__ void counting_kernel(float* sink)
@@ -286,6 +333,9 @@ __global__ void counting_kernel(float* sink)
   s /= a; // div
   ++s; // add
   --s; // sub
+  s *= 2; // mul, a scalar one limb cannot hold, converted to the pair
+  s /= 2.0f; // div, a single-limb scalar
+  s = s * 0.5f; // mul, a single-limb scalar in a binary operator
 
   *sink = static_cast<float>(s);
 }
@@ -392,8 +442,11 @@ __global__ void event_kernel(float* sink)
   acc += (stat_t(1.375f) + stat_t(-1.375f)).hi();
   acc += (stat_t(1.375f) - stat_t(1.375f)).hi();
 
-  // partial cancellation: 24 of 46 significand bits go, and the result is not zero
+  // Exactly half of the 48 significand bits cancel, which must not count.
   acc += (stat_t(1.0f) - stat_t(0.99999994f)).hi();
+
+  // Partial cancellation: 25 of 48 significand bits go, and the result is not zero.
+  acc += (stat_t(1.0f) - stat_t(1.0f, -0x1p-25f)).hi();
 
   // a routine 1-bit drop, which must not count as cancellation
   acc += (stat_t(1.0f) - stat_t(0.6f)).hi();

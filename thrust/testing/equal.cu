@@ -1,8 +1,18 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -103,7 +113,7 @@ struct only_set_when_both_expected
   long long expected;
   bool* flag;
 
-  _CCCL_DEVICE bool operator()(long long x, long long y)
+  _CCCL_DEVICE bool operator()(long long x, long long y) const
   {
     if (x == expected && y == expected)
     {

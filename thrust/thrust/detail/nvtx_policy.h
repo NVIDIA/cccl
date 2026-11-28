@@ -4,7 +4,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,7 +30,7 @@ namespace detail
 // NVTX is DISABLED only for thrust::seq and any policy derived from sequential::execution_policy
 // ENABLED for all other policies (CUDA, OMP, TBB, etc.)
 template <typename DerivedPolicy>
-constexpr bool should_enable_nvtx_for_policy()
+_CCCL_HOST_API constexpr bool should_enable_nvtx_for_policy()
 {
   using Policy = ::cuda::std::decay_t<DerivedPolicy>;
   // This catches thrust::seq, cpp::tag, and any other sequential-based policy

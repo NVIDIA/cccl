@@ -27,7 +27,7 @@ template <int ItemsPerThread>
 struct benchmark_op_t
 {
   template <typename KeyT>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
+  _CCCL_DEVICE_API __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
   {
     cub::NullType values[ItemsPerThread];
     cub::UnstablePairwiseSort(keys, values, cuda::std::less<>{});
@@ -35,13 +35,13 @@ struct benchmark_op_t
 };
 
 template <int BlockSize, result_kind Result, int ItemsPerThread, typename KeyT, typename ActionT>
-__global__ void selection_benchmark_kernel(int num_iterations, ActionT action)
+_CCCL_KERNEL_ATTRIBUTES void selection_benchmark_kernel(int num_iterations, ActionT action)
 {
   constexpr int warp_threads = 32;
   __shared__ volatile KeyT output[BlockSize];
   KeyT keys[ItemsPerThread];
   const auto tid = threadIdx.x;
-  uint32_t seed  = cuda::ptx::get_sreg_clock() + (tid + 7) % warp_threads;
+  uint32_t seed  = cuda::ptx::get_sreg_clock() + ((tid + 7) % warp_threads);
 
 #pragma unroll 1
   for (int iter = 0; iter < num_iterations; ++iter)
@@ -71,7 +71,7 @@ __global__ void selection_benchmark_kernel(int num_iterations, ActionT action)
 }
 
 template <result_kind Result, typename KeyT, int ItemsPerThread>
-void run_benchmark(nvbench::state& state)
+_CCCL_HOST_API void run_benchmark(nvbench::state& state)
 {
   constexpr int block_size     = 256;
   constexpr int num_iterations = 128;

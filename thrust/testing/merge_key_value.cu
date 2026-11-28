@@ -1,7 +1,14 @@
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

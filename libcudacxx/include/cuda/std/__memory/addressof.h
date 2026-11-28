@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,7 +40,7 @@
 #endif // _CCCL_FREESTANDING()
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
 #endif // defined(__CUDACC_TILE__)
@@ -51,6 +51,8 @@
 #    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
 #    include <__memory/addressof.h>
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <type_traits> // for ::std::addressof
 #  else
 #    include <cuda/std/__host_stdlib/memory>
 #  endif

@@ -1,5 +1,10 @@
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/mismatch.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 template <class Vector>

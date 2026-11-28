@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,7 +14,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__host_stdlib/iosfwd>
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -31,28 +31,30 @@ struct KeyValuePair
   Value value; ///< Item value
 
   /// Constructor
-  _CCCL_FORCEINLINE KeyValuePair() = default;
+  _CCCL_HIDE_FROM_ABI KeyValuePair() = default;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
       : key(key)
       , value(value)
   {}
 
   /// Equality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const KeyValuePair& b) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const KeyValuePair& b) const
   {
     return (value == b.value) && (key == b.key);
   }
 
   /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b) const
   {
     return (value != b.value) || (key != b.key);
   }
 
 #  if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const KeyValuePair& pair)
+  template <class CharT, class Traits>
+  _CCCL_HOST_API friend ::std::basic_ostream<CharT, Traits>&
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const KeyValuePair& pair)
   {
     return os << '(' << pair.key << ',' << pair.value << ')';
   }

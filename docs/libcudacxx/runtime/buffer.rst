@@ -87,7 +87,13 @@ Buffers can be constructed in several ways, depending on how you want to initial
 - From initializer list: ``buffer(stream, resource, {val1, val2, ...})``
 - From range: ``buffer(stream, resource, range)``
 
-In each case the memory is allocated and initialized in stream order on the provided stream.
+Memory allocation and destination writes occur in stream order on the provided stream.
+For rvalue initializer lists, including braced lists, all source accesses complete before the constructor or
+factory returns. CUDA 13 uses batched memcpy with source access during the API call on supported streams;
+CUDA 12 and legacy default streams synchronize after copying a non-empty list. Named lvalue initializer lists
+are copied in stream order and must remain valid until the copy completes. These rules also apply to ``make_buffer``, ``make_device_buffer``,
+``make_pinned_buffer``, and ``make_managed_buffer``. Explicitly typed initializer lists must have the same
+element type as the buffer.
 
 .. warning::
 
@@ -125,8 +131,8 @@ In each case the memory is allocated and initialized in stream order on the prov
 
    Some ``cudaMemcpyAsync`` paths historically synchronized implicitly when copying from pageable host memory, which
    could mask this bug. Do not rely on that behavior; newer platforms and asynchronous copy implementations may
-   perform a truly asynchronous copy. The same lifetime rule applies to temporary host sources such as initializer
-   lists, whose backing storage is destroyed at the end of the full expression.
+   perform a truly asynchronous copy. Rvalue initializer lists passed directly to the initializer-list overloads
+   are safe; passing their iterators or a view of their backing storage still requires managing the source lifetime.
 
 Example:
 
@@ -270,3 +276,42 @@ Memory Resource Access
 Buffers provide access to their underlying memory resource:
 
 - ``memory_resource()`` - Get a const reference to the memory resource
+
+Reinterpreting Allocations
+--------------------------
+.. _cccl-runtime-buffer-ownership:
+
+Buffers can transfer ownership of their allocation without copying. All of these functions can only be called on an
+rvalue buffer, and leave it in a state where it can only be assigned to or destroyed:
+
+- ``std::move(buf).as_bytes<Byte>()`` - Convert any buffer into a buffer of ``size() * sizeof(T)`` bytes, where
+  ``Byte`` is one of ``std::byte``, ``cuda::std::byte``, ``char``, or ``unsigned char``
+- ``std::move(buf).as_type<U>()`` - Convert a buffer of bytes into a buffer of ``size() / sizeof(U)`` elements of type
+  ``U``. Throws ``std::invalid_argument`` and leaves the buffer unchanged if ``size()`` is not a multiple of
+  ``sizeof(U)`` or ``alignment()`` is less than ``alignof(U)``
+
+The converted buffer keeps the data pointer, memory resource, stream, and alignment of the original buffer, and
+deallocates the same number of bytes. Interpreting the bytes as ``U`` is subject to the usual C++ object lifetime rules.
+
+Example:
+
+.. code:: cpp
+
+   #include <cuda/buffer>
+   #include <cuda/devices>
+   #include <cuda/memory_resource>
+   #include <cuda/std/utility>
+   #include <cuda/stream>
+
+   #include <cstddef>
+
+   void type_erase() {
+     cuda::stream stream{cuda::devices[0]};
+     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
+
+     cuda::device_buffer<int> ints{stream, mr, 1024, cuda::no_init};
+
+     // Zero-copy conversion to untyped storage and back
+     cuda::device_buffer<std::byte> bytes = cuda::std::move(ints).as_bytes<std::byte>();
+     cuda::device_buffer<int> typed       = cuda::std::move(bytes).as_type<int>();
+   }

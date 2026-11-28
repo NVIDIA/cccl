@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,8 +27,10 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -145,7 +147,7 @@ public:
       : __comm_{[&] {
         if (__comm == ::cuda::experimental::__nccl::__NCCL_COMM_NULL)
         {
-          _CCCL_THROW(::std::invalid_argument, "Invalid NCCL communicator: NCCL_COMM_NULL");
+          _CCCL_THROW_STD(invalid_argument, "Invalid NCCL communicator: NCCL_COMM_NULL");
         }
         return __comm;
       }()}
@@ -156,8 +158,9 @@ public:
     if (const auto __nccl_device = ::cuda::experimental::__nccl::__ncclCommCuDevice(native_handle());
         __nccl_device != logical_device().underlying_device())
     {
-      _CCCL_THROW(::std::runtime_error,
-                  "Inconsistent devices, NCCL communicator device and provided logical device do not match");
+      _CCCL_THROW_STD(runtime_error,
+                      "Inconsistent devices, NCCL communicator device and provided logical device "
+                      "do not match");
     }
   }
 

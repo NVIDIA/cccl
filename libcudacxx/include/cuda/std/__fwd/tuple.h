@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,8 +25,19 @@
 #if _CCCL_HAS_HOST_STD_LIB()
 _CCCL_BEGIN_NAMESPACE_STD
 
+// MSVC reports the MSVC STL's own explicit specialization std::tuple<> at the first declaration of std::tuple, which
+// is this one unless <utility> was included before
+#  if _CCCL_COMPILER(MSVC, >=, 19, 44)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(5285) // cannot declare a specialization for 'std::tuple'
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 44)
+
 template <class...>
 class tuple;
+
+#  if _CCCL_COMPILER(MSVC, >=, 19, 44)
+_CCCL_DIAG_POP
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 44)
 
 _CCCL_END_NAMESPACE_STD
 #endif // _CCCL_HAS_HOST_STD_LIB()

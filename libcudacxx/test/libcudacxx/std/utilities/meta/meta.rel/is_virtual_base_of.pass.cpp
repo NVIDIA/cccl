@@ -16,7 +16,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4624) // class destructor was implicitly defined as del
 template <class Base, class Derived>
 __host__ __device__ constexpr void test_is_virtual_base_of(bool expected)
 {
-#if defined(_CCCL_BUILTIN_IS_VIRTUAL_BASE_OF)
+#ifdef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
   // Test the type of the variables
   {
     static_assert(cuda::std::is_same_v<bool const, decltype(cuda::std::is_virtual_base_of<Base, Derived>::value)>);

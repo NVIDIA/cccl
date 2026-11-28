@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -64,7 +64,7 @@
 #  define _CCCL_GRID_CONSTANT
 #endif // ^^^ no __grid_constant__ ^^^
 
-#if !defined(_CCCL_EXEC_CHECK_DISABLE)
+#ifndef _CCCL_EXEC_CHECK_DISABLE
 #  if _CCCL_CUDA_COMPILER(NVCC)
 #    define _CCCL_EXEC_CHECK_DISABLE _CCCL_PRAGMA(nv_exec_check_disable)
 #  else

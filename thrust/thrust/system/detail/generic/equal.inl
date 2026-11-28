@@ -5,14 +5,15 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/equal.h>
 #include <thrust/mismatch.h>
 #include <thrust/system/detail/generic/equal.h>
 
@@ -22,7 +23,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   return thrust::equal(exec, first1, last1, first2, ::cuda::std::equal_to<>());
@@ -32,7 +33,7 @@ equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, Inpu
 // we make this exception for equal and use nv_exec_check_disable because it is used in vector's implementation
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(thrust::execution_policy<DerivedPolicy>& exec,
       InputIterator1 first1,
       InputIterator1 last1,

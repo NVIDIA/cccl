@@ -4,8 +4,10 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -110,14 +112,7 @@ struct evens_before_odds
     {
       return x < y;
     }
-    else if (x % 2)
-    {
-      return false;
-    }
-    else
-    {
-      return true;
-    }
+    return x % 2 == 0;
   }
 };
 

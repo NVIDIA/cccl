@@ -132,6 +132,9 @@ Macros
 #. Macros for function attributes, like ``_CCCL_HOST_DEVICE``, should be ordered before declaration
    specifiers like ``constexpr`` or ``static``
 #. Do not mark kernels with ``__global__`` but with ``_CCCL_KERNEL_ATTRIBUTES``
+#. Use ``#ifdef MACRO`` instead of ``#if defined(MACRO)`` when a preprocessor condition only checks whether a
+   single macro is defined, since it is cheaper for the preprocessor to evaluate.
+   Keep ``#elif defined(MACRO)``, since ``#elifdef`` requires C++23.
 
 Comments
 ~~~~~~~~
@@ -193,7 +196,7 @@ These rules also include cudax.
 
        #include <cuda/std/detail/__config>
 
-       #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+       #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
        #  pragma GCC system_header
        #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
        #  pragma clang system_header
@@ -219,9 +222,6 @@ CUB and Thrust
 #. Non-public entities, except macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
    Non-public macros should be prefixed with ``_``.
-#. Any full qualification of a CUB or Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``,
-   and ``CUB_NS_QUALIFIER::`` instead of ``::cub::``.
-   This avoids lookup failures when a user defines a wrapped namespace.
 
 CUB
 ----
@@ -231,11 +231,16 @@ CUB
 #. Unit tests must use ``c2h::[host|device]_vector`` as containers over Thrust vectors,
    since they handle OOM conditions gracefully on some testing systems.
 #. Header files use ``.cuh`` as file extension
+#. Always fully qualify calls to free functions, even to functions in the same namespace. This avoids ADL.
+   Use ``_CUB::`` instead of ``::cub::`` for the top level CUB namespace.
+   This does not apply to examples, tests, benchmarks, and documentation.
 
 Thrust
 ------
 
 #. Header files use ``.h`` as file extension
+#. Any full qualification of a Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``.
+   This avoids lookup failures when a user defines a wrapped namespace.
 
 Licensing
 ---------

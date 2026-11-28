@@ -5,20 +5,20 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 scatter(thrust::execution_policy<DerivedPolicy>& exec,
         InputIterator1 first,
         InputIterator1 last,
@@ -30,7 +30,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename InputIterator3,
           typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -44,7 +44,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -55,4 +55,4 @@ _CCCL_HOST_DEVICE void scatter_if(
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/scatter.inl>
+#include <thrust/system/detail/generic/scatter.inl> // IWYU pragma: export

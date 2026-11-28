@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void setup(slice<T> s)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < s.size(); ind += nthreads)
@@ -32,12 +32,12 @@ __global__ void setup(slice<T> s)
 template <typename T>
 __global__ void check(T* x, size_t n)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < n; ind += nthreads)
   {
-    assert(x[ind] == 2.0 * ind + 1.0);
+    assert(x[ind] == (2.0 * ind) + 1.0);
   }
 }
 
@@ -61,7 +61,7 @@ void run()
   ctx.host_launch(handle_X.rw())->*[&](auto X) {
     for (size_t ind = 0; ind < n; ind++)
     {
-      X(ind) = 2.0 * X(ind) + 1.0;
+      X(ind) = (2.0 * X(ind)) + 1.0;
     }
   };
 

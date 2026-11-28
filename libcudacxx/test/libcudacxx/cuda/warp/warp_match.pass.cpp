@@ -75,7 +75,7 @@ TEST_DEVICE_FUNC void test_array()
   }
 }
 
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
 template <class T>
 TEST_DEVICE_FUNC void test_padded_array()
 {
@@ -116,7 +116,7 @@ __global__ void test_kernel()
   test_types(char3{0, 0, 0}, char3{1, 1, 1});
   using array_t = cuda::std::array<char, 6>;
   test_types(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
   test_padded_array<WithPadding>();
   test_padded_array<RelaxedWithPadding>();
 #endif

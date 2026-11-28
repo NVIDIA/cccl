@@ -1,5 +1,14 @@
+#include <thrust/device_allocator.h>
+#include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/concepts>
+#include <cuda/std/utility>
+
+#include <cstddef>
+#include <memory>
 
 #include <unittest/unittest.h>
 
@@ -12,7 +21,7 @@ struct saxpy_reference
 
   _CCCL_HOST_DEVICE T operator()(const T& x, const T& y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 
   T a;
@@ -36,7 +45,7 @@ struct TestFunctionalPlaceholdersValue
     thrust::transform(x.begin(), x.end(), y.begin(), reference.begin(), saxpy_reference<T>(a));
 
     using namespace thrust::placeholders;
-    thrust::transform(x.begin(), x.end(), y.begin(), result.begin(), a * _1 + _2);
+    thrust::transform(x.begin(), x.end(), y.begin(), result.begin(), (a * _1) + _2);
 
     ASSERT_ALMOST_EQUAL(reference, result);
   }

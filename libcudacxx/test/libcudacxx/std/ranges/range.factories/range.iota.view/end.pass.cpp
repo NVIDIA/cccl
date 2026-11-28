@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__clang__)
+#ifdef __clang__
 #  pragma clang diagnostic ignored "-Wsign-compare"
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic ignored "-Wsign-compare"

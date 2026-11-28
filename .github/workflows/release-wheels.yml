@@ -36,13 +36,55 @@ defaults:
     shell: bash --noprofile --norc -xeuo pipefail {0}
 
 jobs:
+  source:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      cutlass-version: ${{ steps.run.outputs.version }}
+      cutlass-sha256: ${{ steps.run.outputs.sha256 }}
+    steps:
+      - name: Identify the source run and its qualified CUTLASS wheel
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run-id }}
+        run: |
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          run="repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
+          metadata=$(gh api "$run" --jq '{path, event, conclusion, head_branch, head_sha, run_attempt}')
+          if [[ $(jq -r .path <<< "$metadata") != .github/workflows/release-cuda-coop-cutlass.yml ]]; then
+            exit 0
+          fi
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          tag=$(jq -er 'select(.event == "push" and .conclusion == "success") | .head_branch' <<< "$metadata")
+          [[ "$tag" =~ ^cuda-coop-cutlass-v[0-9]+\.[0-9]+\.[0-9]+(rc[0-9]+)?$ ]]
+          source_sha=$(jq -er .head_sha <<< "$metadata")
+          repo="repos/$GITHUB_REPOSITORY"
+          test "$(gh api "$repo/commits/refs/tags/$tag" --jq .sha)" = "$source_sha"
+          test "$(gh api "$repo/compare/$source_sha...main" --jq .merge_base_commit.sha)" = "$source_sha"
+          attempt=$(jq -er .run_attempt <<< "$metadata")
+          sha=$(gh api "$run/attempts/$attempt/jobs" | jq -er '
+            [.jobs[] | select(.conclusion == "success") | .name |
+             capture("^Test CUTLASS wheel (?<sha>[0-9a-f]{64}) on L4$").sha]
+            | select(length == 1) | .[0]')
+          echo "version=${tag#cuda-coop-cutlass-v}" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+
   publish-wheels:
     name: Publish wheels
+    needs: source
     runs-on: ubuntu-latest
+    env:
+      CUTLASS_VERSION: ${{ needs.source.outputs.cutlass-version }}
+      CUTLASS_SHA256: ${{ needs.source.outputs.cutlass-sha256 }}
     environment:
-      name: ${{ inputs.wheel-dst }}
+      name: ${{ needs.source.outputs.cutlass-version && format('cuda-coop-cutlass-{0}', inputs.wheel-dst) || inputs.wheel-dst }}
       url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/
     permissions:
+      actions: read
+      contents: read
       id-token: write
     steps:
       - name: Download component wheels
@@ -55,13 +97,47 @@ jobs:
           mv dl/*/*/*.whl dist/
           rm -rf dl
           ls -lh dist/
+          if [[ -n "$CUTLASS_VERSION" ]]; then
+            wheels=(dist/*)
+            [[ ${#wheels[@]} == 1 ]]
+            echo "$CUTLASS_SHA256  dist/cuda_coop_cutlass-$CUTLASS_VERSION-py3-none-any.whl" | sha256sum --check --strict
+          elif printf '%s\n' dist/*.whl | grep -Ei '^dist/cuda[._]+coop[._]+cutlass-' > /dev/null; then
+            echo 'Select the successful cuda-coop-cutlass tag build to publish this wheel.' >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        if: needs.source.outputs.cutlass-version
+        with:
+          path: release-tools
+          persist-credentials: false
+          sparse-checkout: ci/verify_cuda_coop_cutlass_index.py
+          sparse-checkout-cone-mode: false
+      - name: Check the CUTLASS wheel against the package indexes
+        if: needs.source.outputs.cutlass-version
+        env:
+          TARGET: ${{ inputs.wheel-dst }}
+        run: |
+          if [[ "$TARGET" == pypi ]]; then
+            python3 -I release-tools/ci/verify_cuda_coop_cutlass_index.py testpypi "$CUTLASS_VERSION" "$CUTLASS_SHA256"
+          fi
+          python3 -I release-tools/ci/verify_cuda_coop_cutlass_index.py --allow-missing "$TARGET" "$CUTLASS_VERSION" "$CUTLASS_SHA256"
 
       - name: Publish package distributions to PyPI
         if: ${{ inputs.wheel-dst == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+        with:
+          skip-existing: ${{ needs.source.outputs.cutlass-version != '' }}
 
       - name: Publish package distributions to TestPyPI
         if: ${{ inputs.wheel-dst == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: ${{ needs.source.outputs.cutlass-version != '' }}
+
+      - name: Verify the published CUTLASS wheel
+        if: needs.source.outputs.cutlass-version
+        env:
+          TARGET: ${{ inputs.wheel-dst }}
+        run: python3 -I release-tools/ci/verify_cuda_coop_cutlass_index.py "$TARGET" "$CUTLASS_VERSION" "$CUTLASS_SHA256"

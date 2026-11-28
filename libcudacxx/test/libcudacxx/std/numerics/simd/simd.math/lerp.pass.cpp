@@ -11,15 +11,27 @@
 // UNSUPPORTED: force-tile
 // error: calling a host device function in tile mode
 
-// <cuda/std/__simd_>
+// <cuda/std/simd>
 
 // [simd.math], lerp
 
-#include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/simd>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <int N>
+TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
+{
+  using F = simd::vec<float, N>;
+  using D = simd::vec<double, N>;
+  const F x(4.0f);
+  const D y(2.0);
+  const D interpolation = simd::lerp(x, y, 0.5);
+  check_math_values(interpolation, 3.0);
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -85,6 +97,7 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_mixed_arguments<N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }

@@ -1,12 +1,21 @@
+#include <thrust/detail/config.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/memory>
 #include <cuda/std/utility>
 
+#include <cstddef>
+#include <cstdlib>
 #include <iostream>
 
 #include <unittest/unittest.h>
@@ -41,7 +50,7 @@ public:
     correctly_dispatched = (num_copies == 0);
   }
 
-  bool is_valid()
+  bool is_valid() const
   {
     return correctly_dispatched;
   }
@@ -205,7 +214,7 @@ TEST_CASE("TestMallocDispatchExplicit", "[memory]")
 {
   const size_t n = 0;
 
-  my_memory_system sys(0);
+  my_memory_system sys(0); // NOLINT(misc-const-correctness)
   thrust::malloc(sys, n);
 
   REQUIRE(sys.is_valid());
@@ -221,7 +230,7 @@ TEST_CASE("TestFreeDispatchExplicit", "[memory]")
 {
   const thrust::pointer<my_memory_system, void> ptr{};
 
-  my_memory_system sys(0);
+  my_memory_system sys(0); // NOLINT(misc-const-correctness)
   thrust::free(sys, ptr);
 
   REQUIRE(sys.is_valid());
@@ -243,7 +252,7 @@ TEST_CASE("TestGetTemporaryBufferDispatchExplicit", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
-  my_memory_system sys(0);
+  my_memory_system sys(0); // NOLINT(misc-const-correctness)
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
 
@@ -276,7 +285,7 @@ TEST_CASE("TestGetTemporaryBufferDispatchImplicit", "[memory]")
   thrust::reverse(vec.begin(), vec.end());
 
   // call something we know will invoke get_temporary_buffer
-  my_memory_system sys(0);
+  my_memory_system sys(0); // NOLINT(misc-const-correctness)
 
   thrust::sort(sys, vec.begin(), vec.end());
 

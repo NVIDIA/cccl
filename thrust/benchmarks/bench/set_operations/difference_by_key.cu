@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cuda/std/__utility/pair.h>
+
 #include "by_key.cuh"
+#include "nvbench_helper.cuh"
 
 struct op_t
 {

@@ -104,7 +104,7 @@ TEST_DEVICE_FUNC void test_array()
   }
 }
 
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
 template <class T>
 TEST_DEVICE_FUNC void test_padded_array()
 {
@@ -158,7 +158,7 @@ TEST_DEVICE_FUNC void test()
   test_bool();
   test_array<unsigned char[3]>();
   test_array<uint32_t[2][3]>();
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
   test_padded_array<WithPadding>();
   test_padded_array<RelaxedWithPadding>();
 #endif // _CCCL_BUILTIN_CLEAR_PADDING

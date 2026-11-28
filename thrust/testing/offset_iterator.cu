@@ -1,7 +1,15 @@
+#include <thrust/device_vector.h>
 #include <thrust/distance.h>
+#include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/offset_iterator.h>
 
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 

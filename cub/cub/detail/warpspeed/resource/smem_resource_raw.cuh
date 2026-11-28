@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,7 +70,7 @@ struct SmemResourceRaw
   _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[NumSquads])
   {
-    const int numOwningThreads = squadCountThreads(squads);
+    const int numOwningThreads = _CUB::detail::warpspeed::squadCountThreads(squads);
 
     const int curPhase = mNumPhases;
     mNumPhases++;
@@ -129,9 +129,9 @@ struct SmemResourceRaw
     }
   }
 
-  _CCCL_DEVICE_API void* data()
+  _CCCL_DEVICE_API void* data() const
   {
-    return (void*) (mPtrBase + mStageCurrent * mStride);
+    return (void*) (mPtrBase + (mStageCurrent * mStride));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* ptrCurBarrierRelease(int phase)

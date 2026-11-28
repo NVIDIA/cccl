@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -47,7 +47,7 @@
 #endif // _CCCL_ENABLE_FREESTANDING
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_MOVE
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
 #endif // defined(__CUDACC_TILE__)
@@ -71,7 +71,7 @@
 #endif // _CCCL_FREESTANDING()
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // defined(__CUDACC_TILE__)
@@ -82,6 +82,8 @@
 #    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
+#  elif _CCCL_HOST_STD_LIB(STL)
+#    include <type_traits> // for ::std::move and ::std::move_if_noexcept
 #  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif // _CCCL_HOSTED()

@@ -1,10 +1,19 @@
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/functional>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
@@ -19,7 +28,7 @@ TEST_CASE("TestPermutationIteratorTraits", "[permutation_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, int&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

@@ -54,7 +54,13 @@ __global__ void __launch_bounds__(1024) device_test(char* gmem)
 
   __syncthreads();
 
+#if TEST_CUDA_COMPILER(NVCC, ==, 13, 5) && _CCCL_PTX_ARCH() >= 1000 && _CCCL_HAS_NV_ATOMIC_BUILTINS()
+  // nvbug 7121378: NVCC diagnoses the unreachable atomic RMW on local memory.
+  // Only this thread accesses xatom, so a load and store suffice for the increment.
+  for (xatom = 0; xatom.load() < passes; xatom.store(xatom.load() + 1))
+#else
   for (xatom = 0; xatom.load() < passes; xatom++)
+#endif
   {
     using A = cuda::atomic_ref<int, cuda::std::thread_scope_block>;
     A(histogram[A(hidx).fetch_add(1) % threads]).fetch_add(gmem[(xatom.load() * 8) + 0]);

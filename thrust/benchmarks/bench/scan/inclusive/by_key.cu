@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/scan.h>
+
+#include <cstddef>
+#include <cstdint>
 
 #include "nvbench_helper.cuh"
 

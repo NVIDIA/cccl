@@ -5,8 +5,10 @@
 #include <thrust/system/cuda/execution_policy.h>
 
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/functional>
 
 #include <cassert>
+#include <cstddef>
 #include <future>
 
 // This example demonstrates two ways to achieve algorithm invocations that are asynchronous with

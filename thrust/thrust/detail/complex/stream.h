@@ -8,16 +8,25 @@
 
 #include <thrust/complex.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HOSTED()
+#  include <ios>
+#endif // _CCCL_HOSTED()
+
 THRUST_NAMESPACE_BEGIN
 template <typename ValueType, class CharT, class Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<ValueType>& z)
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const complex<ValueType>& z)
 {
   os << '(' << z.real() << ',' << z.imag() << ')';
   return os;
 }
 
 template <typename ValueType, typename CharT, class Traits>
-std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<ValueType>& z)
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, complex<ValueType>& z)
 {
   ValueType re;
   ValueType im;

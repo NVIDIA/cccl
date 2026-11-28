@@ -33,27 +33,19 @@ struct Visitor
   template <class T>
   TEST_HOST_DEVICE_FUNC To operator()([[maybe_unused]] T v) const
   {
-    constexpr auto fmt_arg =
-      (cuda::std::is_same_v<To, HandleTag>)
-        ? cuda::std::__fmt_arg_t::__handle
-        : cuda::std::__fmt_determine_arg_t<Context, To>();
-
-    if constexpr (fmt_arg != cuda::std::__fmt_arg_t::__handle)
-    {
-      if constexpr (cuda::std::is_same_v<T, To>)
-      {
-        return v;
-      }
-      else
-      {
-        assert(false);
-        return To{};
-      }
-    }
-    else
+    if constexpr (cuda::std::is_same_v<To, HandleTag>)
     {
       assert((cuda::std::is_same_v<T, typename cuda::std::basic_format_arg<Context>::handle>) );
       return HandleTag{};
+    }
+    else if constexpr (cuda::std::is_same_v<T, To>)
+    {
+      return v;
+    }
+    else
+    {
+      assert(false);
+      return To{};
     }
   }
 };
@@ -65,8 +57,8 @@ TEST_HOST_DEVICE_FUNC void test_visit_format_arg(From value)
 
   constexpr auto fmt_arg = cuda::std::__fmt_determine_arg_t<Context, From>();
 
-  auto store = cuda::std::make_format_args<Context>(value);
-  auto args  = cuda::std::basic_format_args<Context>{store};
+  const auto store = cuda::std::make_format_args<Context>(value);
+  const auto args  = cuda::std::basic_format_args<Context>{store};
 
   assert(args.__size() == 1);
   assert(args.get(0));
@@ -247,22 +239,17 @@ TEST_HOST_DEVICE_FUNC void test_string_view()
   constexpr auto empty = TEST_STRLIT(CharT, "");
   constexpr auto str   = TEST_STRLIT(CharT, "abc");
 
-  {
-    using SV = cuda::std::basic_string_view<CharT>;
+  using SV = cuda::std::basic_string_view<CharT>;
+  test_visit_format_arg<CharT, SV>(SV{});
+  test_visit_format_arg<CharT, SV>(SV{empty});
+  test_visit_format_arg<CharT, SV>(SV{str});
 
-    test_visit_format_arg<CharT, SV>(SV{});
-    test_visit_format_arg<CharT, SV>(SV{empty});
-    test_visit_format_arg<CharT, SV>(SV{str});
-  }
-  {
-    struct test_char_traits : cuda::std::char_traits<CharT>
-    {};
-    using SV = cuda::std::basic_string_view<CharT, test_char_traits>;
-
-    test_visit_format_arg<CharT, SV>(SV{});
-    test_visit_format_arg<CharT, SV>(SV{empty});
-    test_visit_format_arg<CharT, SV>(SV{str});
-  }
+  struct test_char_traits : cuda::std::char_traits<CharT>
+  {};
+  using CustomSV = cuda::std::basic_string_view<CharT, test_char_traits>;
+  test_visit_format_arg<CharT, SV>(CustomSV{});
+  test_visit_format_arg<CharT, SV>(CustomSV{empty});
+  test_visit_format_arg<CharT, SV>(CustomSV{str});
 }
 
 template <class CharT>
@@ -298,5 +285,6 @@ TEST_HOST_DEVICE_FUNC void test()
 
 int main(int, char**)
 {
+  test();
   return 0;
 }
