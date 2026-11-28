@@ -25,7 +25,7 @@ from cuda.coop.cutlass import (
 from cuda.coop.cutlass._compiler import _rendering
 from cuda.coop.cutlass._compiler._launch import launch_facts_from_cutlass_api
 from cuda.coop.cutlass._lowering import _thread_group as lowering
-from cuda.coop.cutlass._planning import LaunchFacts
+from cuda.coop.cutlass._planning import LaunchFacts, ThreadHierarchy
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
@@ -183,3 +183,12 @@ def test_query_registration_rolls_back(monkeypatch):
     with pytest.raises(ValueError, match="bad ffi"):
         lowering._emit(request, cutlass.Uint32)
     assert not events
+
+
+def test_hierarchy_dimension_must_fit_cuda_index_type():
+    hierarchy = ThreadHierarchy._resolved(block_dim=1, grid_dim=(1 << 32) - 1)
+    assert hierarchy.grid_dim == ((1 << 32) - 1, 1, 1)
+    with pytest.raises(
+        ValueError, match="grid dimensions must fit an unsigned 32-bit integer"
+    ):
+        ThreadHierarchy._resolved(block_dim=1, grid_dim=1 << 32)

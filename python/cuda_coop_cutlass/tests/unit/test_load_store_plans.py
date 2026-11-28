@@ -18,6 +18,7 @@ from cuda.coop.cutlass._planning import (
     ArgumentBinding,
     StorageOwnership,
     this_block,
+    this_warp,
 )
 from tests._group_planning import _load_store, _plan
 
@@ -32,6 +33,16 @@ def _request(kind, algorithm, **kwargs):
         ),
         Int32,
     )
+
+
+@pytest.mark.parametrize(
+    "group, width", [(this_block(), 64), (this_warp(), 32)]
+)
+def test_tile_size_must_fit_cub_indices(group, width):
+    with pytest.raises(
+        ValueError, match="tile size must fit a signed 32-bit integer"
+    ):
+        _plan(group, _load_store(items_per_thread=(1 << 31) // width))
 
 
 @pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize"))

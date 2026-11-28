@@ -59,6 +59,16 @@ def _request(
 
 
 @pytest.mark.parametrize(
+    "group, width", [(this_block(), 64), (this_warp(), 32)]
+)
+def test_tile_size_must_fit_cub_indices(group, width):
+    with pytest.raises(
+        ValueError, match="tile size must fit a signed 32-bit integer"
+    ):
+        _request(group=group, items_per_thread=(1 << 31) // width)
+
+
+@pytest.mark.parametrize(
     "mode", tuple(mode.value for mode in BlockExchangeMode)
 )
 def test_block_mode_contract(mode):

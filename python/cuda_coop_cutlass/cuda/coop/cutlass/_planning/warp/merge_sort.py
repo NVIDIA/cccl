@@ -27,7 +27,7 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
-from ..block._common import normalize_positive_int
+from ..block._common import checked_tile_size, normalize_positive_int
 from ..block.merge_sort import _CHECKED_MERGE_SORT
 
 
@@ -156,6 +156,7 @@ def make_warp_merge_sort_specialization(
         raise ValueError(
             "WarpMergeSort requires threads_in_warp in {1, 2, 4, 8, 16, 32}"
         )
+    checked_tile_size((threads_in_warp,), items_per_thread)
     payload = (
         WarpMergeSortPayload.PAIRS
         if value_dtype is not None

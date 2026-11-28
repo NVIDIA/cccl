@@ -50,6 +50,16 @@ def _request(*, group=None, count=None, pairs=False, storage=None, **options):
     )
 
 
+@pytest.mark.parametrize(
+    "group, width", [(this_block(), 64), (this_warp(), 32)]
+)
+def test_tile_size_must_fit_cub_indices(group, width):
+    with pytest.raises(
+        ValueError, match="tile size must fit a signed 32-bit integer"
+    ):
+        _request(group=group, items_per_thread=(1 << 31) // width)
+
+
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 @pytest.mark.parametrize("pairs", (False, True))
 def test_numeric_results(dtype, pairs):

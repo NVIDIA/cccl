@@ -30,6 +30,7 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
+from ._common import checked_tile_size
 
 
 class BlockMergeSortPayload(str, Enum):
@@ -321,6 +322,7 @@ def make_block_merge_sort_specialization(
         valid_items=valid_items,
         oob_default=oob_default,
     )
+    checked_tile_size(block_dim, call.items_per_thread)
     specialization = Algorithm(
         struct_name="CudaCoopBlockMergeSort"
         if call.has_partial_tile

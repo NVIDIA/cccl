@@ -38,7 +38,11 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
-from ._common import normalize_block_dim, normalize_positive_int
+from ._common import (
+    checked_tile_size,
+    normalize_block_dim,
+    normalize_positive_int,
+)
 
 
 class BlockLoadStoreKind(str, Enum):
@@ -525,17 +529,12 @@ def make_block_load_store_specialization(
         include_full_tile=include_full_tile,
         include_pointer_offset=include_pointer_offset,
     )
+    tile_items = checked_tile_size(block_dim, semantics.items_per_thread)
     if semantics.valid_items.kind is BindingKind.STATIC:
         value = semantics.valid_items.value
         if isinstance(value, bool) or not isinstance(value, Integral):
             raise TypeError("static valid_items must be an integer")
         value = int(value)
-        tile_items = (
-            semantics.items_per_thread
-            * block_dim[0]
-            * block_dim[1]
-            * block_dim[2]
-        )
         if not 0 <= value <= tile_items:
             raise ValueError(
                 "static valid_items must be between zero and the block tile "
