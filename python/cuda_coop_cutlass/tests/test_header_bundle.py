@@ -193,6 +193,34 @@ def test_gitless_archive_does_not_inherit_enclosing_repository_revision(
     assert _bundle_provenance(build_root) == {"cccl_source_commit": "unknown"}
 
 
+def test_invalid_git_worktree_cannot_reuse_sdist_provenance(tmp_path):
+    _require_packaging_tools()
+    source_root = tmp_path / "cccl"
+    package_root = _prepare_minimal_cccl_source(source_root)
+    (source_root / ".git").write_text("invalid git file", encoding="utf-8")
+    receipt = package_root / "cccl-bundle-provenance.json"
+    receipt.write_text('{"cccl_source_commit":"stale"}', encoding="utf-8")
+    git_env = _isolated_git_env()
+
+    build = tmp_path / "build"
+    result = _configure_cuda_coop(package_root, build, git_env)
+    assert result.returncode != 0
+    assert "could not verify the CCCL worktree root" in result.stderr
+    result = _configure_cuda_coop(
+        package_root,
+        build,
+        git_env,
+        "-DCUDA_COOP_CUTLASS_ALLOW_DIRTY_HEADER_BUNDLE=ON",
+    )
+    result.check_returncode()
+    assert _bundle_provenance(build) == {"cccl_source_commit": "unknown"}
+
+    (source_root / ".git").unlink()
+    result = _configure_cuda_coop(package_root, build, git_env)
+    result.check_returncode()
+    assert _bundle_provenance(build) == {"cccl_source_commit": "unknown"}
+
+
 @pytest.mark.parametrize(
     "change,relative_path",
     [
@@ -200,6 +228,8 @@ def test_gitless_archive_does_not_inherit_enclosing_repository_revision(
         ("untracked", Path("libcudacxx/include/cuda/functional")),
         ("ignored", Path("libcudacxx/include/cuda/hierarchy")),
         ("deleted", Path("cmake/install/cub.cmake")),
+        ("modified", Path("cmake/install/cudax.cmake")),
+        ("modified", Path("python/cuda_coop_cutlass/pyproject.toml")),
         ("modified", Path("python/cuda_coop_cutlass/CMakeLists.txt")),
     ],
 )

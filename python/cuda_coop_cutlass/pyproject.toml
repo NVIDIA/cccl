@@ -96,10 +96,11 @@ reproducible = true
 
 [tool.scikit-build.sdist]
 cmake = true
-include = ["cccl-bundle-provenance.json"]
 exclude = [".venv", "build", ".cache", ".pytest_cache", "**/__pycache__"]
 
 [tool.scikit-build.sdist.force-include]
+"build/sdist-inputs/LICENSE" = "LICENSE"
+"build/sdist-inputs/cccl-bundle-provenance.json" = "cccl-bundle-provenance.json"
 "../../cub/cub" = "_cccl/cub/cub"
 "../../thrust/thrust" = "_cccl/thrust/thrust"
 "../../libcudacxx/include/cuda" = "_cccl/libcudacxx/include/cuda"

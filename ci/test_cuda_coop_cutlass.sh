@@ -86,6 +86,8 @@ case "$stage" in
   host | compile)
     python -I -m pytest -v -m 'not gpu' test_*.py packaging/ unit/
     if [[ "$stage" == compile ]]; then
+      python -m pip install pyyaml
+      python -I -m pytest -q "$ci_dir/test/test_cuda_coop_cutlass_ci.py"
       for route in 0 1; do
         CUTE_DSL_USE_EXTENSION_COMPILER="$route" python -I -m pytest -v -m 'not gpu' compile/
       done

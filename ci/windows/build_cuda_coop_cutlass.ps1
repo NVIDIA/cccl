@@ -26,3 +26,12 @@ if ($Wheels.Count -ne 1 -or $Sources.Count -ne 1) {
 }
 & $PythonExe (Join-Path $RepoRoot "ci/validate_cuda_coop_cutlass_artifacts.py") $Wheels[0].FullName $Sources[0].FullName
 if ($LASTEXITCODE -ne 0) { throw "cuda-coop-cutlass artifact validation failed." }
+
+Invoke-Checked { & $PythonExe -m pip install "$($Wheels[0].FullName)[test]" } "Failed to install the built wheel"
+Invoke-Checked { & $PythonExe -m pip check } "Inconsistent cuda-coop-cutlass dependencies"
+Push-Location (Join-Path $PackageRoot "tests")
+try {
+    Invoke-Checked { & $PythonExe -I -m pytest -q unit/test_compiler.py } "Provider cache tests failed"
+} finally {
+    Pop-Location
+}

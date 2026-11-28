@@ -105,9 +105,11 @@ if (CUDA_COOP_CUTLASS_INSTALL_HEADER_BUNDLE)
       "cmake/CCCLInstallRules.cmake"
       "cmake/install/cccl.cmake"
       "cmake/install/cub.cmake"
+      "cmake/install/cudax.cmake"
       "cmake/install/libcudacxx.cmake"
       "cmake/install/thrust.cmake"
       "python/cuda_coop_cutlass/CMakeLists.txt"
+      "python/cuda_coop_cutlass/pyproject.toml"
     )
     execute_process(
       COMMAND
@@ -131,6 +133,12 @@ if (CUDA_COOP_CUTLASS_INSTALL_HEADER_BUNDLE)
         "The CCCL header bundle inputs contain local changes"
       )
     endif()
+  elseif (EXISTS "${CCCL_SOURCE_DIR}/.git")
+    set(_cuda_coop_cutlass_header_bundle_unverified ON)
+    set(
+      _cuda_coop_cutlass_header_bundle_diagnostic
+      "Git could not verify the CCCL worktree root"
+    )
   endif()
 
   if (_cuda_coop_cutlass_header_bundle_unverified)
@@ -161,7 +169,10 @@ if (CUDA_COOP_CUTLASS_INSTALL_HEADER_BUNDLE)
       ERROR_QUIET
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-  elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cccl-bundle-provenance.json")
+  elseif (
+    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/_cccl"
+    AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cccl-bundle-provenance.json"
+  )
     file(
       READ "${CMAKE_CURRENT_SOURCE_DIR}/cccl-bundle-provenance.json"
       _cuda_coop_cutlass_sdist_provenance
@@ -200,10 +211,15 @@ if (CUDA_COOP_CUTLASS_INSTALL_HEADER_BUNDLE)
     "{\n  \"cccl_source_commit\": \"${_cuda_coop_cutlass_source_revision}\"\n}\n"
   )
   if (SKBUILD_STATE STREQUAL "sdist")
-    # Preserve the header revision when the sdist is built without Git metadata.
+    # Stage generated inputs outside the package source payload.
     configure_file(
       "${_cuda_coop_cutlass_bundle_provenance}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/cccl-bundle-provenance.json"
+      "${CMAKE_CURRENT_SOURCE_DIR}/build/sdist-inputs/cccl-bundle-provenance.json"
+      COPYONLY
+    )
+    configure_file(
+      "${CCCL_SOURCE_DIR}/LICENSE"
+      "${CMAKE_CURRENT_SOURCE_DIR}/build/sdist-inputs/LICENSE"
       COPYONLY
     )
   endif()

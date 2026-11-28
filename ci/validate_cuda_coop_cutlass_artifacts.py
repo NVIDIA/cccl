@@ -166,6 +166,7 @@ def validate_sdist(path: Path, version: str | None, source_commit: str | None) -
         required = {
             "pyproject.toml",
             "CMakeLists.txt",
+            "LICENSE",
             "README.md",
             "PKG-INFO",
             "cccl-bundle-provenance.json",
@@ -178,6 +179,11 @@ def validate_sdist(path: Path, version: str | None, source_commit: str | None) -
         } | {"_cccl/" + license for license in _LICENSES}
         if missing := required - names:
             raise SystemExit(f"Missing self-contained sdist inputs: {sorted(missing)}")
+        license_file = archive.extractfile(root + "LICENSE")
+        bundle_license = archive.extractfile(root + "_cccl/LICENSE")
+        assert license_file is not None and bundle_license is not None
+        if license_file.read() != bundle_license.read():
+            raise SystemExit("The sdist LICENSE differs from the bundled CCCL license")
         for member in members:
             parts = PurePosixPath(member.name).parts
             if ".." in parts or member.name.startswith("/"):

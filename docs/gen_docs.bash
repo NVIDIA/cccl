@@ -212,7 +212,7 @@ else
 fi
 
 # Check if dependencies are installed in the virtual environment
-if ! python -c "import sphinx" 2>/dev/null; then
+if ! python -c "import sphinx, pytest" 2>/dev/null; then
     echo "Installing documentation dependencies..."
     python3 -m pip install -r requirements.txt || {
         echo "Error: Failed to install documentation dependencies"
@@ -220,6 +220,8 @@ if ! python -c "import sphinx" 2>/dev/null; then
         exit 1
     }
 fi
+
+python -m pytest -q ../python/cuda_coop_cutlass/tests/test_docs_sources.py
 
 # Generate Doxygen XML in parallel (if doxygen is available)
 if [[ "${CCCL_DOCS_SKIP_AUTO_API_GENERATOR:-0}" == "1" ]]; then
