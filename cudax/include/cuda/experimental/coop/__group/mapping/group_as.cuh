@@ -21,11 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/narrow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
-#include <cuda/std/__iterator/next.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
@@ -34,15 +32,14 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
-#include <cuda/std/__utility/constant_wrapper.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
-#include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
+#include <cuda/experimental/coop/__group/range_to_sequence.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -254,16 +251,6 @@ public:
   }
 };
 
-// Materialize a compile-time range into a sequence without requiring random-access iterators.
-template <class _Wrapper, ::cuda::std::size_t... _Is>
-[[nodiscard]]
-_CCCL_DEVICE_API constexpr auto __group_as_sequence(::cuda::std::index_sequence<_Is...>) -> ::cuda::std::index_sequence<
-  ::cuda::narrow<::cuda::std::size_t>(*::cuda::std::next(::cuda::std::ranges::begin(_Wrapper::value), _Is))...>;
-
-template <class _Wrapper>
-using __group_as_sequence_t _CCCL_NODEBUG = decltype(::cuda::experimental::coop::__group_as_sequence<_Wrapper>(
-  ::cuda::std::make_index_sequence<::cuda::std::ranges::size(_Wrapper::value)>{}));
-
 template <::cuda::std::size_t... _Counts>
 class group_as<::cuda::std::index_sequence<_Counts...>>
 {
@@ -329,15 +316,9 @@ class group_as<::cuda::std::index_sequence<_Counts...>>
   }
 
 public:
-  _CCCL_TEMPLATE(class _Int, _Int... _Values)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::index_sequence<::cuda::narrow<::cuda::std::size_t>(_Values)...>,
-                                        ::cuda::std::index_sequence<_Counts...>>)
-  _CCCL_DEVICE_API explicit constexpr group_as(const ::cuda::std::integer_sequence<_Int, _Values...>&) {}
-
-  _CCCL_TEMPLATE(auto _Range, class _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<__group_as_sequence_t<::cuda::std::constant_wrapper<_Range, _Tp>>,
-                                        ::cuda::std::index_sequence<_Counts...>>)
-  _CCCL_DEVICE_API explicit constexpr group_as(const ::cuda::std::constant_wrapper<_Range, _Tp>&) {}
+  _CCCL_TEMPLATE(class _StaticRange)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<__to_index_sequence_t<_StaticRange>, ::cuda::std::index_sequence<_Counts...>>)
+  _CCCL_DEVICE_API explicit constexpr group_as(const _StaticRange&) noexcept {}
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev) const
@@ -359,19 +340,8 @@ _CCCL_REQUIRES(
     _CCCL_AND ::cuda::std::is_convertible_v<::cuda::std::ranges::range_value_t<_Range>, ::cuda::std::uint32_t>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(_Range&&) -> group_as<::cuda::std::ranges::views::all_t<_Range>>;
 
-template <class _Int, _Int... _Counts>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(const ::cuda::std::integer_sequence<_Int, _Counts...>&)
-  -> group_as<::cuda::std::index_sequence<::cuda::narrow<::cuda::std::size_t>(_Counts)...>>;
-
-_CCCL_TEMPLATE(auto _Range, class _Tp)
-_CCCL_REQUIRES(
-  ::cuda::std::ranges::sized_range<decltype((::cuda::std::constant_wrapper<_Range, _Tp>::value))>
-    _CCCL_AND ::cuda::std::ranges::forward_range<decltype((::cuda::std::constant_wrapper<_Range, _Tp>::value))>
-      _CCCL_AND ::cuda::std::is_convertible_v<
-        ::cuda::std::ranges::range_value_t<decltype((::cuda::std::constant_wrapper<_Range, _Tp>::value))>,
-        ::cuda::std::size_t>)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(const ::cuda::std::constant_wrapper<_Range, _Tp>&)
-  -> group_as<__group_as_sequence_t<::cuda::std::constant_wrapper<_Range, _Tp>>>;
+template <class _StaticRange>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(const _StaticRange&) -> group_as<__to_index_sequence_t<_StaticRange>>;
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED
