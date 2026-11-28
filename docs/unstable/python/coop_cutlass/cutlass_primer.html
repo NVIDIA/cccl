@@ -1,0 +1,1710 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Introduction to CUTLASS for cuda.coop.cutlass Developers &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=6a604523" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../../_static/design-tabs.js?v=fcb327ea"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'python/coop_cutlass/cutlass_primer';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../_static/deduplicate_toc.js?v=abc5616f"></script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/python/coop_cutlass/cutlass_primer.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Minimal CuTe DSL Integration Example" href="cutlass_integration_example.html" />
+    <link rel="prev" title="Developer Guide" href="developer_guide.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+
+
+  </head>
+
+  <body data-default-mode="">
+
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cccl/index.html">CCCL C++ Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/macros.html">Macros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/simd.html">SIMD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/fp.html">FP Component</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/tile.html">CUDA Tile support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/warp_wide.html">Warp-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/warp.html">Warp-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/block_wide.html">Block-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/block.html">Block-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/device_wide.html">Device-Wide Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/device.html">Device-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/environment.html">Execution Environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/determinism.html">Determinism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">Tunings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning_infra.html">Automated Tuning Infrastructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/test_overview.html">CUB Tests</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/algorithms.html">Algorithms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/copying.html">Copying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/merging.html">Merging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/prefix_sum.html">Prefix sums</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/reductions.html">Reductions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/reordering.html">Reordering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/searching.html">Searching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/set_operations.html">Set Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/sorting.html">Sorting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/transformations.html">Transformations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/containers.html">Containers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1host__vector.html">thrust::host_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1device__vector.html">thrust::device_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html">thrust::universal_host_pinned_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html">thrust::universal_vector</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/function_objects.html">Function Objects</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/adaptors.html">Function Object Adaptors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/placeholder.html">Placeholder Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/predefined.html">Function Objects</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/iterators.html">Iterators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html">thrust::make_transform_input_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html">thrust::make_constant_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html">thrust::make_counting_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html">thrust::make_permutation_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html">thrust::make_tabulate_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html">thrust::make_strided_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html">thrust::make_transform_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html">thrust::make_discard_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html">thrust::make_zip_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html">thrust::make_transform_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html">thrust::make_shuffle_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html">thrust::iterator_traversal_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html">thrust::iterator_system_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html">thrust::iterator_reference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html">thrust::iterator_pointer_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga9768cd2705c09755d0dd2cf7a1cd84cc.html">thrust::iterator_traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html">thrust::iterator_difference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html">thrust::iterator_value_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html">thrust::bidirectional_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html">thrust::random_access_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html">thrust::output_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html">thrust::input_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html">thrust::forward_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163.html">thrust::retag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5.html">thrust::reinterpret_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1bidirectional__traversal__tag.html">thrust::bidirectional_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1forward__traversal__tag.html">thrust::forward_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1incrementable__traversal__tag.html">thrust::incrementable_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1no__traversal__tag.html">thrust::no_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1random__access__traversal__tag.html">thrust::random_access_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1single__pass__traversal__tag.html">thrust::single_pass_traversal_tag</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/memory_management.html">Memory Management</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/memory_management/allocators.html">Allocators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/memory_management/memory_resources.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga1a350740a6ade432f3781096df91f162.html">thrust::device_free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html">thrust::device_delete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html">thrust::device_malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html">thrust::malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html">thrust::return_temporary_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html">thrust::swap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html">thrust::device_new</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html">thrust::free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gaa7bf641aa7af0b0dfccf11fc42bbfb6b.html">thrust::raw_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html">thrust::raw_reference_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584.html">thrust::get_temporary_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/numerics.html">Numerics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers.html">Complex Numbers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga040f9fbb88115eebdb8dd423c5e7e134.html">thrust::operator&lt;&lt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be.html">thrust::sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga10d992afe589adffa671b976a5225b3e.html">thrust::sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640.html">thrust::asin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2ec4be34f6b564b8e143ea57e0fa9a94.html">thrust::cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2ffc507023dd15495760fee46cdbebf9.html">thrust::acosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html">thrust::abs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga43083869bf43ea7965c742797b2dde74.html">thrust::log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4a3a56ebc4cd4390daf813feb058228f.html">thrust::atanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4aea440ee8f92a90b9c1cc5070349614.html">thrust::cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a.html">thrust::exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4d1b06b9e0ae6849982172915e04d70b.html">thrust::asinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e.html">thrust::pow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1.html">thrust::norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga6cdba0f86d026da897aed8d758298544.html">thrust::operator/</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669.html">thrust::arg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8224f8e3822afe73300642b65b339331.html">thrust::log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8a71b59095aad09fb37a4d63df982320.html">thrust::operator*</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8afd023e30b61d23806633f29010bc69.html">thrust::proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8ff5d15853a4f98d229636510adcca97.html">thrust::tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e.html">thrust::operator&gt;&gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga969f3d40a0d9f7a2bcfdce2a83233edc.html">thrust::conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306.html">thrust::polar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga999d22f32e88807f5b629905eab61646.html">thrust::operator==</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga9a987acfaaa1f71722c2cc80426db066.html">thrust::operator-</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaa8228e3d100b0eb806d42b325f6a95d8.html">thrust::acos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b.html">thrust::operator!=</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gab608ce4c32a54c6e849ece60df42a036.html">thrust::tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gae3cb9b2e1de24c92ea91a61eb9477c0e.html">thrust::atan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff.html">thrust::sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaf8d90cd8139cb521bbcdc3b4adcf2e03.html">thrust::operator+</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/parallel_execution_policies.html">Parallel Execution Policies</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html">thrust::device</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html">thrust::host</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/random.html">Random Number Generators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/predefined.html">Random Number Engines with Predefined Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/distributions.html">Random Number Distributions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/engine.html">Random Number Engines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/engine_adaptors.html">Random Number Engine Adaptors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/system.html">System</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/system/systems.html">Systems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/system/diagnostics.html">System Diagnostics</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/utility.html">Utility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/pair.html">Pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/tuple.html">Tuple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/type_traits.html">Type Traits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__memory__resource.html">cuda::experimental::graph_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/places.html">Places</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/coop/index.html">CCCL Cooperative</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/coop/group/index.html">CCCL Cooperative Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/coop/algorithm/index.html">CCCL Cooperative Algorithms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/determinism.html">Determinism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/config_macros.html">CCCL configuration macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/coding_conventions.html">CCCL C++ Coding Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/review_checks.html">CCCL Review Checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/debugger_setup.html">General Debugging</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">CCCL Python Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../setup.html">Setup and Installation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../compute/index.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../compute/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../compute/developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">cuda.coop.cutlass: Cooperative primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="programming_guide.html">Programming Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html">Executable examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html">Programming concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> API Reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="advanced.html">Advanced topics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tensor_memory_topk.html">Tensor Core and TopK interop</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faqs.html">FAQs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="visualizations/index.html">Visualizations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/load.html">Load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/store.html">Store</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/exchange.html">Exchange</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/shuffle.html">Shuffle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/reduce.html">Reduce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/reduce-batched.html">Batched Warp Reduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/scan.html">Scan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/adjacent-difference.html">Adjacent Difference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/discontinuity.html">Discontinuity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/histogram.html">Histogram</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/run-length-decode.html">Run Length Decode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/merge-sort.html">Merge Sort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/radix.html">Radix Sort and Rank</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/topk.html">TopK</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="developer_guide.html">Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4 current active"><a aria-current="page" class="current reference internal" href="#">Introduction to CUTLASS for cuda.coop.cutlass Developers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cutlass_integration_example.html">Minimal CuTe DSL Integration Example</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../stf.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code>: Sequential Task Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stf_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../contributors/index.html">Contributor Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../contributors/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/install_build_test.html">Install, Build, Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/targeted_builds.html">Build and run targeted tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/launching.html">Launching a container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/vscode_cmake_tools.html">Using CMake Presets via VS Code GUI extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/creating_a_pull_request.html">Creating a Pull Request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/reproducing_ci.html">Reproducing CI locally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/override_matrix.html">Override matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/adding_build_target.html">Adding a build target</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributors/code_of_conduct.html">Code of Conduct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributors/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../maintainers/index.html">Maintainer Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../maintainers/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/backport_process.html">How to commit fixes to release branches (backport process)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/compile_time.html">Run compile-time benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/plan_work_with_github_issues.html">How To Plan Work with GitHub Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/adding_ci_coverage.html">Adding CI coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/adding_new_devcontainer.html">Adding a new devcontainer toolchain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../maintainers/references/index.html">References</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/branching_strategy.html">Git Methodology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/coderabbit.html">CodeRabbit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/references/compile_time.html">Compile-time benchmark reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../infrastructure/index.html">Infrastructure</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/ci/references/index.html">CI Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_overview.html">CI overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/change_detection.html">Change detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/matrix_yaml.html">matrix.yaml reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_scripts.html">CI scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_artifacts.html">Artifact system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/gha_workflows.html">GitHub Actions workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/skip_tags.html">Skip tags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/cmake/references/index.html">CMake Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/preset_reference.html">Preset reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/cmake_modules.html">CMake helper modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/architecture_flags.html">Architecture flags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/devcontainer/references/index.html">Devcontainer Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/devcontainer/references/devcontainer_overview.html">Devcontainer overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/devcontainer/references/launch_sh_reference.html">launch.sh reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">CCCL Python Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link"><code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code>: Cooperative Primitives for CuTe Kernels</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="developer_guide.html" class="nav-link">Developer Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Introduction to CUTLASS for cuda.coop.cutlass Developers</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+
+<div class="admonition note coop-raw-source">
+  <p class="admonition-title">Agents</p>
+  <p>For a more token-efficient view of this page, read the
+    <a href="../../_sources/python/coop_cutlass/cutlass_primer.rst.txt">raw documentation source</a>.
+    Follow its includes and API references for code examples and docstrings.</p>
+</div>
+
+
+  <section id="introduction-to-cutlass-for-cuda-coop-cutlass-developers">
+<span id="cuda-coop-cutlass-cutlass-primer"></span><h1>Introduction to CUTLASS for cuda.coop.cutlass Developers<a class="headerlink" href="#introduction-to-cutlass-for-cuda-coop-cutlass-developers" title="Link to this heading">#</a></h1>
+<p>This page is for developers who work on <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> and have not
+used CUTLASS or its Python DSL before. It explains what CUTLASS is, how the
+CuTe DSL turns a Python function into a GPU kernel, how that differs from
+other Python compilers you may know, and which of its mechanisms
+<code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> relies on. The <a class="reference internal" href="developer_guide.html"><span class="doc">Developer Guide</span></a>
+then follows one primitive through the implementation, and
+<a class="reference internal" href="cutlass_integration_example.html"><span class="doc">Minimal CuTe DSL Integration Example</span></a> shows, in a single file with no
+<code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> abstractions, the first eight integration points of
+the table in “Where cuda.coop.cutlass plugs in”.</p>
+<p>Paths to CUTLASS DSL modules below are relative to the installed <code class="docutils literal notranslate"><span class="pre">cutlass</span></code>
+package, for example <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass</span></code>
+or <code class="docutils literal notranslate"><span class="pre">python_packages/cutlass</span></code> depending on the wheel. Paths to our modules
+are relative to <code class="docutils literal notranslate"><span class="pre">python/cuda_coop_cutlass/cuda/coop/cutlass</span></code>. The DSL is
+distributed under NVIDIA’s EULA, so read its sources for understanding but
+do not copy them into this repository.</p>
+<section id="what-cutlass-is-and-which-part-we-use">
+<h2>What CUTLASS is, and which part we use<a class="headerlink" href="#what-cutlass-is-and-which-part-we-use" title="Link to this heading">#</a></h2>
+<p>CUTLASS is NVIDIA’s open-source C++ template library for GEMM and related
+kernels. Its lower layer, <strong>CuTe</strong>, is an algebra of layouts and tensors that
+describes how threads and data map onto each other. <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code>
+does not use the C++ library. CUB, the library that <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code>
+wraps, is a separate CCCL library.</p>
+<p>Since CUTLASS 4, the same project ships a Python front end, the <strong>CUTLASS
+DSL</strong> or <strong>CuTe DSL</strong>, installed as <code class="docutils literal notranslate"><span class="pre">nvidia-cutlass-dsl</span></code>. You write GPU
+kernels as decorated Python functions, and the DSL compiles them through its
+own MLIR distribution to a cubin that it also launches. This Python layer is
+the only part of CUTLASS that <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> depends on. When this
+documentation says CuTe, CuTe DSL, or the CUTLASS compiler, it means this
+Python-plus-MLIR toolchain.</p>
+<p>Kernel code imports one package, <code class="docutils literal notranslate"><span class="pre">cutlass</span></code>. The parts that matter here
+are:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Part</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass</span></code> and <code class="docutils literal notranslate"><span class="pre">cutlass.cute</span></code></p></td>
+<td><p>Public API: <code class="docutils literal notranslate"><span class="pre">cute.jit</span></code>, <code class="docutils literal notranslate"><span class="pre">cute.kernel</span></code>, <code class="docutils literal notranslate"><span class="pre">cute.compile</span></code>, numeric
+types such as <code class="docutils literal notranslate"><span class="pre">cutlass.Int32</span></code>, <code class="docutils literal notranslate"><span class="pre">cutlass.Constexpr</span></code>, pointers,
+layouts, tensors, <code class="docutils literal notranslate"><span class="pre">cute.arch</span></code> intrinsics, and <code class="docutils literal notranslate"><span class="pre">cute.ffi</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass.base_dsl</span></code></p></td>
+<td><p>The generic tracing compiler: the <code class="docutils literal notranslate"><span class="pre">&#64;jit</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;kernel</span></code> runners,
+the AST preprocessor, compile options, the FFI, and the environment
+variable manager.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass.cutlass_dsl</span></code></p></td>
+<td><p>The CuTe-specific DSL subclass <code class="docutils literal notranslate"><span class="pre">CuTeDSL</span></code>: GPU module and kernel
+emission, kernel launch, launch facts, and the compiler backend.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass._mlir</span></code></p></td>
+<td><p>MLIR Python bindings with the <code class="docutils literal notranslate"><span class="pre">cute</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda</span></code>, <code class="docutils literal notranslate"><span class="pre">lir</span></code>, <code class="docutils literal notranslate"><span class="pre">nvvm</span></code>,
+<code class="docutils literal notranslate"><span class="pre">llvm</span></code>, <code class="docutils literal notranslate"><span class="pre">scf</span></code>, <code class="docutils literal notranslate"><span class="pre">arith</span></code>, <code class="docutils literal notranslate"><span class="pre">func</span></code>, and <code class="docutils literal notranslate"><span class="pre">gpu</span></code> dialects.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass.memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SmemAllocator</span></code>, the shared-memory allocation helper.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_cutlass_ir</span></code> and <code class="docutils literal notranslate"><span class="pre">libcute_dsl_runtime</span></code></p></td>
+<td><p>The native code: the extension module behind <code class="docutils literal notranslate"><span class="pre">cutlass._mlir</span></code> and
+the runtime library. The <code class="docutils literal notranslate"><span class="pre">[cu13]</span></code> extra installs their CUDA 13
+builds.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> adds one thing to this toolchain: CUB device code
+reachable from a CuTe kernel, with the kernel’s launch shape, scratch, and
+synchronization requirements handled for the caller.</p>
+</section>
+<section id="a-cute-kernel-piece-by-piece">
+<h2>A CuTe kernel, piece by piece<a class="headerlink" href="#a-cute-kernel-piece-by-piece" title="Link to this heading">#</a></h2>
+<p>The kernel from <a class="reference internal" href="cutlass_integration_example.html"><span class="doc">Minimal CuTe DSL Integration Example</span></a> is small enough to read
+whole:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@cute</span><span class="o">.</span><span class="n">kernel</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_block</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">cute</span><span class="o">.</span><span class="n">Pointer</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">cute</span><span class="o">.</span><span class="n">Pointer</span><span class="p">):</span>
+    <span class="n">tidx</span><span class="p">,</span> <span class="n">tidy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cute</span><span class="o">.</span><span class="n">arch</span><span class="o">.</span><span class="n">thread_idx</span><span class="p">()</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">tidx</span> <span class="o">+</span> <span class="n">tidy</span> <span class="o">*</span> <span class="n">_BLOCK</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">cute</span><span class="o">.</span><span class="n">make_tensor</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">cute</span><span class="o">.</span><span class="n">make_layout</span><span class="p">(</span><span class="n">_THREADS</span><span class="p">))</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">cute</span><span class="o">.</span><span class="n">make_tensor</span><span class="p">(</span><span class="n">destination</span><span class="p">,</span> <span class="n">cute</span><span class="o">.</span><span class="n">make_layout</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="n">block_sum</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">rank</span><span class="p">])</span>  <span class="c1"># 1. Traced like any other CuTe call.</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">total</span>
+
+
+<span class="nd">@cute</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">cute</span><span class="o">.</span><span class="n">Pointer</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">cute</span><span class="o">.</span><span class="n">Pointer</span><span class="p">):</span>
+    <span class="n">sum_block</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">_BLOCK</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">&#64;cute.kernel</span></code> marks a GPU kernel and <code class="docutils literal notranslate"><span class="pre">&#64;cute.jit</span></code> marks a host function
+that CuTe compiles. Calling the kernel inside the host function returns a
+launcher. <code class="docutils literal notranslate"><span class="pre">.launch(grid=...,</span> <span class="pre">block=...)</span></code> emits the kernel into the module
+and emits the launch. <code class="docutils literal notranslate"><span class="pre">cute.compile(launch,</span> <span class="pre">source,</span> <span class="pre">destination)</span></code> returns
+a compiled callable for those argument types, which is then called with
+matching arguments. Calling <code class="docutils literal notranslate"><span class="pre">launch(...)</span></code> directly compiles and runs in
+one step.</p>
+<p>Inside the kernel, <code class="docutils literal notranslate"><span class="pre">cute.arch.thread_idx()</span></code> returns three <code class="docutils literal notranslate"><span class="pre">cutlass.Int32</span></code>
+values, <code class="docutils literal notranslate"><span class="pre">cute.make_tensor</span></code> wraps a pointer in a layout, and indexing a
+tensor loads or stores one element. <code class="docutils literal notranslate"><span class="pre">block_sum</span></code> is the function this
+example adds. It is an ordinary Python function and the DSL has no special
+knowledge of it. The table below says what each object is while the function
+is being compiled.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 35.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>In the Python source</p></th>
+<th class="head"><p>During tracing</p></th>
+<th class="head"><p>In the MLIR module</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass.Int32</span></code>, <code class="docutils literal notranslate"><span class="pre">cutlass.Float32</span></code>, …</p></td>
+<td><p>A Python object holding a constant or an <code class="docutils literal notranslate"><span class="pre">ir.Value</span></code> of the matching
+MLIR type. Arithmetic on symbolic values emits <code class="docutils literal notranslate"><span class="pre">arith</span></code> operations.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">i32</span></code>, <code class="docutils literal notranslate"><span class="pre">f32</span></code>, … SSA values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cute.Pointer</span></code></p></td>
+<td><p>A typed pointer with an address space and alignment.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">!cute.ptr&lt;i32,</span> <span class="pre">gmem,</span> <span class="pre">align&lt;16&gt;&gt;</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cute.Tensor</span></code> from <code class="docutils literal notranslate"><span class="pre">make_tensor</span></code></p></td>
+<td><p>A pointer plus a static or dynamic layout.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">!cute.memref&lt;...&gt;</span></code> views and <code class="docutils literal notranslate"><span class="pre">cute.memref.load</span></code> or <code class="docutils literal notranslate"><span class="pre">store</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Python literals and <code class="docutils literal notranslate"><span class="pre">Constexpr</span></code> values used inside the body</p></td>
+<td><p>Ordinary Python values, folded at trace time.</p></td>
+<td><p>Constants or nothing at all.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass.Constexpr</span></code> parameter</p></td>
+<td><p>A Python value that specializes the function.</p></td>
+<td><p>No MLIR argument. The value is part of the function’s cache identity.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">grid=1,</span> <span class="pre">block=(32,</span> <span class="pre">4,</span> <span class="pre">1)</span></code></p></td>
+<td><p>Python integers in a <code class="docutils literal notranslate"><span class="pre">LaunchConfig</span></code>.</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">cutlass_launch_facts</span></code> and <code class="docutils literal notranslate"><span class="pre">nvvm.reqntid</span></code> kernel attributes
+and the <code class="docutils literal notranslate"><span class="pre">cuda.launch_cfg.create</span></code> operands.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Ordinary function arguments can become dynamic DSL values: an unannotated
+Python <code class="docutils literal notranslate"><span class="pre">int</span></code> argument is adapted to <code class="docutils literal notranslate"><span class="pre">Int32</span></code>, and tuple elements are
+adapted recursively. Use <code class="docutils literal notranslate"><span class="pre">Constexpr</span></code> for parameters that must specialize
+the function at trace time.</p>
+</section>
+<section id="how-the-dsl-compiles-a-function">
+<h2>How the DSL compiles a function<a class="headerlink" href="#how-the-dsl-compiles-a-function" title="Link to this heading">#</a></h2>
+<p>The DSL compiles by <strong>tracing</strong>: it runs your Python function with symbolic
+arguments and records the operations that run. The run happens in three
+steps that matter to us.</p>
+<section id="step-1-a-source-level-rewrite-of-control-flow">
+<h3>Step 1: a source-level rewrite of control flow<a class="headerlink" href="#step-1-a-source-level-rewrite-of-control-flow" title="Link to this heading">#</a></h3>
+<p>On the first call of a decorated function, <code class="docutils literal notranslate"><span class="pre">BaseDSL.run_preprocessor</span></code>
+fetches its source with <code class="docutils literal notranslate"><span class="pre">inspect</span></code>, parses it into a Python AST, and runs
+<code class="docutils literal notranslate"><span class="pre">DSLPreprocessor</span></code>, an <code class="docutils literal notranslate"><span class="pre">ast.NodeTransformer</span></code> in
+<code class="docutils literal notranslate"><span class="pre">base_dsl/ast_preprocessor.py</span></code>. The transformer rewrites control flow:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">range(...)</span></code> and <code class="docutils literal notranslate"><span class="pre">cutlass.range(...)</span></code> become a staged loop
+that emits <code class="docutils literal notranslate"><span class="pre">scf.for</span></code>, even with Python integer bounds. Variables assigned
+in the body become loop-carried values. <code class="docutils literal notranslate"><span class="pre">cutlass.range_constexpr(...)</span></code>
+stays a Python loop, so the body is traced once per iteration and the
+result is unrolled code. A <code class="docutils literal notranslate"><span class="pre">for</span></code> over a list or tuple also stays a Python
+loop. An <code class="docutils literal notranslate"><span class="pre">if</span></code>, <code class="docutils literal notranslate"><span class="pre">while</span></code>, or <code class="docutils literal notranslate"><span class="pre">for</span></code> inside it that holds a <code class="docutils literal notranslate"><span class="pre">break</span></code>,
+<code class="docutils literal notranslate"><span class="pre">return</span></code>, or <code class="docutils literal notranslate"><span class="pre">raise</span></code> stays in Python too.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">if</span></code> and <code class="docutils literal notranslate"><span class="pre">while</span></code> become <code class="docutils literal notranslate"><span class="pre">scf.if</span></code> and <code class="docutils literal notranslate"><span class="pre">scf.while</span></code> with <code class="docutils literal notranslate"><span class="pre">scf.yield</span></code>
+of every variable the branches assign, even when the condition is a Python
+value. A condition written as <code class="docutils literal notranslate"><span class="pre">cutlass.const_expr(x)</span></code> asserts that <code class="docutils literal notranslate"><span class="pre">x</span></code>
+is a Python value, so the branch is decided at trace time and only one side
+is traced.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">and</span></code>, <code class="docutils literal notranslate"><span class="pre">or</span></code>, and conditional expressions on DSL values are rewritten
+so that Python’s short-circuiting does not silently drop the dynamic
+operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">return</span></code>, <code class="docutils literal notranslate"><span class="pre">break</span></code>, <code class="docutils literal notranslate"><span class="pre">continue</span></code>, and <code class="docutils literal notranslate"><span class="pre">raise</span></code> inside staged control
+flow are rejected with a diagnostic by this preprocessing mode.</p></li>
+</ul>
+<p>The rewritten AST is compiled and swapped into the function object’s
+<code class="docutils literal notranslate"><span class="pre">__code__</span></code>. The rewrite happens once per function and preprocessing mode.
+Later calls reuse the rewritten code. So the DSL does analyze the AST,
+primarily to stage control flow. It also rewrites selected Python calls and
+expressions. Step 2 type-checks the function and decides which operations
+are legal.</p>
+</section>
+<section id="step-2-execution-with-symbolic-values">
+<h3>Step 2: execution with symbolic values<a class="headerlink" href="#step-2-execution-with-symbolic-values" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">BaseDSL.generate_original_ir</span></code> creates an <code class="docutils literal notranslate"><span class="pre">ir.Module</span></code>, a <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>
+for kernels, and a host <code class="docutils literal notranslate"><span class="pre">func.func</span></code> whose block arguments stand for the
+non-<code class="docutils literal notranslate"><span class="pre">Constexpr</span></code> parameters. It wraps those arguments in the DSL’s Python
+types and then calls the rewritten Python function with them. Every
+operation on a DSL value emits MLIR at <code class="docutils literal notranslate"><span class="pre">ir.InsertionPoint.current</span></code>. Every
+Python-only value behaves as it would in plain Python. When the function
+returns, the module contains the full program.</p>
+<p>Two consequences matter to <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code>:</p>
+<ul class="simple">
+<li><p><strong>Any Python function called in the body runs at trace time.</strong> A call to
+<code class="docutils literal notranslate"><span class="pre">coop.load</span></code> executes as ordinary Python. It inspects its arguments and
+emits IR itself. There is no typing registry or lowering table to register
+with, as there is in Numba.</p></li>
+<li><p><strong>The kernel body is traced inside the launch.</strong> <code class="docutils literal notranslate"><span class="pre">KernelLauncher.launch</span></code>
+in <code class="docutils literal notranslate"><span class="pre">cutlass_dsl/cutlass.py</span></code> receives the grid and block, attaches them
+to the kernel operation as the <code class="docutils literal notranslate"><span class="pre">cutlass_launch_facts</span></code> attribute, and only
+then traces the kernel body. Code running in the body can therefore read
+the exact launch shape through <code class="docutils literal notranslate"><span class="pre">cute._get_launch_facts()</span></code>. When any
+component of the block, grid, or cluster shape is a DSL value, the facts
+omit that whole shape.</p></li>
+</ul>
+<p>The example kernel’s <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">rank</span> <span class="pre">==</span> <span class="pre">0</span></code> illustrates the two steps together.
+Step 1 rewrote the statement. In step 2, the comparison on the DSL value
+<code class="docutils literal notranslate"><span class="pre">rank</span></code> emitted <code class="docutils literal notranslate"><span class="pre">arith.cmpi</span></code> and the rewritten <code class="docutils literal notranslate"><span class="pre">if</span></code> emitted <code class="docutils literal notranslate"><span class="pre">scf.if</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>%9 = arith.cmpi eq, %6, %c0_i32_9 : i32
+%10 = scf.if %9 -&gt; (!memref_gmem_i32_1) {
+  cute.memref.store(%view_6, %coord_13, %8) : (...) -&gt; ()
+  scf.yield %view_6 : !memref_gmem_i32_1
+} else {
+  scf.yield %view_6 : !memref_gmem_i32_1
+}
+</pre></div>
+</div>
+</section>
+<section id="step-3-finalize-hash-compile-link-run">
+<h3>Step 3: finalize, hash, compile, link, run<a class="headerlink" href="#step-3-finalize-hash-compile-link-run" title="Link to this heading">#</a></h3>
+<p>After the body returns, <code class="docutils literal notranslate"><span class="pre">generate_original_ir</span></code> runs the registered
+<strong>trace-finalize hooks</strong> with <code class="docutils literal notranslate"><span class="pre">hook(dsl,</span> <span class="pre">module,</span> <span class="pre">function_name)</span></code>. A hook
+may inspect or change the finished module. Only then does the DSL compute
+the <strong>module hash</strong> that keys its JIT cache. If a cached compilation exists
+for that hash, it is reused. Otherwise the module goes through the compile
+pipeline (<code class="docutils literal notranslate"><span class="pre">lir-to-cute-dsl</span></code>, <code class="docutils literal notranslate"><span class="pre">cute-to-nvvm</span></code>, and the LLVM backend),
+device code is linked with nvJitLink, and the result is loaded as a
+<code class="docutils literal notranslate"><span class="pre">JitCompiledFunction</span></code> and executed. When <code class="docutils literal notranslate"><span class="pre">generate_original_ir</span></code> returns,
+before any cache lookup, the DSL merges each <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>’s
+<code class="docutils literal notranslate"><span class="pre">link-libraries</span></code> attribute into its <code class="docutils literal notranslate"><span class="pre">LinkLibraries</span></code> compile option, which
+is how externally compiled device code reaches the device link.</p>
+<p>Because the cache key is the traced module, <strong>a direct call always traces
+again</strong>, even on a cache hit. Tracing is how the DSL learns whether the
+program changed. <code class="docutils literal notranslate"><span class="pre">cute.compile</span></code> traces and compiles on every call and
+skips the hash and the JIT cache. It returns the compiled callable, so
+calling that object launches without tracing. Our tests and examples use
+<code class="docutils literal notranslate"><span class="pre">cute.compile</span></code> when they need to separate compilation from execution.</p>
+</section>
+<section id="how-this-differs-from-dynamo-numba-and-triton">
+<h3>How this differs from Dynamo, Numba, and Triton<a class="headerlink" href="#how-this-differs-from-dynamo-numba-and-triton" title="Link to this heading">#</a></h3>
+<p>A common first question is whether CuTe traces the way PyTorch Dynamo does.
+It does not, and the differences matter when deciding where to hook in.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 16.0%" />
+<col style="width: 28.0%" />
+<col style="width: 28.0%" />
+<col style="width: 28.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>System</p></th>
+<th class="head"><p>What it analyzes</p></th>
+<th class="head"><p>How it captures a program</p></th>
+<th class="head"><p>How it reuses a compilation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>PyTorch Dynamo</p></td>
+<td><p>CPython bytecode, intercepted through the frame evaluation API before
+a frame runs.</p></td>
+<td><p>Symbolically interprets bytecode into an FX graph. Unsupported code
+causes a graph break and falls back to eager Python.</p></td>
+<td><p>Guards on argument properties. When they pass, the compiled graph
+runs without re-executing the Python.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Numba CUDA (<code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code>)</p></td>
+<td><p>CPython bytecode, lifted to Numba IR and type-inferred.</p></td>
+<td><p>Compiles the whole function per argument type signature. Unsupported
+operations are typing errors. Extensions register typing templates
+and lowering functions.</p></td>
+<td><p>Dispatch on argument types to a previously compiled specialization.</p></td>
+</tr>
+<tr class="row-even"><td><p>Triton</p></td>
+<td><p>The function’s AST.</p></td>
+<td><p>A code generator visits the AST and emits Triton MLIR without running
+the body. <code class="docutils literal notranslate"><span class="pre">tl.constexpr</span></code> arguments specialize.</p></td>
+<td><p>Cache keyed by signature, constexpr values, and options.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CuTe DSL</p></td>
+<td><p>The AST, primarily for control-flow staging. Then the running program.</p></td>
+<td><p>Rewrites staged control flow, then executes the Python body with
+symbolic values. Unsupported operations raise during execution.
+Everything in the body is captured. There are no graph breaks.</p></td>
+<td><p>Re-traces on every direct call and looks up the module hash. The
+callable returned by <code class="docutils literal notranslate"><span class="pre">cute.compile</span></code> launches without tracing.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> the practical differences are these. There are no
+guards, so a primitive can read any Python-level fact it wants at trace time
+and the DSL will not try to generalize over it. Our planners use that to
+specialize on the exact block shape and dtype. There are no graph breaks, so
+a primitive cannot defer to the interpreter. It must emit valid IR or
+raise. Numba extensions register typing templates and lowering functions.
+Our CuTe integration registers neither. <code class="docutils literal notranslate"><span class="pre">coop.load</span></code> is a function that is
+called during tracing.</p>
+</section>
+<section id="pyir-an-optional-second-preprocessing-mode">
+<h3>PyIR, an optional second preprocessing mode<a class="headerlink" href="#pyir-an-optional-second-preprocessing-mode" title="Link to this heading">#</a></h3>
+<p>CuTe DSL 4.9 has <strong>PyIR</strong>, off by default. It is enabled with
+<code class="docutils literal notranslate"><span class="pre">CUTE_DSL_ENABLE_PYIR=1</span></code>, inside a <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">CuTeDSL.enable_pyir():</span></code> block,
+or for one compilation with <code class="docutils literal notranslate"><span class="pre">cute.compile[cute.FrontendNext](...)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">PyIRDSLPreprocessor</span></code> extends the AST rewrite to put the function into SSA
+form, the trace emits <code class="docutils literal notranslate"><span class="pre">pyir</span></code> dialect operations, and the compile pipeline
+lowers them with <code class="docutils literal notranslate"><span class="pre">pyir-prelower</span></code> and <code class="docutils literal notranslate"><span class="pre">convert-pyir-to-scf</span></code>. The
+preprocessing mode is part of the cached rewrite’s identity, so switching
+modes re-runs the rewrite.</p>
+<p>The primitive entry points stage no control flow of their own. Other parts
+of the package still depend on the preprocessing mode. In particular, the
+<code class="docutils literal notranslate"><span class="pre">TempStorage.release()</span></code> lifetime analysis runs at trace finalization,
+before PyIR is lowered. It runs whenever a <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> is constructed
+during the trace, and each call with compiler-managed deferred scratch
+constructs one. It recognizes <code class="docutils literal notranslate"><span class="pre">scf</span></code> and <code class="docutils literal notranslate"><span class="pre">cf</span></code> operations and rejects any
+other operation that has regions or successors. The integration described
+here uses the default preprocessing mode. PyIR needs separate qualification,
+including storage lifetimes across control flow.</p>
+</section>
+</section>
+<section id="where-cuda-coop-cutlass-plugs-in">
+<h2>Where cuda.coop.cutlass plugs in<a class="headerlink" href="#where-cuda-coop-cutlass-plugs-in" title="Link to this heading">#</a></h2>
+<p>This section maps each need of the integration to the DSL facility that
+serves it and the module that uses it. <a class="reference internal" href="cutlass_integration_example.html"><span class="doc">Minimal CuTe DSL Integration Example</span></a>
+exercises the first eight rows in one file.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 28.0%" />
+<col style="width: 36.0%" />
+<col style="width: 36.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Need</p></th>
+<th class="head"><p>CuTe DSL facility</p></th>
+<th class="head"><p>Where we use it</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Run code when the user calls a primitive</p></td>
+<td><p>Trace-time execution; <code class="docutils literal notranslate"><span class="pre">ir.InsertionPoint.current</span></code> names the block
+being built</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_group_*.py</span></code> entry points, <code class="docutils literal notranslate"><span class="pre">_compiler/_state.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Know the launch shape while planning</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cute._get_launch_facts()</span></code> reading the <code class="docutils literal notranslate"><span class="pre">cutlass_launch_facts</span></code>
+kernel attribute</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_launch.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_planning/launch.py</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Call C++ that is not compiled yet</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cute.ffi</span></code>: a private <code class="docutils literal notranslate"><span class="pre">func.func</span></code> prototype in the <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>
+and a <code class="docutils literal notranslate"><span class="pre">func.call</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_lowering/*.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Pass values across the boundary</p></td>
+<td><p>DSL numerics wrap <code class="docutils literal notranslate"><span class="pre">ir.Value</span></code>; <code class="docutils literal notranslate"><span class="pre">cute.Pointer</span></code> converts to
+<code class="docutils literal notranslate"><span class="pre">!llvm.ptr</span></code>; <code class="docutils literal notranslate"><span class="pre">cute.make_rmem_tensor</span></code> gives an addressable
+per-thread buffer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_types.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_thread_data.py</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Run after tracing, before hashing</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CuTeDSL.register_trace_finalize_hook</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_state.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_compiler/_finalize.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Supply the C++ definition to the device link</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gpu.module</span></code> <code class="docutils literal notranslate"><span class="pre">link-libraries</span></code> attribute, merged into the
+<code class="docutils literal notranslate"><span class="pre">LinkLibraries</span></code> compile option</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_bundle.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_compiler/_finalize.py</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Allocate shared memory for CUB</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SmemAllocator.allocate</span></code> at the kernel entry block and
+<code class="docutils literal notranslate"><span class="pre">ir.Value.replace_all_uses_with</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_storage.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_compiler/_layout.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Select the target architecture</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">GPUArch</span></code> compile option or <code class="docutils literal notranslate"><span class="pre">dsl.envar.arch</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_target.py</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Keep a wrapper call convergent</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">llvm</span></code> dialect: <code class="docutils literal notranslate"><span class="pre">llvm.func</span></code> and <code class="docutils literal notranslate"><span class="pre">llvm.call</span></code> with the
+<code class="docutils literal notranslate"><span class="pre">convergent</span></code> attribute</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_convergence.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Raise an explicit launch size to cover deferred scratch</p></td>
+<td><p>The shared-memory operand of <code class="docutils literal notranslate"><span class="pre">cuda.launch</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cuda.launch_cfg.create</span></code>, and <code class="docutils literal notranslate"><span class="pre">cute.kernel_smem_size</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_compiler/_storage.py</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Compile a user’s operator to LTO-IR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cute.compile_to</span></code> with <code class="docutils literal notranslate"><span class="pre">TargetKind.Device</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">CuteCompiler</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_device_operator.py</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="entry-points-are-ordinary-functions">
+<h3>Entry points are ordinary functions<a class="headerlink" href="#entry-points-are-ordinary-functions" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">coop.load</span></code>, <code class="docutils literal notranslate"><span class="pre">coop.reduce</span></code>, and the other public functions validate
+their Python arguments, plan the CUB specialization, and emit IR, all while
+the user’s kernel is being traced. Nothing is registered with the DSL before
+the first call. To find the trace they belong to, they walk from
+<code class="docutils literal notranslate"><span class="pre">ir.InsertionPoint.current.block.owner</span></code> through parent operations to the
+enclosing <code class="docutils literal notranslate"><span class="pre">builtin.module</span></code>. To find the kernel that owns their scratch,
+they stop at the kernel operation, which in CuTe DSL 4.9 is an
+<code class="docutils literal notranslate"><span class="pre">lir.func</span></code> carrying the <code class="docutils literal notranslate"><span class="pre">gpu.kernel</span></code> attribute, or a <code class="docutils literal notranslate"><span class="pre">cuda.kernel</span></code>
+when <code class="docutils literal notranslate"><span class="pre">CUTE_DSL_USE_EXTENSION_COMPILER=0</span></code>. <code class="docutils literal notranslate"><span class="pre">BundleSession</span></code> in
+<code class="docutils literal notranslate"><span class="pre">_compiler/_state.py</span></code> keeps per-trace state keyed by the DSL’s compile
+options object and that module, so a second trace on the same options
+object gets its own session. A nested <code class="docutils literal notranslate"><span class="pre">&#64;cute.jit</span></code> call is traced into
+its caller’s module, so it shares the caller’s session and bundle. Several
+kernels in one module share them too. Each scratch use records its kernel
+operation, so each kernel gets its own allocations.</p>
+</section>
+<section id="launch-facts">
+<h3>Launch facts<a class="headerlink" href="#launch-facts" title="Link to this heading">#</a></h3>
+<p>CUB block primitives are templates on the block shape, and warp primitives
+need to know how many complete warps a block holds. The planner therefore
+requires the exact dimensions, which <code class="docutils literal notranslate"><span class="pre">_compiler/_launch.py</span></code> reads through
+<code class="docutils literal notranslate"><span class="pre">cute._get_launch_facts()</span></code> and records with their provenance. The
+<code class="docutils literal notranslate"><span class="pre">nvvm.reqntid</span></code> attribute also specifies an exact block shape, whereas
+<code class="docutils literal notranslate"><span class="pre">nvvm.maxntid</span></code> supplies only an upper bound. The planner takes launch
+facts only from the launch facts API. An exact shape fixes how many
+threads the block has. The kernel must still bring every thread of the
+group to each primitive call. See <a class="reference internal" href="developer_guide.html#coop-cutlass-exact-launch-facts"><span class="std std-ref">Exact launch facts</span></a>.</p>
+</section>
+<section id="calls-through-the-ffi">
+<h3>Calls through the FFI<a class="headerlink" href="#calls-through-the-ffi" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">cute.ffi(name=...,</span> <span class="pre">params_types=[...],</span> <span class="pre">return_type=...)</span></code> returns a callable
+that, when invoked with DSL values, declares a private function prototype in
+the enclosing <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code> if needed and emits <code class="docutils literal notranslate"><span class="pre">func.call</span></code>. Parameter and
+return types are DSL numeric types or MLIR types. A <code class="docutils literal notranslate"><span class="pre">cute.Pointer</span></code> argument
+is converted to <code class="docutils literal notranslate"><span class="pre">!llvm.ptr</span></code> automatically, and a pointer in a specific
+address space is cast to the generic address space when the prototype
+declares one. The symbol is used verbatim, which is
+why generated wrappers are <code class="docutils literal notranslate"><span class="pre">extern</span> <span class="pre">&quot;C&quot;</span></code> and why request objects derive
+deterministic symbol names from their plan.</p>
+<p>Load returns several values per thread. The lowering allocates a register
+tensor with <code class="docutils literal notranslate"><span class="pre">cute.make_rmem_tensor</span></code>, passes its <code class="docutils literal notranslate"><span class="pre">.iterator.llvm_ptr</span></code> as
+a result-buffer argument, and after the call reads the elements back into
+the <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> payload. The DSL also offers <code class="docutils literal notranslate"><span class="pre">cute.extern</span></code>, a decorator
+that mangles symbol names from argument types. We call <code class="docutils literal notranslate"><span class="pre">cute.ffi</span></code>
+because our symbol names must also identify the CUB plan.</p>
+</section>
+<section id="the-trace-finalize-hook">
+<h3>The trace-finalize hook<a class="headerlink" href="#the-trace-finalize-hook" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">register_trace_finalize_hook</span></code> is persistent for the DSL instance and
+ignores duplicate registrations. <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> registers one
+dispatcher and points it at the current finalizer, so repeated imports or
+activations never accumulate callbacks. The hook runs for every trace. It
+first removes, from the DSL’s <code class="docutils literal notranslate"><span class="pre">LinkLibraries</span></code> option, the paths the
+package attached in earlier traces. It then takes the session for the
+module it was given and returns if there is none or the session is empty.
+For a session with requests, it checks <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> lifetimes, renders
+all wrappers into one C++ translation unit, compiles them with NVRTC to
+LTO-IR, and materializes deferred scratch. <code class="docutils literal notranslate"><span class="pre">_compiler/_convergence.py</span></code>
+then replaces each wrapper’s <code class="docutils literal notranslate"><span class="pre">func.func</span></code> declaration and <code class="docutils literal notranslate"><span class="pre">func.call</span></code>
+operations with <code class="docutils literal notranslate"><span class="pre">llvm.func</span></code> and <code class="docutils literal notranslate"><span class="pre">llvm.call</span></code> operations marked
+<code class="docutils literal notranslate"><span class="pre">convergent</span></code>. Last, the hook attaches the artifact path to each
+<code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>. The LTO-IR file of each <code class="docutils literal notranslate"><span class="pre">DeviceOperator</span></code> the trace uses
+is attached the same way.</p>
+<p>The DSL’s own module hash runs after the hook and includes the module’s
+attributes, so a different bundle path changes the hash. The key of our
+bundle cache is built in <code class="docutils literal notranslate"><span class="pre">_compiler/_bundle.py</span></code> from the rendered source,
+the header and toolkit identity, the <code class="docutils literal notranslate"><span class="pre">sizeof</span></code> and <code class="docutils literal notranslate"><span class="pre">alignof</span></code> probes that
+query scratch layouts, and the compiler options, which include the
+architecture. <code class="docutils literal notranslate"><span class="pre">_compiler/_cache.py</span></code> stores and checks the file. A repeated
+kernel finds the same <code class="docutils literal notranslate"><span class="pre">.ltoir</span></code> file, so on a direct call the DSL’s cache
+hits as well. <code class="docutils literal notranslate"><span class="pre">cute.compile</span></code> turns the DSL’s cache off.</p>
+</section>
+<section id="lto-ir-and-the-device-link">
+<h3>LTO-IR and the device link<a class="headerlink" href="#lto-ir-and-the-device-link" title="Link to this heading">#</a></h3>
+<p>NVRTC compiles the wrappers with <code class="docutils literal notranslate"><span class="pre">--relocatable-device-code=true</span></code> and
+<code class="docutils literal notranslate"><span class="pre">-dlto</span></code> and we store the LTO-IR container in a cache directory. The DSL
+documents its <code class="docutils literal notranslate"><span class="pre">link-libraries</span></code> mechanism in terms of LLVM bitcode, but its
+compiler recognizes LTO-IR containers as nvJitLink inputs and links them
+with the kernel’s own LTO-IR. The link can inline the wrapper into the
+kernel. The runtime tests run <code class="docutils literal notranslate"><span class="pre">cuobjdump</span></code> on the final cubin and fail if
+a provider symbol remains.</p>
+<p>CuTe DSL 4.9 copies compile options for each invocation, so
+adding a module’s link libraries does not mutate the reusable option
+template. The <code class="docutils literal notranslate"><span class="pre">DeviceTarget</span></code> compile mode, which compiles a
+<code class="docutils literal notranslate"><span class="pre">&#64;cute.jit</span></code> function as a device function for export, rejects
+<code class="docutils literal notranslate"><span class="pre">link-libraries</span></code>. Kernels that call <code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> primitives use
+the default host-plus-kernel compilation. <code class="docutils literal notranslate"><span class="pre">compile_operator</span></code> compiles its
+function as a device function, through <code class="docutils literal notranslate"><span class="pre">cute.compile_to</span></code> with
+<code class="docutils literal notranslate"><span class="pre">TargetKind.Device</span></code>. That function cannot call a primitive.</p>
+</section>
+<section id="shared-memory">
+<h3>Shared memory<a class="headerlink" href="#shared-memory" title="Link to this heading">#</a></h3>
+<p>A CUB primitive’s <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> has a size and alignment that only the C++
+compiler knows. Two routes exist. A wrapper can declare its own
+<code class="docutils literal notranslate"><span class="pre">__shared__</span></code> storage in C++, which the device link lays out alongside the
+kernel’s shared memory. Warp Scan and the other wrappers that own their
+storage use this route. The deferred route serves every call whose scratch
+comes from a <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> descriptor, whether the caller supplies it or
+the lowering constructs one. Tracing emits placeholder <code class="docutils literal notranslate"><span class="pre">arith.constant</span></code>
+operands for the address and size. The NVRTC program that compiles the
+wrappers reports the exact layout through <code class="docutils literal notranslate"><span class="pre">nvrtcAddNameExpression</span></code> and
+<code class="docutils literal notranslate"><span class="pre">nvrtcGetLoweredName</span></code>. Finalization then inserts a
+<code class="docutils literal notranslate"><span class="pre">SmemAllocator().allocate(size,</span> <span class="pre">alignment)</span></code> at the kernel’s entry block
+and replaces the placeholders. <code class="docutils literal notranslate"><span class="pre">SmemAllocator</span></code> is stateless: it emits
+<code class="docutils literal notranslate"><span class="pre">cute.memref.alloca</span></code> operations that the compiler lays out together with
+the user’s allocations, and the launch reads the total through
+<code class="docutils literal notranslate"><span class="pre">cute.kernel_smem_size</span></code>. A launch that passes an explicit <code class="docutils literal notranslate"><span class="pre">smem=</span></code> size
+was traced before these allocations existed, so finalization raises that
+operand to at least that total. See <a class="reference internal" href="developer_guide.html#coop-cutlass-scratch-allocation"><span class="std std-ref">Scratch allocation after tracing</span></a>.</p>
+<p>Barriers are emitted inside the wrappers, as <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> or a masked
+<code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code>, so the kernel’s IR contains no barrier operations for
+them. Group queries and group synchronization lower to small wrappers over
+<code class="docutils literal notranslate"><span class="pre">cuda::hierarchy</span></code> and the CUDA barrier intrinsics.</p>
+</section>
+<section id="what-we-deliberately-avoid">
+<h3>What we deliberately avoid<a class="headerlink" href="#what-we-deliberately-avoid" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> defines no MLIR dialect, adds no passes to the compile
+pipeline, and does not generate CuTe IR for the CUB algorithms themselves.
+The integration surface is the trace-time Python call, the launch facts,
+the FFI, the finalize hook, the link attribute, the shared-memory
+allocator, and the target architecture setting. Keeping to those means a
+CUTLASS release can change its internal lowering without affecting the
+generated CUB code. Inside the hook the
+package also rewrites two things CuTe traced. Wrapper calls become
+<code class="docutils literal notranslate"><span class="pre">llvm.call</span></code> operations marked <code class="docutils literal notranslate"><span class="pre">convergent</span></code>. Each launch of a kernel with
+deferred scratch requests at least the size that <code class="docutils literal notranslate"><span class="pre">cute.kernel_smem_size</span></code>
+reports. The launch rewrite depends on the operand positions of CuTe’s
+<code class="docutils literal notranslate"><span class="pre">cuda.launch</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda.launch_cfg.create</span></code> operations, so recheck it
+when the CUTLASS dependency changes. <code class="docutils literal notranslate"><span class="pre">compile_operator</span></code> adds
+<code class="docutils literal notranslate"><span class="pre">cute.compile_to</span></code> to the integration surface.</p>
+</section>
+</section>
+<section id="private-interfaces-we-depend-on">
+<h2>Private interfaces we depend on<a class="headerlink" href="#private-interfaces-we-depend-on" title="Link to this heading">#</a></h2>
+<p>Several of these facilities are private or new in CuTe DSL 4.9. Their names
+begin with an underscore or appear only in its sources. The installed
+package is tested against CuTe DSL 4.9.0.dev1.
+<code class="docutils literal notranslate"><span class="pre">_compiler/_runtime.py</span></code> checks at import that the functions and classes in
+the first four items of the list below exist, and reports which are missing.
+Each time <code class="docutils literal notranslate"><span class="pre">_compiler/_storage.py</span></code> allocates deferred scratch, it checks
+the fifth item’s bindings except <code class="docutils literal notranslate"><span class="pre">ir.Operation.walk</span></code>, <code class="docutils literal notranslate"><span class="pre">llvm.LLVMFuncOp</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">llvm.CallOp</span></code>. No capability check covers those three:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cutlass.cutlass_dsl.CuTeDSL._get_dsl</span></code>,
+<code class="docutils literal notranslate"><span class="pre">register_trace_finalize_hook</span></code>, and <code class="docutils literal notranslate"><span class="pre">trace_finalize_hooks</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cutlass.cute._get_launch_facts</span></code> and its <code class="docutils literal notranslate"><span class="pre">cutlass_launch_facts</span></code>
+schema in <code class="docutils literal notranslate"><span class="pre">cutlass_dsl/_launch_facts_metadata.py</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cutlass.base_dsl.compiler.LinkLibraries</span></code> with the <code class="docutils literal notranslate"><span class="pre">link-libraries</span></code>
+option name, and <code class="docutils literal notranslate"><span class="pre">GPUArch</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cutlass.base_dsl.common.get_current_env_manager</span></code>, which the tests call
+to check that a trace released its environment.</p></li>
+<li><p>The MLIR bindings: <code class="docutils literal notranslate"><span class="pre">ir.InsertionPoint.at_block_begin</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ir.Value.replace_all_uses_with</span></code>, <code class="docutils literal notranslate"><span class="pre">ir.Operation.walk</span></code>, the <code class="docutils literal notranslate"><span class="pre">arith</span></code>
+and <code class="docutils literal notranslate"><span class="pre">llvm</span></code> dialects, <code class="docutils literal notranslate"><span class="pre">llvm.LLVMFuncOp</span></code> and <code class="docutils literal notranslate"><span class="pre">llvm.CallOp</span></code> with their
+<code class="docutils literal notranslate"><span class="pre">convergent</span></code> keyword, <code class="docutils literal notranslate"><span class="pre">cute.Pointer.to_llvm_ptr</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">SmemAllocator.allocate</span></code>.</p></li>
+<li><p>The launch operations the hook rewrites: <code class="docutils literal notranslate"><span class="pre">cuda.launch</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cuda.launch_ex</span></code> with <code class="docutils literal notranslate"><span class="pre">cuda.launch_cfg.create</span></code>, the position of their
+dynamic shared-memory operand, and <code class="docutils literal notranslate"><span class="pre">cute.kernel_smem_size</span></code>. Nothing
+checks these at import.
+<code class="docutils literal notranslate"><span class="pre">python/cuda_coop_cutlass/tests/compile/test_storage.py</span></code> reads the
+shared-memory size from the lowered launch.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">compile_operator</span></code>: <code class="docutils literal notranslate"><span class="pre">cute.compile_to</span></code> and, in
+<code class="docutils literal notranslate"><span class="pre">cutlass.compiler</span></code>, <code class="docutils literal notranslate"><span class="pre">CuteCompiler</span></code>, <code class="docutils literal notranslate"><span class="pre">ArtifactType</span></code>, <code class="docutils literal notranslate"><span class="pre">TargetKind</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Var</span></code>, and <code class="docutils literal notranslate"><span class="pre">DType</span></code>. <code class="docutils literal notranslate"><span class="pre">compile_operator</span></code> checks for them when it is
+called.</p></li>
+</ul>
+<p>When a CUTLASS release changes one of these, expect the failure at import or
+at the first compilation, before any kernel runs. Start with
+<code class="docutils literal notranslate"><span class="pre">validate_cutlass_runtime</span></code> and the lifecycle tests named in
+<a class="reference internal" href="developer_guide.html"><span class="doc">Developer Guide</span></a>. A renamed <code class="docutils literal notranslate"><span class="pre">cuda.launch</span></code> or <code class="docutils literal notranslate"><span class="pre">cuda.launch_ex</span></code> is
+the exception. The hook then finds no launch to rewrite, an explicit
+<code class="docutils literal notranslate"><span class="pre">smem=</span></code> size stays as it was, and <code class="docutils literal notranslate"><span class="pre">tests/compile/test_storage.py</span></code> is the
+only check that fails. The <a class="reference internal" href="faqs.html#coop-faq-compiler-setup"><span class="std std-ref">FAQ</span></a> lists the
+other reasons a kernel can fail to compile after a successful import.</p>
+</section>
+<section id="reading-the-cutlass-dsl-sources">
+<h2>Reading the CUTLASS DSL sources<a class="headerlink" href="#reading-the-cutlass-dsl-sources" title="Link to this heading">#</a></h2>
+<p>Read these modules to see how a trace behaves:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 60.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>What to look for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">base_dsl/dsl.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BaseDSL.jit_runner</span></code> and <code class="docutils literal notranslate"><span class="pre">_preprocess_and_replace_code</span></code> for the
+decorator path; <code class="docutils literal notranslate"><span class="pre">generate_original_ir</span></code> for tracing, hooks, and
+hashing; <code class="docutils literal notranslate"><span class="pre">_merge_gpu_link_libraries</span></code>;
+<code class="docutils literal notranslate"><span class="pre">register_trace_finalize_hook</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">base_dsl/ast_preprocessor.py</span></code> and <code class="docutils literal notranslate"><span class="pre">ast_helpers.py</span></code></p></td>
+<td><p>The control-flow rewrite, <code class="docutils literal notranslate"><span class="pre">range_constexpr</span></code>, <code class="docutils literal notranslate"><span class="pre">const_expr</span></code>, and
+the early-exit diagnostics.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cutlass_dsl/cutlass.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CuTeDSL</span></code>, <code class="docutils literal notranslate"><span class="pre">KernelLauncher.launch</span></code>, <code class="docutils literal notranslate"><span class="pre">_build_launch_facts_attr</span></code>,
+and the <code class="docutils literal notranslate"><span class="pre">nvvm.reqntid</span></code> derivation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cute/launch_facts.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_get_launch_facts</span></code> and the kernel operation names it accepts.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">base_dsl/ffi.py</span></code> and <code class="docutils literal notranslate"><span class="pre">cute/ffi.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FFI.__call__</span></code>: prototype insertion, type checks, and the pointer
+conversions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">base_dsl/compiler.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CompileOptions</span></code>, <code class="docutils literal notranslate"><span class="pre">LinkLibraries</span></code>, <code class="docutils literal notranslate"><span class="pre">GPUArch</span></code>, <code class="docutils literal notranslate"><span class="pre">DeviceTarget</span></code>,
+and the <code class="docutils literal notranslate"><span class="pre">cute.compile[...]</span></code> option syntax.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">memory/smem.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SmemAllocator</span></code> and the <code class="docutils literal notranslate"><span class="pre">smem.partition_id</span></code> attribute.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">base_dsl/env_manager.py</span></code></p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">CUTE_DSL_*</span></code> environment variables of the base DSL and whether
+each affects the cache key. <code class="docutils literal notranslate"><span class="pre">cutlass_dsl/cutlass_env_manager.py</span></code>
+adds the CuTe-specific ones.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Useful environment variables while debugging a trace, all prefixed
+<code class="docutils literal notranslate"><span class="pre">CUTE_DSL_</span></code>: <code class="docutils literal notranslate"><span class="pre">PRINT_IR=1</span></code> prints each module after tracing; <code class="docutils literal notranslate"><span class="pre">KEEP</span></code> with
+<code class="docutils literal notranslate"><span class="pre">ir</span></code>, <code class="docutils literal notranslate"><span class="pre">ptx</span></code>, <code class="docutils literal notranslate"><span class="pre">cubin</span></code>, or <code class="docutils literal notranslate"><span class="pre">sass</span></code> keeps those artifacts under
+<code class="docutils literal notranslate"><span class="pre">DUMP_DIR</span></code>; <code class="docutils literal notranslate"><span class="pre">ARCH</span></code> overrides the detected target; <code class="docutils literal notranslate"><span class="pre">LOG_TO_CONSOLE=1</span></code>
+turns on the DSL’s own logging; <code class="docutils literal notranslate"><span class="pre">LOG_LEVEL</span></code> sets its threshold.
+<code class="docutils literal notranslate"><span class="pre">CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR</span></code> dumps the generated C++ on our side.
+See <a class="reference internal" href="configuration.html"><span class="doc">Configuration</span></a>.</p>
+</section>
+<section id="vocabulary">
+<h2>Vocabulary<a class="headerlink" href="#vocabulary" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Meaning in this documentation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>trace</p></td>
+<td><p>One execution of a <code class="docutils literal notranslate"><span class="pre">&#64;cute.jit</span></code> function with symbolic arguments,
+producing one MLIR module. A <code class="docutils literal notranslate"><span class="pre">&#64;cute.jit</span></code> function it calls is
+traced into the same module. A kernel is traced inside its launch.</p></td>
+</tr>
+<tr class="row-odd"><td><p>module, <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>, kernel operation</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">builtin.module</span></code> for a trace; the <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code> holding its
+kernels; the <code class="docutils literal notranslate"><span class="pre">lir.func</span></code> or <code class="docutils literal notranslate"><span class="pre">cuda.kernel</span></code> operation for one kernel.</p></td>
+</tr>
+<tr class="row-even"><td><p>staged control flow</p></td>
+<td><p>An <code class="docutils literal notranslate"><span class="pre">if</span></code> or <code class="docutils literal notranslate"><span class="pre">while</span></code>, or a <code class="docutils literal notranslate"><span class="pre">for</span></code> over <code class="docutils literal notranslate"><span class="pre">range(...)</span></code> or
+<code class="docutils literal notranslate"><span class="pre">cutlass.range(...)</span></code>, rewritten by the preprocessor to emit <code class="docutils literal notranslate"><span class="pre">scf</span></code>
+operations. <code class="docutils literal notranslate"><span class="pre">const_expr</span></code> conditions and <code class="docutils literal notranslate"><span class="pre">range_constexpr</span></code> loops
+stay in Python.</p></td>
+</tr>
+<tr class="row-odd"><td><p>provider</p></td>
+<td><p>A generated <code class="docutils literal notranslate"><span class="pre">extern</span> <span class="pre">&quot;C&quot;</span></code> C++ device function that calls CUB. For a
+group query or barrier it calls <code class="docutils literal notranslate"><span class="pre">cuda::hierarchy</span></code> or a CUDA barrier
+intrinsic. Calls whose requests are equal share one provider.</p></td>
+</tr>
+<tr class="row-even"><td><p>provider request</p></td>
+<td><p>The record describing one provider: its plan, dtype, symbol name,
+and the C++ renderer that emits it.</p></td>
+</tr>
+<tr class="row-odd"><td><p>bundle, session</p></td>
+<td><p>The C++ translation unit containing all providers of one trace, and
+the per-trace object that collects requests and scratch uses for it.</p></td>
+</tr>
+<tr class="row-even"><td><p>trace-finalize hook</p></td>
+<td><p>The DSL callback that runs after tracing and before module hashing.
+<code class="docutils literal notranslate"><span class="pre">cuda.coop.cutlass</span></code> compiles the bundle there.</p></td>
+</tr>
+<tr class="row-odd"><td><p>deferred scratch</p></td>
+<td><p>Shared memory whose placeholder operands are traced first and replaced
+after NVRTC reports the C++ layout.</p></td>
+</tr>
+<tr class="row-even"><td><p>link library</p></td>
+<td><p>A file named in a <code class="docutils literal notranslate"><span class="pre">gpu.module</span></code>’s <code class="docutils literal notranslate"><span class="pre">link-libraries</span></code> attribute that
+the device link consumes. Ours are the bundle’s LTO-IR and the LTO-IR
+of each <code class="docutils literal notranslate"><span class="pre">DeviceOperator</span></code> the trace uses.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="developer_guide.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Developer Guide</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="cutlass_integration_example.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Minimal CuTe DSL Integration Example</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-cutlass-is-and-which-part-we-use">What CUTLASS is, and which part we use</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-cute-kernel-piece-by-piece">A CuTe kernel, piece by piece</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-the-dsl-compiles-a-function">How the DSL compiles a function</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-a-source-level-rewrite-of-control-flow">Step 1: a source-level rewrite of control flow</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-execution-with-symbolic-values">Step 2: execution with symbolic values</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-finalize-hash-compile-link-run">Step 3: finalize, hash, compile, link, run</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#how-this-differs-from-dynamo-numba-and-triton">How this differs from Dynamo, Numba, and Triton</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyir-an-optional-second-preprocessing-mode">PyIR, an optional second preprocessing mode</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#where-cuda-coop-cutlass-plugs-in">Where cuda.coop.cutlass plugs in</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#entry-points-are-ordinary-functions">Entry points are ordinary functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-facts">Launch facts</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#calls-through-the-ffi">Calls through the FFI</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-trace-finalize-hook">The trace-finalize hook</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lto-ir-and-the-device-link">LTO-IR and the device link</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-memory">Shared memory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-we-deliberately-avoid">What we deliberately avoid</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#private-interfaces-we-depend-on">Private interfaces we depend on</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reading-the-cutlass-dsl-sources">Reading the CUTLASS DSL sources</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vocabulary">Vocabulary</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

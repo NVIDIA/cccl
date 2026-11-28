@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="280" viewBox="0 0 1440 280" role="img" aria-labelledby="title description">
+<title id="title">Four choices when creating a cooperative group</title>
+<desc id="description">A diagram connects four design questions from left to right. First, what is being grouped: threads, warps, or other units? Second, within what boundary: a block, another group, or another level? Third, how are units grouped: by four, by a predicate, or another mapping? Fourth, how shall the group synchronize: a barrier, __syncwarp(), or another synchronization mechanism?</desc>
+<style>
+  text { font-family: Arial, Helvetica, sans-serif; fill: #172b3a; }
+  .heading { font-size: 24px; font-weight: 700; }
+  .label { font-size: 18px; fill: #526373; }
+  .example { font-size: 20px; }
+  .number { font-size: 20px; font-weight: 700; fill: #3e6500; }
+  .card { fill: #f8fafc; stroke: #a8b5c1; stroke-width: 1.5; }
+  .step { fill: #edf7da; stroke: #3e6500; stroke-width: 1.5; }
+  .connector { fill: none; stroke: #266a9e; stroke-width: 2; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <path d="M 0 0 L 8 4 L 0 8 Z" fill="#266a9e"/>
+  </marker>
+</defs>
+<rect width="1440" height="280" fill="white"/>
+<g id="unit">
+  <rect x="24" y="24" width="324" height="232" rx="12" class="card"/>
+  <circle cx="58" cy="60" r="18" class="step"/>
+  <text x="58" y="67" class="number" text-anchor="middle">1</text>
+  <text x="90" y="67" class="label">Unit</text>
+  <text x="48" y="116" class="heading">What is being</text>
+  <text x="48" y="146" class="heading">grouped?</text>
+  <text x="48" y="202" class="example">Threads, warps, …</text>
+</g>
+<path d="M 350 140 H 372" class="connector" marker-end="url(#arrow)"/>
+<g id="boundary">
+  <rect x="380" y="24" width="324" height="232" rx="12" class="card"/>
+  <circle cx="414" cy="60" r="18" class="step"/>
+  <text x="414" y="67" class="number" text-anchor="middle">2</text>
+  <text x="446" y="67" class="label">Upper boundary</text>
+  <text x="404" y="116" class="heading">Within what?</text>
+  <text x="404" y="202" class="example">A block, another group, …</text>
+</g>
+<path d="M 706 140 H 728" class="connector" marker-end="url(#arrow)"/>
+<g id="mapping">
+  <rect x="736" y="24" width="324" height="232" rx="12" class="card"/>
+  <circle cx="770" cy="60" r="18" class="step"/>
+  <text x="770" y="67" class="number" text-anchor="middle">3</text>
+  <text x="802" y="67" class="label">Mapping</text>
+  <text x="760" y="116" class="heading">How?</text>
+  <text x="760" y="202" class="example">By 4, a predicate, ...</text>
+</g>
+<path d="M 1062 140 H 1084" class="connector" marker-end="url(#arrow)"/>
+<g id="synchronizer">
+  <rect x="1092" y="24" width="324" height="232" rx="12" class="card"/>
+  <circle cx="1126" cy="60" r="18" class="step"/>
+  <text x="1126" y="67" class="number" text-anchor="middle">4</text>
+  <text x="1158" y="67" class="label">Synchronizer Selection</text>
+  <text x="1116" y="116" class="heading">How shall it</text>
+  <text x="1116" y="146" class="heading">synchronize?</text>
+  <text x="1116" y="202" class="example">Barrier, <tspan font-family="Consolas, monospace">__syncwarp()</tspan>, …</text>
+</g>
+</svg>
