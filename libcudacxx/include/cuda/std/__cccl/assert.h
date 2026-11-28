@@ -66,6 +66,31 @@
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
 #elif _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
+#elif _CCCL_CUDA_COMPILER(CLANG) && _CCCL_OS(WINDOWS)
+// clang checks host functions in the device compilation and device functions in the host compilation as well, so the
+// assertions need a function that can be called from both: _STL_VERIFY calls the host only _CrtDbgReport in debug
+// builds, __assertfail is device only
+#  ifdef NDEBUG
+// Reintroduce the _wassert declaration
+extern "C" _ACRTIMP void __cdecl _wassert(const wchar_t* __message, const wchar_t* __file, unsigned __line);
+#  endif // NDEBUG
+[[noreturn]] _CCCL_HOST_DEVICE inline void __cccl_assert_fail_windows(
+  const char* __message,
+  const char* __file,
+  unsigned __line,
+  const char* __function,
+  const wchar_t* __wmessage,
+  const wchar_t* __wfile) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ((void) __message; (void) __file; (void) __function; ::_wassert(__wmessage, __wfile, __line);),
+    ((void) __wmessage; (void) __wfile; ::__assertfail(__message, __file, __line, __function, sizeof(char));))
+  __builtin_trap();
+}
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+    ? (void) 0 : ::__cccl_assert_fail_windows(message, __FILE__, __LINE__, __func__, _CRT_WIDE(#message), __FILEW__)
 #elif __has_include(<yvals.h>) && _CCCL_OS(WINDOWS) // Windows uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
