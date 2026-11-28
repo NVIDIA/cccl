@@ -320,3 +320,59 @@ def test_aggregate_output_in_another_block_of_the_same_region():
                 _validate_output_region(output, name="aggregate_output")
                 scf.YieldOp([])
         assert module.operation.verify()
+
+
+class _PythonInt(int):
+    pass
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -1,
+        np.int32(-1),
+        256,
+        _PythonInt(256),
+        np.longdouble(300),
+        np.clongdouble(300),
+    ],
+)
+@pytest.mark.parametrize(
+    "factory", ["from_fn", "from_payload", "to_tensor_ssa"]
+)
+def test_checked_host_casts(factory, value):
+    dtype = np.dtype(np.uint8)
+    with pytest.raises(ValueError, match="not representable in Uint8"):
+        if factory == "from_fn":
+            ThreadData.from_fn(1, lambda _: value, dtype=dtype)
+        elif factory == "from_payload":
+            ThreadData.from_payload(ThreadData.from_values(value), dtype=dtype)
+        else:
+            ThreadData.from_values(value).to_tensor_ssa(dtype=dtype)
+
+
+@pytest.mark.parametrize("selector", [123, 1.5, np.uint32(7), Int32(0)])
+def test_scalar_values_are_not_dtype_selectors(selector):
+    with pytest.raises(TypeError, match="dtype must be a scalar type"):
+        ThreadData(1, dtype=selector)
+    with pytest.raises(TypeError, match="dtype must be a scalar type"):
+        ThreadData.from_payload(
+            ThreadData.from_values(1, dtype=int), dtype=selector
+        )
+    with pytest.raises(
+        TypeError, match="dtype must be a supported numeric type"
+    ):
+        ThreadData.from_values(1).to_tensor_ssa(dtype=selector)
+
+
+def test_unrecognized_producer_dtype_is_retained():
+    opaque = object()
+    data = ThreadData.from_vector(_Vector(), dtype=opaque)
+    assert data.dtype is opaque
+    assert data.values("test") == (2, 3, 4)
+
+
+def test_explicit_cast_checks_finite_float_before_narrowing():
+    value = np.longdouble(np.finfo(np.float32).max) * 2
+    with pytest.raises(ValueError, match="not representable in Float32"):
+        ThreadData.from_fn(1, lambda _: value, dtype=np.float32)

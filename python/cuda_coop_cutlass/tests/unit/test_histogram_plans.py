@@ -163,3 +163,17 @@ def test_failed_storage_emission_restores_session(monkeypatch):
         )
     assert restored == [saved]
     assert samples.values("histogram") == (3, 1)
+
+
+def test_inferred_histogram_samples_must_fit_int32():
+    with pytest.raises(ValueError, match="not representable in Int32"):
+        _histogram.provider_histogram(
+            group=this_block(),
+            launch=LaunchFacts(exact_block_dim=(32, 1, 1)),
+            samples=ThreadData.from_values(1 << 40),
+            bins=5,
+            bins_per_thread=1,
+            counter_dtype=None,
+            algorithm="atomic",
+            temp_storage=None,
+        )

@@ -335,7 +335,10 @@ def provider_histogram(
             temp_storage=temp_storage,
         )
     )
-    arguments = [sample_type(value) for value in values]
+    arguments = [
+        _types.as_provider_scalar(value, sample_type, name="histogram sample")
+        for value in values
+    ]
     parameter_types = [sample_type] * len(values)
     tensor = _make_rmem_tensor(bins_per_thread, counter_type, samples.alignment)
     snapshot = _state.snapshot_active_session_state()

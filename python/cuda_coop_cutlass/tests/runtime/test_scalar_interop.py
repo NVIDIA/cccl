@@ -187,3 +187,31 @@ def test_scan_aggregate_explicit_copy(region):
     with device_array(observed) as destination:
         launch(destination, cutlass.Int32(3))
     np.testing.assert_array_equal(observed, 1056 if region == "loop" else 528)
+
+
+@pytest.mark.parametrize("payload", (False, True))
+def test_numpy_scalar_store(payload):
+    value = np.uint32(0xFEDCBA98)
+
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        if cutlass.const_expr(payload):
+            coop.store(
+                coop.this_block(),
+                destination,
+                coop.ThreadData.from_values(value),
+                dtype=cutlass.Uint32,
+            )
+        else:
+            coop.store(
+                coop.this_block(), destination, value, dtype=cutlass.Uint32
+            )
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    observed = np.zeros(32, dtype=np.uint32)
+    with device_array(observed) as destination:
+        launch(destination)
+    np.testing.assert_array_equal(observed, np.full_like(observed, value))
