@@ -17,6 +17,10 @@
 
 #include <nv/target>
 
+#if _CCCL_HOSTED()
+#  include <chrono>
+#endif // _CCCL_HOSTED()
+
 #include "test_macros.h"
 
 int main(int, char**)
