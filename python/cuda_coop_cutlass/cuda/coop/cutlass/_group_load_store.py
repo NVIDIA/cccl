@@ -234,6 +234,8 @@ def load(
         ``cute.recast_tensor`` view of it, a shared tensor from CuTe's
         ``SmemAllocator``, or a tensor from
         :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`.
+        The pointer must be aligned to the element size in bytes. Use a
+        plain layout and an unswizzled pointer for linear memory access.
         Its element type is one of the ten listed under
         :ref:`ThreadData <coop-thread-data>`. A register tensor, a tensor
         with a runtime shape and any other element type are rejected when

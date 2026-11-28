@@ -6,8 +6,11 @@
 
 from __future__ import annotations
 
+from inspect import getattr_static
 from math import prod
 from typing import Any
+
+from cutlass import cute
 
 
 def _optional_attr(value: Any, name: str) -> Any:
@@ -92,16 +95,22 @@ def contiguous_layout_reason(value: Any) -> str | None:
 
     Ignore unit extents and sort other dimensions by stride, so compact
     permutations remain eligible. Dynamic or incomplete layout metadata cannot
-    prove compactness. A bare to_llvm_ptr conversion with no layout metadata
+    prove compactness. A bare LLVM pointer conversion with no layout metadata
     is accepted as a pointer contract, without a known capacity.
     """
+
+    if isinstance(_optional_attr(value, "layout"), cute.ComposedLayout):
+        return "has a composed layout"
 
     shape = _optional_attr(value, "shape")
     strides_value = _optional_attr(value, "strides")
     if strides_value is None:
         strides_value = _optional_attr(value, "stride")
     if shape is None and strides_value is None:
-        if callable(_optional_attr(value, "to_llvm_ptr")):
+        if (
+            callable(_optional_attr(value, "to_llvm_ptr"))
+            or getattr_static(value, "llvm_ptr", None) is not None
+        ):
             return None
         return "has no inspectable shape/stride contract"
     if shape is None or strides_value is None:

@@ -418,14 +418,21 @@ def _destination(destination, value_type):
         or destination.element_type is not value_type
     ):
         raise TypeError(message)
-    if destination.iterator.memspace != cute.AddressSpace.gmem:
+    if (
+        isinstance(destination.layout, cute.ComposedLayout)
+        or destination.iterator.memspace != cute.AddressSpace.gmem
+    ):
         raise TypeError(message)
     shape, stride = destination.shape, destination.stride
     if isinstance(shape, tuple):
         if len(shape) != 1 or isinstance(shape[0], tuple):
             raise TypeError(message)
         shape, stride = shape[0], stride[0]
-    if not isinstance(stride, Integral) or stride != 1:
+    if (
+        isinstance(stride, bool)
+        or not isinstance(stride, Integral)
+        or stride != 1
+    ):
         raise TypeError(message)
     if isinstance(shape, Integral):
         if not 0 <= shape <= (1 << 63) - 1:
@@ -435,9 +442,9 @@ def _destination(destination, value_type):
             )
     elif _types.canonical_dsl_type(shape) not in _types.INTEGER_VALUE_TYPES:
         raise TypeError(message)
-    pointer = _try_raw_memory_pointer(destination)
+    pointer, reason = _try_raw_memory_pointer(destination, value_type)
     if pointer is None:
-        raise TypeError(message)
+        raise TypeError(f"{message}: {reason}")
     return pointer, Int64(shape)
 
 
