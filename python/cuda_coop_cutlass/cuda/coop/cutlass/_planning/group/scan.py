@@ -361,10 +361,11 @@ def _plan_scan(
     -------
     GroupLoweringPlan
         A CUB implementation with result and execution contracts, or an
-        unsupported plan with a specific reason. Supported plans use
-        implementation-owned shared scratch for each group instance and
-        request a reuse barrier at the group's execution scope. The backend
-        determines the scratch layout.
+        unsupported plan with a specific reason. Block scans use
+        implementation-owned shared scratch and request a block barrier
+        for scratch reuse. The backend determines the block scratch layout.
+        Warp scans use register shuffles and need no shared scratch or
+        reuse barrier.
 
     Raises
     ------
