@@ -263,10 +263,25 @@ rules for each argument and for the result.
 Does Histogram retain counters between calls?
 ---------------------------------------------
 
-No. Each call counts from zero, even when it shares a ``TempStorage`` with
-earlier calls. To count several tiles, keep a payload of totals and add
-each call's counters to it. Item ``i`` of a thread's counters stands for
-the same bin in every call, so each thread adds item by item:
+:func:`~cuda.coop.cutlass.histogram` counts one tile from zero and returns
+its bin counts to the threads. Sharing a :class:`~cuda.coop.cutlass.TempStorage`
+between calls reuses scratch space.
+
+To count several tiles into the same bins, initialize the counters once
+and pass them to :func:`~cuda.coop.cutlass.histogram_composite` for each
+tile. There are two ways to provide the shared memory for the counters:
+
+* ``coop.histogram_init(block, bins=70)`` allocates a one-dimensional
+  shared tensor, zeros it and returns it. Its 70 default ``Int32`` counters
+  occupy 280 bytes per block.
+* If the kernel already owns a shared tensor, for example one allocated
+  by CuTe's ``SmemAllocator``, ``coop.histogram_init(block, counters)``
+  zeros that tensor in place. Its extent gives the bin count.
+
+Both forms synchronize the block after zeroing. This kernel uses either
+form to count four tiles on 64 threads. The counters stay live across the
+loop. A separate :class:`~cuda.coop.cutlass.TempStorage` supplies scratch
+space to the sort algorithm on every iteration.
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
    :language: python
@@ -274,12 +289,27 @@ the same bin in every call, so each thread adds item by item:
    :end-before: # cutlass-histogram-tiles-example-end
    :dedent: 4
 
-Here ``totals`` and the counters are ``Int32``. For totals past the range
-of ``Int32``, call ``histogram`` with ``counter_dtype=cutlass.Int64`` and
-give ``totals`` the same element type. CUB's ``Composite`` method, which
-adds to counters the caller keeps, has no counterpart in the package.
-:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
-rules for each argument and for the result.
+The C++ equivalent of the update is
+``BlockHistogram(scratch).Composite(samples, counters)``, where
+``BlockHistogram`` names the specialized CUB class. Its constructor
+takes a ``BlockHistogram::TempStorage&`` reference, and ``Composite``
+takes the counters array. With ``cub::BLOCK_HISTO_SORT``, CUB uses the
+scratch to radix-sort samples and find runs. With ``cub::BLOCK_HISTO_ATOMIC``,
+CUB adds directly to the counters and its scratch type is empty. CUB's
+``BlockHistogram`` selects the algorithm through its ``Algorithm`` template
+parameter, which defaults to ``cub::BLOCK_HISTO_SORT``. Python defaults to
+``algorithm="atomic"``.
+
+For ``histogram_composite``, pass a ``TempStorage`` only with
+``algorithm="sort"``. For the default atomic algorithm, omit
+``temp_storage``. With either algorithm, omitting ``temp_storage`` includes
+a block barrier after the update. The example supplies sort scratch with
+``auto_sync=True``, so every thread can read the totals when the call returns.
+
+Each entry ``counters[b]`` holds the block total for bin ``b``. Threads 0
+through 5 each write a second bin, so the kernel writes all 70 totals.
+:ref:`Histogram <coop-cutlass-histogram>` gives the synchronization rules
+for ``auto_sync=False`` and the supported 64-bit counter types.
 
 .. _coop-faq-rld-lifecycle:
 

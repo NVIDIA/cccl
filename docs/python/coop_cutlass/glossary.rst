@@ -76,11 +76,11 @@ Terms
       reference and the :doc:`explorer <visualizations/reduce-batched>`.
 
    bin
-      One counter of :func:`~cuda.coop.cutlass.histogram`. A sample with
-      value ``b`` adds one to bin ``b``, so every sample must be at least 0
-      and less than ``bins``. The counters come back in :term:`striped`
-      order: on a block of ``G`` threads, item ``i`` of the thread with rank
-      ``t`` holds the count of bin ``t + i * G``. See
+      A counter for one sample value. A sample with value ``b`` adds one to
+      bin ``b``, so every sample must be at least zero and less than ``bins``.
+      :func:`~cuda.coop.cutlass.histogram` returns counters in :term:`striped`
+      order. :func:`~cuda.coop.cutlass.histogram_composite` updates
+      ``counters[b]`` in shared memory. See
       :ref:`Histogram <coop-cutlass-histogram>` in the API reference and the
       :doc:`explorer <visualizations/histogram>`.
 

@@ -56,6 +56,8 @@ _API_VISUALIZATIONS = {
     "adjacent-difference": "adjacent-difference",
     "discontinuity": "discontinuity",
     "histogram": "histogram",
+    "histogram_init": "histogram",
+    "histogram_composite": "histogram",
     "run-length-decode": "run-length-decode",
     "reduce-batched": "reduce-batched",
     "sum": "reduce",

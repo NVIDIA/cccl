@@ -63,49 +63,64 @@ def test_histogram_example(items_per_thread):
     np.testing.assert_array_equal(sorted_counts, expected)
 
 
-def test_histogram_tiles_example():
-    """Add the counts of four tiles in a runtime loop.
-
-    The host compares the totals with one bincount over all 1,024 samples
-    and requires zero in every item past the last bin.
-    """
+@pytest.mark.parametrize("use_smem_allocator", [False, True])
+def test_histogram_tiles_example(use_smem_allocator):
+    """Accumulate four tiles into 70 shared counters on 64 threads."""
 
     # cutlass-histogram-tiles-example-begin
     import cutlass
     from cutlass import cute
+    from cutlass.memory import SmemAllocator
 
     import cuda.coop.cutlass as coop
 
     @cute.kernel
     def count_tiles(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        use_smem_allocator: cutlass.Constexpr,
     ):
         block = coop.this_block()
-        totals = coop.ThreadData(2, dtype=cutlass.Int32)
-        for i in cutlass.range_constexpr(2):
-            totals[i] = cutlass.Int32(0)
+        if cutlass.const_expr(use_smem_allocator):
+            counters = SmemAllocator().allocate_tensor(
+                cutlass.Int32, cute.make_layout(70), byte_alignment=4
+            )
+            coop.histogram_init(block, counters)
+        else:
+            counters = coop.histogram_init(block, bins=70)
+
+        scratch = coop.TempStorage(auto_sync=True)
         for tile in cutlass.range(tiles):
             samples = coop.load(
                 block, source, items_per_thread=4, offset=tile * 256
             )
-            counts = coop.histogram(block, samples, bins=70, bins_per_thread=2)
-            # Item i of counts stands for the same bin in every call.
-            for i in cutlass.range_constexpr(2):
-                totals[i] = totals[i] + counts[i]
-        coop.store(block, destination, totals, algorithm="striped")
+            coop.histogram_composite(
+                block, samples, counters, algorithm="sort", temp_storage=scratch
+            )
+
+        output = cute.make_tensor(destination, cute.make_layout(70))
+        thread = cute.arch.thread_idx()[0]
+        for bin_index in cutlass.range(thread, 70, 64):
+            output[bin_index] = counters[bin_index]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        use_smem_allocator: cutlass.Constexpr,
     ):
-        count_tiles(source, destination, tiles).launch(grid=1, block=64)
+        count_tiles(source, destination, tiles, use_smem_allocator).launch(
+            grid=1, block=64
+        )
 
     # cutlass-histogram-tiles-example-end
     values = (np.arange(4 * 256, dtype=np.int32) * 13) % 70
-    observed = np.full(128, -1, dtype=np.int32)
+    observed = np.full(70, -1, dtype=np.int32)
     with device_array(values) as src, device_array(observed) as dst:
-        launch(src, dst, cutlass.Int32(4))
-    np.testing.assert_array_equal(observed, np.bincount(values, minlength=128))
+        launch(src, dst, cutlass.Int32(4), use_smem_allocator)
+    np.testing.assert_array_equal(observed, np.bincount(values, minlength=70))
 
 
 def test_histogram_partial_tile_example():

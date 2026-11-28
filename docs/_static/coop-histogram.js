@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Build the fresh-counter Histogram model for the CoopExplorer renderer.
+// Build the one-tile and shared-counter Histogram models for the explorer.
 // Atomic rounds and sort/run counts explain how sample indices become bin
 // counts. The stages show values and ownership, not GPU scheduling or timing.
 (() => {
@@ -16,6 +16,53 @@
   const token = (id, value, row, index, color, detail, muted = false, from = undefined) =>
     ({ id, label: String(value), value, row, index, color, detail, muted, from });
 
+  function sample_value(index, bins, pattern) {
+    if (pattern === "zero") return 0;
+    if (pattern === "hot") return index % 4 === 0 ? index % bins : bins - 1;
+    return (index * 5 + Math.floor(index / 3)) % bins;
+  }
+
+  function build_composite(state) {
+    const items = Number(state.items);
+    const bins = Number(state.bins);
+    const capacity = threads * items;
+    const rows = [
+      { id: "input", align: "start", label: "Current tile · samples by thread", count: capacity, groups: groups(items) },
+      { id: "delta", align: "start", label: "Samples contributed by this tile · in bin order", count: bins },
+      { id: "bins", align: "start", label: "Running totals · the same shared counters at every step", count: bins },
+    ];
+    const counts = Array(bins).fill(0);
+    const counter_tokens = () => counts.map((count, bin) =>
+      token("bin-" + bin, count, "bins", bin, bin % threads, `counters[${bin}] = ${count} across all tiles counted so far.`));
+    const phases = [{
+      label: "Initialize", description: "histogram_init zeros the shared counters once, before the first tile.", tokens: counter_tokens(),
+    }];
+    for (let tile = 0; tile < 2; tile += 1) {
+      const added = Array(bins).fill(0);
+      const source = Array.from({ length: capacity }, (_, index) => {
+        const sample = sample_value(tile * capacity + index, bins, state.pattern);
+        added[sample] += 1;
+        return token("sample-" + index, sample, "input", index, Math.floor(index / items),
+          `Tile ${tile + 1}, thread ${Math.floor(index / items)}, slot ${index % items}: add one to bin ${sample}.`);
+      });
+      const delta = added.map((count, bin) => {
+        const before = counts[bin];
+        counts[bin] += count;
+        return token("delta-" + bin, count, "delta", bin, bin % threads,
+          `Tile ${tile + 1} contributes ${count} to bin ${bin}: ${before} + ${count} = ${counts[bin]}.`);
+      });
+      const action = state.algorithm === "sort" ? "The sort algorithm adds the length of each run to its bin." :
+        "The atomic algorithm increments the bin for each sample.";
+      phases.push({ label: `Composite tile ${tile + 1}`, description: action, tokens: [...source, ...delta, ...counter_tokens()] });
+    }
+    return {
+      rows, phases,
+      detail: `Two tiles of ${capacity} samples counted into ${bins} shared bins on one block of ${threads} threads.`,
+      summary: `Final counts in bin order: [${counts.join(", ")}]. Sum = ${2 * capacity}.`,
+      caption: "The middle row shows each tile's contribution. histogram_composite updates the shared tensor in place.",
+    };
+  }
+
   // Build one display phase per teaching step. Every phase repeats the input
   // sample tokens, so the preserved input row stays visible. Input size and
   // counters per thread are separate controls; the counter choices always
@@ -25,11 +72,9 @@
     const bins = Number(state.bins);
     const bins_per_thread = Number(state.bins_per_thread);
     const capacity = threads * items;
-    const records = Array.from({ length: capacity }, (_, index) => {
-      const sample = state.pattern === "zero" ? 0 : state.pattern === "hot" ?
-        (index % 4 === 0 ? index % bins : bins - 1) : (index * 5 + Math.floor(index / 3)) % bins;
-      return { index, sample };
-    });
+    const records = Array.from({ length: capacity }, (_, index) => ({
+      index, sample: sample_value(index, bins, state.pattern),
+    }));
     const source = records.map(({ index, sample }) => token(`source-${index}`, sample, "input", index,
       Math.floor(index / items), `T${Math.floor(index / items)}, local slot ${index % items}: sample ${sample} contributes one count to bin ${sample}. This input is preserved.`));
     const rows = [
@@ -106,7 +151,7 @@
         "The bin count and counters per thread are compile-time controls. Eight times counters per thread must cover every bin in this teaching block.",
         "Returned counters use striped ownership: bin = thread rank + local slot * block size. Output padding is zero; it is safe to read but is outside the requested bin range.",
         "Every input slot is counted. Padding an incomplete input tile with sample zero adds unwanted counts to bin zero; Histogram has no valid_items argument.",
-        "Each call starts a fresh histogram. To accumulate tiles, add their returned per-bin counts and choose a counter dtype wide enough for the total.",
+        "histogram returns fresh counts. Switch to Shared bins across two tiles to see histogram_composite add directly to running totals.",
         "Atomic rounds and sort/run stages explain the algorithms. They are not a trace of GPU scheduling, exact CUB instructions, or relative performance.",
       ],
       caption: "One complete one-dimensional block with eight teaching threads. Inputs may be ThreadData or supported CuTe register payloads. All return fresh counter payloads. Select a value to inspect it; arrow keys move between values.",
@@ -114,17 +159,18 @@
   }
 
   window.CoopExplorer.register("histogram", {
-    title: "Count samples into bins", eyebrow: "Fresh counts and striped ownership", defaultAlgorithm: "atomic",
+    title: "Count samples into bins", eyebrow: "One-tile counts and running totals", defaultAlgorithm: "atomic",
     algorithms: [
       { id: "atomic", label: "Atomic increments", tag: "algorithm=atomic" },
       { id: "sort", label: "Sort and count runs", tag: "algorithm=sort" },
     ],
     controls: [
+      { id: "mode", label: "Counting mode", value: "one", choices: [choice("one", "One tile, striped result"), choice("composite", "Shared bins across two tiles")] },
       { id: "items", label: "Samples per thread", value: "2", choices: ["1", "2", "4"] },
       { id: "bins", label: "Bins", value: "13", choices: ["1", "5", "8", "13", "16"] },
-      { id: "bins_per_thread", label: "Counters per thread", value: "2", choices: state => Array.from({ length: 4 - Math.ceil(Number(state.bins) / threads) }, (_, index) => String(index + Math.ceil(Number(state.bins) / threads))) },
+      { id: "bins_per_thread", label: "Counters per thread", value: "2", hidden: state => state.mode === "composite", choices: state => Array.from({ length: 4 - Math.ceil(Number(state.bins) / threads) }, (_, index) => String(index + Math.ceil(Number(state.bins) / threads))) },
       { id: "pattern", label: "Samples", value: "mixed", choices: [choice("mixed", "Mixed bins"), choice("hot", "Mostly one bin"), choice("zero", "All in bin zero")] },
     ],
-    build: build_histogram,
+    build: state => state.mode === "composite" ? build_composite(state) : build_histogram(state),
   });
 })();

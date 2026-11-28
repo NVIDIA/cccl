@@ -23,12 +23,10 @@ each value's bin index first.
    7 stand for bins 13, 14 and 15, which are past the last bin, and hold
    zero.
 
-Each call counts from zero, even when it shares a
-:ref:`TempStorage <coop-temp-storage>` with earlier calls. To count several
-:term:`tiles <tile>`, add each call's counters to a payload of your own.
-Item ``i`` of a thread's counters stands for the same bin in every call, so
-each thread adds item by item, as in the second example of
-:func:`~cuda.coop.cutlass.histogram`.
+Each :func:`~cuda.coop.cutlass.histogram` call counts one tile from zero.
+To accumulate several tiles in shared memory, call
+:func:`~cuda.coop.cutlass.histogram_init` once before the loop, then call
+:func:`~cuda.coop.cutlass.histogram_composite` for each tile.
 
 ``histogram`` counts every item of every thread and takes no
 ``valid_items``, so zeros that fill a partial tile add to bin 0. To count a
@@ -48,7 +46,7 @@ partial tile, fill it with the index of an extra bin, as in
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from cuda.coop.cutlass._planning.block._common import normalize_positive_int
 from cuda.coop.cutlass._planning.block.histogram import (
@@ -73,6 +71,9 @@ from ._thread_data import (
     ThreadData,
 )
 from ._typing import BlockGroup, ReadableThreadDataLike, TempStorageLike
+
+if TYPE_CHECKING:
+    from cutlass import cute
 
 _Counter = TypeVar(
     "_Counter",
@@ -182,9 +183,8 @@ def histogram(
 
     Notes
     -----
-    The call runs CUB's ``Histogram`` method. CUB's ``Composite`` method,
-    which adds to counters the caller keeps, has no counterpart here. The
-    second example below does its job.
+    This runs CUB's ``Histogram`` method. Each call returns fresh counts,
+    including calls that share a ``TempStorage``.
 
     See Also
     --------
@@ -208,19 +208,6 @@ def histogram(
         :end-before: # cutlass-histogram-example-end
         :dedent: 4
 
-    Count ``tiles`` tiles of 256 samples each and add up their counts.
-    ``totals`` starts at zero, and each thread adds the counters of every
-    call to it, item by item.
-
-    `Full example and test on GitHub
-    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py>`__
-
-    .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
-        :language: python
-        :start-after: # cutlass-histogram-tiles-example-begin
-        :end-before: # cutlass-histogram-tiles-example-end
-        :dedent: 4
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError(
@@ -253,4 +240,153 @@ def histogram(
     )
 
 
-__all__ = ["histogram"]
+def _require_block(group, primitive):
+    if not isinstance(group, ThreadGroup):
+        raise TypeError(f"{primitive} group must be a ThreadGroup")
+    if group.kind != "block":
+        raise NotImplementedError(f"{primitive} requires a block group")
+
+
+def histogram_init(
+    group: BlockGroup,
+    counters: cute.Tensor | None = None,
+    /,
+    *,
+    bins: int | None = None,
+    counter_dtype: type[int | _Counter] | np.dtype | None = None,
+) -> cute.Tensor:
+    """Zero the shared counters of a one-dimensional block.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Every thread in ``this_block()`` participates.
+    counters : CuTe tensor, optional
+        An existing contiguous, naturally aligned shared tensor with one
+        counter per bin. Its length must be a positive compile-time integer.
+        Pass this tensor to clear it in place, or pass ``bins`` to allocate
+        a tensor.
+    bins : int, optional
+        The number of bins to allocate. Each call site gets its own shared
+        memory. A call inside a runtime loop clears the same bytes each trip.
+    counter_dtype : type, optional
+        The element type to allocate. The default is ``Int32``. The accepted
+        types are the same as for :func:`~cuda.coop.cutlass.histogram`.
+
+    Returns
+    -------
+    CuTe tensor
+        The supplied or newly allocated tensor. All counters are zero and
+        every thread in the block has reached a barrier before return.
+
+    Notes
+    -----
+    Before clearing counters already in use, synchronize the block after
+    the last read or update. The barrier in this call follows the writes.
+    """
+    _require_block(group, "histogram_init")
+    if counters is None:
+        if bins is None:
+            raise TypeError("histogram_init requires counters or bins")
+        bins = normalize_positive_int("bins", bins)
+    elif bins is not None or counter_dtype is not None:
+        raise TypeError(
+            "histogram_init takes either counters or bins and counter_dtype"
+        )
+    from ._lowering._histogram_init import initialize_counters
+
+    return initialize_counters(group, counters, bins, counter_dtype)
+
+
+def histogram_composite(
+    group: BlockGroup,
+    samples: ReadableThreadDataLike
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    counters: cute.Tensor,
+    /,
+    *,
+    algorithm: Literal["atomic", "sort"] = "atomic",
+    temp_storage: TempStorageLike | None = None,
+) -> None:
+    """Add one block tile's samples to existing shared counters in place.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Every thread in a one-dimensional block participates.
+    samples : ThreadData, CuTe register tensor or TensorSSA
+        One bin index per item, from zero through the last bin. The sample
+        types and the algorithms follow :func:`~cuda.coop.cutlass.histogram`.
+    counters : CuTe tensor
+        A contiguous, naturally aligned shared tensor with one 32- or
+        64-bit integer counter per bin. Its static length gives the bin
+        count. Each counter starts from its current value. Choose a type
+        that holds the accumulated totals.
+    algorithm : {"atomic", "sort"}, optional
+        The counting algorithm. The default is ``"atomic"``.
+    temp_storage : TempStorage, optional
+        Optional scratch for ``algorithm="sort"``, separate from the live
+        counters. The default atomic algorithm increments the counters
+        directly. The compiler rejects explicit scratch with atomic.
+        With ``temp_storage=None``, the block synchronizes after either
+        algorithm. With explicit sort scratch, ``auto_sync=True`` gives
+        the same barrier. With ``auto_sync=False``, synchronize before
+        reading or resetting the counters, changing the algorithm, or
+        reusing scratch.
+
+    Notes
+    -----
+    Call :func:`~cuda.coop.cutlass.histogram_init` to start from zero.
+    After directly seeding or otherwise writing counts, synchronize before
+    calling this function. Keep the counters separate from any overlapping
+    scratch or reservation throughout accumulation. Samples keep their
+    values. The counts stay in shared memory until the kernel reads them.
+
+    Examples
+    --------
+    Accumulate successive tiles in a shared histogram with 70 bins on a
+    block of 64 threads.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
+        :language: python
+        :start-after: # cutlass-histogram-tiles-example-begin
+        :end-before: # cutlass-histogram-tiles-example-end
+        :dedent: 4
+    """
+    _require_block(group, "histogram_composite")
+    algorithm = normalize_histogram_algorithm(algorithm)
+    if temp_storage is not None and not isinstance(temp_storage, TempStorage):
+        raise TypeError(
+            "histogram_composite temp_storage must be CUTLASS TempStorage"
+        )
+    if temp_storage is not None and algorithm == "atomic":
+        raise ValueError(
+            'histogram_composite with algorithm="atomic" updates counters '
+            "directly. Omit temp_storage or select "
+            'algorithm="sort" to supply scratch.'
+        )
+    from ._compiler._launch import current_kernel_launch_facts
+    from ._lowering._histogram import provider_histogram_composite
+    from ._lowering._histogram_init import counter_extent
+
+    bins = counter_extent(counters)
+    samples = _snapshot_readable_payload(
+        samples, name="samples", primitive="histogram_composite"
+    )
+    provider_histogram_composite(
+        group=group,
+        launch=current_kernel_launch_facts(),
+        samples=samples,
+        counters=counters,
+        bins=bins,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+    )
+
+
+__all__ = ["histogram", "histogram_composite", "histogram_init"]

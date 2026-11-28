@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare static result types for ``cuda.coop.cutlass.histogram``.
+"""Declare the block histogram's per-thread and shared-counter interfaces.
 
-The counter type does not depend on the sample type. An omitted selector or
-Python int gives Int32 counters. An explicit NumPy or CuTe selector sets the
-counter type. Result extent follows bins_per_thread, not the sample count.
+Histogram returns striped per-thread counts with the selected counter type.
+Initialization returns a shared tensor. Composite adds a tile to that tensor.
 """
 
 from typing import Literal, TypeAlias, overload
@@ -14,7 +13,7 @@ from typing import Literal, TypeAlias, overload
 import numpy as np
 from typing_extensions import TypeVar
 
-from cutlass import Int32, Int64, Uint32, Uint64
+from cutlass import Int32, Int64, Uint32, Uint64, cute
 
 from ._thread_data import (
     CutlassTensorSample,
@@ -86,3 +85,35 @@ def histogram(
     algorithm: Literal["atomic", "sort"] = "atomic",
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[_Counter]: ...
+@overload
+def histogram_init(
+    group: BlockGroup,
+    /,
+    *,
+    bins: int,
+    counter_dtype: type[int | _Counter] | np.dtype[_NumpyCounter] | None = None,
+) -> cute.Tensor: ...
+@overload
+def histogram_init(
+    group: BlockGroup, counters: cute.Tensor, /
+) -> cute.Tensor: ...
+@overload
+def histogram_composite(
+    group: BlockGroup,
+    samples: _Samples[_Sample],
+    counters: cute.Tensor,
+    /,
+    *,
+    algorithm: Literal["atomic", "sort"] = "atomic",
+    temp_storage: None = None,
+) -> None: ...
+@overload
+def histogram_composite(
+    group: BlockGroup,
+    samples: _Samples[_Sample],
+    counters: cute.Tensor,
+    /,
+    *,
+    algorithm: Literal["sort"],
+    temp_storage: TempStorageLike | None,
+) -> None: ...

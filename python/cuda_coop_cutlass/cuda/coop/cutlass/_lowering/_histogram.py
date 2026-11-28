@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Turn ``cuda.coop.cutlass.histogram`` into generated C++ calls to CUB.
+"""Generate CUB calls for fresh and cumulative block histograms.
 
 CUB writes a block-wide histogram into shared memory. ``cuda.coop`` returns
 counts in registers instead. The C++ adapter therefore keeps CUB scratch and
 one shared counter per bin in a single storage type. Each call zeroes those
 counters, counts the samples, and distributes bins round-robin across threads.
 A C++ probe reports the storage type's size and alignment so the compiler can
-allocate matching scratch. Sample count and output extent are independent.
+allocate matching scratch. Composite instead passes the caller's shared counter
+address to CUB and probes the primitive's own scratch type.
 """
 
 import hashlib
@@ -24,7 +25,10 @@ from cuda.coop.cutlass._planning import (
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop.cutlass._planning.group.histogram import GroupHistogramSemantics
+from cuda.coop.cutlass._planning.group.histogram import (
+    GroupHistogramCompositeSemantics,
+    GroupHistogramSemantics,
+)
 from cutlass._mlir.dialects import llvm
 from cutlass.base_dsl.typing import Int32, Int64, Uint8, Uint32, Uint64
 from cutlass.cute.ffi import ffi
@@ -64,6 +68,10 @@ def _make_histogram_plan(
     operation = GroupHistogramSemantics(
         sample_type, items, bins, bins_per_thread, counter_type, algorithm
     )
+    return _plan_with_storage(group, launch, operation, temp_storage)
+
+
+def _plan_with_storage(group, launch, operation, temp_storage):
     plan = plan_group_primitive(
         make_group_primitive_call(group, operation), launch
     ).require_supported()
@@ -97,30 +105,44 @@ def _make_histogram_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubHistogramRequest:
-    """Describe one specialized CUB histogram wrapper call.
+    """Describe a fresh or cumulative CUB block histogram call.
 
-    The plan artifact key controls equality, hashing, and the wrapper symbol.
-    Block width, items per thread, sample and counter dtypes, bin count,
-    output extent, and algorithm select the C++ type, its scratch layout, and
-    the result contract.
+    The plan identifies the operation, the input tile, the counter type and
+    bin count, and the algorithm. A fresh histogram also specializes on the
+    number of counters each thread receives. Composite writes through the
+    shared counter address supplied at runtime. The artifact key determines
+    equality, hashing, and the wrapper symbol.
     """
 
     plan: GroupLoweringPlan
-    kind: str = "cub_group_histogram"
+
+    @property
+    def composite(self):
+        return isinstance(self.operation, GroupHistogramCompositeSemantics)
+
+    @property
+    def kind(self):
+        return (
+            "cub_group_histogram_composite"
+            if self.composite
+            else "cub_group_histogram"
+        )
 
     def __post_init__(self):
         """Check that the plan matches the CUB histogram wrapper contract.
 
-        Require a CUB block plan, supported sample and counter dtypes,
-        matching template arguments and method, exact scratch, and one counter
-        result of the planned extent. These checks cannot see runtime values.
-        Callers must keep each sample in [0, bins).
+        Check the sample and counter dtypes, CUB method, template arguments
+        and scratch layout. A fresh histogram has one striped counter result.
+        Composite has no return value. Samples must be in [0, bins) at runtime.
         """
 
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
-            or not isinstance(self.plan.call.operation, GroupHistogramSemantics)
+            or not isinstance(
+                self.operation,
+                (GroupHistogramSemantics, GroupHistogramCompositeSemantics),
+            )
             or not isinstance(self.implementation, Algorithm)
         ):
             raise TypeError(
@@ -138,20 +160,30 @@ class _CubHistogramRequest:
             "BLOCK_DIM_X": self.plan.participation.exact_block_dim[0],
             "ITEMS_PER_THREAD": self.operation.items_per_thread,
             "BINS": self.operation.bins,
-            "BINS_PER_THREAD": self.operation.bins_per_thread,
-            "CounterT": self.operation.counter_dtype,
             "ALGORITHM": "::cub::BLOCK_HISTO_ATOMIC"
             if self.operation.algorithm == "atomic"
             else "::cub::BLOCK_HISTO_SORT",
         }
+        if not self.composite:
+            expected.update(
+                BINS_PER_THREAD=self.operation.bins_per_thread,
+                CounterT=self.operation.counter_dtype,
+            )
+        method = "Composite" if self.composite else "Histogram"
         if (
-            self.implementation.method_name != "Histogram"
+            self.implementation.method_name != method
             or self.implementation.template_arguments != expected
         ):
             raise ValueError("histogram implementation does not match its plan")
         if not self.plan.temp_storage.exact_layout_required:
             raise ValueError("histogram requires exact scratch layout")
         result = self.plan.result
+        if self.composite:
+            if result is not None:
+                raise ValueError(
+                    "histogram_composite must update counters in place"
+                )
+            return
         if (
             result is None
             or len(result.values) != 1
@@ -187,6 +219,8 @@ class _CubHistogramRequest:
     def scratch_requirement_key(self):
         """Key scratch uses by adapter type to share one layout probe."""
 
+        if self.composite:
+            return "cub_histogram_composite_storage", self.cpp_type
         return "cub_histogram_storage", self.cpp_type
 
     @property
@@ -196,6 +230,8 @@ class _CubHistogramRequest:
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
+        if self.composite:
+            return f"cuda_coop_cutlass_histogram_composite_{digest}"
         return f"cuda_coop_cutlass_histogram_{digest}"
 
     def __eq__(self, other):
@@ -209,18 +245,12 @@ class _CubHistogramRequest:
 
 
 def _render_histogram(request):
-    """Write the C++ wrapper that calls the shared histogram adapter.
+    """Generate a fresh histogram or an update of caller-owned shared bins.
 
-    The wrapper receives samples by value, the scratch's 32-bit shared
-    address, byte size, and auto-sync flag, and a pointer to register
-    counters. It traps if the scratch is too small or misaligned. Then it
-    converts the shared address to a generic pointer and calls the adapter.
-    The adapter zeroes the counters, runs CUB, and synchronizes before reading
-    bins into each thread's outputs.
-
-    The optional trailing barrier protects later scratch reuse. Disabling it
-    leaves the adapter's internal barrier intact. Copy every output slot,
-    including the adapter's zeros for slots beyond the bin count.
+    Both wrappers copy the sample values into the mutable array expected by
+    CUB and honor the requested trailing barrier. Fresh histograms return a
+    per-thread array. Composite instead receives the CTA-local address of
+    the caller's bins and updates them directly.
     """
 
     request.__post_init__()
@@ -235,11 +265,13 @@ def _render_histogram(request):
             "unsigned int storage_address",
             "int storage_bytes",
             "int storage_auto_sync",
-            f"{counter_cpp}* result",
+            "unsigned int counters_address"
+            if request.composite
+            else f"{counter_cpp}* result",
         )
     )
     values = ", ".join(f"item{i}" for i in range(operation.items_per_thread))
-    return [
+    lines = [
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
@@ -254,6 +286,31 @@ def _render_histogram(request):
         "      __cvta_shared_to_generic(storage_address);",
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         f"  {sample_cpp} samples[{operation.items_per_thread}] = {{{values}}};",
+    ]
+    if request.composite:
+        # Unsigned arithmetic preserves the bit pattern for signed counters.
+        # CUDA atomicAdd supports unsigned long long for 64-bit counters.
+        unsigned = (
+            "unsigned long long"
+            if _types.TYPE_SPECIFICATIONS[operation.counter_dtype].width_bits
+            == 64
+            else "unsigned int"
+        )
+        return [
+            *lines,
+            f"  using counter_type = {unsigned};",
+            "  if ((counters_address & (alignof(counter_type) - 1u)) != 0u) {",
+            '    asm volatile("trap;");',
+            "  }",
+            f"  using counters_type = counter_type[{operation.bins}];",
+            "  auto& counters = *reinterpret_cast<counters_type*>(",
+            "      __cvta_shared_to_generic(counters_address));",
+            "  implementation_type(storage).Composite(samples, counters);",
+            "  if (storage_auto_sync != 0) { __syncthreads(); }",
+            "}",
+        ]
+    return [
+        *lines,
         f"  {counter_cpp} counts[{operation.bins_per_thread}];",
         "  implementation_type(storage).Histogram(samples, counts);",
         "  if (storage_auto_sync != 0) { __syncthreads(); }",
@@ -266,7 +323,7 @@ def _render_histogram(request):
 
 
 def _scratch_probe(request):
-    """Probe the combined CUB scratch and intermediate counter layout."""
+    """Probe the storage for the selected operation and specialization."""
 
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
@@ -278,13 +335,19 @@ _HEADERS = (
     "cub/block/block_histogram.cuh",
     "cuda/std/__type_traits/conditional.h",
 )
-_rendering.register_bundle_renderer(
-    "cub_group_histogram",
-    render=_render_histogram,
-    include_lines=tuple(f"#include <{header}>" for header in _HEADERS),
-    cccl_headers=tuple((f"#include <{header}>", header) for header in _HEADERS),
-    scratch_layout_probe=_scratch_probe,
-)
+for _kind, _headers in (
+    ("cub_group_histogram", _HEADERS),
+    ("cub_group_histogram_composite", ("cub/block/block_histogram.cuh",)),
+):
+    _rendering.register_bundle_renderer(
+        _kind,
+        render=_render_histogram,
+        include_lines=tuple(f"#include <{header}>" for header in _headers),
+        cccl_headers=tuple(
+            (f"#include <{header}>", header) for header in _headers
+        ),
+        scratch_layout_probe=_scratch_probe,
+    )
 
 
 def provider_histogram(
@@ -335,32 +398,16 @@ def provider_histogram(
             temp_storage=temp_storage,
         )
     )
-    arguments = [sample_type(value) for value in values]
-    parameter_types = [sample_type] * len(values)
     tensor = _make_rmem_tensor(bins_per_thread, counter_type, samples.alignment)
     snapshot = _state.snapshot_active_session_state()
     try:
-        _state.register_request(request)
-        descriptor = (
-            TempStorage(auto_sync=True)
-            if temp_storage is None
-            else temp_storage
+        _emit_histogram_call(
+            request,
+            sample_type,
+            values,
+            temp_storage,
+            tensor,
         )
-        arguments.extend(
-            _storage.register_deferred_temp_storage_event(
-                descriptor,
-                primitive_name="histogram",
-                requirement_key=request.scratch_requirement_key,
-            )
-        )
-        parameter_types.extend((Uint32, Int32, Int32))
-        arguments.append(tensor.iterator.llvm_ptr)
-        parameter_types.append(llvm.PointerType.get(0))
-        ffi(
-            name=request.symbol_name,
-            params_types=parameter_types,
-            return_type=None,
-        )(*arguments)
         return ThreadData(
             bins_per_thread,
             dtype=counter_type
@@ -368,6 +415,74 @@ def provider_histogram(
             else counter_dtype,
             values=[counter_type(tensor[i]) for i in range(bins_per_thread)],
             alignment=samples.alignment,
+        )
+    except BaseException:
+        _state.restore_active_session_state(snapshot)
+        raise
+
+
+def _emit_histogram_call(request, sample_type, values, temp_storage, counters):
+    _state.register_request(request)
+    descriptor = (
+        TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+    )
+    storage_arguments = _storage.register_deferred_temp_storage_event(
+        descriptor,
+        primitive_name="histogram_composite"
+        if request.composite
+        else "histogram",
+        requirement_key=request.scratch_requirement_key,
+    )
+    if request.composite:
+        counters_address = Uint32(counters.iterator.toint())
+        counter_parameter = Uint32
+    else:
+        counters_address = counters.iterator.llvm_ptr
+        counter_parameter = llvm.PointerType.get(0)
+    parameter_types = [sample_type] * len(values) + [
+        Uint32,
+        Int32,
+        Int32,
+        counter_parameter,
+    ]
+    ffi(
+        name=request.symbol_name, params_types=parameter_types, return_type=None
+    )(
+        *(sample_type(value) for value in values),
+        *storage_arguments,
+        counters_address,
+    )
+
+
+def provider_histogram_composite(
+    *, group, launch, samples, counters, bins, algorithm, temp_storage
+):
+    """Add samples directly into the caller's shared counter array."""
+
+    sample_type, values = _types.resolve_thread_data_value_type(
+        samples,
+        allowed=_SAMPLES,
+        feature="samples",
+        scope="cuda.coop.cutlass",
+        resolve_type=_resolve_type,
+    )
+    counter_type = _resolve_type(
+        counters.element_type, allowed=_COUNTERS, feature="counters"
+    )
+    operation = GroupHistogramCompositeSemantics(
+        sample_type, len(values), bins, counter_type, algorithm
+    )
+    request = _CubHistogramRequest(
+        _plan_with_storage(group, launch, operation, temp_storage)
+    )
+    snapshot = _state.snapshot_active_session_state()
+    try:
+        _emit_histogram_call(
+            request,
+            sample_type,
+            values,
+            temp_storage,
+            counters,
         )
     except BaseException:
         _state.restore_active_session_state(snapshot)

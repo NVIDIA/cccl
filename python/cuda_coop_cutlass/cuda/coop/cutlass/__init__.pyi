@@ -5,7 +5,15 @@
 from ._device_operator import DeviceOperator as DeviceOperator
 from ._device_operator import compile_operator as compile_operator
 from ._group_exchange import exchange as exchange
-from ._group_histogram import histogram as histogram
+from ._group_histogram import (
+    histogram as histogram,
+)
+from ._group_histogram import (
+    histogram_composite as histogram_composite,
+)
+from ._group_histogram import (
+    histogram_init as histogram_init,
+)
 from ._group_load_store import load as load
 from ._group_load_store import store as store
 from ._group_merge_sort import merge_sort_keys as merge_sort_keys
