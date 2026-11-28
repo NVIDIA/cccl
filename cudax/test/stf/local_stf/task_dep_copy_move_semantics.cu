@@ -205,13 +205,13 @@ int main()
       auto output = task.template get<slice<int>>(1); // Second dependency (write)
 
       // Simple kernel that doubles the values
-      const int N = static_cast<int>(input.size());
+      const int num_items = static_cast<int>(input.size());
 
       const int block_size = 256;
-      const int grid_size  = (N + block_size - 1) / block_size;
+      const int grid_size  = (num_items + block_size - 1) / block_size;
 
       // Use the global kernel function to avoid device lambda nesting
-      double_values_kernel<<<grid_size, block_size, 0, stream>>>(output.data_handle(), input.data_handle(), N);
+      double_values_kernel<<<grid_size, block_size, 0, stream>>>(output.data_handle(), input.data_handle(), num_items);
     };
 
     ctx.pop(); // Exit nested context

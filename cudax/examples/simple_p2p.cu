@@ -109,8 +109,7 @@ void benchmark_cross_device_ping_pong_copy(
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
          dev0_stream.device().get(),
          dev1_stream.device().get(),
-         (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / static_cast<float>(1024 * 1024 * 1024)
-          / duration.count()));
+         (static_cast<double>(cpy_count * dev0_buffer.size_bytes()) / (1024.0 * 1024 * 1024) / duration.count()));
 }
 
 template <typename BufferType>
@@ -167,7 +166,10 @@ void test_cross_device_access_from_kernel(
     const float expected = float(i % 4096) * 2.0f * 2.0f;
     if (host_span[i] != expected)
     {
-      printf("Verification error @ element %zu: val = %f, ref = %f\n", i, host_span[i], expected);
+      printf("Verification error @ element %zu: val = %f, ref = %f\n",
+             i,
+             static_cast<double>(host_span[i]),
+             static_cast<double>(expected));
 
       if (error_count++ > 10)
       {

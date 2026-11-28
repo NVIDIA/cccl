@@ -216,8 +216,8 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Repeat for performance timing
-  float elapsed_millis     = 0.0;
-  float elapsed_rle_millis = 0.0;
+  double elapsed_millis     = 0.0;
+  double elapsed_rle_millis = 0.0;
   for (int i = 0; i <= timing_iterations; ++i)
   {
     // Allocate and initialize device arrays for sorting
@@ -305,8 +305,8 @@ int main(int argc, char** argv)
     }
     else
     {
-      elapsed_millis += static_cast<float>((end_event - start_event).count()) / 1.0e6f;
-      elapsed_rle_millis += static_cast<float>((end_event - rle_start_event).count()) / 1.0e6f;
+      elapsed_millis += static_cast<double>((end_event - start_event).count()) / 1.0e6;
+      elapsed_rle_millis += static_cast<double>((end_event - rle_start_event).count()) / 1.0e6;
     }
   }
 
@@ -323,8 +323,8 @@ int main(int argc, char** argv)
     printf("%d timing iterations, average time to sort and isolate non-trivial duplicates: %.3f ms (%.3f ms spent in "
            "RLE isolation)\n",
            timing_iterations,
-           elapsed_millis / static_cast<float>(timing_iterations),
-           elapsed_rle_millis / static_cast<float>(timing_iterations));
+           elapsed_millis / timing_iterations,
+           elapsed_rle_millis / timing_iterations);
   }
 
   return 0;

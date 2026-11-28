@@ -512,8 +512,8 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
   }
 
-  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
-    return a.first == b.first;
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.first == rhs.first;
   });
 
   const int num_selected = output_num_selected_it[0];
@@ -587,8 +587,8 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
   }
 
-  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
-    return a.first == b.first;
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.first == rhs.first;
   });
 
   const int num_selected = output_num_selected_it[0];

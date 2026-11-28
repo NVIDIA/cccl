@@ -1,3 +1,10 @@
+// These tests compare and assign across float and double on purpose. nvc++ reports the promotion at the position
+// of the header code it instantiates (e.g. the common_type that thrust::complex's mixed-type operator== uses),
+// so suppress it before any header is included.
+#ifdef __NVCOMPILER
+#  pragma diag_suppress arith_float_promotion
+#endif // __NVCOMPILER
+
 #include <thrust/complex.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -13,6 +20,9 @@
 #include <unittest/unittest.h>
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
+// These tests exercise implicit float -> double promotion on purpose.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdouble-promotion")
+_CCCL_DIAG_SUPPRESS_GCC("-Wdouble-promotion")
 
 /*
    The following tests do not check for the numerical accuracy of the operations.

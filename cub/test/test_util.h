@@ -77,7 +77,7 @@ struct CommandLineArgs
   std::vector<std::string> values;
   std::vector<std::string> args;
   cudaDeviceProp deviceProp{};
-  float device_giga_bandwidth{};
+  double device_giga_bandwidth{};
   std::size_t device_free_physmem{};
   std::size_t device_total_physmem{};
 
@@ -300,7 +300,7 @@ struct CommandLineArgs
         break;
       }
 
-      device_giga_bandwidth = float(memoryBusWidth) * static_cast<float>(memoryClockRate) * 2 / 8 / 1000 / 1000;
+      device_giga_bandwidth = double(memoryBusWidth) * memoryClockRate * 2 / 8 / 1000 / 1000;
 
       if (!CheckCmdLineFlag("quiet"))
       {
@@ -1105,7 +1105,7 @@ int CompareResults(
       const float difference = std::abs(computed[i] - reference[i]);
       const float fraction   = difference / std::abs(reference[i]);
 
-      if (fraction > 0.00015)
+      if (fraction > 0.00015f)
       {
         if (verbose)
         {

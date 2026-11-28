@@ -49,21 +49,21 @@ int main()
       EXPECT(!done);
       done = true;
 
-      auto ltmp = ctx.logical_data(lres.shape());
-      ctx.parallel_for(ltmp.shape(), ltmp.write())->*[] __device__(size_t i, auto tmp) {
+      auto lnew = ctx.logical_data(lres.shape());
+      ctx.parallel_for(lnew.shape(), lnew.write())->*[] __device__(size_t i, auto tmp) {
         tmp(i) = i;
       };
-      return ltmp;
+      return lnew;
     };
 
     auto ltmp2 = run_once(size_t(k % 4))->*[&](size_t val) {
       // fprintf(stderr, "COMPUTE FOR %ld\n", val);
 
-      auto ltmp = ctx.logical_data(lres.shape());
-      ctx.parallel_for(ltmp.shape(), ltmp.write())->*[val] __device__(size_t i, auto tmp) {
+      auto lnew = ctx.logical_data(lres.shape());
+      ctx.parallel_for(lnew.shape(), lnew.write())->*[val] __device__(size_t i, auto tmp) {
         tmp(i) = val;
       };
-      return ltmp;
+      return lnew;
     };
 
     ctx.parallel_for(lres.shape(), ltmp.read(), lres.rw())->*[] __device__(size_t i, auto tmp, auto res) {

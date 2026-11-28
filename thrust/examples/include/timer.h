@@ -53,7 +53,7 @@ struct timer
 
     float ms_elapsed;
     cuda_safe_call(cudaEventElapsedTime(&ms_elapsed, start, end));
-    return ms_elapsed / 1e3;
+    return static_cast<double>(ms_elapsed) / 1e3;
   }
 
   double epsilon()

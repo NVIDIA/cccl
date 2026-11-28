@@ -65,9 +65,9 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
   /* Important : result C will only be valid once we finalize the context or introduce a task fence ! */
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t stream, auto dA, auto dB, auto dC) {
     // Reconstruct a zipped iterator from the data instances passed to the lambda function
-    const size_t num_elements = dA.size();
-    auto dfirst               = thrust::make_zip_iterator(cuda::std::tuple(dA.data_handle(), dB.data_handle()));
-    auto dlast                = dfirst + num_elements;
+    const size_t n = dA.size();
+    auto dfirst    = thrust::make_zip_iterator(cuda::std::tuple(dA.data_handle(), dB.data_handle()));
+    auto dlast     = dfirst + n;
 
     // Create a device pointer from the raw pointer
     const thrust::device_ptr<int> dout = thrust::device_pointer_cast(dC.data_handle());

@@ -80,11 +80,11 @@ int main()
     axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
   };
 
-  ctx.host_launch(lX.read(data_place::managed()), lY.read())->*[=](auto X, auto Y) {
+  ctx.host_launch(lX.read(data_place::managed()), lY.read())->*[=](auto hX, auto hY) {
     for (size_t i = 0; i < N; i++)
     {
-      EXPECT(fabs(Y(i) - (Y0(i) + (alpha * X0(i)))) < 0.0001);
-      EXPECT(fabs(X(i) - X0(i)) < 0.0001);
+      EXPECT(fabs(hY(i) - (Y0(i) + (alpha * X0(i)))) < 0.0001);
+      EXPECT(fabs(hX(i) - X0(i)) < 0.0001);
     }
   };
 

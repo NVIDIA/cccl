@@ -241,7 +241,8 @@ struct set_real_t
 
   __host__ __device__ void operator()(std::size_t i) const
   {
-    m_d_in[i].real(random_to_item_t<double>{m_min.real(), m_max.real()}(m_d_tmp[i]));
+    m_d_in[i].real(
+      random_to_item_t<double>{static_cast<double>(m_min.real()), static_cast<double>(m_max.real())}(m_d_tmp[i]));
   }
 };
 
@@ -255,7 +256,8 @@ struct set_imag_t
 
   __host__ __device__ void operator()(std::size_t i) const
   {
-    m_d_in[i].imag(random_to_item_t<double>{m_min.imag(), m_max.imag()}(m_d_tmp[i]));
+    m_d_in[i].imag(
+      random_to_item_t<double>{static_cast<double>(m_min.imag()), static_cast<double>(m_max.imag())}(m_d_tmp[i]));
   }
 };
 
@@ -367,8 +369,8 @@ void generator_t::generate(
     case bit_entropy::_0_000: {
       std::mt19937 rng;
       rng.seed(static_cast<std::mt19937::result_type>(seed.get()));
-      std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-      T random_value = random_to_item_t<T>(min, max)(dist(rng));
+      std::uniform_real_distribution<float> float_dist(0.0f, 1.0f);
+      T random_value = random_to_item_t<T>(min, max)(static_cast<double>(float_dist(rng)));
       thrust::fill(exec, span.data(), span.data() + span.size(), random_value);
       return;
     }
@@ -438,10 +440,15 @@ void generator_t::generate(
     case bit_entropy::_0_000: {
       std::mt19937 rng;
       rng.seed(static_cast<std::mt19937::result_type>(seed.get()));
-      std::uniform_real_distribution<double> dist(0.0f, 1.0f);
-      const float random_imag = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
-      const float random_real = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
-      thrust::fill(exec, span.data(), span.data() + span.size(), cuda::std::complex<T>{random_real, random_imag});
+      std::uniform_real_distribution<double> double_dist(0.0, 1.0);
+      const float random_imag =
+        random_to_item_t<double>(static_cast<double>(min.imag()), static_cast<double>(max.imag()))(double_dist(rng));
+      const float random_real =
+        random_to_item_t<double>(static_cast<double>(min.imag()), static_cast<double>(max.imag()))(double_dist(rng));
+      thrust::fill(exec,
+                   span.data(),
+                   span.data() + span.size(),
+                   cuda::std::complex<T>{static_cast<T>(random_real), static_cast<T>(random_imag)});
       return;
     }
     default: {

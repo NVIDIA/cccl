@@ -120,14 +120,14 @@ int main()
   double sum_pageranks = 0.0;
   for (int64_t i = 0; i < num_vertices; i++)
   {
-    sum_pageranks += page_rank[i];
+    sum_pageranks += static_cast<double>(page_rank[i]);
   }
   printf("Page rank answer is %s.\n", abs(sum_pageranks - 1.0) < 0.001 ? "correct" : "not correct");
 
   printf("PageRank Results:\n");
   for (size_t i = 0; i < page_rank.size(); ++i)
   {
-    printf("Vertex %zu: %f\n", i, page_rank[i]);
+    printf("Vertex %zu: %f\n", i, static_cast<double>(page_rank[i]));
   }
 
   return 0;

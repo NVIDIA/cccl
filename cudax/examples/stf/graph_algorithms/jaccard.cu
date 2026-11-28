@@ -131,7 +131,7 @@ int main()
         printf("Jaccard similarity between vertex %d and vertex %d: %f\n",
                u,
                v,
-               jaccard_similarities[(u * num_vertices) + v]);
+               static_cast<double>(jaccard_similarities[(u * num_vertices) + v]));
       }
     }
   }

@@ -8410,8 +8410,8 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
   EXPECT(c.status<cudaError_t>() == cudaErrorNotReady);
   // a status the policy handles is not recorded, even when its substitute is a failing code
   {
-    const auto c = (if_equal(cudaErrorNotReady)(subst(cudaErrorInvalidValue)) | fwd) << cudaErrorNotReady;
-    EXPECT(!c.forwarded());
+    const auto handled = (if_equal(cudaErrorNotReady)(subst(cudaErrorInvalidValue)) | fwd) << cudaErrorNotReady;
+    EXPECT(!handled.forwarded());
   }
 };
 
@@ -8562,9 +8562,9 @@ UNITTEST("error sinks: (notify & retry) * 3")
   EXPECT(!c.forwarded());
   EXPECT(n == 4);
   size_t lines = 0;
-  for (const char c : log.str())
+  for (const char ch : log.str())
   {
-    lines += c == '\n';
+    lines += ch == '\n';
   }
   EXPECT(lines == 3);
 };

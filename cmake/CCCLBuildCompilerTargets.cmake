@@ -243,6 +243,18 @@ function(cccl_build_compiler_targets)
       "-Wno-gnu-zero-variadic-macro-arguments"
       cxx_compile_options
     )
+
+    # Strict warnings: catch shadowed variables, missing virtual destructors,
+    # implicit float-to-double, and format string issues.
+    # Note: -Wpedantic is intentionally omitted — nvcc's preprocessor emits
+    # GCC-style line directives that trigger unavoidable pedantic warnings.
+    # Note: -Wnull-dereference is intentionally omitted — GCC produces many
+    # false positives in system headers (e.g. streambuf) when inlining user code.
+    append_option_if_available("-Wshadow=local" cxx_compile_options)
+    append_option_if_available("-Wnon-virtual-dtor" cxx_compile_options)
+    append_option_if_available("-Wdouble-promotion" cxx_compile_options)
+    append_option_if_available("-Wformat=2" cxx_compile_options)
+
     # clang added this to -Wall in LLVM 23, but it's basically unusable for GPU code
     # because NVCC will make all the kernel call stubs static. So we must disable it. See
     # https://github.com/llvm/llvm-project/issues/219968.

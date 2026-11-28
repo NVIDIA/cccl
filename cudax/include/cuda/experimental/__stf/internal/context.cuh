@@ -1551,11 +1551,11 @@ _CCCL_HOST_API inline void unit_test_context_repeat()
   };
 
   // Repeat K times : A(i) = 2 * A(i)
-  ctx.repeat(K)->*[&](context ctx, size_t) {
-    ctx.launch(lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
-      for (auto i : th.apply_partition(shape(A)))
+  ctx.repeat(K)->*[&](context repeat_ctx, size_t) {
+    repeat_ctx.launch(lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> sA) {
+      for (auto i : th.apply_partition(shape(sA)))
       {
-        A(i) = 2 * A(i);
+        sA(i) = 2 * sA(i);
       }
     };
   };
@@ -1640,9 +1640,9 @@ UNITTEST("context task")
 
   auto lb = ctx.logical_data(la.shape());
 
-  ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
+  ctx.task(la.read(), lb.write())->*[](auto s, auto sa, auto sb) {
     // cudaMemcpyAsync is overloaded in CTK 13.3, so the introspected `cuda_try<fun>` form cannot name it
-    cuda_try(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
+    cuda_try(cudaMemcpyAsync(&sb(0), &sa(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
@@ -1707,8 +1707,8 @@ UNITTEST("logical data slice const")
   double A[128];
   slice<const double> cA = make_slice((const double*) &A[0], 128);
   auto lA                = ctx.logical_data(cA);
-  ctx.task(lA.read())->*[](cudaStream_t, auto A) {
-    static_assert(::cuda::std::is_same_v<decltype(A), slice<const double>>);
+  ctx.task(lA.read())->*[](cudaStream_t, auto sA) {
+    static_assert(::cuda::std::is_same_v<decltype(sA), slice<const double>>);
   };
   ctx.finalize();
 };

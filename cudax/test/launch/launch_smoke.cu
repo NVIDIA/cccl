@@ -270,25 +270,25 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     auto test = [&](const auto& input_config) {
       // Single element
       {
-        auto config = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t>());
+        auto smem_config = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t>());
 
-        cudax::launch(dst, config, dynamic_smem_single<my_dynamic_smem_t>());
+        cudax::launch(dst, smem_config, dynamic_smem_single<my_dynamic_smem_t>());
         check_kernel_run(dst);
       }
 
       // Dynamic span
       {
-        const int size = 2;
-        auto config    = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
-        cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
+        const int size   = 2;
+        auto smem_config = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
+        cudax::launch(dst, smem_config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
         check_kernel_run(dst);
       }
 
       // Static span
       {
         constexpr int size = 3;
-        auto config        = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[size]>());
-        cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
+        auto smem_config   = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[size]>());
+        cudax::launch(dst, smem_config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
         check_kernel_run(dst);
       }
     };

@@ -470,8 +470,8 @@ struct less_t
   template <typename T>
   _CCCL_HOST_DEVICE_API bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
   {
-    double magnitude_0 = cuda::std::abs(lhs);
-    double magnitude_1 = cuda::std::abs(rhs);
+    double magnitude_0 = static_cast<double>(cuda::std::abs(lhs));
+    double magnitude_1 = static_cast<double>(cuda::std::abs(rhs));
 
     if (cuda::std::isnan(magnitude_0) || cuda::std::isnan(magnitude_1))
     {
@@ -491,8 +491,8 @@ struct less_t
       // Dividing both components by a constant before computing the magnitude prevents overflow.
       const T scaler = 0.5;
 
-      magnitude_0 = cuda::std::abs(lhs * scaler);
-      magnitude_1 = cuda::std::abs(rhs * scaler);
+      magnitude_0 = static_cast<double>(cuda::std::abs(lhs * scaler));
+      magnitude_1 = static_cast<double>(cuda::std::abs(rhs * scaler));
     }
 
     const T difference = cuda::std::abs(magnitude_0 - magnitude_1);

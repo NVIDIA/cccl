@@ -64,18 +64,18 @@ int main(int argc, char** argv)
   auto handle_Z = ctx.logical_data(make_slice(dZ, N), data_place::device(0));
 
   // Y = Y + alpha X
-  ctx.task(handle_X.read(), handle_Y.rw())->*[&](cudaStream_t stream, auto dX, auto dY) {
-    axpy<<<16, 16, 0, stream>>>(N, alpha, dX.data_handle(), dY.data_handle());
+  ctx.task(handle_X.read(), handle_Y.rw())->*[&](cudaStream_t stream, auto sX, auto sY) {
+    axpy<<<16, 16, 0, stream>>>(N, alpha, sX.data_handle(), sY.data_handle());
   };
 
   // Z = Z + alpha X
-  ctx.task(handle_X.read(), handle_Z.rw())->*[&](cudaStream_t stream, auto dX, auto dZ) {
-    axpy<<<16, 16, 0, stream>>>(N, alpha, dX.data_handle(), dZ.data_handle());
+  ctx.task(handle_X.read(), handle_Z.rw())->*[&](cudaStream_t stream, auto sX, auto sZ) {
+    axpy<<<16, 16, 0, stream>>>(N, alpha, sX.data_handle(), sZ.data_handle());
   };
 
   // Z = Z + alpha Y
-  ctx.task(handle_Y.read(), handle_Z.rw())->*[&](cudaStream_t stream, auto dY, auto dZ) {
-    axpy<<<16, 16, 0, stream>>>(N, alpha, dY.data_handle(), dZ.data_handle());
+  ctx.task(handle_Y.read(), handle_Z.rw())->*[&](cudaStream_t stream, auto sY, auto sZ) {
+    axpy<<<16, 16, 0, stream>>>(N, alpha, sY.data_handle(), sZ.data_handle());
   };
 
   ctx.host_launch(handle_X.read(), handle_Y.read(), handle_Z.read())->*[&](auto hX, auto hY, auto hZ) {

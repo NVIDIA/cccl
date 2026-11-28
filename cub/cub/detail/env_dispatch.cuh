@@ -285,12 +285,10 @@ template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCalla
     d_temp_storage,
     temp_storage_bytes,
     env,
-    [&algorithm_callable](
-      [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    [&algorithm_callable]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
       using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return ::cuda::std::forward<AlgorithmCallable>(
-        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(algorithm_callable)(policy_selector{}, storage, bytes, stream);
     });
 }
 
@@ -315,12 +313,10 @@ template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCalla
     d_temp_storage,
     temp_storage_bytes,
     env,
-    [&algorithm_callable](
-      [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    [&algorithm_callable]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
       using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return ::cuda::std::forward<AlgorithmCallable>(
-        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(algorithm_callable)(policy_selector{}, storage, bytes, stream);
     });
 }
 //! @endcond

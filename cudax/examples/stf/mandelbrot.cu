@@ -126,5 +126,5 @@ int main(int argc, char** argv)
   // https://stackoverflow.com/questions/6551121/cuda-cudaeventelapsedtime-returns-device-not-ready-error
   cuda_safe_call(cudaEventSynchronize(stop));
 
-  fprintf(stderr, "Mandelbrot took %.2f ms\n", cuda_try<cudaEventElapsedTime>(start, stop));
+  fprintf(stderr, "Mandelbrot took %.2f ms\n", static_cast<double>(cuda_try<cudaEventElapsedTime>(start, stop)));
 }

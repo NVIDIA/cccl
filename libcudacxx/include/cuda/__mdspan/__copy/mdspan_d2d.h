@@ -303,8 +303,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       // (2a) vectorized case
       if constexpr (__are_vectorizable_copy)
       {
-        const auto __op = [__stream](const auto& __src, const auto& __dst) {
-          ::cuda::__launch_copy_contiguous_kernel(__src, __dst, __stream);
+        const auto __op = [__stream](const auto& __src_vec, const auto& __dst_vec) {
+          ::cuda::__launch_copy_contiguous_kernel(__src_vec, __dst_vec, __stream);
         };
         ::cuda::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
       }
@@ -361,8 +361,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
           return;
         }
 
-        const auto __op = [__stream](const auto& __src, const auto& __dst) {
-          ::cuda::__copy_optimized(__src, __dst, ::cuda::__total_size(__src), __stream);
+        const auto __op = [__stream](const auto& __src_vec, const auto& __dst_vec) {
+          ::cuda::__copy_optimized(__src_vec, __dst_vec, ::cuda::__total_size(__src_vec), __stream);
         };
         ::cuda::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
         return;

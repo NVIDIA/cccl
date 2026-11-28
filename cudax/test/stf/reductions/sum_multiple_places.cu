@@ -41,21 +41,21 @@ int main()
     // device
     for (int d = 0; d < ndevs; d++)
     {
-      ctx.task(exec_place::device(d), var_handle.relaxed(redux_op))->*[=](cudaStream_t s, auto var) {
-        add_val<int><<<1, 1, 0, s>>>(var, i);
+      ctx.task(exec_place::device(d), var_handle.relaxed(redux_op))->*[=](cudaStream_t s, auto v) {
+        add_val<int><<<1, 1, 0, s>>>(v, i);
       };
     }
 
     // host
-    ctx.host_launch(var_handle.relaxed(redux_op))->*[=](auto var) {
-      var(0) += i;
+    ctx.host_launch(var_handle.relaxed(redux_op))->*[=](auto v) {
+      v(0) += i;
     };
   }
 
   // Check result
-  ctx.host_launch(var_handle.read())->*[&](auto var) {
+  ctx.host_launch(var_handle.read())->*[&](auto v) {
     const int expected = 42 + ((N * (N - 1)) / 2 * (ndevs + 1));
-    EXPECT(var(0) == expected);
+    EXPECT(v(0) == expected);
   };
 
   ctx.finalize();

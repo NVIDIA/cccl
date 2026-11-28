@@ -413,10 +413,10 @@ void launch_env(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal));
 
   cuda::std::apply(
-    [stream, action](auto... args) {
+    [stream, action](auto... inner_args) {
       // Make sure specified stream is used
       const stream_scope scope(stream.get());
-      const cudaError_t error = action(args...);
+      const cudaError_t error = action(inner_args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);
@@ -491,9 +491,14 @@ void launch_env(ActionT action, Args... args)
   const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
 
   cuda::std::apply(
-    [&](auto... args) {
+    [&](auto... inner_args) {
       cuda::launch(
-        stream, config, device_side_api_launch_kernel_env<ActionT, decltype(args)...>, d_error_ptr, action, args...);
+        stream,
+        config,
+        device_side_api_launch_kernel_env<ActionT, decltype(inner_args)...>,
+        d_error_ptr,
+        action,
+        inner_args...);
       launch_helper_detail::check_device_launch_completion(stream, d_error);
     },
     fixed_args);
@@ -549,8 +554,8 @@ void launch_env(ActionT action, Args... args)
     auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
     cuda::std::apply(
-      [action](auto... args) {
-        REQUIRE(cudaErrorMemoryAllocation == action(args...));
+      [action](auto... inner_args) {
+        REQUIRE(cudaErrorMemoryAllocation == action(inner_args...));
       },
       fixed_args);
   }
@@ -564,11 +569,11 @@ void launch_env(ActionT action, Args... args)
   auto kernels    = cuda::std::execution::__query_or(env, get_allowed_kernels_t{}, cuda::std::span<void*>{});
 
   cuda::std::apply(
-    [stream, kernels, action](auto... args) {
+    [stream, kernels, action](auto... inner_args) {
       // Make sure specified stream and kernels are used
       const stream_scope allowed_stream(stream);
       const kernel_scope allowed_kernels(kernels);
-      const cudaError_t error = action(args...);
+      const cudaError_t error = action(inner_args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);

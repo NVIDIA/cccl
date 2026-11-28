@@ -187,7 +187,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
-  fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
+  fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, static_cast<double>(ms));
 
   if (check)
   {

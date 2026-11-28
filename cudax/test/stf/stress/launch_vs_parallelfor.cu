@@ -134,5 +134,5 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventDestroy(start));
   cuda_safe_call(cudaEventDestroy(stop));
 
-  printf("Method: %s, elapsed: %f ms\n", argv[1], elapsed_ms);
+  printf("Method: %s, elapsed: %f ms\n", argv[1], static_cast<double>(elapsed_ms));
 }

@@ -73,13 +73,14 @@ void run()
   auto partials = ctx.logical_data(shape_of<slice<int>>(num_blocks));
   auto result   = ctx.logical_data(shape_of<slice<int>>(1));
 
-  ctx.task(values.read(), partials.write(), result.write())->*[&](auto stream, auto values, auto partials, auto result) {
-    // reduce values into partials
-    reduce<BLOCK_SIZE, int><<<num_blocks, BLOCK_SIZE, 0, stream>>>(values, partials, N);
+  ctx.task(values.read(), partials.write(), result.write())
+      ->*[&](auto stream, auto svalues, auto spartials, auto sresult) {
+            // reduce values into partials
+            reduce<BLOCK_SIZE, int><<<num_blocks, BLOCK_SIZE, 0, stream>>>(svalues, spartials, N);
 
-    // reduce partials on a single block into result
-    reduce<BLOCK_SIZE, int><<<1, BLOCK_SIZE, 0, stream>>>(partials, result, num_blocks);
-  };
+            // reduce partials on a single block into result
+            reduce<BLOCK_SIZE, int><<<1, BLOCK_SIZE, 0, stream>>>(spartials, sresult, num_blocks);
+          };
 
   ctx.host_launch(result.read())->*[&](auto p) {
     if (p(0) != ref_tot)

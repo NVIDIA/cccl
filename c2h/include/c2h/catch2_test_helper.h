@@ -230,6 +230,10 @@ std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
 
 namespace c2h::detail
 {
+// Catch2's ITransientExpression has a protected non-virtual destructor, which GCC's -Wnon-virtual-dtor flags on every
+// derived class even though it cannot be deleted through a base pointer.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wnon-virtual-dtor")
 // Copy of Catch2::MatchExpr, but streamReconstructedExpression does not print arg
 template <typename ArgT, typename MatcherT>
 class QuietMatchExpr : public Catch::ITransientExpression
@@ -253,6 +257,8 @@ public:
     os << m_matcher.toString();
   }
 };
+
+_CCCL_DIAG_POP
 
 template <typename ArgT, typename MatcherT>
 QuietMatchExpr(ArgT&&, MatcherT) -> QuietMatchExpr<ArgT, MatcherT>;

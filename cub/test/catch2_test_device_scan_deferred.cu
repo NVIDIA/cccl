@@ -301,8 +301,8 @@ CUB_TEST("DeviceScan in-place entry points accept deferred num_items", "[device]
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   // Items past num_items must be left untouched, which also proves the deferred count reached the kernel.
-  const auto check = [&](const c2h::device_vector<scan_value_t>& data, auto expected_at) {
-    const c2h::host_vector<scan_value_t> host = data;
+  const auto check = [&](const c2h::device_vector<scan_value_t>& result, auto expected_at) {
+    const c2h::host_vector<scan_value_t> host = result;
     for (count_t i = 0; i < num_items; ++i)
     {
       REQUIRE(host[i] == expected_at(i));

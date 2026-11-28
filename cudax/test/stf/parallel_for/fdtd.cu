@@ -37,10 +37,10 @@ void write_vtk_2D(const std::string& filename, slice<const double, 3> Ez, double
   {
     for (size_t x = 0; x < Ez.extent(0); x++)
     {
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 0), dy * static_cast<float>(y + 0));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 1), dy * static_cast<float>(y + 0));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 1), dy * static_cast<float>(y + 1));
-      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<float>(x + 0), dy * static_cast<float>(y + 1));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 0), dy * static_cast<double>(y + 0));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 1), dy * static_cast<double>(y + 0));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 1), dy * static_cast<double>(y + 1));
+      fprintf(f, "%lf %lf 0.0\n", dx * static_cast<double>(x + 0), dy * static_cast<double>(y + 1));
     }
   }
 

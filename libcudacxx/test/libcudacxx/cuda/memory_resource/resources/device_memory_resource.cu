@@ -466,15 +466,15 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
       cuda::stream stream{peers.front()};
       CHECK(pool.is_accessible_from(cuda::devices[0]));
 
-      auto allocate_and_check_access = [&](auto& resource) {
-        auto* ptr1  = resource.allocate(stream, sizeof(int));
-        auto* ptr2  = resource.allocate_sync(sizeof(int));
+      auto allocate_and_check_access = [&](auto& mr) {
+        auto* ptr1  = mr.allocate(stream, sizeof(int));
+        auto* ptr2  = mr.allocate_sync(sizeof(int));
         auto config = cuda::distribute<1>(1);
         cuda::launch(stream, config, test::assign_42{}, (int*) ptr1);
         cuda::launch(stream, config, test::assign_42{}, (int*) ptr2);
         stream.sync();
-        resource.deallocate(stream, ptr1, sizeof(int));
-        resource.deallocate_sync(ptr2, sizeof(int));
+        mr.deallocate(stream, ptr1, sizeof(int));
+        mr.deallocate_sync(ptr2, sizeof(int));
       };
 
       pool.enable_access_from(peers);

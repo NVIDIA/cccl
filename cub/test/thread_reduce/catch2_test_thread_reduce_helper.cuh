@@ -99,12 +99,13 @@ struct dist_interval<
   // UB.
   static constexpr T min()
   {
-    const double log2_abs_min = cuda::std::log2(cuda::std::fabs(cuda::std::numeric_limits<T>::lowest()));
+    const double log2_abs_min =
+      static_cast<double>(cuda::std::log2(cuda::std::fabs(cuda::std::numeric_limits<T>::lowest())));
     return clamp_to<T>(-cuda::std::exp2(log2_abs_min / MaxReductionLength));
   }
   static constexpr T max()
   {
-    const double log2_max = cuda::std::log2(cuda::std::numeric_limits<T>::max());
+    const double log2_max = static_cast<double>(cuda::std::log2(cuda::std::numeric_limits<T>::max()));
     return clamp_to<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };

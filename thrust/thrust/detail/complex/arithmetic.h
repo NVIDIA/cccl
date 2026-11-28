@@ -23,77 +23,81 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() + y.real(), x.imag() + y.imag());
+  return complex<T>(static_cast<T>(x.real()) + static_cast<T>(y.real()),
+                    static_cast<T>(x.imag()) + static_cast<T>(y.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() + y, x.imag());
+  return complex<T>(static_cast<T>(x.real()) + static_cast<T>(y), static_cast<T>(x.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x + y.real(), y.imag());
+  return complex<T>(static_cast<T>(x) + static_cast<T>(y.real()), static_cast<T>(y.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() - y.real(), x.imag() - y.imag());
+  return complex<T>(static_cast<T>(x.real()) - static_cast<T>(y.real()),
+                    static_cast<T>(x.imag()) - static_cast<T>(y.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() - y, x.imag());
+  return complex<T>(static_cast<T>(x.real()) - static_cast<T>(y), static_cast<T>(x.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x - y.real(), -y.imag());
+  return complex<T>(static_cast<T>(x) - static_cast<T>(y.real()), static_cast<T>(-y.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() * y.real() - x.imag() * y.imag(), x.real() * y.imag() + x.imag() * y.real());
+  return complex<T>(
+    static_cast<T>(x.real()) * static_cast<T>(y.real()) - static_cast<T>(x.imag()) * static_cast<T>(y.imag()),
+    static_cast<T>(x.real()) * static_cast<T>(y.imag()) + static_cast<T>(x.imag()) * static_cast<T>(y.real()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() * y, x.imag() * y);
+  return complex<T>(static_cast<T>(x.real()) * static_cast<T>(y), static_cast<T>(x.imag()) * static_cast<T>(y));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x * y.real(), x * y.imag());
+  return complex<T>(static_cast<T>(x) * static_cast<T>(y.real()), static_cast<T>(x) * static_cast<T>(y.imag()));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  T s     = ::cuda::std::abs(y.real()) + ::cuda::std::abs(y.imag());
+  T s     = static_cast<T>(::cuda::std::abs(y.real()) + ::cuda::std::abs(y.imag()));
 
   T oos = T(1.0) / s;
 
-  const T ars = x.real() * oos;
-  const T ais = x.imag() * oos;
-  const T brs = y.real() * oos;
-  const T bis = y.imag() * oos;
+  const T ars = static_cast<T>(x.real()) * oos;
+  const T ais = static_cast<T>(x.imag()) * oos;
+  const T brs = static_cast<T>(y.real()) * oos;
+  const T bis = static_cast<T>(y.imag()) * oos;
 
   s = (brs * brs) + (bis * bis);
 
@@ -107,14 +111,14 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x.real() / y, x.imag() / y);
+  return complex<T>(static_cast<T>(x.real()) / static_cast<T>(y), static_cast<T>(x.imag()) / static_cast<T>(y));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(x) / y;
+  return complex<T>(static_cast<T>(x)) / y;
 }
 
 /* --- Unary Arithmetic Operators --- */

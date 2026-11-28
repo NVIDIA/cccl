@@ -44,19 +44,19 @@ logical_data<slice<int>> compute_fibo(context& ctx, int n)
 {
   // The result for a given value n is memoized in a logical_data that will be reused every time we compute the same
   // value
-  return run_once(n)->*[&](int n) {
-    auto result = ctx.logical_data(shape_of<slice<int>>(1)).set_symbol(std::to_string(n));
-    if (n < 2)
+  return run_once(n)->*[&](int m) {
+    auto result = ctx.logical_data(shape_of<slice<int>>(1)).set_symbol(std::to_string(m));
+    if (m < 2)
     {
-      ctx.task(result.write()).set_symbol("fibo" + std::to_string(n))->*[=](cudaStream_t s, auto sresult) {
-        set<<<1, 1, 0, s>>>(sresult, n);
+      ctx.task(result.write()).set_symbol("fibo" + std::to_string(m))->*[=](cudaStream_t s, auto sresult) {
+        set<<<1, 1, 0, s>>>(sresult, m);
       };
     }
     else
     {
-      auto fib2 = compute_fibo(ctx, n - 2);
-      auto fib1 = compute_fibo(ctx, n - 1);
-      ctx.task(fib1.read(), fib2.read(), result.write()).set_symbol("fibo" + std::to_string(n))
+      auto fib2 = compute_fibo(ctx, m - 2);
+      auto fib1 = compute_fibo(ctx, m - 1);
+      ctx.task(fib1.read(), fib2.read(), result.write()).set_symbol("fibo" + std::to_string(m))
           ->*[=](cudaStream_t s, auto s1, auto s2, auto sresult) {
                 add<<<1, 1, 0, s>>>(sresult, s1, s2);
               };

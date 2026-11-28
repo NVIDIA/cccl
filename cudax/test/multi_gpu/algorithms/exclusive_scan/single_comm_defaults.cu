@@ -64,11 +64,11 @@ MULTI_GPU_TEST("exclusive_scan single-comm, overloads default values", )
 
     std::iota(reference.begin(), reference.end(), T{1});
 
-    std::vector<T> expected_values(reference.size());
+    std::vector<T> scanned(reference.size());
 
-    std::exclusive_scan(reference.begin(), reference.end(), expected_values.begin(), init, op);
+    std::exclusive_scan(reference.begin(), reference.end(), scanned.begin(), init, op);
 
-    return expected_values;
+    return scanned;
   }();
 
   const auto check_outputs = [&] {
