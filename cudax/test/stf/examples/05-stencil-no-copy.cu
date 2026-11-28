@@ -11,6 +11,7 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <string>
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
@@ -27,8 +28,7 @@ public:
       , end(end)
       , block_size(end - beg)
       , ghost_size(GHOST_SIZE)
-      , array(std::vector<T>(block_size + (2 * ghost_size)))
-      , handle(ctx.logical_data(&array[0], block_size + (2 * ghost_size)))
+      , handle(ctx.logical_data(shape_of<slice<T>>(block_size + (2 * ghost_size))))
   {}
 
   size_t get_block_size() const
@@ -62,8 +62,6 @@ private:
   size_t block_size;
   size_t ghost_size;
   int dev_id = 0;
-
-  std::vector<T> array;
 
   // HANDLE = whole data + boundaries
   logical_data<slice<T>> handle;
@@ -171,9 +169,9 @@ int main(int argc, char** argv)
 
   stream_ctx ctx;
 
-  int NITER         = 500;
-  size_t NBLOCKS    = 4 * ndevs;
-  size_t BLOCK_SIZE = 2048 * 1024;
+  int NITER                   = 500;
+  size_t NBLOCKS              = 4 * ndevs;
+  constexpr size_t BLOCK_SIZE = 2048 * 1024;
 
   if (argc > 1)
   {
@@ -187,18 +185,9 @@ int main(int argc, char** argv)
 
   const size_t GHOST_SIZE = 1;
 
-  size_t TOTAL_SIZE = NBLOCKS * BLOCK_SIZE;
-
-  double* U0 = new double[NBLOCKS * BLOCK_SIZE];
-  for (size_t idx = 0; idx < NBLOCKS * BLOCK_SIZE; idx++)
-  {
-    U0[idx] = (idx == 0) ? 1.0 : 0.0;
-  }
-
   std::vector<data_block<double>> Un;
   std::vector<data_block<double>> Un1;
 
-  // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
     const size_t beg = b * BLOCK_SIZE;
@@ -219,16 +208,14 @@ int main(int argc, char** argv)
   // been written asynchronously using host callbacks.
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t beg = b * BLOCK_SIZE;
-
-    auto t = ctx.task(exec_place::host(), Un[b].get_handle().rw(), Un1[b].get_handle().rw());
+    auto t = ctx.task(exec_place::host(), Un[b].get_handle().write(), Un1[b].get_handle().write());
     t->*[&](cudaStream_t stream, auto Un_vals, auto Un1_vals) {
       cuda_safe_call(cudaStreamSynchronize(stream));
-      for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
+      for (size_t i = 0; i < Un_vals.size(); i++)
       {
-        const double val                               = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
-        Un1_vals.data_handle()[local_idx + GHOST_SIZE] = val;
-        Un_vals.data_handle()[local_idx + GHOST_SIZE]  = val;
+        const double val          = (b == 0 && i == GHOST_SIZE) ? 1.0 : 0.0;
+        Un_vals.data_handle()[i]  = val;
+        Un1_vals.data_handle()[i] = val;
       }
     };
   }
