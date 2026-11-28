@@ -223,10 +223,11 @@ the **module hash** that keys its JIT cache. If a cached compilation exists
 for that hash, it is reused. Otherwise the module goes through the compile
 pipeline (``lir-to-cute-dsl``, ``cute-to-nvvm``, and the LLVM backend),
 device code is linked with nvJitLink, and the result is loaded as a
-``JitCompiledFunction`` and executed. When ``generate_original_ir`` returns,
+``JitCompiledFunction`` and executed. On Linux, when ``generate_original_ir`` returns,
 before any cache lookup, the DSL merges each ``gpu.module``'s
 ``link-libraries`` attribute into its ``LinkLibraries`` compile option, which
-is how externally compiled device code reaches the device link.
+supplies externally compiled device code to the linker. On Windows, the
+module carries a :ref:`device link plan <cuda.coop.cutlass.windows_device_link>`.
 
 Because the cache key is the traced module, **a direct call always traces
 again**, even on a cache hit. Tracing is how the DSL learns whether the
@@ -341,9 +342,9 @@ exercises the first eight rows in one file.
      - ``CuTeDSL.register_trace_finalize_hook``
      - ``_compiler/_state.py``, ``_compiler/_finalize.py``
    * - Supply the C++ definition to the device link
-     - ``gpu.module`` ``link-libraries`` attribute, merged into the
-       ``LinkLibraries`` compile option
-     - ``_compiler/_bundle.py``, ``_compiler/_finalize.py``
+     - Linux uses the GPU module's ``link-libraries`` attribute. Windows
+       records a link plan on the traced module.
+     - ``_compiler/_bundle.py``, ``_compiler/_windows_pipeline.py``
    * - Allocate shared memory for CUB
      - ``SmemAllocator.allocate`` at the kernel entry block and
        ``ir.Value.replace_all_uses_with``
@@ -431,9 +432,10 @@ all wrappers into one C++ translation unit, compiles them with NVRTC to
 LTO-IR, and materializes deferred scratch. ``_compiler/_convergence.py``
 then replaces each wrapper's ``func.func`` declaration and ``func.call``
 operations with ``llvm.func`` and ``llvm.call`` operations marked
-``convergent``. Last, the hook attaches the artifact path to each
-``gpu.module``. The LTO-IR file of each ``DeviceOperator`` the trace uses
-is attached the same way.
+``convergent``. On Linux, the hook attaches the wrapper and
+``DeviceOperator`` LTO-IR paths to each ``gpu.module``. On Windows, it
+records those paths in the traced module's
+:ref:`device link plan <cuda.coop.cutlass.windows_device_link>`.
 
 The DSL's own module hash runs after the hook and includes the module's
 attributes, so a different bundle path changes the hash. The key of our
@@ -449,9 +451,9 @@ LTO-IR and the device link
 
 NVRTC compiles the wrappers with ``--relocatable-device-code=true`` and
 ``-dlto`` and we store the LTO-IR container in a cache directory. The DSL
-documents its ``link-libraries`` mechanism in terms of LLVM bitcode, but its
-compiler recognizes LTO-IR containers as nvJitLink inputs and links them
-with the kernel's own LTO-IR. The link can inline the wrapper into the
+supplies the kernel's own LTO-IR. On Linux, CuTe passes the
+libraries to nvJitLink. On Windows, ``cuda.coop.cutlass`` passes them to
+the same linker. The link can inline the wrapper into the
 kernel. The runtime tests run ``cuobjdump`` on the final cubin and fail if
 a provider symbol remains.
 
@@ -636,6 +638,5 @@ Vocabulary
      - Shared memory whose placeholder operands are traced first and replaced
        after NVRTC reports the C++ layout.
    * - link library
-     - A file named in a ``gpu.module``'s ``link-libraries`` attribute that
-       the device link consumes. Ours are the bundle's LTO-IR and the LTO-IR
+     - A device code file passed to the linker. Ours are the bundle's LTO-IR and the LTO-IR
        of each ``DeviceOperator`` the trace uses.

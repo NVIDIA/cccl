@@ -11,6 +11,7 @@ so the tests can cover Linux and Windows without loading CUDA.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -46,10 +47,12 @@ class _VersionFunction:
 def _isolated_process_toolkit_state():
     """Reset fake library handles and toolkit selection around each test."""
     with _toolkit._PRELOAD_LOCK:
+        _toolkit._windows_toolkit_candidates.cache_clear()
         _toolkit._EXACT_LIBRARY_HANDLES.clear()
         _toolkit._PROCESS_TOOLKIT_SELECTION = None
     yield
     with _toolkit._PRELOAD_LOCK:
+        _toolkit._windows_toolkit_candidates.cache_clear()
         _toolkit._EXACT_LIBRARY_HANDLES.clear()
         _toolkit._PROCESS_TOOLKIT_SELECTION = None
 
@@ -185,6 +188,16 @@ def _patch_compiler_loaders(
             )
         )
 
+    # A real Pathfinder probe cannot load the empty DLLs in these fixtures.
+    def probe(toolkit_root, names, wheel_site=None):
+        result = []
+        for name in names:
+            path = paths[name.lower()]
+            base = paths["root"] if len(names) == 2 else path.parent.parent
+            result.append(str(toolkit_root / path.relative_to(base)))
+        return result
+
+    monkeypatch.setattr(_toolkit, "_windows_compiler_paths", probe)
     monkeypatch.setattr(_toolkit.ctypes, "CDLL", load_library)
     monkeypatch.setattr(
         cuda.pathfinder,
@@ -199,8 +212,7 @@ def _patch_compiler_loaders(
     [
         ("posix", "lib"),
         ("nt", "bin"),
-        ("nt", "bin/x64"),
-        ("nt", "bin/x86_64"),
+        ("nt", "pathfinder-selected/native-dlls"),
     ],
 )
 def test_preload_loads_one_same_root_monolithic_set_and_reuses_exact_handles(
@@ -229,6 +241,95 @@ def test_preload_loads_one_same_root_monolithic_set_and_reuses_exact_handles(
     assert first == second
     assert first.toolkit_version == (13, 2)
     assert first.nvjitlink_version == (13, 4)
+
+
+@pytest.mark.parametrize(
+    "failure,diagnostic",
+    [
+        ("foreign", "library escapes"),
+        ("missing", "missing nvJitLink DLL"),
+        ("no-path", "no absolute path for nvJitLink"),
+        ("relative", "no absolute path for nvJitLink"),
+        ("load-error", "test nvJitLink load failed"),
+    ],
+)
+def test_windows_discovery_can_retry_without_loading_into_the_compiler_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    failure: str,
+    diagnostic: str,
+) -> None:
+    monkeypatch.setattr(
+        _toolkit,
+        "os",
+        SimpleNamespace(name="nt", path=os.path, environ=os.environ),
+    )
+    paths = _write_complete_toolkit(
+        tmp_path / "toolkit", 13020, library_dir_name="native/compiler"
+    )
+    imports = tmp_path / "imports"
+    package = imports / "cuda"
+    package.mkdir(parents=True)
+    (package / "__init__.py").touch()
+    (package / "pathfinder.py").write_text(
+        """import json
+import os
+import site
+from pathlib import Path
+from types import SimpleNamespace
+
+def load_nvidia_dynamic_lib(name):
+    assert site.PREFIXES == []
+    assert 'CUDA_HOME' not in os.environ and 'CONDA_PREFIX' not in os.environ
+    assert not os.environ.get('PATH')
+    root = Path(os.environ["CUDA_PATH"])
+    with (root / "calls.txt").open("a") as calls:
+        print(os.getpid(), name, file=calls)
+    path = json.loads((root / "paths.json").read_text())[name]
+    if path == "load-error":
+        raise OSError("test nvJitLink load failed")
+    return SimpleNamespace(abs_path=path)
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(imports))
+    monkeypatch.setenv("CUDA_PATH", str(tmp_path / "other toolkit"))
+    monkeypatch.setenv("CUDA_HOME", str(tmp_path / "other toolkit"))
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "other conda"))
+    probe = _toolkit._windows_compiler_paths
+    attempts, pathfinder_calls = _patch_compiler_loaders(
+        monkeypatch, paths, nvrtc_version=(13, 2), nvjitlink_version=(13, 2)
+    )
+    monkeypatch.setattr(_toolkit, "_windows_compiler_paths", probe)
+
+    foreign = tmp_path / paths["nvjitlink"].name
+    foreign.touch()
+    bad = {
+        "foreign": str(foreign),
+        "missing": str(paths["root"] / "missing.dll"),
+        "no-path": None,
+        "relative": paths["nvjitlink"].name,
+        "load-error": "load-error",
+    }
+    state = paths["root"] / "paths.json"
+    discovered = {"nvrtc": str(paths["nvrtc"]), "nvJitLink": bad[failure]}
+    state.write_text(json.dumps(discovered))
+    with pytest.raises(RuntimeError, match=diagnostic):
+        _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
+    assert not attempts and not pathfinder_calls
+    assert _toolkit._PROCESS_TOOLKIT_SELECTION is None
+
+    discovered["nvJitLink"] = str(paths["nvjitlink"])
+    state.write_text(json.dumps(discovered))
+    first = _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
+    assert first == _toolkit.preload_toolkit_compiler_libraries(
+        (paths["include"],)
+    )
+    assert attempts == [paths["builtins"], paths["nvrtc"], paths["nvjitlink"]]
+    calls = (paths["root"] / "calls.txt").read_text().splitlines()
+    assert [line.split()[1] for line in calls] == ["nvrtc", "nvJitLink"] * 2
+    assert all(int(line.split()[0]) != os.getpid() for line in calls)
+    assert os.environ["CUDA_PATH"] == str(tmp_path / "other toolkit")
 
 
 @pytest.mark.parametrize(
@@ -261,6 +362,62 @@ def test_preload_loads_split_wheel_set_from_one_nvidia_anchor(
     assert libraries.toolkit_version == (12, 9)
 
 
+def test_windows_scopes_pathfinder_to_the_selected_wheel_installation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        _toolkit, "os", SimpleNamespace(name="nt", path=os.path)
+    )
+    site = tmp_path / "target"
+    paths = _write_complete_toolkit(site / "nvidia" / "cu13", 13040)
+    calls = []
+
+    def probe(root, names, wheel_site):
+        calls.append((root, names, wheel_site))
+        return [str(paths[name.lower()]) for name in names]
+
+    monkeypatch.setattr(_toolkit, "_windows_compiler_paths", probe)
+    _toolkit._windows_toolkit_candidates(paths["include"], 13, 4)
+    assert calls == [(paths["root"], ("nvrtc", "nvJitLink"), site)]
+
+
+@pytest.mark.parametrize("kind", ["nvrtc", "nvjitlink", "builtins"])
+def test_windows_rejects_cuda13_component_beside_cuda12_wheels(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, kind: str
+) -> None:
+    monkeypatch.setattr(
+        _toolkit, "os", SimpleNamespace(name="nt", path=os.path)
+    )
+    paths = _write_split_wheel_toolkit(
+        tmp_path / "site-packages" / "nvidia", 12090
+    )
+    foreign = _write_complete_toolkit(paths["root"] / "cu13", 13020)
+    probe = {"nvrtc": str(paths["nvrtc"]), "nvjitlink": str(paths["nvjitlink"])}
+    if kind == "builtins":
+        paths[kind].unlink()
+        try:
+            paths[kind].symlink_to(foreign[kind])
+        except OSError:
+            pytest.skip(
+                "creating a file symlink requires Windows Developer Mode"
+            )
+    else:
+        probe[kind] = str(foreign[kind])
+    attempts, pathfinder_calls = _patch_compiler_loaders(
+        monkeypatch, paths, nvrtc_version=(12, 9), nvjitlink_version=(12, 9)
+    )
+    monkeypatch.setattr(
+        _toolkit,
+        "_windows_compiler_paths",
+        lambda root, names: [probe[name.lower()] for name in names],
+    )
+    with pytest.raises(RuntimeError, match="library escapes"):
+        _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
+
+    assert not attempts and not pathfinder_calls
+    assert _toolkit._PROCESS_TOOLKIT_SELECTION is None
+
+
 def test_preload_rejects_split_wheel_components_from_later_nvidia_anchor(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -274,6 +431,13 @@ def test_preload_rejects_split_wheel_components_from_later_nvidia_anchor(
         12090,
     )
     first["nvjitlink"].unlink()
+    monkeypatch.setattr(
+        _toolkit,
+        "_windows_compiler_paths",
+        lambda root, names: [
+            str(first["nvrtc"] if names == ("nvrtc",) else second["nvjitlink"])
+        ],
+    )
     attempts: list[Path] = []
     monkeypatch.setattr(
         _toolkit.ctypes,
@@ -311,6 +475,14 @@ def test_preload_rejects_nvrtc_without_adjacent_builtins(
     lib_dir.mkdir()
     _library_path(lib_dir, "nvrtc", 13).touch()
     _library_path(lib_dir, "nvJitLink", 13).touch()
+    monkeypatch.setattr(
+        _toolkit,
+        "_windows_compiler_paths",
+        lambda root, names, wheel_site: tuple(
+            str(_library_path(lib_dir, name, 13))
+            for name in ("nvrtc", "nvJitLink")
+        ),
+    )
     monkeypatch.setattr(
         _toolkit.ctypes,
         "CDLL",
@@ -352,6 +524,10 @@ def test_preload_tries_nvjitlink_candidates_only_within_selected_root(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    # POSIX can try a second filename. Windows Pathfinder selects one DLL.
+    monkeypatch.setattr(
+        _toolkit, "os", SimpleNamespace(name="posix", path=os.path)
+    )
     paths = _write_complete_toolkit(tmp_path / "toolkit", 13020)
     lib64 = paths["root"] / "lib64"
     lib64.mkdir()

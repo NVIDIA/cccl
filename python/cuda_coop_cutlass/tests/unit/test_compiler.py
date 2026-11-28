@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 from cutlass import Int32
-from cutlass.base_dsl.compiler import LinkLibraries
+from cutlass.base_dsl.compiler import LinkLibraries, PtxasOptions
 
 from cuda.coop.cutlass._compiler import (
     _bundle,
@@ -237,7 +237,11 @@ def test_finalize_preserves_unrelated_session_and_user_link_libraries(
         _finalize._target, "resolve_nvrtc_arch", lambda *a: "compute_120"
     )
     monkeypatch.setattr(
-        _bundle, "append_link_library_attr", lambda m, p: linked.append((m, p))
+        _finalize,
+        "_attach_link_inputs",
+        lambda owner, module, arch, paths: linked.extend(
+            (module, path) for path in paths
+        ),
     )
     monkeypatch.setattr(
         _finalize._convergence,
@@ -251,3 +255,89 @@ def test_finalize_preserves_unrelated_session_and_user_link_libraries(
     assert Path(linked[0][1]).is_file()
     _finalize._trace_finalize_hook(dsl, owned_module, "owned")
     assert len(linked) == 1
+
+
+def test_windows_linker_rejects_an_older_caller_ir_reader(monkeypatch):
+    from cuda import pathfinder
+    from cuda.bindings import nvjitlink
+    from cuda.coop.cutlass._compiler import _nvjitlink
+
+    monkeypatch.setattr(
+        pathfinder, "load_nvidia_dynamic_lib", lambda name: None
+    )
+    monkeypatch.setattr(nvjitlink, "version", lambda: (13, 3))
+    with pytest.raises(RuntimeError, match=r"13\.4 or newer.*13\.3"):
+        _nvjitlink.link_lto(b"", (), "sm_80")
+
+
+def test_windows_link_plan_belongs_to_the_traced_module(monkeypatch, tmp_path):
+    from cutlass._mlir import ir, passmanager
+
+    from cuda.coop.cutlass._compiler import _windows_pipeline
+
+    user = tmp_path / "user library.ltoir"
+    user.write_bytes(b"external device image")
+    bitcode = tmp_path / "user bitcode.bc"
+    bitcode.write_bytes(b"BC\xc0\xde")
+    libraries = LinkLibraries(f"{user},{bitcode}")
+    options = SimpleNamespace(
+        options={LinkLibraries: libraries, PtxasOptions: PtxasOptions("-v")},
+        full_cubin_path="final.cubin",
+    )
+    compiler = SimpleNamespace(passmanager=passmanager)
+    dsl = SimpleNamespace(compile_options=options, compiler_provider=compiler)
+    linked = []
+
+    def record(
+        module,
+        pipeline,
+        paths,
+        arch,
+        *,
+        cubin_path,
+        ptxas_options,
+        enable_verifier,
+    ):
+        assert libraries.serialize() not in pipeline
+        assert LinkLibraries(str(bitcode)).serialize() in pipeline
+        assert enable_verifier is False
+        assert (arch, cubin_path, ptxas_options) == (
+            "sm_120a",
+            "final.cubin",
+            "-v",
+        )
+        linked.append((module.operation, paths))
+
+    monkeypatch.setattr(_windows_pipeline, "lower_and_link", record)
+    with ir.Context(), ir.Location.unknown():
+        first = ir.Module.parse("module {gpu.module @kernels {}}")
+        second = ir.Module.parse("module {gpu.module @kernels {}}")
+        for module, provider in (
+            (first, "first.ltoir"),
+            (second, "second.ltoir"),
+        ):
+            _windows_pipeline.configure_device_link(
+                dsl, module, "compute_120a", (provider, str(user))
+            )
+        passes = "cubin-chip=sm_120a " + libraries.serialize()
+        pipeline = compiler.passmanager.PassManager.parse(
+            f"builtin.module(cute-to-nvvm{{{passes}}})"
+        )
+        pipeline.enable_verifier(False)
+        pipeline.run(second.operation)
+        pipeline.run(first.operation)
+        assert linked == [
+            (second.operation, (str(user), "second.ltoir")),
+            (first.operation, (str(user), "first.ltoir")),
+        ]
+        missing_options = compiler.passmanager.PassManager.parse(
+            "builtin.module(cute-to-nvvm{cubin-chip=sm_120a})"
+        )
+        with pytest.raises(RuntimeError, match="device link options"):
+            missing_options.run(first.operation)
+        original = str(first)
+        user.write_bytes(b"replacement device image")
+        _windows_pipeline.configure_device_link(
+            dsl, first, "compute_120a", ("first.ltoir", str(user))
+        )
+        assert str(first) != original

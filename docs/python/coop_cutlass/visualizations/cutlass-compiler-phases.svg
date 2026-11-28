@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-overview-title cutlass-phases-overview-desc" viewBox="0 0 1024 1209">
   <title id="cutlass-phases-overview-title">Compiler phases: overview</title>
-  <desc id="cutlass-phases-overview-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop.cutlass finalizes the provider bundle inside the CuTe hook. CuTe then compiles and links the kernel.</desc>
+  <desc id="cutlass-phases-overview-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop.cutlass finalizes the provider bundle inside the CuTe hook. CuTe compiles the kernel. nvJitLink links its device libraries.</desc>
   <defs>
     <marker id="cutlass-phases-overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
@@ -52,22 +52,22 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <path d="M585 665.2V690.2" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <text x="4" y="726.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">5. Resolve</text>
   <text x="4" y="755" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">deferred scratch</text>
-  <g data-node="Resolve scratch; attach the provider link input" role="group" aria-label="cuda.coop.cutlass. Resolve scratch; attach the provider link input. For deferred uses, apply the C++ sizes and alignments.. Allocate at kernel entry. Bind each call to its slice.. Mark provider calls convergent.. Attach the LTO-IR path to gpu.module link-libraries.">
+  <g data-node="Resolve scratch; attach the provider link input" role="group" aria-label="cuda.coop.cutlass. Resolve scratch; attach the provider link input. For deferred uses, apply the C++ sizes and alignments.. Allocate at kernel entry. Bind each call to its slice.. Mark provider calls convergent.. Record the provider LTO-IR path before hashing.">
     <rect x="154" y="704.2" width="862" height="166" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
     <text x="166" y="741" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Resolve scratch; attach the provider link input</text>
     <text x="166" y="769.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">For deferred uses, apply the C++ sizes and alignments.</text>
     <text x="166" y="798.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Allocate at kernel entry. Bind each call to its slice.</text>
     <text x="166" y="827.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Mark provider calls convergent.</text>
-    <text x="166" y="856.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Attach the LTO-IR path to gpu.module link-libraries.</text>
+    <text x="166" y="856.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Record the provider LTO-IR path before hashing.</text>
   </g>
   <path d="M585 873.2V898.2" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <text x="4" y="934.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">6. Compile and</text>
   <text x="4" y="963" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">link the kernel</text>
-  <g data-node="Completed kernel IR + provider LTO-IR → cubin" role="group" aria-label="CuTe compiler. Completed kernel IR + provider LTO-IR → cubin. Hash and build the module after the finalization hook.. Merge gpu.module link-libraries into LinkLibraries; compile.. nvJitLink resolves provider symbols. LTO can inline them.">
+  <g data-node="Completed kernel IR + provider LTO-IR → cubin" role="group" aria-label="CuTe compiler. Completed kernel IR + provider LTO-IR → cubin. Hash and build the module after the finalization hook.. Compile the kernel to LTO-IR for the device link.. nvJitLink resolves provider symbols. LTO can inline them.">
     <rect x="154" y="912.2" width="862" height="137.2" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
     <text x="166" y="949" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Completed kernel IR + provider LTO-IR → cubin</text>
     <text x="166" y="977.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Hash and build the module after the finalization hook.</text>
-    <text x="166" y="1006.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Merge gpu.module link-libraries into LinkLibraries; compile.</text>
+    <text x="166" y="1006.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Compile the kernel to LTO-IR for the device link.</text>
     <text x="166" y="1035.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">nvJitLink resolves provider symbols. LTO can inline them.</text>
   </g>
   <path d="M585 1052.4V1077.4" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>

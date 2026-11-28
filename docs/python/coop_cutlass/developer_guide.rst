@@ -40,8 +40,8 @@ Developer Guide
 
 CuTe compiles your kernel and its control flow. For each cooperative
 primitive, ``cuda.coop.cutlass`` generates a C++ device function that calls
-CUB. NVRTC compiles those functions to LTO-IR, which CuTe links into
-the kernel before it runs. The implementation calls these generated
+CUB. NVRTC compiles those functions to LTO-IR. The device linker can
+inline them into the kernel. The implementation calls these generated
 functions *providers*.
 
 During tracing, CuTe runs the kernel's Python code with symbolic values
@@ -115,8 +115,8 @@ same kernel.
 Compiler requirements
 ---------------------
 
-The CuTe compiler must support external NVIDIA LTO-IR linking and
-trace-finalization hooks that run after tracing and before module hashing.
+The CuTe compiler must supply kernel LTO-IR and trace-finalization hooks
+that run after tracing and before module hashing.
 It must provide access to the active compiler environment, exact block, grid,
 and cluster dimensions, launch flags, and the ``GPUArch`` compile option.
 ``_compiler/_runtime.py`` checks for the required Python interfaces
@@ -172,7 +172,7 @@ record carries information between steps.
                BundleSession collects provider requests. The trace finalizer
                obtains a BundleCompilation, materializes
                DeferredTempStoragePlan records, and marks provider calls
-               convergent before CuTe links the kernel.
+               convergent before device linking.
          :width: 100%
          :figclass: coop-cutlass-diagram-desktop
 
@@ -197,9 +197,8 @@ before device linking.
 
 The next figure expands this boundary. It shows a nonempty session on a
 provider-cache miss, with deferred scratch. NVRTC compiles the provider
-bundle. CuTe compiles the enclosing kernel and arranges the final link.
-The figures show the device-LTO path that produces a cubin. CuTe supplies
-kernel LTO-IR and provider LTO-IR to nvJitLink.
+bundle. CuTe compiles the enclosing kernel to LTO-IR. nvJitLink combines
+that LTO-IR with the bundle and any device operators to produce a cubin.
 
 .. tab-set::
    :class: coop-cutlass-compiler-tabs
@@ -209,8 +208,7 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
       .. figure:: visualizations/cutlass-compiler-swimlane.svg
          :alt: Actor swimlanes show CuTe tracing, cuda.coop.cutlass
                collecting providers, NVRTC returning LTO-IR and scratch
-               layouts, and CuTe arranging the final device link before
-               launch.
+               layouts, and nvJitLink producing a cubin before launch.
          :width: 100%
          :figclass: coop-cutlass-diagram-desktop
 
@@ -232,8 +230,7 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
       .. figure:: visualizations/cutlass-compiler-swimlane-classes.svg
          :alt: Implementation-level handoffs through BundleSession, the
                trace-finalization hook, BundleCompilation, deferred storage
-               planning, convergent provider calls, and GPU module
-               link-libraries.
+               planning, convergent provider calls, and device link inputs.
          :width: 100%
          :figclass: coop-cutlass-diagram-desktop
 
@@ -271,16 +268,14 @@ This step needs a symbol name. The provider's device code is linked and
 loaded later.
 
 At finalization, ``_trace_finalize_hook()`` marks each provider call
-convergent, then attaches the compiled bundle to the GPU module's
-``link-libraries`` attribute. To mark the calls,
+convergent and records the bundle as a device link input. To mark the calls,
 ``lower_convergent_provider_calls()`` replaces the ``func.func`` declaration
 and each ``func.call`` that ``cute.ffi`` emitted with ``llvm.func`` and
 ``llvm.call`` operations that carry the ``convergent`` attribute, under the
 same symbol. A provider can contain barriers, shuffles, and reductions that
 the threads of a group run together. The attribute keeps the optimizer from
 copying the call into branches that only some threads take. The hook also
-attaches the LTO-IR file of each compiled device operator that the trace
-uses.
+records the LTO-IR file of each compiled device operator that the trace uses.
 
 By default, a direct call to a ``@cute.jit`` function uses CuTe's compile
 cache. CuTe then computes its module hash after the hook returns, builds
@@ -289,6 +284,24 @@ skips the hash. The device linker resolves each provider call against its
 definition and can optimize it with the kernel. The provider can be
 inlined, so it need not remain a separate function in the final cubin.
 Loading that cubin makes the kernel available to launch.
+
+.. _cuda.coop.cutlass.windows_device_link:
+
+On Linux, CuTe reads the link inputs from the GPU module's
+``link-libraries`` attribute. On Windows, the hook records the target
+architecture and input paths on the traced module before CuTe hashes it.
+When compilation is required, CuTe lowers the kernel to LTO-IR.
+``cuda.coop.cutlass`` calls nvJitLink with the kernel and its device
+libraries, then places the cubin in the ``cuda.binary`` operation. CuTe
+lowers the host launcher and loads the kernel as usual. A CuTe JIT cache hit
+reuses the compiled module and skips the device link.
+
+On Windows, ``@cute.jit`` launches and ``cute.compile`` use this link
+step. The trace must contain one CuTe ``gpu.module``, which can contain
+several kernel entry points. CuTe's staged
+``cute.compile_to(ArtifactType.CompiledMlir, ...)`` export bypasses the
+link step. Use ``cute.compile`` to obtain a callable with the cooperative
+device code linked in.
 
 Scratch addresses follow a separate path. During tracing, calls that need
 deferred scratch use placeholder address and size operands. NVRTC supplies
@@ -427,11 +440,8 @@ CuTe. The hook runs for every trace on that DSL. It finds the session
 belonging to the module being finalized and leaves unrelated or nested
 sessions alone. The hook renders the requests into one C++ translation unit
 and compiles it to NVIDIA LTO-IR. It marks the provider calls convergent
-and attaches the artifact to each ``gpu.module`` in the trace through its
-``link-libraries`` attribute. An operator from ``compile_operator`` that a
-request uses has its own LTO-IR, which the hook attaches the same way. The
-CuTe compiler and final linker then resolve the provider calls while
-compiling the enclosing kernel.
+and records the bundle and each requested device operator as
+:ref:`device link inputs <cuda.coop.cutlass.windows_device_link>`.
 
 Header and toolkit discovery use the helpers under ``_headers``.
 The compiler libraries for the selected toolkit are loaded before importing
@@ -551,6 +561,9 @@ provider calls.
    * - Rendering, compilation, and artifacts
      - ``_compiler/_rendering.py``, ``_compiler/_bundle.py``,
        ``_compiler/_nvrtc.py``, ``_compiler/_cache.py``
+   * - Windows device linking
+     - ``_compiler/_windows_pipeline.py``, ``_compiler/_windows_lto.py``,
+       ``_compiler/_nvjitlink.py``
    * - Scratch layout, materialization, and lifetime
      - ``_compiler/_layout.py``, ``_compiler/_storage.py``,
        ``_compiler/_lifetime.py``
@@ -940,13 +953,13 @@ Hand the link input back to CuTe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set a breakpoint near the end of ``_trace_finalize_hook()`` on
-``_bundle.append_link_library_attr(module, path)``. Continue and inspect
+the assignment to ``paths``. Continue and inspect
 ``path``. It names the cached ``.ltoir`` file containing both providers.
 The statement before this one,
 ``_convergence.lower_convergent_provider_calls(module, requests)``, has
 already run. ``print(module)`` now shows the Load and Store calls as
 ``llvm.call`` operations with the ``convergent`` attribute, where the
-rendering stop showed ``func.call``. Step over
+rendering stop showed ``func.call``. On Linux, step over
 ``append_link_library_attr`` and evaluate:
 
 .. code-block:: python
@@ -954,8 +967,9 @@ rendering stop showed ``func.call``. Step over
    [(op.name, str(op.attributes["link-libraries"]))
     for op in module.body.operations if op.name == "gpu.module"]
 
-The GPU module now names that file as a link input. CuTe's compiler and
-final linker consume it to resolve the device calls. The example keeps
+On Windows, step over ``configure_device_link`` and inspect the link plan
+in ``module.operation.attributes``. Both routes record the LTO-IR that
+nvJitLink uses to resolve the device calls. The example keeps
 its temporary cache alive through compilation and both launches.
 This handoff is a useful boundary when diagnosing a failure. When you reach
 it, provider compilation has finished. Kernel linking and execution are

@@ -26,18 +26,19 @@ explains each line.
 Installation
 ------------
 
-On Linux with a CUDA 13-capable NVIDIA driver, install the published package
-with its CUDA Toolkit 13.4 headers, NVRTC and nvJitLink:
+On Linux or Windows with a CUDA 13-capable NVIDIA driver, use the
+``[cu13]`` extra to install CUDA Toolkit 13.4 headers and NVRTC together
+with a compatible version of nvJitLink:
 
 .. code-block:: bash
 
-   python -m pip install 'cuda-coop-cutlass[cu13]'
+   python -m pip install "cuda-coop-cutlass[cu13]"
 
 To build from source, run the following from the CCCL repository root:
 
 .. code-block:: bash
 
-   python -m pip install './python/cuda_coop_cutlass[cu13]'
+   python -m pip install "./python/cuda_coop_cutlass[cu13]"
 
 With a compatible system toolkit already installed, omit the ``[cu13]`` extra
 from either command.
@@ -50,6 +51,8 @@ Requirements
 * Python 3.10 or later.
 * CUDA Toolkit 13 and a compatible driver. On Linux with CuTe DSL
   4.9.0.dev1, use NVRTC 13.1 through 13.4.
+* On Windows, linking kernels requires nvJitLink 13.4 or later in the
+  CUDA 13 series. The ``[cu13]`` extra installs a compatible linker.
 * A GPU architecture supported by your CuTe compiler. The earliest target
   in CuTe DSL 4.9.0.dev1 is compute capability 8.0 (SM80).
 * CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends
@@ -57,11 +60,13 @@ Requirements
 
 One tested Linux configuration pairs an NVIDIA L4 with CUDA Toolkit 13.4
 and CuTe DSL 4.9.0.dev1. It uses CuTe's default setting of PyIR off.
+On Windows, the examples ran with CuTe DSL 4.9.0.dev1 on both x64
+(Python 3.14, SM120a) and Arm64 (Python 3.13, SM121a).
 
 The wheel includes the CCCL headers it needs. The toolkit's NVRTC compiles
-the CUB device code to LTO-IR. CuTe's final linker must be at least as
-new as NVRTC within the same CUDA major series. The Linux CUDA 13 wheel
-for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
+the CUB device code to LTO-IR. On Linux, CuTe's final linker must be at
+least as new as NVRTC within the same CUDA major series. The Linux CUDA 13
+wheel for CuTe DSL 4.9.0.dev1 uses a CUDA 13.4 linker. CUDA Toolkits 13.3 and
 13.4 have been tested with this wheel. CUDA 13.5 LTO-IR needs a newer
 linker. See
 `nvJitLink compatibility <https://docs.nvidia.com/cuda/nvjitlink/#compatibility>`__

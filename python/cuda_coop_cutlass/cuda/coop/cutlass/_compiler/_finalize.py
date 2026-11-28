@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile a trace's C++ requests and attach the result for CuTe linking."""
+"""Compile a trace's C++ requests and record its device-link inputs."""
 
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any
 
 from cutlass.base_dsl.common import DSLRuntimeError, DSLUserCodeError
@@ -59,18 +60,29 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
         options[LinkLibraries] = LinkLibraries(",".join(filtered_paths))
 
 
+def _attach_link_inputs(dsl, module, arch, paths):
+    """Select the device-link implementation for this trace."""
+    if sys.platform == "win32":
+        from ._windows_pipeline import configure_device_link
+
+        configure_device_link(dsl, module, arch, paths)
+    else:
+        for link_path in paths:
+            _bundle.append_link_library_attr(module, link_path)
+
+
 def _trace_finalize_hook(dsl, module, function_name):
     """Finish one trace's provider bundle and deferred scratch allocations.
 
-    CuTe calls this registered hook after it has traced a module and before
-    it links device code. At that point all cooperative calls are known, so
-    their wrappers can share one NVRTC compilation. The hook changes the
-    module and compiler link options; it does not launch the kernel.
+    CuTe calls this hook after tracing and before hashing the module. All
+    cooperative calls are known, so their wrappers can share one NVRTC
+    compilation.
 
     The matching session supplies deduplicated wrapper requests and every
     recorded scratch use. Compile first to learn exact C++ layouts, then plan
     and insert allocations. Mark the provider calls convergent, then attach
-    the bundle's LTO-IR file and each device operator's for CuTe linking.
+    the provider and device-operator paths to the GPU modules on Linux.
+    On Windows, record them in the traced module's device-link plan.
     Other trace sessions remain separate, including nested compilations.
 
     Parameters
@@ -78,7 +90,7 @@ def _trace_finalize_hook(dsl, module, function_name):
     dsl : object
         Active CuTe DSL instance, which owns the compile options.
     module : ir.Module
-        Completed trace module whose GPU modules receive the link attribute.
+        Completed trace module that owns the cooperative calls.
     function_name : str
         Function name supplied by CuTe. Unused because sessions are selected
         by module identity, not by function name.
@@ -136,9 +148,8 @@ def _trace_finalize_hook(dsl, module, function_name):
     _storage.materialize_deferred_temp_storage_plans(plans)
     _lifetime.erase_temp_storage_lifetime_markers(session)
     _convergence.lower_convergent_provider_calls(module, requests)
-    _bundle.append_link_library_attr(module, path)
-    for operator in operators:
-        _bundle.append_link_library_attr(module, operator._materialize())
+    paths = (path, *(operator._materialize() for operator in operators))
+    _attach_link_inputs(dsl, module, arch, paths)
 
 
 _state.register_bundle_finalizer(_trace_finalize_hook)
