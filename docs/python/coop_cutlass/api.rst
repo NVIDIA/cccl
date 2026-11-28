@@ -300,3 +300,28 @@ Compiled device operators
 .. autoclass:: DeviceOperator
    :no-members:
    :no-special-members:
+
+Ahead-of-time provider packs
+----------------------------
+
+See :ref:`coop-cutlass-aot-packs` for a capture and deployment example.
+
+.. autofunction:: cuda.coop.cutlass.aot.capture
+
+.. autofunction:: cuda.coop.cutlass.aot.use
+
+.. autofunction:: cuda.coop.cutlass.aot.inspect
+
+.. autoclass:: cuda.coop.cutlass.aot.PackInfo
+   :members: artifact_bytes
+
+.. autoclass:: cuda.coop.cutlass.aot.EntryInfo
+   :no-members:
+
+.. autoexception:: cuda.coop.cutlass.aot.PackError
+
+.. autoexception:: cuda.coop.cutlass.aot.PackMissError
+
+.. autoexception:: cuda.coop.cutlass.aot.PackIntegrityError
+
+.. autoexception:: cuda.coop.cutlass.aot.CaptureError

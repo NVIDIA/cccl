@@ -50,10 +50,11 @@ are Python integers. A runtime loop can repeat one call. A
 different call.
 
 Primitives work in a kernel and in any ``@cute.jit`` function that the
-kernel calls. When CuTe finishes tracing, the package compiles the CUB code
-for every call it traced in one NVRTC compilation, and CuTe links the
-result into the kernel, where it can be inlined. The compiled code is kept
-in a cache on disk, described in :doc:`configuration`. To launch a kernel
+kernel calls. When CuTe finishes tracing, it links the compiled CUB code
+for those calls into the kernel, where it can be inlined. A matching
+:ref:`ahead-of-time pack <coop-cutlass-aot-packs>` supplies that code.
+On the JIT path, the package reuses its :doc:`disk cache <configuration>`
+or compiles all the calls together with NVRTC. To launch a kernel
 more than once, pass the ``@cute.jit`` function that launches it, followed
 by that function's arguments, to ``cute.compile`` and keep the callable it
 returns.
@@ -63,6 +64,7 @@ call it.
 The package includes ``.pyi`` stubs for type checkers.
 """
 
+from . import aot
 from ._compiler._runtime import validate_cutlass_runtime
 from ._device_operator import DeviceOperator, compile_operator
 from ._group_exchange import exchange
@@ -112,6 +114,7 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "aot",
     "DeviceOperator",
     "compile_operator",
     "reduce_batched",

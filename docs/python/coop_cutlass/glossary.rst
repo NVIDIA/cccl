@@ -14,9 +14,10 @@ Terms
 
    compiler integration
       The part of the package that works with the CuTe compiler. It records
-      each primitive call while CuTe traces a kernel. When tracing ends, it
-      compiles the CUB code for all the calls in one NVRTC compilation, and
-      CuTe links the result into the kernel. See the
+      each primitive call while CuTe traces a kernel. When tracing ends,
+      it supplies the compiled CUB code for CuTe to link into the kernel.
+      The code can come from an :ref:`ahead-of-time pack <coop-cutlass-aot-packs>`,
+      the disk cache or a new NVRTC compilation. See the
       :doc:`Developer Guide <developer_guide>`.
 
    blocked

@@ -7,16 +7,24 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import sys
 from collections.abc import Iterable
 from dataclasses import asdict
+from pathlib import Path
 
+from cuda.coop.cutlass import _aot_pack
 from cuda.coop.cutlass._planning._source_dump import dump_source
 from cutlass._mlir import ir
 
 from . import _cache, _nvrtc
-from ._layout import BundleCompilation, _prepare_layout_probes
-from ._types import ScratchLayoutProbe
+from ._layout import (
+    BundleCompilation,
+    _prepare_layout_probes,
+    _PreparedLayoutProbes,
+)
+from ._types import ScratchLayout, ScratchLayoutProbe
 
 
 def append_link_library_attr(module: ir.Module, path: str) -> None:
@@ -106,13 +114,80 @@ def _compile_bundle_source(
     """
 
     prepared = _prepare_layout_probes(source, layout_probes)
+    path, layouts = _resolve_bundle(prepared, arch, required_headers)
+    _cache.add_managed_bundle_path(path)
+    return BundleCompilation(
+        path,
+        {
+            key: layouts[expression]
+            for key, expression in prepared.key_to_expression.items()
+        },
+    )
+
+
+def _resolve_bundle(
+    prepared: _PreparedLayoutProbes,
+    arch: str,
+    required_headers: tuple[str, ...],
+) -> tuple[str, dict[str, ScratchLayout]]:
+    # A selected pack supplies its own compiled CUB implementation and layout
+    # answers. An exact hit only needs the consumer linker.
+    pack_key = None
+    if _aot_pack.active():
+        identity = (
+            "cutlass-provider-abi-v1",
+            sys.platform,  # NVRTC uses LLP64 on Windows and LP64 on Linux.
+            prepared.source,
+            prepared.expressions,
+            tuple(flag.decode("ascii") for flag in _nvrtc.bundle_options(arch)),
+        )
+        pack_key = hashlib.sha256(
+            json.dumps(identity, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        dump_source(prepared.source, backend="cutlass", identity=(pack_key,))
+        hit = _aot_pack.lookup(pack_key, arch, prepared.expressions)
+        if hit is not None:
+            blob, layouts, producer_version = hit
+            path = _cache.materialize_pack_artifact(blob)
+            if _aot_pack.capturing():
+                _aot_pack.record(
+                    pack_key, arch, blob, layouts, producer_version
+                )
+            return path, layouts
+
+    cached, producer_version = _jit_bundle(
+        prepared, arch, required_headers, dump_jit_source=pack_key is None
+    )
+    if pack_key is not None and _aot_pack.capturing():
+        blob = Path(cached.path).read_bytes()
+        if hashlib.sha256(blob).hexdigest() != cached.artifact_sha256:
+            raise RuntimeError("Provider artifact changed during AOT capture")
+        _aot_pack.record(
+            pack_key, arch, blob, cached.layouts_by_expression, producer_version
+        )
+    return cached.path, cached.layouts_by_expression
+
+
+def _jit_bundle(
+    prepared: _PreparedLayoutProbes,
+    arch: str,
+    required_headers: tuple[str, ...],
+    *,
+    dump_jit_source: bool,
+) -> tuple[_cache._CachedBundle, tuple[int, int]]:
     context = _nvrtc.resolve_compile_context(required_headers)
     options = _nvrtc.compiler_options(context, arch)
-    identity = ("cutlass-ltoir-v1", prepared.source, asdict(context), options)
+    identity: tuple[object, ...] = (
+        "cutlass-ltoir-v1",
+        prepared.source,
+        asdict(context),
+        options,
+    )
     if prepared.expressions:
         identity += (prepared.expressions,)
     key = hashlib.sha256(repr(identity).encode("utf-8")).hexdigest()
-    dump_source(prepared.source, backend="cutlass", identity=(key,))
+    if dump_jit_source:
+        dump_source(prepared.source, backend="cutlass", identity=(key,))
 
     def complete(cached):
         if cached is None or set(cached.layouts_by_expression) != set(
@@ -138,16 +213,12 @@ def _compile_bundle_source(
                         prepared, options
                     )
                 else:
-                    blob, layouts = _nvrtc.compile_ltoir(source, options), {}
+                    blob, layouts = (
+                        _nvrtc.compile_ltoir(prepared.source, options),
+                        {},
+                    )
                 cached = _cache.publish_bundle(
                     path, key, blob, layouts_by_expression=layouts
                 )
             _cache.store_memory_bundle(path, cached)
-    _cache.add_managed_bundle_path(cached.path)
-    return BundleCompilation(
-        cached.path,
-        {
-            key: cached.layouts_by_expression[expression]
-            for key, expression in prepared.key_to_expression.items()
-        },
-    )
+    return cached, context.nvrtc_version

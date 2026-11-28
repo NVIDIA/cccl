@@ -40,8 +40,8 @@ Developer Guide
 
 CuTe compiles your kernel and its control flow. For each cooperative
 primitive, ``cuda.coop.cutlass`` generates a C++ device function that calls
-CUB. NVRTC compiles those functions to LTO-IR, which CuTe links into
-the kernel before it runs. The implementation calls these generated
+CUB. CuTe links their LTO-IR into the kernel. NVRTC compiles them when
+the JIT path needs a new bundle. The implementation calls these generated
 functions *providers*.
 
 During tracing, CuTe runs the kernel's Python code with symbolic values
@@ -196,8 +196,9 @@ trace-finalization hook runs after these requests have been collected and
 before device linking.
 
 The next figure expands this boundary. It shows a nonempty session on a
-provider-cache miss, with deferred scratch. NVRTC compiles the provider
-bundle. CuTe compiles the enclosing kernel and arranges the final link.
+JIT provider-cache miss, with deferred scratch and no selected AOT pack.
+NVRTC compiles the provider bundle. CuTe compiles the enclosing kernel and
+arranges the final link.
 The figures show the device-LTO path that produces a cubin. CuTe supplies
 kernel LTO-IR and provider LTO-IR to nvJitLink.
 
@@ -255,9 +256,10 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
 
 Equivalent provider requests share one generated wrapper. Scratch events
 retain each traced use, because separate uses can need separate slices.
-A valid cache entry supplies both the LTO-IR and the queried layouts, so
-that path skips NVRTC compilation. A session with no providers needs no
-bundle. Separate trace modules keep separate sessions. A trace module can
+A matching :ref:`AOT pack <coop-cutlass-aot-packs>` or a valid cache entry
+supplies both LTO-IR and the queried layouts. Either hit skips provider
+compilation. A session with no providers needs no bundle.
+Separate trace modules keep separate sessions. A trace module can
 contain several kernels. Deferred scratch is allocated separately for each
 kernel.
 
@@ -426,21 +428,21 @@ providers together.
 CuTe. The hook runs for every trace on that DSL. It finds the session
 belonging to the module being finalized and leaves unrelated or nested
 sessions alone. The hook renders the requests into one C++ translation unit
-and compiles it to NVIDIA LTO-IR. It marks the provider calls convergent
-and attaches the artifact to each ``gpu.module`` in the trace through its
-``link-libraries`` attribute. An operator from ``compile_operator`` that a
-request uses has its own LTO-IR, which the hook attaches the same way. The
-CuTe compiler and final linker then resolve the provider calls while
+and obtains its LTO-IR from a selected AOT pack, the JIT cache or NVRTC.
+It marks the provider calls convergent and attaches the artifact to each
+``gpu.module`` in the trace through its ``link-libraries`` attribute. An operator from
+``compile_operator`` that a request uses has its own LTO-IR, which the hook
+attaches the same way. The CuTe compiler and final linker then resolve the provider calls while
 compiling the enclosing kernel.
 
-Header and toolkit discovery use the helpers under ``_headers``.
+On the JIT path, header and toolkit discovery use the helpers under ``_headers``.
 The compiler libraries for the selected toolkit are loaded before importing
 the NVRTC bindings, and the loaded NVRTC version is checked against that
 selection. A mismatch reports an error before provider compilation. The
 final linker must also accept the generated LTO-IR. A bundle that NVRTC
 compiles can still fail at the final link.
 
-The cache identity includes the rendered source, header identity, compiler
+The JIT cache identity includes the rendered source, header identity, compiler
 options, architecture, and resolved toolkit/compiler information. Cache
 loads check the artifact's size and digest and any recorded scratch
 layouts. Cache writes use a lock and atomic replacement. The LTO-IR file
@@ -550,7 +552,7 @@ provider calls.
        ``_compiler/_convergence.py``
    * - Rendering, compilation, and artifacts
      - ``_compiler/_rendering.py``, ``_compiler/_bundle.py``,
-       ``_compiler/_nvrtc.py``, ``_compiler/_cache.py``
+       ``_compiler/_nvrtc.py``, ``_compiler/_cache.py``, ``_aot_pack.py``
    * - Scratch layout, materialization, and lifetime
      - ``_compiler/_layout.py``, ``_compiler/_storage.py``,
        ``_compiler/_lifetime.py``
@@ -757,6 +759,7 @@ exists, add the entry to its ``configurations`` list:
          "env": {
            "PYTHONPATH": "${workspaceFolder}/python/cuda_coop_cutlass",
            "CUDA_COOP_CUTLASS_CCCL_ROOT": "${workspaceFolder}",
+           "CUDA_COOP_CUTLASS_AOT_MODE": "off",
            "CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-cutlass-debug-sources"
          }
        }
@@ -765,10 +768,9 @@ exists, add the entry to its ``configurations`` list:
 
 ``justMyCode: false`` permits stepping into library code. ``PYTHONPATH`` and
 ``CUDA_COOP_CUTLASS_CCCL_ROOT`` select this checkout's Python sources and
-C++ headers. ``cute.compile`` explicitly requests CuTe compilation. When run
-as a script, the example also selects a new temporary provider-cache
-directory and removes it on exit. A new process with that empty provider
-cache lets each debug session reach NVRTC.
+C++ headers. ``CUDA_COOP_CUTLASS_AOT_MODE=off`` disables pack selection for
+the debug session. The script creates a fresh temporary provider cache, so
+the first ``cute.compile`` reaches NVRTC. The script removes the cache on exit.
 
 On a machine with several GPUs, add ``CUDA_VISIBLE_DEVICES`` to ``env``.
 Use the toolkit configured for your compatible compiler environment.
@@ -920,7 +922,7 @@ a two-item C++ array, calls ``BlockLoad::Load``, and writes the result
 buffer. The Store wrapper builds its array from the two scalar arguments
 and calls ``BlockStore::Store``.
 
-In ``_compiler/_bundle.py:_compile_bundle_source()``, break on
+In ``_compiler/_bundle.py:_jit_bundle()``, break on
 ``options = _nvrtc.compiler_options(context, arch)``. Continue, inspect
 ``context.include_dirs`` and ``context.toolkit_root``, then step over
 the assignment. ``options`` contains C++17, relocatable device code,
@@ -988,7 +990,7 @@ and start a new debug session. From a terminal, the equivalent is:
 
 .. code-block:: bash
 
-   python docs/python/coop_cutlass/debugger_walkthrough.py --algorithm transpose
+   CUDA_COOP_CUTLASS_AOT_MODE=off python docs/python/coop_cutlass/debugger_walkthrough.py --algorithm transpose
 
 The kernel, launch dimensions, and expected output are unchanged. At the
 plan stop, ``ALGORITHM`` now selects ``::cub::BLOCK_LOAD_TRANSPOSE`` or
@@ -1045,12 +1047,12 @@ If a breakpoint does not stop
   the first ``import cuda.coop.cutlass``, whether CuTe or the package is
   imported first. A failed validation raises an import error. Read it
   before investigating later compiler stops.
-* If NVRTC is skipped, restart the complete script. Its temporary provider
-  cache is created only under ``if __name__ == "__main__"``. Check that
-  the provider directory is new and that you set the breakpoint before
-  ``cute.compile``. A stop in ``_compile_bundle_source()`` can show a
-  provider-cache hit. The backend writes the source dump before it
-  looks up a cached provider, so a dump appears whether or not NVRTC ran.
+* If NVRTC is skipped, check that the debugger sets
+  ``CUDA_COOP_CUTLASS_AOT_MODE=off``. A matching pack supplies the provider
+  before ``_jit_bundle()`` runs. Set the breakpoint before ``cute.compile``
+  and restart the complete script to get a fresh temporary provider cache.
+  In ``_jit_bundle()``, inspect the cache lookup. The backend can write the
+  source dump even on a cache hit.
 * If a later launch retraces, check that you are calling ``compiled``.
   This walkthrough retains the callable returned by ``cute.compile``
   and invokes it twice. Calling the decorated ``launch`` directly follows
