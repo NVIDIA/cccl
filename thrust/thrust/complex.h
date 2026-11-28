@@ -18,14 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__host_stdlib/istream>
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
-
-#if _CCCL_HOSTED()
-#  include <complex>
-#endif // _CCCL_HOSTED()
 
 #define THRUST_STD_COMPLEX_REAL(z) \
   reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]

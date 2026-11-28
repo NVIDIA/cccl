@@ -30,12 +30,8 @@
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/move.h>
-
-// todo: find a way to get rid of this include
-#  if _CCCL_HOSTED()
-#    include <complex> // for std::complex stream operators
-#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -188,7 +184,8 @@ public:
     return *this;
   }
 
-  _CCCL_HOST_API operator ::std::complex<value_type>() const noexcept
+  template <class _Tp = value_type, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, value_type>, int> = 0>
+  _CCCL_HOST_API operator ::std::complex<_Tp>() const noexcept
   {
     return {__repr_.x, __repr_.y};
   }
@@ -343,7 +340,7 @@ template <class _CharT, class _Traits>
 _CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
 operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& __x)
 {
-  ::std::complex<float> __temp;
+  complex<float> __temp;
   __is >> __temp;
   __x = __temp;
   return __is;

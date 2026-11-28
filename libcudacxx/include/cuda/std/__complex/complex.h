@@ -24,6 +24,7 @@
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -41,10 +42,9 @@
 #include <cuda/std/limits>
 
 // Compatibility helpers for thrust to convert between `std::complex` and `cuda::std::complex`
-// todo: find a way to get rid of this include
+// The host <complex> is intentionally not included. `std::complex` is only forward declared and all uses below are
+// dependent, so they are only checked when the user has included <complex> themselves.
 #if _CCCL_HOSTED()
-#  include <complex> // for std::complex stream operators
-
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
 #endif // _CCCL_HOSTED()
@@ -685,21 +685,101 @@ template <class _Tp>
 }
 
 #if _CCCL_HOSTED()
+// The stream operators do not need the host <complex> to be included, only the complete stream types at instantiation.
 template <class _Tp, class _CharT, class _Traits>
 _CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
 operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
-  ::std::complex<_Tp> __temp;
-  __is >> __temp;
-  __x = __temp;
+  _Tp __re{};
+  _Tp __im{};
+  _CharT __ch{};
+  __is >> __ch;
+  if (__ch == _CharT('('))
+  {
+    __is >> __re >> __ch;
+    if (__ch == _CharT(','))
+    {
+      __is >> __im >> __ch;
+      if (__ch == _CharT(')'))
+      {
+        __x = complex<_Tp>(__re, __im);
+      }
+      else
+      {
+        __is.setstate(__is.failbit);
+      }
+    }
+    else if (__ch == _CharT(')'))
+    {
+      __x = complex<_Tp>(__re);
+    }
+    else
+    {
+      __is.setstate(__is.failbit);
+    }
+  }
+  else
+  {
+    __is.putback(__ch);
+    __is >> __re;
+    __x = complex<_Tp>(__re);
+  }
   return __is;
 }
+
+// Counts the characters written to it, so that the width can be applied to the whole output without a string stream
+template <class _CharT, class _Traits>
+class __complex_counting_streambuf : public ::std::basic_streambuf<_CharT, _Traits>
+{
+public:
+  ::std::streamsize __count_ = 0;
+
+protected:
+  _CCCL_HOST_API typename _Traits::int_type overflow(typename _Traits::int_type __c) override
+  {
+    if (!_Traits::eq_int_type(__c, _Traits::eof()))
+    {
+      ++__count_;
+    }
+    return _Traits::not_eof(__c);
+  }
+
+  _CCCL_HOST_API ::std::streamsize xsputn(const _CharT*, ::std::streamsize __n) override
+  {
+    __count_ += __n;
+    return __n;
+  }
+};
 
 template <class _Tp, class _CharT, class _Traits>
 _CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 {
-  return __os << static_cast<::std::complex<_Tp>>(__x);
+  const auto __width = __os.width();
+  __os.width(0);
+  if (__width <= 0)
+  {
+    return __os << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
+  }
+  // [complex.ops] applies the width to the whole "(re,im)" output, so determine its length first
+  __complex_counting_streambuf<_CharT, _Traits> __buf;
+  ::std::basic_ostream<_CharT, _Traits> __tmp(&__buf);
+  // do not use copyfmt, it would invoke the callbacks registered on __os and copy its exception mask and tie
+  __tmp.flags(__os.flags());
+  __tmp.imbue(__os.getloc());
+  __tmp.precision(__os.precision());
+  __tmp << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
+  const bool __left = (__os.flags() & __os.adjustfield) == __os.left;
+  for (auto __pad = __width - __buf.__count_; !__left && __pad > 0; --__pad)
+  {
+    __os.put(__os.fill());
+  }
+  __os << __os.widen('(') << __x.real() << __os.widen(',') << __x.imag() << __os.widen(')');
+  for (auto __pad = __width - __buf.__count_; __left && __pad > 0; --__pad)
+  {
+    __os.put(__os.fill());
+  }
+  return __os;
 }
 #endif // _CCCL_HOSTED()
 
