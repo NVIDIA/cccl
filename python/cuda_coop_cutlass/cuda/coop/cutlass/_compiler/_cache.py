@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
@@ -139,10 +140,16 @@ def artifact_lock(path: str, *, scope: str):
                     "provider artifact lock is not owned by this user"
                 )
             if os.name == "nt":
-                if lock_stat.st_size == 0:
-                    os.write(descriptor, b"\0")
-                os.lseek(descriptor, 0, os.SEEK_SET)
-                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+                # An empty file can be locked beyond EOF. Writing the first
+                # byte would race another process locking the same range.
+                while True:
+                    try:
+                        msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+                        break
+                    except OSError as exc:
+                        # The CRT gives up after ten seconds of contention.
+                        if exc.errno != errno.EDEADLK:
+                            raise
             else:
                 fcntl.flock(descriptor, fcntl.LOCK_EX)
         except OSError as exc:
@@ -159,7 +166,6 @@ def artifact_lock(path: str, *, scope: str):
             if os.getpid() == descriptor_owner_pid:
                 try:
                     if os.name == "nt":
-                        os.lseek(descriptor, 0, os.SEEK_SET)
                         msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
                     else:
                         fcntl.flock(descriptor, fcntl.LOCK_UN)

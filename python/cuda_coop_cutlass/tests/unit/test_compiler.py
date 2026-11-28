@@ -12,6 +12,8 @@ wrappers omit scratch and barriers; unused storage controls do not change
 request identity.
 """
 
+import errno
+import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -127,6 +129,24 @@ def test_concurrent_compilation_publishes_one_artifact(compilation):
         paths = list(executor.map(lambda _: _compile(), range(12)))
     assert len(set(paths)) == 1
     assert len(compilation.calls) == 1
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows CRT byte-range lock")
+def test_windows_artifact_lock_waits_after_crt_timeout(tmp_path, monkeypatch):
+    path = str(tmp_path / "provider")
+    locking = _cache.msvcrt.locking
+    calls = []
+
+    def lock_after_timeout(descriptor, mode, size):
+        calls.append(mode)
+        if len(calls) == 1:
+            raise OSError(errno.EDEADLK, "lock is still held")
+        return locking(descriptor, mode, size)
+
+    monkeypatch.setattr(_cache.msvcrt, "locking", lock_after_timeout)
+    with _cache.artifact_lock(path, scope="test"):
+        assert Path(f"{path}.lock").stat().st_size == 0
+    assert calls == [_cache.msvcrt.LK_LOCK] * 2 + [_cache.msvcrt.LK_UNLCK]
 
 
 def test_compilation_failure_does_not_poison_retry(compilation, monkeypatch):
