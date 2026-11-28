@@ -148,7 +148,7 @@ from cuda.coop.cutlass._typing import (
 from cuda.coop.cutlass._validation import _validate_temp_storage
 
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData, _copy_readable_payload
+from ._thread_data import ThreadData, _coerce_thread_payload
 from ._thread_group import (
     _require_complete_warp_partition,
     _resolve_primitive_group_from_launch,
@@ -535,7 +535,9 @@ def store(
     if not isinstance(value, ThreadData) and isinstance(
         value, ReadableThreadDataLike
     ):
-        value = _copy_readable_payload(value, name="value", primitive="store")
+        value = _coerce_thread_payload(
+            value, scope=_SCOPE, primitive_name="store", arg_name="value"
+        )
     provider_store(
         group=group,
         launch=launch,

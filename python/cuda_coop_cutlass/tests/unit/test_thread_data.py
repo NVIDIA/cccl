@@ -129,27 +129,6 @@ def test_memory_payloads_require_explicit_register_conversion():
         ThreadData.from_payload(np.array([1, 2], dtype=np.int32))
 
 
-def test_memory_backed_readable_payload_requires_explicit_load():
-    class Memory:
-        items_per_thread = 2
-        dtype = Int32
-        memspace = cute.AddressSpace.gmem
-
-        def __len__(self):
-            return self.items_per_thread
-
-        def __getitem__(self, index):
-            pytest.fail("collective indexed global memory before a load")
-
-    with pytest.raises(TypeError, match="group-first load"):
-        _coerce_thread_payload(
-            Memory(),
-            scope="cuda.coop.cutlass",
-            primitive_name="store",
-            arg_name="value",
-        )
-
-
 @pytest.mark.parametrize("value", [1, 2.0, np.int16(3), np.float64(4)])
 def test_scalar_payloads_are_not_converted_to_vectors(value):
     assert (

@@ -123,8 +123,12 @@ class _ReadonlyOnes:
         return cutlass.Int32((1, 1)[index])
 
 
+class _RegisterOnes(_ReadonlyOnes):
+    memspace = cute.AddressSpace.rmem
+
+
 @pytest.mark.parametrize(
-    "operation", ("store", "exchange", "shuffle", "scan", "sum")
+    "operation", ("store", "store_rmem", "exchange", "shuffle", "scan", "sum")
 )
 def test_readonly_collective_input(operation):
     @cute.kernel
@@ -133,6 +137,8 @@ def test_readonly_collective_input(operation):
         values = _ReadonlyOnes()
         if cutlass.const_expr(operation == "store"):
             coop.store(block, destination, values)
+        elif cutlass.const_expr(operation == "store_rmem"):
+            coop.store(block, destination, _RegisterOnes())
         elif cutlass.const_expr(operation == "exchange"):
             coop.store(block, destination, coop.exchange(block, values))
         elif cutlass.const_expr(operation == "shuffle"):
