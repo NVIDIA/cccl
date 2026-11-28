@@ -5,27 +5,33 @@
 
 #include <cub/util_type.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/equal.h>
 #include <thrust/fill.h>
-#include <thrust/functional.h>
-#include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/buffer>
+#include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
+#include <utility>
 
+#include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_test_helper.h>
+#include <c2h/checked_memory_resource.cuh>
 #include <c2h/cpu_timer.h>
 #include <c2h/device_policy.h>
-#include <c2h/generators.h> // seed_t
-#include <c2h/vector.h>
+#include <c2h/generator_common.h> // seed_t
 
 // #define DEBUG_TIMING
 
@@ -134,36 +140,51 @@ struct index_to_value
 } // namespace detail
 
 template <typename KeyType, typename ValueType = cub::NullType>
-struct large_array_sort_helper
+class large_array_sort_helper
 {
-  // Sorted keys/values in host memory
-  // (May be unused if results can be verified with fancy iterators)
-  c2h::host_vector<KeyType> keys_ref;
-  c2h::host_vector<ValueType> values_ref;
+  cuda::stream_ref stream;
+  cuda::host_buffer<ValueType> values_ref;
+  cuda::device_buffer<KeyType> keys_in;
+  cuda::device_buffer<ValueType> values_in;
+  cuda::device_buffer<KeyType> keys_out;
+  cuda::device_buffer<ValueType> values_out;
 
-  // Unsorted keys/values in device memory
-  c2h::device_vector<KeyType> keys_in;
-  c2h::device_vector<ValueType> values_in;
-
-  // Allocated device memory for output keys/values
-  c2h::device_vector<KeyType> keys_out;
-  c2h::device_vector<ValueType> values_out;
-
-  // Double buffer for keys/values. Aliases the in/out arrays.
+  // Double buffers alias the input and output allocations.
   cub::DoubleBuffer<KeyType> keys_buffer;
   cub::DoubleBuffer<ValueType> values_buffer;
 
-  // By default, both input and output arrays are allocated to ensure that 2 * num_items * (sizeof(KeyType) +
-  // sizeof(ValueType)) device memory is available at the start of the initialize_* methods. This ensures that we'll
-  // fail quickly if the problem size exceeds the necessary storage required for sorting. If the output arrays are not
-  // being used (e.g. in-place merge sort API with temporary storage allocation), these may be freed easily by calling
-  // this method:
+public:
+  explicit large_array_sort_helper(cuda::stream_ref stream)
+      : stream(stream)
+      , values_ref(c2h::make_host_buffer<ValueType>(stream, 0, cuda::no_init))
+      , keys_in(c2h::make_device_buffer<KeyType>(stream, 0, cuda::no_init))
+      , values_in(c2h::make_device_buffer<ValueType>(stream, 0, cuda::no_init))
+      , keys_out(c2h::make_device_buffer<KeyType>(stream, 0, cuda::no_init))
+      , values_out(c2h::make_device_buffer<ValueType>(stream, 0, cuda::no_init))
+  {}
+
+  [[nodiscard]] KeyType* input_keys_data() noexcept
+  {
+    return keys_in.data();
+  }
+
+  [[nodiscard]] cub::DoubleBuffer<KeyType>& key_double_buffer() noexcept
+  {
+    return keys_buffer;
+  }
+
+  [[nodiscard]] cub::DoubleBuffer<ValueType>& value_double_buffer() noexcept
+  {
+    return values_buffer;
+  }
+
+  // Release the output allocations when the sort only needs input buffers.
   void deallocate_outputs()
   {
-    keys_out.clear();
-    keys_out.shrink_to_fit();
-    values_out.clear();
-    values_out.shrink_to_fit();
+    keys_buffer   = {};
+    values_buffer = {};
+    keys_out      = c2h::make_device_buffer<KeyType>(stream, 0, cuda::no_init);
+    values_out    = c2h::make_device_buffer<ValueType>(stream, 0, cuda::no_init);
   }
 
   // Populates keys_in with random KeyTypes. Allocates keys_out and configures keys_buffer appropriately.
@@ -175,44 +196,45 @@ struct large_array_sort_helper
     TIME(c2h::cpu_timer timer);
 
     // Preallocate device memory ASAP so we fail quickly on bad_alloc
-    keys_in.resize(num_items);
-    keys_out.resize(num_items);
-    keys_buffer =
-      cub::DoubleBuffer<KeyType>(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()));
+    keys_in     = c2h::make_device_buffer<KeyType>(stream, num_items, cuda::no_init);
+    keys_out    = c2h::make_device_buffer<KeyType>(stream, num_items, cuda::no_init);
+    keys_buffer = cub::DoubleBuffer<KeyType>(keys_in.data(), keys_out.data());
 
     TIME(timer.print_elapsed_seconds_and_reset("Device Alloc"));
 
     { // Place the sorted keys into keys_out
       auto key_iter = cuda::make_transform_iterator(
         cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
-      thrust::copy(c2h::device_policy, key_iter, key_iter + num_items, keys_out.begin());
+      thrust::copy(c2h::device_policy.on(stream.get()), key_iter, key_iter + num_items, keys_out.data());
     }
 
     TIME(timer.print_elapsed_seconds_and_reset("Generate sorted keys"));
 
     // shuffle random keys into keys_in
     thrust::shuffle_copy(
-      c2h::device_policy,
-      keys_out.cbegin(),
-      keys_out.cend(),
-      keys_in.begin(),
+      c2h::device_policy.on(stream.get()),
+      keys_out.data(),
+      keys_out.data() + keys_out.size(),
+      keys_in.data(),
       thrust::default_random_engine(static_cast<std::uint32_t>(seed.get())));
 
     TIME(timer.print_elapsed_seconds_and_reset("Shuffle"));
 
     // Reset keys_out to remove the valid sorted keys:
-    thrust::fill(c2h::device_policy, keys_out.begin(), keys_out.end(), KeyType{});
+    thrust::fill(c2h::device_policy.on(stream.get()), keys_out.data(), keys_out.data() + keys_out.size(), KeyType{});
 
     TIME(timer.print_elapsed_seconds_and_reset("Reset Output"));
   }
 
-  // Verify the results of sorting the keys_in produced by initialize_for_unstable_key_sort.
-  void verify_unstable_key_sort(std::size_t num_items, bool is_descending, const c2h::device_vector<KeyType>& keys)
+  // Verify the selected result after sorting the generated keys.
+  void verify_unstable_key_sort(std::size_t num_items, bool is_descending) const
   {
+    const auto& keys = keys_buffer.selector == 0 ? keys_in : keys_out;
+
     TIME(c2h::cpu_timer timer);
     auto key_iter = cuda::make_transform_iterator(
       cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
-    REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), key_iter));
+    REQUIRE(thrust::equal(c2h::device_policy.on(stream.get()), keys.data(), keys.data() + keys.size(), key_iter));
     TIME(timer.print_elapsed_seconds_and_reset("Validate keys"));
   }
 
@@ -232,117 +254,80 @@ struct large_array_sort_helper
 
     TIME(c2h::cpu_timer timer);
 
-    c2h::device_vector<summary_t> d_summaries;
-    // Overallocate -- if this fails, there won't be be enough free device memory for the input/output arrays.
-    // Better to fail now before spending time computing the inputs/outputs.
-    d_summaries.reserve(2 * max_summaries);
-    d_summaries.resize(num_summaries);
-
-    TIME(timer.print_elapsed_seconds_and_reset("Device allocate"));
-
-    // Populate the summaries using evenly spaced keys and constant sized runs, padding the last run to fill.
-    thrust::tabulate(c2h::device_policy,
-                     d_summaries.begin(),
-                     d_summaries.end(),
-                     detail::index_to_summary<KeyType>{num_items, num_summaries, is_descending});
-
-    TIME(timer.print_elapsed_seconds_and_reset("idx -> summary"));
-
-    // Copy the summaries to host memory and release device summary memory.
-    c2h::host_vector<summary_t> h_summaries = d_summaries;
-
-    TIME(timer.print_elapsed_seconds_and_reset("D->H Summaries"));
-
-    d_summaries.clear();
-    d_summaries.shrink_to_fit();
-
-    TIME(timer.print_elapsed_seconds_and_reset("Free device summaries"));
-
-    // Build the unsorted key and reference value arrays on host:
-    c2h::host_vector<KeyType> h_unsorted_keys(num_items);
-    c2h::host_vector<ValueType> h_sorted_values(num_items);
-
-    TIME(timer.print_elapsed_seconds_and_reset("Host allocate"));
-
     {
+      auto h_unsorted_keys = c2h::make_host_buffer<KeyType>(stream, num_items, cuda::no_init);
+      values_ref           = c2h::make_host_buffer<ValueType>(stream, num_items, cuda::no_init);
+      auto h_summaries     = c2h::make_host_buffer<summary_t>(stream, num_summaries, cuda::no_init);
+
+      {
+        // Check early that there is room for the key/value arrays.
+        auto d_summaries = c2h::make_device_buffer<summary_t>(stream, 2 * max_summaries, cuda::no_init);
+        thrust::tabulate(c2h::device_policy.on(stream.get()),
+                         d_summaries.data(),
+                         d_summaries.data() + num_summaries,
+                         detail::index_to_summary<KeyType>{num_items, num_summaries, is_descending});
+        c2h::copy_to_host(stream, d_summaries.first(num_summaries), h_summaries);
+      }
+      TIME(timer.print_elapsed_seconds_and_reset("Generate summaries"));
+
       using range_t = thrust::random::uniform_int_distribution<std::size_t>::param_type;
       constexpr range_t run_range{1, 256};
 
       thrust::default_random_engine rng(static_cast<std::uint32_t>(seed.get()));
       thrust::random::uniform_int_distribution<std::size_t> dist;
-      range_t summary_range{0, num_summaries - 1};
+      std::size_t remaining_summaries = num_summaries;
       for (std::size_t i = 0; i < num_items; /*inc in loop*/)
       {
-        const std::size_t summ_idx = dist(rng, summary_range);
+        const std::size_t summ_idx = dist(rng, range_t{0, remaining_summaries - 1});
         summary_t& summary         = h_summaries[summ_idx];
         const std::size_t run_size = std::min(summary.count, dist(rng, run_range));
 
-        std::fill(h_unsorted_keys.begin() + i, // formatting
-                  h_unsorted_keys.begin() + i + run_size,
-                  summary.key);
-        std::iota(h_sorted_values.begin() + summary.index, // formatting
-                  h_sorted_values.begin() + summary.index + run_size,
-                  static_cast<ValueType>(i));
+        std::fill_n(h_unsorted_keys.data() + i, run_size, summary.key);
+        std::iota(
+          values_ref.data() + summary.index, values_ref.data() + summary.index + run_size, static_cast<ValueType>(i));
 
         i += run_size;
         summary.index += run_size;
         summary.count -= run_size;
         if (summary.count == 0)
         {
-          using std::swap;
-          swap(summary, h_summaries.back());
-          h_summaries.pop_back();
-          summary_range.second -= 1;
+          --remaining_summaries;
+          std::swap(summary, h_summaries[remaining_summaries]);
         }
       }
+      REQUIRE(remaining_summaries == 0);
+      TIME(timer.print_elapsed_seconds_and_reset("Host-side summary processing"));
+
+      keys_in = c2h::make_device_buffer<KeyType>(stream, h_unsorted_keys);
+      stream.sync();
+      TIME(timer.print_elapsed_seconds_and_reset("Unsorted keys H->D"));
     }
 
-    TIME(timer.print_elapsed_seconds_and_reset("Host-side summary processing"));
-
-    // Release the host summary memory.
-    REQUIRE(h_summaries.empty());
-    h_summaries.shrink_to_fit();
-
-    TIME(timer.print_elapsed_seconds_and_reset("Host summaries free"));
-
-    // Copy the unsorted keys to device
-    keys_in = h_unsorted_keys;
-    h_unsorted_keys.clear();
-    h_unsorted_keys.shrink_to_fit();
-
-    TIME(timer.print_elapsed_seconds_and_reset("Unsorted keys H->D"));
-
-    // Unsorted values are just a sequence
-    values_in.resize(num_items);
-    thrust::tabulate(c2h::device_policy, values_in.begin(), values_in.end(), detail::index_to_value<ValueType>{});
+    // Unsorted values are just a sequence.
+    values_in = c2h::make_device_buffer<ValueType>(stream, num_items, cuda::no_init);
+    thrust::tabulate(c2h::device_policy.on(stream.get()),
+                     values_in.data(),
+                     values_in.data() + values_in.size(),
+                     detail::index_to_value<ValueType>{});
 
     TIME(timer.print_elapsed_seconds_and_reset("Unsorted value gen"));
 
-    // Copy the sorted values to the member array.
-    // Sorted keys are verified using a fancy iterator.
-    values_ref = std::move(h_sorted_values); // Same memory space, just move.
-
-    TIME(timer.print_elapsed_seconds_and_reset("Copy/move refs"));
-
-    keys_out.resize(num_items);
-    values_out.resize(num_items);
+    keys_out   = c2h::make_device_buffer<KeyType>(stream, num_items, cuda::no_init);
+    values_out = c2h::make_device_buffer<ValueType>(stream, num_items, cuda::no_init);
 
     TIME(timer.print_elapsed_seconds_and_reset("Prep device outputs"));
 
-    keys_buffer =
-      cub::DoubleBuffer<KeyType>(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()));
-    values_buffer = cub::DoubleBuffer<ValueType>(
-      thrust::raw_pointer_cast(values_in.data()), thrust::raw_pointer_cast(values_out.data()));
+    keys_buffer   = cub::DoubleBuffer<KeyType>(keys_in.data(), keys_out.data());
+    values_buffer = cub::DoubleBuffer<ValueType>(values_in.data(), values_out.data());
   }
 
-  // Verify the results of sorting the keys_in produced by initialize_for_stable_pair_sort.
-  void verify_stable_pair_sort(
-    std::size_t num_items,
-    bool is_descending,
-    const c2h::device_vector<KeyType>& keys,
-    const c2h::device_vector<ValueType>& values)
+  // Verify the selected results after sorting the generated key-value pairs.
+  void verify_stable_pair_sort(std::size_t num_items, bool is_descending) const
   {
     static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
+
+    const auto& keys   = keys_buffer.selector == 0 ? keys_in : keys_out;
+    const auto& values = values_buffer.selector == 0 ? values_in : values_out;
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
     const std::size_t num_summaries = this->compute_num_summaries(num_items, max_summaries);
@@ -353,11 +338,21 @@ struct large_array_sort_helper
       cuda::counting_iterator(std::size_t{0}),
       detail::pair_sort_ref_key_transform<KeyType>(num_items, num_summaries, is_descending));
 
-    REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), ref_key_begin));
+    REQUIRE(thrust::equal(c2h::device_policy.on(stream.get()), keys.data(), keys.data() + keys.size(), ref_key_begin));
 
     TIME(timer.print_elapsed_seconds_and_reset("Validate keys"));
 
-    REQUIRE((values == this->values_ref) == true);
+    REQUIRE(values.size() == values_ref.size());
+    constexpr std::size_t chunk_size = 1 << 20;
+    auto h_values = c2h::make_host_buffer<ValueType>(stream, std::min(num_items, chunk_size), cuda::no_init);
+    for (std::size_t offset = 0; offset < num_items; offset += chunk_size)
+    {
+      const auto count = std::min(chunk_size, num_items - offset);
+      auto chunk       = h_values.first(count);
+      c2h::copy_to_host(stream, values.subspan(offset, count), chunk);
+      CAPTURE(offset);
+      REQUIRE(std::equal(chunk.begin(), chunk.end(), values_ref.data() + offset));
+    }
 
     TIME(timer.print_elapsed_seconds_and_reset("Validate values"));
   }

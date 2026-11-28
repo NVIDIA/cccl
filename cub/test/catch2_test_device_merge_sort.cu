@@ -6,7 +6,6 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <thrust/copy.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
@@ -14,20 +13,33 @@
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
+#include <thrust/transform.h>
 
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/std/iterator>
+#include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <ostream>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/custom_type.h>
 #include <c2h/device_and_stream.h>
+#include <c2h/device_policy.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -185,16 +197,17 @@ public:
 };
 
 /**
- * Generates a shuffled array of key ranks. E.g., for a vector of size 5: [4, 2, 3, 1, 0]
+ * Generates shuffled key ranks. E.g., for a buffer of size 5: [4, 2, 3, 1, 0]
  */
 template <typename OffsetT>
-c2h::device_vector<OffsetT> make_shuffled_key_ranks_vector(OffsetT num_items, c2h::seed_t seed)
+cuda::device_buffer<OffsetT> make_shuffled_key_ranks(cuda::stream_ref stream, OffsetT num_items, c2h::seed_t seed)
 {
-  c2h::device_vector<OffsetT> key_ranks(num_items);
-  thrust::sequence(c2h::device_policy, key_ranks.begin(), key_ranks.end());
-  thrust::shuffle(c2h::device_policy,
-                  key_ranks.begin(),
-                  key_ranks.end(),
+  auto key_ranks    = c2h::make_device_buffer<OffsetT>(stream, num_items, cuda::no_init);
+  const auto policy = c2h::device_policy.on(stream.get());
+  thrust::sequence(policy, key_ranks.data(), key_ranks.data() + key_ranks.size());
+  thrust::shuffle(policy,
+                  key_ranks.data(),
+                  key_ranks.data() + key_ranks.size(),
                   thrust::default_random_engine{static_cast<unsigned int>(seed.get())});
   return key_ranks;
 }
@@ -204,6 +217,8 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works",
          CUB_SMALL,
          wide_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
@@ -211,25 +226,31 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works",
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
-  c2h::device_vector<key_t> keys_in(num_items);
+  auto key_ranks = make_shuffled_key_ranks(stream, num_items, C2H_SEED(2));
+  auto keys_in   = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
   thrust::transform(
-    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
+    c2h::device_policy.on(stream.get()),
+    key_ranks.data(),
+    key_ranks.data() + key_ranks.size(),
+    keys_in.data(),
+    rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  c2h::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
-  sort_keys_copy(
-    thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
+  auto keys_out = c2h::make_device_buffer<key_t>(stream, num_items, static_cast<key_t>(42));
+  sort_keys_copy(keys_in.data(), keys_out.data(), num_items, custom_less_op_t{}, stream);
 
   // Verify results
   const auto key_ranks_it     = cuda::counting_iterator(offset_t{});
   const auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  const bool results_equal    = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  const bool results_equal    = thrust::equal(
+    c2h::device_policy.on(stream.get()), keys_out.data(), keys_out.data() + keys_out.size(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", CUB_SMALL, wide_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
@@ -237,19 +258,23 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", CUB_SMALL, 
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
-  c2h::device_vector<key_t> keys_in_out(num_items);
+  auto key_ranks   = make_shuffled_key_ranks(stream, num_items, C2H_SEED(2));
+  auto keys_in_out = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
   thrust::transform(
-    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
+    c2h::device_policy.on(stream.get()),
+    key_ranks.data(),
+    key_ranks.data() + key_ranks.size(),
+    keys_in_out.data(),
+    rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
+  sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
 
   // Verify results
-  auto key_ranks_it     = cuda::counting_iterator(offset_t{});
-  auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  const bool results_equal =
-    thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  auto key_ranks_it        = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it    = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  const bool results_equal = thrust::equal(
+    c2h::device_policy.on(stream.get()), keys_in_out.data(), keys_in_out.data() + keys_in_out.size(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
 
@@ -258,6 +283,8 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
          "[merge][sort][device][skip-cs-racecheck][skip-cs-memcheck]",
          CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::size_t;
 
@@ -265,28 +292,34 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  c2h::device_vector<offset_t> key_ranks(num_items);
+  auto key_ranks = c2h::make_device_buffer<offset_t>(stream, num_items, cuda::no_init);
   c2h::gen(C2H_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
-  c2h::device_vector<key_t> keys_in(num_items);
+  auto keys_in      = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
   auto key_value_it = cuda::counting_iterator(offset_t{});
-  auto key_init_it  = cuda::make_zip_iterator(key_ranks.begin(), key_value_it);
+  auto key_init_it  = cuda::make_zip_iterator(key_ranks.data(), key_value_it);
   thrust::transform(
-    c2h::device_policy, key_init_it, key_init_it + num_items, keys_in.begin(), tuple_to_custom_op_t<key_t>{});
+    c2h::device_policy.on(stream.get()),
+    key_init_it,
+    key_init_it + num_items,
+    keys_in.data(),
+    tuple_to_custom_op_t<key_t>{});
 
   // Perform sort
-  c2h::device_vector<key_t> keys_out(num_items, rank_to_key_op_t<offset_t, key_t>{}(42));
-  stable_sort_keys_copy(
-    thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
+  auto keys_out = c2h::make_device_buffer<key_t>(stream, num_items, rank_to_key_op_t<offset_t, key_t>{}(42));
+  stable_sort_keys_copy(keys_in.data(), keys_out.data(), num_items, custom_less_op_t{}, stream);
 
   // Verify results
-  c2h::host_vector<key_t> keys_expected(keys_in);
-  std::stable_sort(keys_expected.begin(), keys_expected.end(), custom_less_op_t{});
+  auto keys_expected = c2h::make_host_buffer<key_t>(stream, num_items, cuda::no_init);
+  c2h::copy_to_host(stream, keys_in, keys_expected);
+  std::stable_sort(keys_expected.data(), keys_expected.data() + keys_expected.size(), custom_less_op_t{});
 
-  REQUIRE(keys_expected == keys_out);
+  REQUIRE_THAT_QUIET(keys_out, c2h::Equals(stream, keys_expected));
 }
 
 CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]", CUB_SMALL)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::int32_t;
 
@@ -294,17 +327,15 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]", CUB_S
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  c2h::device_vector<key_t> keys_in_out(num_items);
-  c2h::gen(C2H_SEED(2), keys_in_out);
 
-  // Perform sort
-  stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
+  auto key_buffers    = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
+  auto& keys_in_out   = key_buffers.d_items;
+  auto& keys_expected = key_buffers.h_items;
+  std::stable_sort(keys_expected.data(), keys_expected.data() + keys_expected.size(), custom_less_op_t{});
 
-  // Verify results
-  c2h::host_vector<key_t> keys_expected(keys_in_out);
-  std::stable_sort(keys_expected.begin(), keys_expected.end(), custom_less_op_t{});
+  stable_sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
 
-  REQUIRE(keys_expected == keys_in_out);
+  REQUIRE_THAT_QUIET(keys_in_out, c2h::Equals(stream, keys_expected));
 }
 
 CUB_TEST("DeviceMergeSort::SortPairsCopy works",
@@ -312,6 +343,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works",
          CUB_SMALL,
          wide_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
@@ -319,35 +352,37 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works",
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
-  c2h::device_vector<key_t> keys_in(num_items);
+  auto key_ranks = make_shuffled_key_ranks(stream, num_items, C2H_SEED(2));
+  auto keys_in   = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
   thrust::transform(
-    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
+    c2h::device_policy.on(stream.get()),
+    key_ranks.data(),
+    key_ranks.data() + key_ranks.size(),
+    keys_in.data(),
+    rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  c2h::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
-  c2h::device_vector<offset_t> values_out(num_items, static_cast<offset_t>(42));
+  auto keys_out   = c2h::make_device_buffer<key_t>(stream, num_items, static_cast<key_t>(42));
+  auto values_out = c2h::make_device_buffer<offset_t>(stream, num_items, static_cast<offset_t>(42));
   sort_pairs_copy(
-    thrust::raw_pointer_cast(keys_in.data()),
-    thrust::raw_pointer_cast(key_ranks.data()),
-    thrust::raw_pointer_cast(keys_out.data()),
-    thrust::raw_pointer_cast(values_out.data()),
-    num_items,
-    custom_less_op_t{});
+    keys_in.data(), key_ranks.data(), keys_out.data(), values_out.data(), num_items, custom_less_op_t{}, stream);
 
   // Verify results
   auto key_ranks_it       = cuda::counting_iterator(offset_t{});
   auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = cuda::counting_iterator(offset_t{});
-  const bool keys_equal   = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
-  const bool values_equal =
-    thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
+  const bool keys_equal   = thrust::equal(
+    c2h::device_policy.on(stream.get()), keys_out.data(), keys_out.data() + keys_out.size(), keys_expected_it);
+  const bool values_equal = thrust::equal(
+    c2h::device_policy.on(stream.get()), values_out.data(), values_out.data() + values_out.size(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", CUB_SMALL, wide_key_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
@@ -355,23 +390,26 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", CUB_SMALL,
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
-  c2h::device_vector<key_t> keys_in_out(num_items);
+  auto key_ranks   = make_shuffled_key_ranks(stream, num_items, C2H_SEED(2));
+  auto keys_in_out = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
   thrust::transform(
-    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
+    c2h::device_policy.on(stream.get()),
+    key_ranks.data(),
+    key_ranks.data() + key_ranks.size(),
+    keys_in_out.data(),
+    rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  sort_pairs(thrust::raw_pointer_cast(keys_in_out.data()),
-             thrust::raw_pointer_cast(key_ranks.data()),
-             num_items,
-             custom_less_op_t{});
+  sort_pairs(keys_in_out.data(), key_ranks.data(), num_items, custom_less_op_t{}, stream);
 
   // Verify results
   auto key_ranks_it       = cuda::counting_iterator(offset_t{});
   auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = cuda::counting_iterator(offset_t{});
-  const bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
-  const bool values_equal = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
+  const bool keys_equal   = thrust::equal(
+    c2h::device_policy.on(stream.get()), keys_in_out.data(), keys_in_out.data() + keys_in_out.size(), keys_expected_it);
+  const bool values_equal = thrust::equal(
+    c2h::device_policy.on(stream.get()), key_ranks.data(), key_ranks.data() + key_ranks.size(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -382,6 +420,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works and performs a stable sort",
          key_types,
          value_types)
 {
+  const auto stream = c2h::make_current_device_stream();
+
   using key_t    = typename c2h::get<0, TestType>;
   using data_t   = typename c2h::get<1, TestType>;
   using offset_t = std::int32_t;
@@ -390,28 +430,24 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works and performs a stable sort",
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
     GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
-  c2h::device_vector<key_t> keys_in_out(num_items);
-  c2h::device_vector<data_t> values_in_out(num_items);
-  c2h::gen(C2H_SEED(2), keys_in_out);
-  c2h::gen(C2H_SEED(1), values_in_out);
 
-  // Prepare host data for verification
-  c2h::host_vector<key_t> keys_expected(keys_in_out);
-  c2h::host_vector<data_t> values_expected(values_in_out);
+  auto key_buffers      = c2h::gen_buffers<key_t>(stream, C2H_SEED(2), num_items);
+  auto value_buffers    = c2h::gen_buffers<data_t>(stream, C2H_SEED(1), num_items);
+  auto& keys_in_out     = key_buffers.d_items;
+  auto& keys_expected   = key_buffers.h_items;
+  auto& values_in_out   = value_buffers.d_items;
+  auto& values_expected = value_buffers.h_items;
 
   // Use thrust::make_zip_iterator instead of cuda::make_zip_iterator as a work-around
   // See https://github.com/NVIDIA/cccl/issues/6400
-  auto zipped_expected_it = thrust::make_zip_iterator(keys_expected.begin(), values_expected.begin());
+  auto zipped_expected_it = thrust::make_zip_iterator(keys_expected.data(), values_expected.data());
   std::stable_sort(zipped_expected_it, zipped_expected_it + num_items, compare_first_lt_op_t{});
 
   // Perform sort
-  stable_sort_pairs(thrust::raw_pointer_cast(keys_in_out.data()),
-                    thrust::raw_pointer_cast(values_in_out.data()),
-                    num_items,
-                    custom_less_op_t{});
+  stable_sort_pairs(keys_in_out.data(), values_in_out.data(), num_items, custom_less_op_t{}, stream);
 
-  REQUIRE(keys_expected == keys_in_out);
-  REQUIRE(values_expected == values_in_out);
+  REQUIRE_THAT_QUIET(keys_in_out, c2h::Equals(stream, keys_expected));
+  REQUIRE_THAT_QUIET(values_in_out, c2h::Equals(stream, values_expected));
 }
 
 CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
@@ -433,7 +469,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
     try
     {
       // Initialize random input data
-      large_array_sort_helper<key_t> arrays;
+      const auto stream = c2h::make_current_device_stream();
+      large_array_sort_helper<key_t> arrays(stream);
       constexpr bool is_descending = false;
       arrays.initialize_for_unstable_key_sort(C2H_SEED(1), num_items, is_descending);
 
@@ -441,10 +478,10 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       arrays.deallocate_outputs();
 
       // Perform sort
-      stable_sort_keys(thrust::raw_pointer_cast(arrays.keys_in.data()), num_items, custom_less_op_t{});
+      stable_sort_keys(arrays.input_keys_data(), num_items, custom_less_op_t{}, stream);
 
       // Verify results
-      arrays.verify_unstable_key_sort(num_items, is_descending, arrays.keys_in);
+      arrays.verify_unstable_key_sort(num_items, is_descending);
     }
     catch (...)
     {
@@ -456,19 +493,22 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   {
     try
     {
-      c2h::device_vector<key_t> keys_in_out(num_items);
+      const auto stream = c2h::make_current_device_stream();
+      auto keys_in_out  = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+      const auto policy = c2h::device_policy.on(stream.get());
 
       // Pre-populated array with a constant value
       auto counting_it = cuda::counting_iterator(std::size_t{0});
-      thrust::copy(counting_it, counting_it + num_items, keys_in_out.begin());
+      thrust::copy(policy, counting_it, counting_it + num_items, keys_in_out.data());
 
       // Perform sort
-      stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
+      stable_sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
 
       // Perform comparison
       auto expected_result_it =
         cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
-      const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
+      const bool is_correct =
+        thrust::equal(policy, keys_in_out.data(), keys_in_out.data() + keys_in_out.size(), expected_result_it);
       REQUIRE(is_correct == true);
     }
     catch (...)
@@ -481,20 +521,23 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   {
     try
     {
-      c2h::device_vector<key_t> keys_in_out(num_items);
+      const auto stream = c2h::make_current_device_stream();
+      auto keys_in_out  = c2h::make_device_buffer<key_t>(stream, num_items, cuda::no_init);
+      const auto policy = c2h::device_policy.on(stream.get());
 
       auto counting_it   = cuda::counting_iterator(std::size_t{0});
       auto key_value_it  = cuda::transform_iterator(counting_it, index_to_key_value_op<key_t>{});
       auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
-      thrust::copy(rev_sorted_it, rev_sorted_it + num_items, keys_in_out.begin());
+      thrust::copy(policy, rev_sorted_it, rev_sorted_it + num_items, keys_in_out.data());
 
       // Perform sort
-      stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
+      stable_sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
 
       // Perform comparison
       auto expected_result_it =
         cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
-      const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
+      const bool is_correct =
+        thrust::equal(policy, keys_in_out.data(), keys_in_out.data() + keys_in_out.size(), expected_result_it);
       REQUIRE(is_correct == true);
     }
     catch (...)
@@ -551,11 +594,10 @@ struct make_not_default_constructible_op_t
 
 // Device storage for not_default_constructible_t, which thrust::device_vector cannot hold. Elements are constructed on
 // the device. Holds 0, 1, ..., num_items - 1, or the same values in reverse order.
-inline auto make_ndc_buffer(const cuda::stream& stream, int num_items, bool reversed = false)
+inline auto make_ndc_buffer(cuda::stream_ref stream, int num_items, bool reversed = false)
 {
-  auto buffer =
-    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
-  const auto policy = thrust::cuda::par.on(stream.get());
+  auto buffer       = c2h::make_device_buffer<not_default_constructible_t>(stream, num_items, cuda::no_init);
+  const auto policy = c2h::device_policy.on(stream.get());
   thrust::tabulate(policy, buffer.data(), buffer.data() + num_items, make_not_default_constructible_op_t{});
   if (reversed)
   {
@@ -570,10 +612,9 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works with non-default-constructible key
   const cuda::stream stream = c2h::make_current_device_stream();
   const int num_items       = GENERATE(1, 500, 1000000);
   auto keys_in              = make_ndc_buffer(stream, num_items, true);
-  auto keys_out =
-    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  auto keys_out             = c2h::make_device_buffer<not_default_constructible_t>(stream, num_items, cuda::no_init);
 
-  sort_keys_copy(keys_in.data(), keys_out.data(), num_items, custom_less_op_t{});
+  sort_keys_copy(keys_in.data(), keys_out.data(), num_items, custom_less_op_t{}, stream);
 
   REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items)));
 }
@@ -584,7 +625,7 @@ CUB_TEST("DeviceMergeSort::SortKeys works with non-default-constructible keys", 
   const int num_items       = GENERATE(1, 500, 1000000);
   auto keys_in_out          = make_ndc_buffer(stream, num_items, true);
 
-  sort_keys(keys_in_out.data(), num_items, custom_less_op_t{});
+  sort_keys(keys_in_out.data(), num_items, custom_less_op_t{}, stream);
 
   REQUIRE_THAT(keys_in_out, Equals(make_ndc_buffer(stream, num_items)));
 }
@@ -597,12 +638,11 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works with non-default-constructible ke
   const int num_items       = GENERATE(1, 500, 1000000);
   auto keys_in              = make_ndc_buffer(stream, num_items, true);
   auto values_in            = make_ndc_buffer(stream, num_items);
-  auto keys_out =
-    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
-  auto values_out =
-    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  auto keys_out             = c2h::make_device_buffer<not_default_constructible_t>(stream, num_items, cuda::no_init);
+  auto values_out           = c2h::make_device_buffer<not_default_constructible_t>(stream, num_items, cuda::no_init);
 
-  sort_pairs_copy(keys_in.data(), values_in.data(), keys_out.data(), values_out.data(), num_items, custom_less_op_t{});
+  sort_pairs_copy(
+    keys_in.data(), values_in.data(), keys_out.data(), values_out.data(), num_items, custom_less_op_t{}, stream);
 
   REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items)));
   // values were ascending while keys were descending, so values end up descending
@@ -618,7 +658,7 @@ CUB_TEST("DeviceMergeSort::SortPairs works with non-default-constructible keys a
   auto keys_in_out          = make_ndc_buffer(stream, num_items, true);
   auto values_in_out        = make_ndc_buffer(stream, num_items);
 
-  sort_pairs(keys_in_out.data(), values_in_out.data(), num_items, custom_less_op_t{});
+  sort_pairs(keys_in_out.data(), values_in_out.data(), num_items, custom_less_op_t{}, stream);
 
   REQUIRE_THAT(keys_in_out, Equals(make_ndc_buffer(stream, num_items)));
   REQUIRE_THAT(values_in_out, Equals(make_ndc_buffer(stream, num_items, true)));
