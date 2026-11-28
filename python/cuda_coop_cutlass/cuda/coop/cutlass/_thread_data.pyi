@@ -247,24 +247,26 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         items_per_thread: int | None = None,
         dtype: None = None,
     ) -> ThreadData[_ValueT]: ...
+    # An indexable value can be an existing ThreadData. Its dtype metadata
+    # decides whether conversion casts the items or preserves the object.
     @overload
     @classmethod
     def from_payload(
         cls,
-        payload: object,
+        payload: _ThreadDataVectorSource[_ProducerT],
         *,
         items_per_thread: int | None = None,
         dtype: type[_ValueT],
-    ) -> ThreadData[_ValueT]: ...
+    ) -> ThreadData[_ProducerT] | ThreadData[_ValueT]: ...
     @overload
     @classmethod
     def from_payload(
         cls,
-        payload: object,
+        payload: _ThreadDataVectorSource[_ProducerT],
         *,
         items_per_thread: int | None = None,
         dtype: np.dtype[_NumpyT],
-    ) -> ThreadData[_NumpyT]: ...
+    ) -> ThreadData[_ProducerT] | ThreadData[_NumpyT]: ...
     @overload
     @classmethod
     def from_payload(
@@ -272,51 +274,51 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         payload: object,
         *,
         items_per_thread: int | None = None,
-        dtype: None = None,
+        dtype: type[Any] | np.dtype[Any] | None = None,
     ) -> ThreadData[Any]: ...
     @overload
     @classmethod
     def load(
         cls,
-        source: ThreadDataLoadSource[Any],
+        source: ThreadDataLoadSource[_ProducerT],
         *,
         items_per_thread: int | None = None,
         dtype: type[_ValueT],
-    ) -> ThreadData[_ValueT]:
-        """Load and cast a statically sized producer payload to ``dtype``."""
+    ) -> ThreadData[_ProducerT] | ThreadData[_ValueT]:
+        """Preserve matching payloads or cast loaded register values."""
 
     @overload
     @classmethod
     def load(
         cls,
-        source: ThreadDataLoadSource[Any],
+        source: ThreadDataLoadSource[_ProducerT],
         *,
         items_per_thread: int | None = None,
         dtype: np.dtype[_NumpyT],
-    ) -> ThreadData[_NumpyT]:
-        """Load and cast a statically sized producer payload to ``dtype``."""
+    ) -> ThreadData[_ProducerT] | ThreadData[_NumpyT]:
+        """Preserve matching payloads or cast loaded register values."""
 
     @overload
     @classmethod
     def load(
         cls,
-        source: _ThreadDataIndexableLoadSource[Any],
+        source: _ThreadDataIndexableLoadSource[_ProducerT],
         *,
         items_per_thread: int,
         dtype: type[_ValueT],
-    ) -> ThreadData[_ValueT]:
-        """Load and cast an explicitly sized producer payload to ``dtype``."""
+    ) -> ThreadData[_ProducerT] | ThreadData[_ValueT]:
+        """Preserve matching payloads or cast loaded register values."""
 
     @overload
     @classmethod
     def load(
         cls,
-        source: _ThreadDataIndexableLoadSource[Any],
+        source: _ThreadDataIndexableLoadSource[_ProducerT],
         *,
         items_per_thread: int,
         dtype: np.dtype[_NumpyT],
-    ) -> ThreadData[_NumpyT]:
-        """Load and cast an explicitly sized producer payload to ``dtype``."""
+    ) -> ThreadData[_ProducerT] | ThreadData[_NumpyT]:
+        """Preserve matching payloads or cast loaded register values."""
 
     @overload
     @classmethod

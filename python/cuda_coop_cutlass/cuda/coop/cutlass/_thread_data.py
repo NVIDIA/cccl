@@ -1462,7 +1462,9 @@ def _coerce_thread_payload(
 
     if isinstance(value, ThreadData):
         return value
-    if isinstance(value, _ReadableThreadDataLike):
+    if isinstance(
+        value, _ReadableThreadDataLike
+    ) and not _is_memory_backed_payload(value):
         return _copy_readable_payload(
             value, name=arg_name, primitive=primitive_name
         )

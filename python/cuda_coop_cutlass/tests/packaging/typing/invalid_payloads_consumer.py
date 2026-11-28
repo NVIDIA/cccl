@@ -22,3 +22,10 @@ coop.this_grid().sync_aligned()  # expected-error: [misc]
 coop.TempStorage(sharing="invalid")  # expected-error: [arg-type]
 coop.ThreadData(items_per_thread="two")  # expected-error: [call-overload]
 coop.ThreadData.from_values(first=1)  # expected-error: [call-arg]
+selector = np.dtype(np.uint8)
+existing = coop.ThreadData(1, dtype=selector, values=[1])
+adapted = coop.ThreadData.from_payload(existing, dtype=selector)
+adapted[0].item()  # expected-error: [union-attr]
+coop.ThreadData.from_payload(  # expected-error: [call-overload]
+    existing, dtype=np.uint8(1)
+)
