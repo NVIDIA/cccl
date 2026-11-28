@@ -23,10 +23,10 @@ def _validate_output_region(output: Any, *, name: str) -> None:
         block = ir.InsertionPoint.current.block
     except ValueError:
         return
-    if block == output._creation_block:
-        return
-    owner = block.owner
-    while owner is not None:
+    while True:
+        if block.region == output._creation_region:
+            return
+        owner = block.owner
         if owner.name.startswith("scf."):
             raise DSLUserCodeError(
                 f"{name} must be created inside the current runtime branch "
@@ -34,7 +34,9 @@ def _validate_output_region(output: Any, *, name: str) -> None:
                 "copy its items with an explicit subscript assignment to "
                 "carry them across runtime control flow."
             )
-        owner = owner.parent
+        if owner.parent is None:
+            return
+        block = owner.operation.block
 
 
 @runtime_checkable

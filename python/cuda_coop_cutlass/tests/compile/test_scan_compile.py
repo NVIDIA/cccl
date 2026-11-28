@@ -302,7 +302,7 @@ def test_launch_requirements(case, expected):
         cute.compile[(GPUArch("sm_80"),)](launch, 48)
 
 
-@pytest.mark.parametrize("region", ("branch", "loop"))
+@pytest.mark.parametrize("region", ("branch", "loop", "carried"))
 def test_aggregate_output_requires_explicit_control_flow_assignment(region):
     @cute.kernel
     def kernel(memory: cute.Pointer, count: cutlass.Int32):
@@ -316,6 +316,8 @@ def test_aggregate_output_requires_explicit_control_flow_assignment(region):
                 )
         else:
             for _ in cutlass.range(count):
+                if cutlass.const_expr(region == "carried"):
+                    aggregate[0] = aggregate[0] + 1
                 coop.inclusive_sum(
                     coop.this_block(),
                     cutlass.Int32(1),

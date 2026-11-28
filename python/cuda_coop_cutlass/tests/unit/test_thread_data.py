@@ -300,3 +300,23 @@ def test_deepcopy_ir_values():
             cloned[0] = Int32(9)
             assert data[0] is value
         assert module.operation.verify()
+
+
+def test_aggregate_output_in_another_block_of_the_same_region():
+    from cutlass._mlir.dialects import cf, scf
+
+    from cuda.coop.cutlass._validation import _validate_output_region
+
+    with ir.Context(), ir.Location.unknown():
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            region = scf.ExecuteRegionOp([]).regions[0]
+            entry = region.blocks.append()
+            successor = region.blocks.append()
+            with ir.InsertionPoint(entry):
+                output = ThreadData(1)
+                cf.BranchOp([], successor)
+            with ir.InsertionPoint(successor):
+                _validate_output_region(output, name="aggregate_output")
+                scf.YieldOp([])
+        assert module.operation.verify()

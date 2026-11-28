@@ -709,9 +709,9 @@ class ThreadData:
         from cutlass._mlir import ir
 
         try:
-            self._creation_block = ir.InsertionPoint.current.block
+            self._creation_region = ir.InsertionPoint.current.block.region
         except ValueError:
-            self._creation_block = None
+            self._creation_region = None
 
     @classmethod
     def from_values(cls, *values: Any, dtype: Any = None) -> ThreadData:
@@ -1357,6 +1357,8 @@ class ThreadData:
             values=[value_type(value) for value in values[1:]],
             alignment=self.alignment,
         )
+        # A loop-carried SSA value still represents the original payload.
+        result._creation_region = self._creation_region
         return result
 
     def __copy__(self) -> ThreadData:
