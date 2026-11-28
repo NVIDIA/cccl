@@ -179,6 +179,7 @@ projects:
     full_dependencies: []
     include_regexes:
       - 'python/cuda_coop_cutlass/'
+      - '^docs/python/coop_cutlass/(cutlass_integration_example|debugger_walkthrough)\.py$'
       - 'ci/(build|test)_cuda_coop_cutlass\.sh$'
       - 'ci/windows/build_cuda_coop_cutlass\.ps1$'
       - 'ci/cuda_coop_cutlass_requirements\.txt$'
@@ -319,7 +320,7 @@ ignore_regexes:
   - 'ci/pytorch/'
   - 'ci/rapids/'
   - '^ci/util/pre-commit/'
-  - 'docs/'
+  - 'docs/(?!python/coop_cutlass/(cutlass_integration_example|debugger_walkthrough)\.py$)'
   - '^LICENSE$'
   - '^cub/LICENSE\.TXT$'
   - '^cudax/LICENSE\.TXT$'

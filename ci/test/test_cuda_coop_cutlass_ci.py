@@ -95,6 +95,8 @@ def test_runtime_uses_the_cpu_qualified_artifact(
         "ci/test/test_cuda_coop_cutlass_ci.py",
         "ci/cuda_coop_cutlass_requirements.txt",
         "ci/test_cuda_coop_cutlass.sh",
+        "docs/python/coop_cutlass/cutlass_integration_example.py",
+        "docs/python/coop_cutlass/debugger_walkthrough.py",
         "ci/validate_cuda_coop_cutlass_artifacts.py",
         "ci/verify_cuda_coop_cutlass_index.py",
     ],
