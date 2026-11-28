@@ -30,6 +30,7 @@
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/string.h>
 #include <cuda/std/__fwd/string_view.h> // IWYU pragma: export
+#include <cuda/std/__host_stdlib/iosfwd>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/bounded_iter.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -58,14 +59,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/limits>
 #include <cuda/std/version>
-
-// todo: find a way to get rid of these includes
-#if _CCCL_HOSTED()
-#  include <string> // for std::basic_string operator<<
-#  if __cpp_lib_string_view >= 201606L
-#    include <string_view> // for std::basic_string_view operator<<
-#  endif // __cpp_lib_string_view >= 201606L
-#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -799,9 +792,9 @@ public:
 #if __cpp_lib_string_view >= 201606L
   _CCCL_TEMPLATE(class _Traits2 = _Traits)
   _CCCL_REQUIRES(is_same_v<_Traits2, char_traits<_CharT>>)
-  _CCCL_HOST_API constexpr operator ::std::basic_string_view<_CharT>() const noexcept
+  _CCCL_HOST_API constexpr operator ::std::basic_string_view<_CharT, ::std::char_traits<_CharT>>() const noexcept
   {
-    return ::std::basic_string_view<_CharT>{__data_, __size_};
+    return ::std::basic_string_view<_CharT, ::std::char_traits<_CharT>>{__data_, __size_};
   }
 
   _CCCL_HOST_API constexpr operator ::std::basic_string_view<_CharT, _Traits>() const noexcept
@@ -866,7 +859,7 @@ basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_
 
 #if __cpp_lib_string_view >= 201606L
 template <class _CharT>
-basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string_view<_CharT, ::std::char_traits<_CharT>>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits>
 basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
@@ -904,7 +897,12 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
 _CCCL_DIAG_SUPPRESS_MSVC(4455)
+// NVRTC 13.3 does not honor nv_diag_suppress when it is emitted in the same macro expansion as nv_diagnostic push, so
+// the push and the suppression are separate macro invocations. See https://github.com/NVIDIA/cccl/issues/9170
+_CCCL_NV_DIAG_PUSH()
+_CCCL_DIAG_SUPPRESS_NVCC(2506) // a user-provided literal suffix must begin with "_"
 
 inline namespace literals
 {
@@ -941,6 +939,7 @@ _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __s
 } // namespace string_view_literals
 } // namespace literals
 
+_CCCL_NV_DIAG_POP()
 _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD
