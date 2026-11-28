@@ -103,17 +103,24 @@ template <typename SelectDirectionT>
 // Helper: turn a segment ID into the number of large-segment-agent tiles needed
 // to cover that segment. Wrapped in a transform_iterator, this produces the
 // per-segment tile counts that we exclusive-scan to obtain per-segment tile
-// offsets.
+// offsets. The scan covers one index more than there are segments, so that it
+// also writes the total number of tiles. That index maps to a tile count of
+// zero without reading a segment size.
 // -----------------------------------------------------------------------------
-template <typename SegmentSizeParameterT, typename TotalNumItemsValueType>
+template <typename SegmentSizeParameterT, typename NumSegmentsValueT, typename TotalNumItemsValueType>
 struct segment_size_to_tile_count_op
 {
   SegmentSizeParameterT segment_sizes;
   int large_segment_agent_tile_size;
+  NumSegmentsValueT num_segments;
 
   template <typename SegmentIndexT>
   _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
+    if (::cuda::std::cmp_greater_equal(+segment_id, +num_segments))
+    {
+      return TotalNumItemsValueType{0};
+    }
     return static_cast<TotalNumItemsValueType>(
       ::cuda::ceil_div(_CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id),
                        large_segment_agent_tile_size));
@@ -786,6 +793,8 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     //   any_small_segments && !only_small_segments (mixed): [0] tile offsets, [1] counters struct,
     //                                                       [2] large-segment ids.
     //   !any_small_segments (large-only): [0] tile offsets, [1] segment-size transform-scan temp storage.
+    // The tile offsets have `num_segments + 1` entries: one per segment that may be large plus the total number of
+    // tiles, which follows the offset of the last large segment.
     static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
     size_t allocation_sizes[allocations_array_size] = {1}; // NOLINT(misc-const-correctness)
 
@@ -794,11 +803,13 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     using segment_size_scan_offset_t = detail::choose_offset_t<num_segments_val_t>;
     const auto num_segments_val      = _CUB::detail::params::get_param(num_segments, num_segments_val_t{0});
     using segment_size_scan_input_op_t =
-      segment_size_to_tile_count_op<SegmentSizeParameterT, large_segment_tile_offset_t>;
+      segment_size_to_tile_count_op<SegmentSizeParameterT, num_segments_val_t, large_segment_tile_offset_t>;
     static constexpr auto multi_worker_per_segment_tile_size =
       multi_worker_per_segment_policy.threads_per_block * multi_worker_per_segment_policy.items_per_thread;
-    const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, multi_worker_per_segment_tile_size};
-    // Transform iterator over [0, num_segments) producing the tile-count for each segment.
+    const segment_size_scan_input_op_t segment_size_scan_input_op{
+      segment_sizes, multi_worker_per_segment_tile_size, num_segments_val};
+    // Transform iterator over [0, num_segments] producing the tile-count for each segment, and zero for the index after
+    // the last segment.
     [[maybe_unused]] const auto segment_size_scan_input_it = ::cuda::transform_iterator(
       ::cuda::counting_iterator<num_segments_val_t>{num_segments_val_t{0}}, segment_size_scan_input_op);
 
@@ -809,7 +820,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
       // bounds num_segments_val to <= INT_MAX); (2) making the baseline tunable by populating its `epilogue` and
       // `multi_worker_per_segment_policy` sub-policies and adding matching knobs to the segmented_topk benchmarks,
       // which leave them zero-initialized today so baseline sweeps are not yet meaningful.
-      allocation_sizes[0] = num_segments_val * sizeof(large_segment_tile_offset_t);
+      allocation_sizes[0] = (static_cast<size_t>(num_segments_val) + 1) * sizeof(large_segment_tile_offset_t);
       if constexpr (any_small_segments)
       {
         allocation_sizes[1] = sizeof(counters_t);
@@ -819,9 +830,10 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
       {
         // Query the temporary storage requirement of the segment-size transform-scan.
         _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
-                       && ::cuda::std::cmp_less_equal(
-                         +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
-                     "num_segments must be non-negative and fit the segment-size scan offset type");
+                       && ::cuda::std::cmp_less(+num_segments_val,
+                                                (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
+                     "num_segments must be non-negative and num_segments + 1 must fit the segment-size scan offset "
+                     "type");
         if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
               nullptr,
               allocation_sizes[1],
@@ -829,7 +841,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
               static_cast<large_segment_tile_offset_t*>(nullptr),
               ::cuda::std::plus<>{},
               _CUB::detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
-              static_cast<segment_size_scan_offset_t>(num_segments_val),
+              static_cast<segment_size_scan_offset_t>(num_segments_val) + segment_size_scan_offset_t{1},
               stream,
               {},
               {},
@@ -906,10 +918,12 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     else
     {
       // No small segments: compute the per-segment tile offsets directly via a transform-scan over all segment sizes.
-      _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
-                     && ::cuda::std::cmp_less_equal(
-                       +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
-                   "num_segments must be non-negative and fit the segment-size scan offset type");
+      // Scanning one index more than there are segments also writes the total number of tiles, like the agent's
+      // epilogue does for the queued segments.
+      _CCCL_ASSERT(
+        ::cuda::std::cmp_greater_equal(+num_segments_val, 0)
+          && ::cuda::std::cmp_less(+num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
+        "num_segments must be non-negative and num_segments + 1 must fit the segment-size scan offset type");
       if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
             allocations[1],
             allocation_sizes[1],
@@ -917,7 +931,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
             static_cast<large_segment_tile_offset_t*>(allocations[0]),
             ::cuda::std::plus<>{},
             _CUB::detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
-            static_cast<segment_size_scan_offset_t>(num_segments_val),
+            static_cast<segment_size_scan_offset_t>(num_segments_val) + segment_size_scan_offset_t{1},
             stream,
             {},
             {},
