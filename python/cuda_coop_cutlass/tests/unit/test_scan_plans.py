@@ -101,13 +101,17 @@ def test_warp_prefix_contracts(width, mode):
     )
     request = _scan._CubScanRequest(plan, "sum", cutlass.Int32)
     assert plan.target is GroupLoweringTarget.CUB_WARP
-    assert _scan._warp_instances(plan) == (64 // width, width)
+    assert plan.topology.instances == 64 // width
+    assert plan.temp_storage.ownership is StorageOwnership.NONE
     assert plan.participation.argument_preconditions[0].minimum == 1
     assert plan.participation.argument_preconditions[0].maximum == width
     assert plan.result.has_aggregate
     assert (
-        plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
     )
+    source = "\n".join(_scan._render_cub_scan(request))
+    assert "__shared__" not in source
+    assert "__syncwarp" not in source
     assert not _rendering.bundle_scratch_layout_probes([request])
     if mode == "exclusive":
         assert isinstance(request.operation.initial_value, CxxFunction)

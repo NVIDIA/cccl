@@ -498,7 +498,11 @@ def _plan_scan(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        storage_ownership=StorageOwnership.IMPLEMENTATION,
+        storage_ownership=(
+            StorageOwnership.NONE
+            if target is GroupLoweringTarget.CUB_WARP
+            else StorageOwnership.IMPLEMENTATION
+        ),
         cpp_type=None,
         uniform_arguments=(
             *(

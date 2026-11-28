@@ -7,8 +7,8 @@
 A request binds the algorithm, dtype, optional arguments, and scratch ABI. The
 renderer emits C++ source; materialization emits the matching CuTe
 foreign-function call and retains the request for bundle compilation. Block
-scratch uses deferred layout queries and allocation. Warp wrappers declare
-their own shared storage, with one slice per logical group.
+scratch uses deferred layout queries and allocation. Warp scans exchange
+values through shuffles.
 """
 
 from __future__ import annotations
@@ -337,6 +337,11 @@ def _validate_scan_request_plan(
             or not temp_storage.exact_layout_required
         ):
             raise ValueError("BlockScan requires exact shared storage")
+    elif plan.target is GroupLoweringTarget.CUB_WARP:
+        if temp_storage.ownership is not StorageOwnership.NONE:
+            raise ValueError(
+                "shuffle-based WarpScan requires no shared storage"
+            )
     elif temp_storage.ownership is not StorageOwnership.IMPLEMENTATION:
         raise ValueError(
             "internal Scan scratch requires implementation ownership"
@@ -527,55 +532,16 @@ def _render_cub_template_argument(
 
 
 def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
-    """Render the plan's block barrier or exact logical-warp mask.
-
-    Warp masks use linear thread rank in the physical warp. Each logical group
-    synchronizes only its own lanes, matching its separate scratch slice. A
-    plan with no reuse barrier returns an empty source line.
-    """
+    """Render the block storage-reuse barrier if the plan requires one."""
 
     synchronization = plan.synchronization
     if synchronization is None:
         raise ValueError("Scan plan requires a synchronization contract")
     if synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK:
         return "  __syncthreads();"
-    if synchronization.storage_reuse_barrier is SynchronizationScope.WARP:
-        _, logical_width = _warp_instances(plan)
-        mask = "0xffffffffu"
-        if logical_width < 32:
-            mask = (
-                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
-                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
-                f"{logical_width}u * {logical_width}u)"
-            )
-        return f"  __syncwarp({mask});"
     if synchronization.storage_reuse_barrier is SynchronizationScope.NONE:
         return ""
     raise ValueError("Scan plan requires a storage reuse barrier")
-
-
-def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
-    """Return the scratch-instance count and width of each logical warp.
-
-    The enclosing block must divide into complete groups. The wrapper uses
-    linear thread rank divided by this width to select its scratch instance.
-    """
-
-    participation = plan.participation
-    if participation is None:
-        raise ValueError("WarpScan plan requires a participation contract")
-    block_dim = participation.exact_block_dim
-    block_threads = block_dim[0] * block_dim[1] * block_dim[2]
-    implementation = plan.implementation
-    assert isinstance(implementation, Algorithm)
-    logical_width = implementation.template_arguments.get(
-        "VIRTUAL_WARP_THREADS"
-    )
-    if not isinstance(logical_width, int) or logical_width < 1:
-        raise ValueError("WarpScan plan requires a static logical warp width")
-    if block_threads < logical_width or block_threads % logical_width != 0:
-        raise ValueError("WarpScan plan requires complete logical warps")
-    return block_threads // logical_width, logical_width
 
 
 def _render_cub_scan(request: _CubScanRequest) -> list[str]:
@@ -589,8 +555,8 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
     Static prefix counts and canonical typed zero appear in source. Runtime
     counts and explicit initial values are operands. The wrapper traps if a
     runtime count is outside 1 through the group size, or if external block
-    scratch is too small or misaligned. Internal warp scratch has one slice
-    per group. The plan controls the trailing storage-reuse barrier.
+    scratch is too small or misaligned. Shuffle-based warp scans use no
+    shared memory or storage-reuse barrier.
     """
 
     operation = _validate_scan_request_plan(
@@ -642,20 +608,8 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
         ]
         storage = "*storage_ptr"
     elif request.plan.target is GroupLoweringTarget.CUB_WARP:
-        instances, logical_width = _warp_instances(request.plan)
-        storage_lines = [
-            (
-                "  __shared__ typename implementation_type::TempStorage "
-                f"storage[{instances}];"
-            ),
-            "  unsigned int storage_instance =",
-            (
-                "      (threadIdx.x + blockDim.x * "
-                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
-                f"{logical_width}u;"
-            ),
-        ]
-        storage = "storage[storage_instance]"
+        # Every supported warp scan width is a power of two and uses shuffles.
+        storage_lines = ["  typename implementation_type::TempStorage storage;"]
 
     params: list[str] = []
     input_lines: list[str] = []

@@ -405,16 +405,27 @@ def _plan_cub_reduce(
         cpp_class = "cub::WarpReduce"
         header = "cub/warp/warp_reduce.cuh"
 
+    # Older CUB headers use shared scratch for irregular widths.
+    # Power-of-two widths always use shuffles.
+    width = resolved.static_size
+    assert width is not None
+    storage_free = target is GroupLoweringTarget.CUB_WARP and not (
+        width & (width - 1)
+    )
     result = _result_contract(operation)
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        storage_ownership=operation.storage_ownership,
+        storage_ownership=(
+            StorageOwnership.NONE
+            if storage_free
+            else operation.storage_ownership
+        ),
         cpp_type=None,
         storage_sharing=operation.storage_sharing,
         requested_size_in_bytes=operation.storage_size_in_bytes,
         requested_alignment=operation.storage_alignment,
-        auto_sync=operation.storage_auto_sync,
+        auto_sync=False if storage_free else operation.storage_auto_sync,
         uniform_arguments=(
             *(("valid_items",) if operation.primitive.has_valid_items else ()),
         ),
