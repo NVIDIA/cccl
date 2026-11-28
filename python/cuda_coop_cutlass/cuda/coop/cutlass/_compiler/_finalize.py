@@ -16,6 +16,7 @@ from . import (
     _cache,
     _convergence,
     _lifetime,
+    _nvrtc,
     _rendering,
     _state,
     _storage,
@@ -102,7 +103,8 @@ def _trace_finalize_hook(dsl, module, function_name):
         _storage.materialize_deferred_temp_storage_plans(plans)
         _lifetime.erase_temp_storage_lifetime_markers(session)
         return
-    source = _rendering.render_bundle_source(requests)
+    common_pch = _nvrtc.pch_mode() == "common"
+    source = _rendering.render_bundle_source(requests, common_pch=common_pch)
     arch = _target.resolve_nvrtc_arch(
         ROOT_SCOPE, lambda: _target.configured_gpu_arch(lambda: dsl)
     )
@@ -114,7 +116,16 @@ def _trace_finalize_hook(dsl, module, function_name):
                 f"but this kernel targets {arch}; compile the operator "
                 "for the kernel's architecture."
             )
-    headers = tuple(_rendering.registered_bundle_headers().values())
+    if common_pch:
+        # CCCL headers must come from the selected CCCL root rather than a
+        # second installation in the toolkit. cuda_runtime.h is toolkit-owned.
+        headers = tuple(
+            header
+            for header in _rendering.common_pch_headers()
+            if header != "cuda_runtime.h"
+        )
+    else:
+        headers = tuple(_rendering.registered_bundle_headers().values())
     probes = _rendering.bundle_scratch_layout_probes(requests)
     if probes:
         compilation = _bundle.compile_bundle_source_with_layouts(

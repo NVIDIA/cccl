@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from functools import cache
+from importlib import import_module
+from pkgutil import iter_modules
 from typing import Any
 
 from ._types import BundleRenderer, ScratchLayoutProbe
@@ -140,6 +143,28 @@ def registered_bundle_headers() -> dict[str, str]:
     return {include: headers[include] for include in sorted(headers)}
 
 
+@cache
+def common_pch_headers() -> tuple[str, ...]:
+    """Collect header paths from every built-in lowering in stable order."""
+    from .. import _lowering
+
+    # Each lowering registers its renderer on first import. Waiting until a
+    # common PCH is requested keeps ordinary imports and builds lazy.
+    for module in iter_modules(_lowering.__path__, _lowering.__name__ + "."):
+        import_module(module.name)
+
+    headers = {
+        line.removeprefix("#include <").removesuffix(">")
+        for renderer in _BUNDLE_RENDERERS.values()
+        for line in renderer.include_lines
+        if line.startswith("#include <") and line.endswith(">")
+    }
+    # Some headers are selected by individual planners (e.g. Load vs. Store);
+    # their shared renderer registers their paths without including them all.
+    headers.update(registered_bundle_headers().values())
+    return tuple(sorted(headers))
+
+
 def make_scratch_layout_probe(requirement_key, cpp_type):
     return ScratchLayoutProbe(
         requirement_key, f"sizeof({cpp_type})", f"alignof({cpp_type})"
@@ -186,7 +211,7 @@ def bundle_device_operators(requests):
     return tuple(operators[symbol] for symbol in sorted(operators))
 
 
-def render_bundle_source(requests):
+def render_bundle_source(requests, common_pch=False):
     """Render the complete C++ bundle: preamble, shared types, wrappers.
 
     Visit requests in canonical symbol order, then retain the first occurrence
@@ -209,8 +234,12 @@ def render_bundle_source(requests):
                     f"conflicting provider type definition {definition.name!r}"
                 )
             definitions[definition.name] = definition.code
+    preamble = bundle_include_lines(requests)
+    if common_pch:
+        shared = (f"#include <{header}>" for header in common_pch_headers())
+        preamble = canonical_bundle_preamble_lines((*shared, *preamble))
     lines = [
-        *bundle_include_lines(requests),
+        *preamble,
         *(op.cpp_definition for op in bundle_device_operators(requests)),
         *definitions.values(),
         'extern "C" {',
