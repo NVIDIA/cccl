@@ -15,6 +15,8 @@ allocate matching scratch. Sample count and output extent are independent.
 import hashlib
 from dataclasses import dataclass, replace
 
+import numpy as np
+
 from cuda.coop.cutlass._planning import (
     Algorithm,
     GroupLoweringPlan,
@@ -310,6 +312,10 @@ def provider_histogram(
     scratch uses. Emitted IR and the register tensor are not undone.
     """
 
+    if counter_dtype is not None and not isinstance(
+        counter_dtype, (type, np.dtype)
+    ):
+        raise TypeError("histogram counter_dtype must be a scalar type")
     sample_type, values = _types.resolve_thread_data_value_type(
         samples,
         allowed=_SAMPLES,

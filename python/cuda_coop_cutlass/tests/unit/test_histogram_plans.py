@@ -14,6 +14,7 @@ from dataclasses import replace
 from types import SimpleNamespace
 
 import cutlass
+import numpy as np
 import pytest
 
 from cuda.coop.cutlass import TempStorage, ThreadData
@@ -174,6 +175,27 @@ def test_inferred_histogram_samples_must_fit_int32():
             bins=5,
             bins_per_thread=1,
             counter_dtype=None,
+            algorithm="atomic",
+            temp_storage=None,
+        )
+
+
+@pytest.mark.parametrize("counter_dtype", [1, np.uint32(1), cutlass.Int32(1)])
+def test_invalid_counter_selector_fails_before_emission(
+    counter_dtype, monkeypatch
+):
+    def unexpected_allocation(*args):
+        pytest.fail("invalid counter_dtype reached register allocation")
+
+    monkeypatch.setattr(_histogram, "_make_rmem_tensor", unexpected_allocation)
+    with pytest.raises(TypeError, match="counter_dtype must be a scalar type"):
+        _histogram.provider_histogram(
+            group=this_block(),
+            launch=LaunchFacts(exact_block_dim=(32, 1, 1)),
+            samples=ThreadData.from_values(1),
+            bins=5,
+            bins_per_thread=1,
+            counter_dtype=counter_dtype,
             algorithm="atomic",
             temp_storage=None,
         )
