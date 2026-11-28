@@ -382,8 +382,9 @@ CUB_TEST("LRB reuses partition storage across segment windows",
          c2h::type_list<std::uint16_t, std::uint32_t>,
          c2h::enum_type_list<cub::SortOrder, cub::SortOrder::Ascending, cub::SortOrder::Descending>)
 {
-  using key_t          = c2h::get<0, TestType>;
-  constexpr auto order = c2h::get<1, TestType>::value;
+  using key_t      = c2h::get<0, TestType>;
+  using order_t    = c2h::get<1, TestType>;
+  using compare_op = std::conditional_t<order_t::value == cub::SortOrder::Ascending, std::less<>, std::greater<>>;
   cuda::compute_capability cc{};
   REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   if (!capacity::can_use_lrb<key_t>(cc))
@@ -394,7 +395,8 @@ CUB_TEST("LRB reuses partition storage across segment windows",
   constexpr int window_size = 4;
   // Two mixed windows, an empty window, and a partial window with both sort paths.
   const std::vector<int> lengths{0, 16001, 2, 0, 3, 0, 16000, 1, 0, 0, 0, 0, 5, 16004};
-  c2h::host_vector<int> begins, ends;
+  c2h::host_vector<int> begins;
+  c2h::host_vector<int> ends;
   c2h::host_vector<key_t> input;
   for (const auto length : lengths)
   {
@@ -409,9 +411,7 @@ CUB_TEST("LRB reuses partition storage across segment windows",
   auto expected = input;
   for (size_t i = 0; i < lengths.size(); ++i)
   {
-    std::sort(expected.begin() + begins[i], expected.begin() + ends[i], [](key_t lhs, key_t rhs) {
-      return order == cub::SortOrder::Ascending ? lhs < rhs : lhs > rhs;
-    });
+    std::sort(expected.begin() + begins[i], expected.begin() + ends[i], compare_op{});
   }
 
   const bool overwrite              = GENERATE(false, true);
@@ -428,7 +428,7 @@ CUB_TEST("LRB reuses partition storage across segment windows",
   size_t bytes            = 0;
   const auto stream_owner = c2h::make_current_device_stream();
   const auto run          = [&](void* storage) {
-    return capacity::dispatch<order>(
+    return capacity::dispatch<order_t::value>(
       storage,
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
