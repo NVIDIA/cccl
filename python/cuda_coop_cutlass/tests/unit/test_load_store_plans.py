@@ -10,7 +10,7 @@ barrier policy from the group plan to deferred storage registration.
 """
 
 import pytest
-from cutlass import Int32
+from cutlass import Int32, Int64, Uint64
 
 from cuda.coop.cutlass._compiler import _rendering
 from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
@@ -24,13 +24,13 @@ from tests._group_planning import _load_store, _plan
 pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 
 
-def _request(kind, algorithm, **kwargs):
+def _request(kind, algorithm, dtype=Int32, **kwargs):
     return _CubLoadStoreRequest(
         _plan(
             this_block(),
-            _load_store(kind, dtype=Int32, algorithm=algorithm, **kwargs),
+            _load_store(kind, dtype=dtype, algorithm=algorithm, **kwargs),
         ),
-        Int32,
+        dtype,
     )
 
 
@@ -125,3 +125,21 @@ def test_reuse_barrier_requires_explicit_opt_in(
     )
     _scratch_arguments(_CubLoadStoreRequest(plan, Int32), storage)
     assert observed == [expected_sync]
+
+
+@pytest.mark.parametrize(
+    "dtype,value,literal",
+    (
+        (Int64, -(2**63), "(-9223372036854775807LL - 1LL)"),
+        (Uint64, 2**64 - 1, "18446744073709551615ULL"),
+    ),
+)
+def test_64_bit_default_uses_representable_cpp_literal(dtype, value, literal):
+    request = _request(
+        "load",
+        "direct",
+        dtype=dtype,
+        valid_items=ArgumentBinding.static(1),
+        oob_default=ArgumentBinding.static(value),
+    )
+    assert literal in _rendering.render_bundle_source([request])

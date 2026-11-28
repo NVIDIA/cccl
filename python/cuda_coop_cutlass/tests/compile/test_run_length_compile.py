@@ -78,6 +78,11 @@ def _compile(
                 ),
                 dtype,
             )
+            if cutlass.const_expr(bad == "swizzle"):
+                destination = cute.make_tensor(
+                    cute.recast_ptr(memory, cute.make_swizzle(1, 4, 3)),
+                    cute.make_layout(256),
+                )
             if cutlass.const_expr(bad == "rank"):
                 destination = cute.make_tensor(
                     memory, cute.make_layout((16, 16))
@@ -153,7 +158,9 @@ def test_dynamic_destination_capacity():
     assert _compile(bulk=True, dynamic_capacity=True) is not None
 
 
-@pytest.mark.parametrize("bad", ("strided", "rank", "pointer", "dtype", "rmem"))
+@pytest.mark.parametrize(
+    "bad", ("strided", "rank", "pointer", "dtype", "rmem", "swizzle")
+)
 def test_destination_contract(bad):
     with pytest.raises(
         (TypeError, ValueError, DSLRuntimeError),

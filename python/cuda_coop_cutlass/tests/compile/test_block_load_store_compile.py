@@ -10,6 +10,8 @@ tracing. A runtime block-size argument must not become an exact launch fact
 merely because its example value is 32.
 """
 
+from types import SimpleNamespace
+
 import cutlass
 import numpy as np
 import pytest
@@ -175,7 +177,61 @@ def test_invalid_movement_inputs(case, message):
         cute.compile[(GPUArch("sm_80"),)](launch, pointer)
 
 
-@pytest.mark.parametrize("operand", ("pointer", "offset-pointer", "tensor"))
+@pytest.mark.parametrize(
+    "case,diagnostic",
+    (
+        ("swizzled-pointer", "swizzled pointer"),
+        ("swizzled-tensor", "swizzled pointer"),
+        ("composed", "composed layout"),
+        ("alignment", "element alignment"),
+        ("cmem", "unsupported address space"),
+        ("tmem", "unsupported address space"),
+        ("dsmem", "unsupported address space"),
+    ),
+)
+def test_rejects_memory_that_cannot_be_accessed_linearly(case, diagnostic):
+    @cute.kernel
+    def kernel(memory: cute.Pointer):
+        block = coop.this_block()
+        if cutlass.const_expr(case == "swizzled-pointer"):
+            pointer = cute.recast_ptr(memory, cute.make_swizzle(1, 4, 3))
+            coop.load(block, pointer, items_per_thread=1)
+        elif cutlass.const_expr(case == "swizzled-tensor"):
+            pointer = cute.recast_ptr(memory, cute.make_swizzle(1, 4, 3))
+            view = cute.make_tensor(pointer, cute.make_layout(64))
+            coop.store(block, view, cutlass.Int32(1))
+        elif cutlass.const_expr(case == "composed"):
+            layout = cute.make_composed_layout(
+                cute.make_swizzle(1, 4, 3), 0, cute.make_layout(64)
+            )
+            coop.load(
+                block, cute.make_tensor(memory, layout), items_per_thread=1
+            )
+        elif cutlass.const_expr(case == "alignment"):
+            coop.load(block, memory, items_per_thread=1)
+        else:
+            pointer = cute.make_ptr(
+                cutlass.Int32, 0, getattr(cute.AddressSpace, case)
+            )
+            coop.store(block, pointer, cutlass.Int32(1))
+
+    @cute.jit
+    def launch(memory: cute.Pointer):
+        kernel(memory).launch(grid=1, block=32)
+
+    pointer = make_ptr(
+        cutlass.Int32,
+        0,
+        cute.AddressSpace.gmem,
+        assumed_align=2 if case == "alignment" else 16,
+    )
+    with pytest.raises(Exception, match=diagnostic):
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer)
+
+
+@pytest.mark.parametrize(
+    "operand", ("pointer", "offset-pointer", "llvm-pointer", "tensor")
+)
 @pytest.mark.parametrize(
     "dtype,value_type",
     (
@@ -201,6 +257,10 @@ def test_declared_memory_dtype(operand, dtype, value_type):
         group = coop.this_block()
         if cutlass.const_expr(operand == "pointer"):
             target = memory
+        elif cutlass.const_expr(operand == "llvm-pointer"):
+            target = SimpleNamespace(
+                dtype=memory.dtype, llvm_ptr=memory.llvm_ptr
+            )
         elif cutlass.const_expr(operand == "offset-pointer"):
             target = memory + 32
         else:

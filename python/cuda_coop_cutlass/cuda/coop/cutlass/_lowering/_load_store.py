@@ -43,6 +43,8 @@ from cuda.coop.cutlass._planning import (
     make_group_primitive_call,
     plan_group_primitive,
 )
+from cuda.coop.cutlass._planning._bindings import cxx_scalar_literal
+from cutlass import cute
 from cutlass._mlir.dialects import llvm
 from cutlass.base_dsl.typing import Int32, Int64, Uint32
 from cutlass.cute.ffi import ffi
@@ -293,9 +295,10 @@ def _render_cub_load_store(request):
                     "  using storage_type = typename "
                     "implementation_type::TempStorage;"
                 ),
+                "  if (temp_storage_bytes <= 0 ||",
                 (
-                    f"  if (temp_storage_bytes < {request.group_instances}u "
-                    "* sizeof(storage_type) ||"
+                    "      (unsigned long long)temp_storage_bytes < "
+                    f"{request.group_instances}u * sizeof(storage_type) ||"
                 ),
                 (
                     "      (temp_storage_smem_addr & "
@@ -520,6 +523,7 @@ def provider_load(
     )
     pointer = _memory_pointer(
         source,
+        value_type,
         primitive_name="load",
         required_elements=_required_static_elements(request),
     )
@@ -665,6 +669,7 @@ def provider_store(
     )
     pointer = _memory_pointer(
         destination,
+        value_type,
         primitive_name="store",
         required_elements=_required_static_elements(request),
     )
@@ -802,18 +807,10 @@ def _cpp_oob_literal(request: _CubLoadStoreRequest) -> str:
     Request validation checks representability before this source is rendered.
     """
 
-    value = getattr(request.operation.oob_default.value, "value", None)
-    if value is None:
-        value = request.operation.oob_default.value
+    literal = cxx_scalar_literal(
+        request.operation.oob_default.value, name="oob_default"
+    )
     cpp_type = TYPE_SPECIFICATIONS[request.value_type].cpp_type
-    if isinstance(value, bool):
-        literal = "true" if value else "false"
-    elif isinstance(value, Integral):
-        literal = str(value)
-    elif isinstance(value, Real) and math.isfinite(float(value)):
-        literal = repr(float(value))
-    else:
-        raise TypeError("static oob_default must be a finite scalar literal")
     return f"static_cast<{cpp_type}>({literal})"
 
 
@@ -875,19 +872,18 @@ def _is_local_memory_space(value: Any) -> bool:
     return name in {"local", "local_memory", "rmem"}
 
 
-def _uses_local_memory(value: Any) -> bool:
-    """Detect register/local storage on an operand or its pointers."""
+def _pointer_metadata_reason(
+    candidates: list[Any], value_type: type
+) -> str | None:
+    """Check metadata that can be lost in conversion to an LLVM pointer."""
 
-    candidates = [value]
-    for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
-        try:
-            candidate = getattr(value, name)
-        except Exception:  # noqa: BLE001, S112
-            # Optional pointer metadata may reject access.
-            continue
-        if candidate is not None:
-            candidates.append(candidate)
     for candidate in candidates:
+        if isinstance(candidate, cute.Pointer):
+            if candidate.type.is_swizzled:
+                return "uses a swizzled pointer"
+            alignment = value_type.width // 8
+            if candidate.alignment % alignment:
+                return f"requires an element alignment of {alignment} bytes"
         for name in ("memspace", "space", "address_space"):
             try:
                 memory_space = getattr(candidate, name)
@@ -895,16 +891,14 @@ def _uses_local_memory(value: Any) -> bool:
                 # Optional memory-space metadata may reject access.
                 continue
             if _is_local_memory_space(memory_space):
-                return True
-    return False
+                return "uses register/local memory"
+    return None
 
 
-def _try_raw_memory_pointer(value: Any) -> Any | None:
-    """Extract a usable LLVM pointer and cast its address space to generic.
-
-    Skip candidates that cannot establish pointer type. Local-memory pointers
-    are ineligible; other address spaces can require an emitted cast.
-    """
+def _try_raw_memory_pointer(
+    value: Any, value_type: type
+) -> tuple[Any | None, str]:
+    """Extract a raw generic, global, or CTA shared pointer."""
 
     candidates = [value]
     data_ptr = getattr(value, "data_ptr", None)
@@ -922,6 +916,9 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
         if candidate is not None:
             candidates.append(candidate)
 
+    reason = _pointer_metadata_reason(candidates, value_type)
+    if reason is not None:
+        return None, reason
     for candidate in candidates:
         to_llvm_ptr = getattr(candidate, "to_llvm_ptr", None)
         if callable(to_llvm_ptr):
@@ -936,19 +933,25 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
             # A non-pointer candidate does not establish raw-pointer
             # eligibility.
             continue
-        if pointer_type.address_space == _LLVM_LOCAL_ADDRESS_SPACE:
-            return None
+        if pointer_type.address_space not in (
+            cute.AddressSpace.generic.value,
+            cute.AddressSpace.gmem.value,
+            cute.AddressSpace.smem.value,
+        ):
+            return (
+                None,
+                f"uses unsupported address space {pointer_type.address_space}",
+            )
         if pointer_type.address_space != 0:
             pointer = llvm.addrspacecast(llvm.PointerType.get(0), pointer)
-        return pointer
+        return pointer, ""
 
-    return None
+    return None, "does not expose a raw iterator/pointer"
 
 
 def _contiguous_memory_proof(
     value: Any,
-    *,
-    primitive_name: str,
+    value_type: type,
 ) -> tuple[_ContiguousMemoryProof | None, str]:
     """Check layout and pointer eligibility before registering a request.
 
@@ -960,14 +963,9 @@ def _contiguous_memory_proof(
     layout_reason = contiguous_layout_reason(value)
     if layout_reason is not None:
         return None, layout_reason
-    if _uses_local_memory(value):
-        return (
-            None,
-            "uses register/local memory instead of a primitive base pointer",
-        )
-    pointer = _try_raw_memory_pointer(value)
+    pointer, reason = _try_raw_memory_pointer(value, value_type)
     if pointer is None:
-        return None, "does not expose a raw iterator/pointer"
+        return None, reason
     return (
         _ContiguousMemoryProof(pointer, static_layout_elements(value)),
         "raw pointer and compact layout proven",
@@ -976,6 +974,7 @@ def _contiguous_memory_proof(
 
 def _memory_pointer(
     value: Any,
+    value_type: type,
     *,
     primitive_name: str,
     required_elements: int | None = None,
@@ -986,10 +985,7 @@ def _memory_pointer(
     are static. An unknown extent does not prove an access is within bounds.
     """
 
-    proof, reason = _contiguous_memory_proof(
-        value,
-        primitive_name=primitive_name,
-    )
+    proof, reason = _contiguous_memory_proof(value, value_type)
     if proof is not None:
         if (
             required_elements is not None

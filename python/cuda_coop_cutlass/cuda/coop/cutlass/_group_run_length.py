@@ -330,8 +330,9 @@ def run_length_decode_into(
     destination : cute.Tensor
         The memory that receives the stream: a tensor in global memory with
         one dimension, stride 1 and the element type of ``run_values``,
-        such as ``cute.make_tensor(pointer, cute.make_layout(n))``. For
-        unsigned ``run_values``, pass a ``cute.recast_tensor`` view of that
+        such as ``cute.make_tensor(pointer, cute.make_layout(n))``. Use a
+        plain layout and an unswizzled pointer aligned to the element size.
+        For unsigned ``run_values``, pass a ``cute.recast_tensor`` view of that
         tensor with the unsigned type, because a ``cute.make_tensor`` view
         is signed. The number of elements, ``n`` here, is a Python integer
         or a CuTe integer. A pointer has no size and is rejected when the
