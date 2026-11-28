@@ -878,7 +878,103 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nextafterf128)
+#    define _CCCL_BUILTIN_NEXTAFTERF128(...) __builtin_nextafterf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_nextafterf128)
+
+// clang-cuda can not call into the host math library on device
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    undef _CCCL_BUILTIN_NEXTAFTERF128
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
+
+// nvcc doesn't implement __builtin_nextafterf128 on device
+#  if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#    undef _CCCL_BUILTIN_NEXTAFTERF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// Portable nextafter of __float128, used on device, where there is no intrinsic, and on hosts without the builtin
+[[nodiscard]] _CCCL_API inline __float128 __nextafter_fp128_impl(__float128 __x, __float128 __y) noexcept
+{
+  using __storage_t            = __fp_storage_of_t<__float128>;
+  constexpr __storage_t __sign = __fp_sign_mask_of_v<__float128>;
+  constexpr __storage_t __exp  = __fp_exp_mask_of_v<__float128>;
+
+  // A sign-masked encoding greater than infinity represents a NaN.
+  const __storage_t __x_abs = static_cast<__storage_t>(::cuda::std::__fp_get_storage(__x) & ~__sign);
+  const __storage_t __y_abs = static_cast<__storage_t>(::cuda::std::__fp_get_storage(__y) & ~__sign);
+  if (__x_abs > __exp || __y_abs > __exp)
+  {
+    // returns a NaN, and raises FE_INVALID for a signaling one
+    return __x + __y;
+  }
+  if (__x == __y)
+  {
+    // returning y gives nextafter(0, -0) the sign of y
+    return __y;
+  }
+
+  __storage_t __bits = ::cuda::std::__fp_get_storage(__x);
+  if (__x == __float128(0))
+  {
+    // the smallest subnormal with the sign of y
+    __bits = static_cast<__storage_t>((::cuda::std::__fp_get_storage(__y) & __sign) | 1);
+  }
+  else if ((__x < __y) == (__x > __float128(0)))
+  {
+    // moving away from zero increments the magnitude, which carries into the exponent and steps max to infinity
+    ++__bits;
+  }
+  else
+  {
+    // moving towards zero decrements the magnitude
+    --__bits;
+  }
+  const __float128 __result = ::cuda::std::__fp_from_storage<__float128>(__bits);
+
+  // The device has no floating point exceptions. On the host, raise the ones the math library raises: FE_OVERFLOW and
+  // FE_INEXACT when a finite x steps to infinity, FE_UNDERFLOW and FE_INEXACT when the result is subnormal or zero
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 const __storage_t __abs_bits = static_cast<__storage_t>(__bits & ~__sign);
+                 if (__abs_bits == __exp)
+                 {
+                   volatile __float128 __overflow = __x;
+                   __overflow                     = __overflow + __overflow;
+                 }
+                 else if ((__abs_bits & __exp) == 0)
+                 {
+                   volatile __float128 __underflow = numeric_limits<__float128>::denorm_min();
+                   __underflow                     = __underflow * __underflow;
+                 }
+               }))
+  return __result;
+}
+
+// A template, so that only __float128 arguments match it exactly. A plain overload would also be reachable through
+// implicit conversions and make calls like nextafter(__half, __nv_bfloat16) ambiguous
+template <class _Tp, enable_if_t<is_same_v<_Tp, __float128>, int> = 0>
+[[nodiscard]] _CCCL_API __float128 nextafter(_Tp __x, _Tp __y) noexcept
+{
+#  if defined(_CCCL_BUILTIN_NEXTAFTERF128)
+  return _CCCL_BUILTIN_NEXTAFTERF128(__x, __y);
+#  else // ^^^ _CCCL_BUILTIN_NEXTAFTERF128 ^^^ / vvv !_CCCL_BUILTIN_NEXTAFTERF128 vvv
+  return ::cuda::std::__nextafter_fp128_impl(__x, __y);
+#  endif // ^^^ !_CCCL_BUILTIN_NEXTAFTERF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
+
+// Admitting __float128 promotes mixed calls like nextafter(__float128, double) to __float128, rather than converting
+// the __float128 argument to double. Other extended floating point types are left out, so their mixed calls resolve
+// as before
+template <class _Tp>
+inline constexpr bool __is_nextafter_promotable_v =
+  is_arithmetic_v<_Tp>
+#if _CCCL_HAS_FLOAT128()
+  || is_same_v<_Tp, __float128>
+#endif // _CCCL_HAS_FLOAT128()
+  ;
+
+template <class _A1, class _A2, enable_if_t<__is_nextafter_promotable_v<_A1> && __is_nextafter_promotable_v<_A2>, int> = 0>
 _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
