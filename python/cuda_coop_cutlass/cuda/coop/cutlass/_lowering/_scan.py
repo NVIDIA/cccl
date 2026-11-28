@@ -1038,7 +1038,7 @@ def provider_scan(
     Resolve the homogeneous scalar dtype and preserve scalar versus array
     form. Validate the operator dtype, then use ``group`` and ``launch`` to
     obtain the shared plan. All block calls use deferred external scratch;
-    warp calls use storage declared inside the wrapper. ``temp_storage`` can
+    warp calls exchange values with shuffles. ``temp_storage`` can
     override only the block allocation policy.
 
     ``mode``, ``op``, and ``algorithm`` select the scan variant. An explicit
