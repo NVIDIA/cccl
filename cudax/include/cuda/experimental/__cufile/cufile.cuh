@@ -114,16 +114,17 @@ private:
       _CCCL_THROW_STD(runtime_error, "Failed to retrieve open flags.");
     }
 
+    const int __access_mode = __oflags & O_ACCMODE;
     cufile_open_mode __om{};
-    if (__oflags & O_RDWR)
+    if (__access_mode == O_RDWR)
     {
       __om |= cufile_open_mode::in | cufile_open_mode::out;
     }
-    else if (__oflags & O_RDONLY)
+    else if (__access_mode == O_RDONLY)
     {
       __om |= cufile_open_mode::in;
     }
-    else if (__oflags & O_WRONLY)
+    else if (__access_mode == O_WRONLY)
     {
       __om |= cufile_open_mode::out;
     }

@@ -13,8 +13,7 @@
 
 #include <cuda/experimental/cufile.cuh>
 
-#include <cstdio>
-
+#include <fcntl.h>
 #include <testing.cuh>
 #include <unistd.h>
 
@@ -209,16 +208,21 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
   STATIC_REQUIRE(!noexcept(cudax::cufile::from_native_handle(cuda::std::declval<int>())));
   STATIC_REQUIRE(
     cuda::std::is_same_v<cudax::cufile, decltype(cudax::cufile::from_native_handle(cuda::std::declval<int>()))>);
+  constexpr cuda::std::pair<int, cudax::cufile_open_mode> modes[] = {
+    {O_RDONLY, cudax::cufile_open_mode::in},
+    {O_WRONLY, cudax::cufile_open_mode::out},
+    {O_RDWR, cudax::cufile_open_mode::in | cudax::cufile_open_mode::out}};
+  for (const auto& [flags, mode] : modes)
   {
-    FILE* cfile = std::fopen(filename, "w");
-    test_check_file_exists(filename);
-
-    int fd = fileno(cfile);
+    CAPTURE(flags);
+    const int fd = ::open(filename, flags | O_CREAT, 0600);
     REQUIRE(fd != -1);
+    test_check_file_exists(filename);
 
     cudax::cufile file = cudax::cufile::from_native_handle(fd);
     REQUIRE(file.get() != nullptr);
     REQUIRE(file.native_handle() == fd);
+    CHECK(file.open_mode() == mode);
   }
   test_remove_file(filename);
 }
