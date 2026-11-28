@@ -295,8 +295,10 @@ The C++ equivalent of the update is
 takes a ``BlockHistogram::TempStorage&`` reference, and ``Composite``
 takes the counters array. With ``cub::BLOCK_HISTO_SORT``, CUB uses the
 scratch to radix-sort samples and find runs. With ``cub::BLOCK_HISTO_ATOMIC``,
-CUB adds directly to the counters and its scratch type is empty. C++
-defaults to sort. Python defaults to ``algorithm="atomic"``.
+CUB adds directly to the counters and its scratch type is empty. CUB's
+``BlockHistogram`` selects the algorithm through its ``Algorithm`` template
+parameter, which defaults to ``cub::BLOCK_HISTO_SORT``. Python defaults to
+``algorithm="atomic"``.
 
 For ``histogram_composite``, pass a ``TempStorage`` only with
 ``algorithm="sort"``. For the default atomic algorithm, omit

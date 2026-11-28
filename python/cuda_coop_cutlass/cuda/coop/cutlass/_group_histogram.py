@@ -328,7 +328,7 @@ def histogram_composite(
     temp_storage : TempStorage, optional
         Optional scratch for ``algorithm="sort"``, separate from the live
         counters. The default atomic algorithm increments the counters
-        directly. Passing explicit scratch with atomic raises ``ValueError``.
+        directly. The compiler rejects explicit scratch with atomic.
         With ``temp_storage=None``, the block synchronizes after either
         algorithm. With explicit sort scratch, ``auto_sync=True`` gives
         the same barrier. With ``auto_sync=False``, synchronize before
