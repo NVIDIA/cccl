@@ -4,9 +4,10 @@
 
 """Some primitives need scratch space in shared memory while they run.
 
-A block scan does, and so do the transpose forms of Load and Store. Leave
-``temp_storage`` out of a call and the compiler provides the scratch that
-call needs and adds a barrier after it.
+A block scan does, and so do the transpose forms of Load and Store when
+``items_per_thread`` is greater than 1. Leave ``temp_storage`` out of a call
+and the compiler provides the scratch that call needs and adds a barrier after
+it.
 
 Pass a :class:`~cuda.coop.cutlass.TempStorage` to choose which calls share
 bytes and where the barriers go. Construct it inside the kernel and give the
@@ -97,9 +98,10 @@ each of the two calls. ``_BLOCK`` is ``(8, 4, 2)``, which is 64 threads.
     :dedent: 4
 
 These block primitives take a ``temp_storage`` argument: transpose Load and
-Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
-Discontinuity, Histogram and Run Length Decode. Exchange, Shuffle, Radix
-Rank and the warp primitives always manage their own scratch.
+Store with more than one item per thread, Reduce, Scan, Merge Sort, Radix
+Sort, TopK, Adjacent Difference, Discontinuity, Histogram and Run Length
+Decode. Exchange, Shuffle, Radix Rank and the warp primitives always manage
+their own scratch.
 
 You can also use the region for your own data.
 :meth:`~cuda.coop.cutlass.TempStorage.reserve` returns a typed shared tensor

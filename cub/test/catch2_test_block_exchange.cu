@@ -5,6 +5,9 @@
 
 #include <thrust/memory.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/type_traits>
+
 #include <cstdint>
 
 #include "cub_test_macros.h"
@@ -463,3 +466,266 @@ CUB_TEST("Block exchange flagged scatter to striped works in-place",
 
   require_valid_scatter_outputs(data, input, params::block_threads, params::items_per_thread);
 }
+
+#if TEST_TYPES == 0
+template <int BlockThreads, bool WarpTimeSlicing, typename InputT, typename OutputT>
+__global__ void single_item_exchange_transpose_kernel(
+  const InputT* d_in,
+  InputT* d_in_place,
+  InputT* d_aliased,
+  OutputT* d_striped_to_blocked,
+  OutputT* d_blocked_to_striped,
+  OutputT* d_warp_striped_to_blocked,
+  OutputT* d_blocked_to_warp_striped)
+{
+  using block_exchange_t = cub::BlockExchange<InputT, BlockThreads, 1, WarpTimeSlicing>;
+  __shared__ typename block_exchange_t::TempStorage temp_storage;
+  block_exchange_t exchange(temp_storage);
+
+  const int tid = static_cast<int>(threadIdx.x);
+
+  InputT in_place[1] = {d_in[tid]};
+  exchange.StripedToBlocked(in_place);
+  exchange.BlockedToStriped(in_place);
+  exchange.WarpStripedToBlocked(in_place);
+  exchange.BlockedToWarpStriped(in_place);
+  d_in_place[tid] = in_place[0];
+
+  InputT aliased[1] = {d_in[tid]};
+  exchange.StripedToBlocked(aliased, aliased);
+  exchange.BlockedToStriped(aliased, aliased);
+  exchange.WarpStripedToBlocked(aliased, aliased);
+  exchange.BlockedToWarpStriped(aliased, aliased);
+  d_aliased[tid] = aliased[0];
+
+  const InputT src[1] = {d_in[tid]};
+  OutputT out0[1]{};
+  OutputT out1[1]{};
+  OutputT out2[1]{};
+  OutputT out3[1]{};
+  exchange.StripedToBlocked(src, out0);
+  exchange.BlockedToStriped(src, out1);
+  exchange.WarpStripedToBlocked(src, out2);
+  exchange.BlockedToWarpStriped(src, out3);
+
+  d_striped_to_blocked[tid]      = out0[0];
+  d_blocked_to_striped[tid]      = out1[0];
+  d_warp_striped_to_blocked[tid] = out2[0];
+  d_blocked_to_warp_striped[tid] = out3[0];
+}
+
+template <bool WarpTimeSlicing>
+void test_single_item_exchange_transpose()
+{
+  constexpr int block_threads = 128;
+
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_in_place(block_threads, 0);
+  c2h::device_vector<int> d_aliased(block_threads, 0);
+  c2h::device_vector<long long> d_s2b(block_threads, 0);
+  c2h::device_vector<long long> d_b2s(block_threads, 0);
+  c2h::device_vector<long long> d_ws2b(block_threads, 0);
+  c2h::device_vector<long long> d_b2ws(block_threads, 0);
+
+  single_item_exchange_transpose_kernel<block_threads, WarpTimeSlicing, int, long long><<<1, block_threads>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_in_place.data()),
+    thrust::raw_pointer_cast(d_aliased.data()),
+    thrust::raw_pointer_cast(d_s2b.data()),
+    thrust::raw_pointer_cast(d_b2s.data()),
+    thrust::raw_pointer_cast(d_ws2b.data()),
+    thrust::raw_pointer_cast(d_b2ws.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_in_place == d_in);
+  REQUIRE(d_aliased == d_in);
+
+  c2h::host_vector<long long> expected(d_in.size());
+  c2h::host_vector<int> h_in = d_in;
+  for (std::size_t i = 0; i < h_in.size(); ++i)
+  {
+    expected[i] = static_cast<long long>(h_in[i]);
+  }
+  REQUIRE(c2h::host_vector<long long>(d_s2b) == expected);
+  REQUIRE(c2h::host_vector<long long>(d_b2s) == expected);
+  REQUIRE(c2h::host_vector<long long>(d_ws2b) == expected);
+  REQUIRE(c2h::host_vector<long long>(d_b2ws) == expected);
+}
+
+struct assign_only_exchange_output
+{
+  int value{};
+
+  __host__ __device__ assign_only_exchange_output() = default;
+  __host__ __device__ assign_only_exchange_output(const assign_only_exchange_output& other)
+      : value(other.value)
+  {}
+  assign_only_exchange_output(int) = delete;
+
+  __host__ __device__ assign_only_exchange_output& operator=(int v)
+  {
+    value = v;
+    return *this;
+  }
+  __host__ __device__ assign_only_exchange_output& operator=(const assign_only_exchange_output& other)
+  {
+    value = other.value;
+    return *this;
+  }
+};
+
+struct construct_only_exchange_output
+{
+  int value{};
+
+  __host__ __device__ construct_only_exchange_output() = default;
+  __host__ __device__ construct_only_exchange_output(int v)
+      : value(v)
+  {}
+  __host__ __device__ construct_only_exchange_output(const construct_only_exchange_output& other)
+      : value(other.value)
+  {}
+  construct_only_exchange_output& operator=(int)                                   = delete;
+  construct_only_exchange_output& operator=(const construct_only_exchange_output&) = delete;
+};
+
+template <int BlockThreads, bool WarpTimeSlicing>
+__global__ void
+single_item_exchange_conversion_semantics_kernel(const int* d_in, int* d_s2b, int* d_b2s, int* d_b2ws, int* d_ws2b)
+{
+  using block_exchange_t = cub::BlockExchange<int, BlockThreads, 1, WarpTimeSlicing>;
+  __shared__ typename block_exchange_t::TempStorage temp_storage;
+  block_exchange_t exchange(temp_storage);
+
+  const int tid    = static_cast<int>(threadIdx.x);
+  const int src[1] = {d_in[tid]};
+
+  assign_only_exchange_output s2b_out[1]{};
+  assign_only_exchange_output b2s_out[1]{};
+  assign_only_exchange_output b2ws_out[1]{};
+  exchange.StripedToBlocked(src, s2b_out);
+  exchange.BlockedToStriped(src, b2s_out);
+  exchange.BlockedToWarpStriped(src, b2ws_out);
+  d_s2b[tid]  = s2b_out[0].value;
+  d_b2s[tid]  = b2s_out[0].value;
+  d_b2ws[tid] = b2ws_out[0].value;
+
+  if constexpr (WarpTimeSlicing)
+  {
+    assign_only_exchange_output ws2b_out[1]{};
+    exchange.WarpStripedToBlocked(src, ws2b_out);
+    d_ws2b[tid] = ws2b_out[0].value;
+  }
+  else
+  {
+    construct_only_exchange_output ws2b_out[1]{};
+    exchange.WarpStripedToBlocked(src, ws2b_out);
+    d_ws2b[tid] = ws2b_out[0].value;
+  }
+}
+
+template <bool WarpTimeSlicing>
+void test_single_item_exchange_conversion_semantics()
+{
+  constexpr int block_threads = 128;
+
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_s2b(block_threads, 0);
+  c2h::device_vector<int> d_b2s(block_threads, 0);
+  c2h::device_vector<int> d_b2ws(block_threads, 0);
+  c2h::device_vector<int> d_ws2b(block_threads, 0);
+
+  single_item_exchange_conversion_semantics_kernel<block_threads, WarpTimeSlicing><<<1, block_threads>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_s2b.data()),
+    thrust::raw_pointer_cast(d_b2s.data()),
+    thrust::raw_pointer_cast(d_b2ws.data()),
+    thrust::raw_pointer_cast(d_ws2b.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_s2b == d_in);
+  REQUIRE(d_b2s == d_in);
+  REQUIRE(d_b2ws == d_in);
+  REQUIRE(d_ws2b == d_in);
+}
+
+struct self_resetting_exchange_item
+{
+  int value{};
+
+  __host__ __device__ self_resetting_exchange_item() = default;
+  __host__ __device__ explicit self_resetting_exchange_item(int v)
+      : value(v)
+  {}
+  __host__ __device__ self_resetting_exchange_item(const self_resetting_exchange_item& other)
+      : value(0)
+  {
+    value = other.value;
+  }
+  self_resetting_exchange_item& operator=(const self_resetting_exchange_item&) = delete;
+};
+
+template <int BlockThreads>
+__global__ void
+single_item_warp_striped_aliased_non_trivial_kernel(const int* d_in, int* d_aliased_out, int* d_distinct_out)
+{
+  static_assert(!::cuda::is_trivially_copyable_v<self_resetting_exchange_item>);
+  using block_exchange_t = cub::BlockExchange<self_resetting_exchange_item, BlockThreads, 1, false>;
+  __shared__ typename block_exchange_t::TempStorage temp_storage;
+  block_exchange_t exchange(temp_storage);
+
+  const int tid = static_cast<int>(threadIdx.x);
+  self_resetting_exchange_item aliased[1]{self_resetting_exchange_item{d_in[tid]}};
+  exchange.WarpStripedToBlocked(aliased);
+  exchange.WarpStripedToBlocked(aliased, aliased);
+  d_aliased_out[tid] = aliased[0].value;
+
+  self_resetting_exchange_item distinct[1]{};
+  exchange.WarpStripedToBlocked(aliased, distinct);
+  d_distinct_out[tid] = distinct[0].value;
+}
+
+void test_single_item_warp_striped_aliased_non_trivial()
+{
+  constexpr int block_threads = 128;
+
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_aliased_out(block_threads, 0);
+  c2h::device_vector<int> d_distinct_out(block_threads, 0);
+
+  single_item_warp_striped_aliased_non_trivial_kernel<block_threads><<<1, block_threads>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_aliased_out.data()),
+    thrust::raw_pointer_cast(d_distinct_out.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_aliased_out == d_in);
+  REQUIRE(d_distinct_out == d_in);
+}
+
+CUB_TEST_CASE("BlockExchange single-item transposes handle in-place, aliased, and cross-type outputs",
+              "[exchange][block]",
+              CUB_SMALL)
+{
+  // Scatter exchanges still require TempStorage when ItemsPerThread is 1.
+  STATIC_REQUIRE(
+    !::cuda::std::is_same_v<typename cub::BlockExchange<int, 128, 1>::TempStorage, cub::Uninitialized<cub::NullType>>);
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockExchange<int, 128, 1>::TempStorage) > sizeof(cub::Uninitialized<cub::NullType>));
+
+  test_single_item_exchange_transpose<false>();
+  test_single_item_exchange_transpose<true>();
+  test_single_item_exchange_conversion_semantics<false>();
+  test_single_item_exchange_conversion_semantics<true>();
+  test_single_item_warp_striped_aliased_non_trivial();
+}
+#endif // TEST_TYPES == 0

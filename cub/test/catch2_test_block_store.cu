@@ -7,6 +7,7 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
 
@@ -405,5 +406,83 @@ CUB_TEST_CASE("Vectorized block store works with non-default-constructible types
   {
     REQUIRE(h_output[i].value == h_input[i]);
   }
+}
+
+template <cub::BlockStoreAlgorithm Algorithm, int BlockThreads, typename T>
+__global__ void single_item_transpose_store_kernel(const T* d_in, T* d_out_full, T* d_out_guarded, int valid_items)
+{
+  using block_store_t = cub::BlockStore<T, BlockThreads, 1, Algorithm>;
+  static_assert(::cuda::std::is_same_v<typename block_store_t::TempStorage, cub::Uninitialized<cub::NullType>>);
+  __shared__ typename block_store_t::TempStorage temp_storage;
+
+  T items[1] = {d_in[threadIdx.x]};
+  block_store_t(temp_storage).Store(d_out_full, items);
+  block_store_t(temp_storage).Store(d_out_guarded, items, valid_items);
+}
+
+template <cub::BlockStoreAlgorithm Algorithm>
+void test_single_item_transpose_store()
+{
+  constexpr int block_threads = 128;
+  constexpr int valid_items   = 73;
+  constexpr int sentinel      = -1;
+
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_out_full(block_threads, sentinel);
+  c2h::device_vector<int> d_out_guarded(block_threads, sentinel);
+
+  single_item_transpose_store_kernel<Algorithm, block_threads, int><<<1, block_threads>>>(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_out_full.data()),
+    thrust::raw_pointer_cast(d_out_guarded.data()),
+    valid_items);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_out_full == d_in);
+
+  c2h::host_vector<int> expected_partial = d_in;
+  for (int i = valid_items; i < block_threads; ++i)
+  {
+    expected_partial[i] = sentinel;
+  }
+  const c2h::device_vector<int> d_expected_partial = expected_partial;
+  REQUIRE(d_out_guarded == d_expected_partial);
+}
+
+CUB_TEST_CASE("BlockStore uses NullType TempStorage when ItemsPerThread is 1", "[store][block]", CUB_SMALL)
+{
+  using null_storage_t = cub::Uninitialized<cub::NullType>;
+
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_DIRECT>::TempStorage, null_storage_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_STRIPED>::TempStorage,
+                                        null_storage_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_VECTORIZE>::TempStorage,
+                                        null_storage_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_TRANSPOSE>::TempStorage,
+                                        null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_WARP_TRANSPOSE>::TempStorage,
+                           null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>::TempStorage,
+                           null_storage_t>);
+  STATIC_REQUIRE(sizeof(typename cub::BlockStore<int, 128, 1, cub::BLOCK_STORE_WARP_TRANSPOSE>::TempStorage)
+                 == sizeof(null_storage_t));
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockStore<double, 64, 1, cub::BLOCK_STORE_TRANSPOSE>::TempStorage) == sizeof(null_storage_t));
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockStore<int, 128, 2, cub::BLOCK_STORE_TRANSPOSE>::TempStorage) > sizeof(null_storage_t));
+  STATIC_REQUIRE(sizeof(typename cub::BlockStore<int, 128, 2, cub::BLOCK_STORE_WARP_TRANSPOSE>::TempStorage)
+                 > sizeof(null_storage_t));
+  STATIC_REQUIRE(sizeof(typename cub::BlockStore<int, 128, 2, cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>::TempStorage)
+                 > sizeof(null_storage_t));
+
+  test_single_item_transpose_store<cub::BLOCK_STORE_TRANSPOSE>();
+  test_single_item_transpose_store<cub::BLOCK_STORE_WARP_TRANSPOSE>();
+  test_single_item_transpose_store<cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>();
 }
 #endif

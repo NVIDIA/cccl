@@ -205,11 +205,15 @@ struct AgentSelectIf
   //---------------------------------------------------------------------
   using ScanTileStateT = ScanTileState<OffsetT>;
 
-  // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data
+  // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data.
+  // When ITEMS_PER_THREAD == 1, BlockLoad omits SMEM transpose and its barrier, so decoupled look-back must retain
+  // ordering for potentially in-place selection.
   static constexpr bool loads_via_smem =
-    !(AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT
-      || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED
-      || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_VECTORIZE);
+    (AgentSelectIfPolicyT::ITEMS_PER_THREAD > 1)
+    && !(AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT
+         || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED
+         || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_VECTORIZE
+         || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED_VECTORIZED);
 
   // If this may be an *in-place* stream compaction, we need to ensure that all of a tile's items have been loaded
   // before signalling a subsequent thread block's partial or inclusive state, hence we need a store release when

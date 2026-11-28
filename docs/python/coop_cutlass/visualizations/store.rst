@@ -49,15 +49,18 @@ holds ``K`` consecutive elements starting at tile position ``t * K``, where
 ``K`` is the number of items per thread, and writes them itself.
 
 ``striped`` takes a :term:`striped` payload: thread ``t`` writes item ``i``
-to tile position ``t + i * G``, where ``G`` is the group's size.
-``transpose`` takes a blocked payload, exchanges the items into striped
-order and then makes the same writes.
+to tile position ``t + i * G``, where ``G`` is the group's size. With more
+than one item per thread, ``transpose`` takes a blocked payload, exchanges the
+items into striped order and then makes the same writes.
 
-``warp_transpose`` makes that exchange within each warp, and each warp
-writes its own part of the tile in striped order. With
-``warp_transpose_timesliced`` the warps take turns with scratch sized for
-one warp. The explorer shows one exchange round for each warp. All warps
-write to memory after the last round.
+``warp_transpose`` makes that exchange within each warp when
+``items_per_thread`` exceeds 1, and each warp writes its own part of the tile
+in striped order. With ``warp_transpose_timesliced`` the warps take turns with
+scratch sized for one warp. With ``items_per_thread=1``, block calls write
+directly and skip the shared-memory exchange, while warps and groups of lanes
+still use scratch for ``transpose``. The explorer shows one exchange round for
+each warp when an exchange occurs. All warps write to memory after the last
+round.
 
 The :ref:`glossary <coop-glossary-layouts>` has a table of both layouts.
 :ref:`Load & Store <memory-operations>` in the API reference has the rules

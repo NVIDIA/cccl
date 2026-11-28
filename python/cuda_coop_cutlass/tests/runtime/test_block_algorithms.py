@@ -544,15 +544,98 @@ def test_deferred_storage_preserves_user_shared_memory(sharing):
     )
 
 
-@pytest.mark.parametrize("algorithm", ("striped", "vectorize", "transpose"))
-def test_final_cubin_storage_contract(tmp_path, algorithm):
+@pytest.mark.parametrize("algorithm", _SCRATCH_ALGORITHMS)
+@pytest.mark.parametrize(
+    "valid", (0, _THREADS - 19, _THREADS), ids=("zero", "partial", "full")
+)
+def test_single_item_transpose_partial_load_and_store(algorithm, valid):
+    """Verify single-item block transpose loads and stores."""
+
+    @cute.kernel
+    def kernel(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        destination: cute.Pointer,
+        count: cutlass.Int32,
+    ):
+        x, y, z = cute.arch.thread_idx()
+        thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
+        storage = coop.TempStorage(
+            1, sharing="exclusive", alignment=64, auto_sync=False
+        )
+        payload = coop.load(
+            coop.this_block(),
+            source,
+            items_per_thread=1,
+            algorithm=algorithm,
+            valid_items=count,
+            oob_default=-29,
+            offset=3,
+            temp_storage=storage,
+        )
+        outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
+        outputs[thread] = payload[0]
+        coop.store(
+            coop.this_block(),
+            destination,
+            payload,
+            algorithm=algorithm,
+            valid_items=count,
+            offset=5,
+            temp_storage=storage,
+        )
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        destination: cute.Pointer,
+        count: cutlass.Int32,
+    ):
+        kernel(source, observed, destination, count).launch(
+            grid=1, block=_BLOCK
+        )
+
+    source = values_for(np.int32, _THREADS + 3, shift=23)
+    observed = np.full(_THREADS, 71, dtype=np.int32)
+    destination = np.full(_THREADS + 11, -41, dtype=np.int32)
+    expected_observed = np.full(_THREADS, -29, dtype=np.int32)
+    expected_observed[:valid] = source[3 : 3 + valid]
+    expected_destination = destination.copy()
+    expected_destination[5 : 5 + valid] = expected_observed[:valid]
+    with (
+        device_array(source) as src,
+        device_array(observed) as out,
+        device_array(destination) as dst,
+    ):
+        launch(src, out, dst, valid)
+    np.testing.assert_array_equal(observed, expected_observed)
+    np.testing.assert_array_equal(destination, expected_destination)
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    ),
+)
+@pytest.mark.parametrize("items_per_thread", (1, _ITEMS))
+def test_final_cubin_storage_contract(tmp_path, algorithm, items_per_thread):
     """Inspect storage and synchronization in the final linked kernel.
 
     First verify the copy result. Then check that provider calls have been
-    inlined and that only transpose has shared-memory allocation and barriers.
-    Transpose scratch must use LDS/STS, and no generic LD/ST may remain.
-    Resource metadata covers static allocation; shared accesses also detect
-    dynamically allocated scratch.
+    inlined and that only multi-item transpose algorithms allocate shared-memory
+    scratch and emit barriers. Multi-item time-sliced warp transpose can trigger
+    intra-kernel ``ptxas`` basic-block outlining (``CALL.REL... 0x...``) within
+    the single linked kernel function, so verify there are no additional
+    device functions or non-offset calls in that case. Multi-item transpose
+    scratch must use LDS/STS, and no generic LD/ST may remain. Resource
+    metadata covers static allocation; shared accesses also detect dynamically
+    allocated scratch.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -595,11 +678,12 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
             grid=1, block=_BLOCK
         )
 
-    source = values_for(np.int32, _TILE, shift=67)
+    uses_scratch = items_per_thread > 1 and algorithm in _SCRATCH_ALGORITHMS
+    source = values_for(np.int32, _THREADS * items_per_thread, shift=67)
     destination = np.full_like(source, -101)
     with device_array(source) as src, device_array(destination) as dst:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, dst, _ITEMS
+            launch, src, dst, items_per_thread
         )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
@@ -616,9 +700,25 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         cubin.with_suffix(".resources").write_text(resources)
         assert "cuda_coop_cutlass_load_" not in sass
         assert "cuda_coop_cutlass_store_" not in sass
-        assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
+        call_lines = [
+            line
+            for line in sass.splitlines()
+            if re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", line) is not None
+        ]
+        if uses_scratch and algorithm == "warp_transpose_timesliced":
+            assert len(re.findall(r"^\s*Function\s+\S+:", resources, re.M)) == 1
+            assert len(re.findall(r"^\s*Function\s*:", sass, re.M)) == 1
+            assert all(
+                re.search(
+                    r"\bCALL\.REL(?:\.[A-Z0-9_]+)*\s+0x[0-9a-fA-F]+\b", line
+                )
+                is not None
+                for line in call_lines
+            )
+        else:
+            assert not call_lines
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
-        if algorithm == "transpose":
+        if uses_scratch:
             assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
             assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
         shared_sizes = [
@@ -626,7 +726,7 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         ]
         assert shared_sizes
         has_barrier = re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is not None
-        if algorithm != "transpose":
+        if not uses_scratch:
             assert not any(shared_sizes)
             assert re.search(r"\b(?:LDS|STS)(?:\.[A-Z0-9_]+)*\b", sass) is None
-        assert has_barrier is (algorithm == "transpose")
+        assert has_barrier is uses_scratch

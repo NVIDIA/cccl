@@ -61,9 +61,11 @@
   function build_store(state) {
     const option = stores.find((entry) => entry.id === state.algorithm);
     const items = Number(state.items);
+    const has_exchange = Boolean(option.exchange && items > 1);
+    const is_timesliced = Boolean(option.timesliced && items > 1);
     const count = threads * items;
     const rows = [thread_row("input", `Payload · ${option.input} input`, items)];
-    if (option.exchange) rows.push({id: "scratch", label: option.timesliced ? "Shared scratch · one warp at a time" : "Shared scratch · logical positions, padding omitted", count: option.timesliced ? warp_threads * items : count});
+    if (has_exchange) rows.push({id: "scratch", label: is_timesliced ? "Shared scratch · one warp at a time" : "Shared scratch · logical positions, padding omitted", count: is_timesliced ? warp_threads * items : count});
     rows.push(thread_row("writers", `${option.access} writer registers`, items));
     rows.push({id: "memory", label: "Global memory · logical item index", count});
 
@@ -74,7 +76,7 @@
         let index = value;
         if (row === "input") index = register_index(option.input, value, items);
         if (row === "writers") index = register_index(option.access, value, items);
-        if (row === "scratch" && option.timesliced) index = value % (warp_threads * items);
+        if (row === "scratch" && is_timesliced) index = value % (warp_threads * items);
         return {
           id: `v${value}`, label: String(value), value, row, index,
           color: owner(option.input, value, items)[0],
@@ -84,22 +86,27 @@
     }
 
     const phases = [{label: "Input registers", description: `The tile begins in ${option.input} ownership. Each displayed thread has ${items} item${items === 1 ? "" : "s"}.`, tokens: tokens_for(["input", "input"])}];
-    if (option.timesliced) {
+    if (is_timesliced) {
       phases.push(
         {label: "Warp 0 exchange", description: "Displayed warp 0 uses shared scratch. Warp 1 retains its blocked input registers.", tokens: tokens_for(["scratch", "input"])},
         {label: "Warp 1 exchange", description: "Warp 0 has warp-striped writer registers. Warp 1 reuses the same scratch for its exchange.", tokens: tokens_for(["writers", "scratch"])},
       );
-    } else if (option.exchange) {
+    } else if (has_exchange) {
       phases.push({label: "Shared exchange", description: "Values pass through scratch at their logical positions; readers then take them in the writer layout.", tokens: tokens_for(["scratch", "scratch"])});
     }
     phases.push(
       {label: "Writer registers", description: `${option.access} registers supply the memory writes. This is an ownership stage, not a barrier or exact instruction schedule.`, tokens: tokens_for(["writers", "writers"])},
       {label: "Memory", description: "The full tile is stored in consecutive memory locations. Each value reaches the address shown by its label.", tokens: tokens_for(["memory", "memory"])},
     );
+    const scratch_note = option.exchange && items === 1
+      ? (option.id === "transpose"
+          ? "No exchange scratch for a single-item block call. On warps and groups of lanes, transpose still uses scratch."
+          : "No exchange scratch for a single-item block call. Single-item warp transpose still requires a block size divisible by 32.")
+      : option.note;
     return {
       detail: option.detail, rows, phases,
-      notes: [option.note, "The three transpose algorithms leave the input payload undefined. Copy values before Store if they are needed later.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
-      summary: `Memory receives values 0–${count - 1} in order. ${option.exchange ? "The exchange changes which thread writes each value." : "Each thread writes directly from the illustrated input ownership."}`,
+      notes: [scratch_note, "The three transpose algorithms leave the input payload undefined when exchange scratch is used, or on warps and groups of lanes. Copy values before Store if they are needed later.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
+      summary: `Memory receives values 0–${count - 1} in order. ${has_exchange ? "The exchange changes which thread writes each value." : "Each thread writes directly from the illustrated input ownership."}`,
       caption: "Eight illustrative threads; warp variants use two four-lane teaching warps. CUDA physical warps have 32 lanes. Timeslicing serializes exchange scratch use, not the subsequent global-memory store instruction stream.",
     };
   }

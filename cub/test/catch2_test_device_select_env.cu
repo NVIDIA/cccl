@@ -17,6 +17,7 @@ struct stream_registry_factory_t;
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/iterator>
 
+#include <algorithm>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
@@ -1007,6 +1008,55 @@ CUB_TEST("DeviceSelect::If tuning can be modified", "[select][device]", CUB_SMAL
   device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, env);
   REQUIRE(d_num_selected[0] == 4);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+template <cub::BlockLoadAlgorithm LoadAlgorithm>
+struct single_item_transpose_select_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
+  {
+    return {cub::SelectAlgorithm::lookback,
+            {128,
+             1,
+             LoadAlgorithm,
+             cub::LOAD_DEFAULT,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
+  }
+};
+
+using single_item_transpose_load_algos =
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BLOCK_LOAD_TRANSPOSE,
+                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                      cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
+
+CUB_TEST("DeviceSelect::If in-place works with single-item transpose loads",
+         "[select][device]",
+         CUB_SMALL,
+         single_item_transpose_load_algos)
+{
+  constexpr auto load_algo = c2h::get<0, TestType>::value;
+  constexpr int num_items  = 100003;
+
+  c2h::device_vector<int> d_data(num_items);
+  c2h::gen(C2H_SEED(2), d_data);
+  const less_than_t<int> le{d_data[num_items / 2]};
+
+  c2h::host_vector<int> reference = d_data;
+  const auto reference_boundary   = std::stable_partition(reference.begin(), reference.end(), le);
+  const int expected_num_selected = static_cast<int>(reference_boundary - reference.begin());
+
+  c2h::device_vector<int> d_num_selected(1, 0);
+  const auto env = cuda::execution::tune(single_item_transpose_select_tuning<load_algo>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, le, env));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_num_selected[0] == expected_num_selected);
+  d_data.resize(expected_num_selected);
+  reference.resize(expected_num_selected);
+  REQUIRE(reference == d_data);
 }
 
 #endif // TEST_LAUNCH != 1

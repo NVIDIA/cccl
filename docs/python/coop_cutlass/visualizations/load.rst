@@ -51,14 +51,18 @@ candidates for one vector access.
 
 ``striped`` gives thread ``t`` the elements ``t + i * G`` for item ``i``,
 where ``G`` is the group's size. Neighboring threads read neighboring
-addresses, and the payload stays :term:`striped`. ``transpose`` makes the
-same reads and then exchanges the items into a blocked payload.
+addresses, and the payload stays :term:`striped`. With more than one item per
+thread, ``transpose`` makes the same reads and then exchanges the items into a
+blocked payload.
 
 ``warp_transpose`` reads in striped order inside each warp's part of the
-tile and exchanges the items within that warp into a blocked payload.
-``warp_transpose_timesliced`` makes the same reads, and the warps then take
-turns with scratch sized for one warp. The explorer shows one exchange round
-for each warp. Every warp has read its elements before the first round.
+tile and exchanges the items within that warp into a blocked payload when
+``items_per_thread`` exceeds 1. ``warp_transpose_timesliced`` makes the same
+reads, and the warps then take turns with scratch sized for one warp. With
+``items_per_thread=1``, block calls transfer directly and skip the
+shared-memory exchange, while warps and groups of lanes still use scratch for
+``transpose``. The explorer shows one exchange round for each warp when an
+exchange occurs. Every warp has read its elements before the first round.
 
 The :ref:`glossary <coop-glossary-layouts>` has a table of both layouts.
 :ref:`Load & Store <memory-operations>` in the API reference has the rules

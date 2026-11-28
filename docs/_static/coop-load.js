@@ -178,23 +178,25 @@
     // Animation phases show ownership, not GPU instruction timing.
     function build_scene() {
       const option = algorithms[state.algorithm];
+      const has_exchange = Boolean(option.exchange && state.items > 1);
+      const is_timesliced = Boolean(option.timesliced && state.items > 1);
       const total = threads * state.items;
       geometry = { card_width: state.items * 34 + 10, thread_step: state.items * 34 + 24 };
       geometry.width = Math.max(850, threads * geometry.thread_step + 32);
       geometry.register_x = (geometry.width - (threads * geometry.thread_step - 14)) / 2;
       geometry.memory_x = (geometry.width - (total * 34 - 6)) / 2;
-      geometry.scratch_x = (geometry.width - ((option.timesliced ? warp_threads * state.items : total) * 34 - 6)) / 2;
-      geometry.output_y = option.exchange ? 438 : 306;
+      geometry.scratch_x = (geometry.width - ((is_timesliced ? warp_threads * state.items : total) * 34 - 6)) / 2;
+      geometry.output_y = has_exchange ? 438 : 306;
       phases = [
         { label: "Memory", positions: ["memory", "memory"], description: "The full input tile starts in consecutive memory locations." },
         { label: "Load into registers", positions: ["read", "read"], description: `All displayed threads have loaded their ${option.access} values into registers.` },
       ];
-      if (option.timesliced) {
+      if (is_timesliced) {
         phases.push(
           { label: "Warp 0 exchange", positions: ["scratch", "read"], description: "Displayed warp 0 uses shared scratch. Warp 1 keeps its already-loaded values in registers." },
           { label: "Warp 1 exchange", positions: ["output", "scratch"], description: "Warp 0 has completed. Displayed warp 1 reuses the same shared scratch for its exchange." },
         );
-      } else if (option.exchange) {
+      } else if (has_exchange) {
         phases.push({ label: "Shared exchange", positions: ["scratch", "scratch"], description: "Loaded values pass through shared scratch at their logical positions. Storage padding is omitted." });
       }
       phases.push({ label: "Result registers", positions: ["output", "output"], description: `${option.result === "blocked" ? "Consecutive" : "Striped"} per-thread values are ready for the next operation.` });
@@ -223,9 +225,9 @@
         }
       }
       draw_registers(178, `Loaded registers · ${option.access} ownership`, option.access);
-      if (option.exchange) {
-        add_text(20, 263, option.timesliced ? "Shared scratch · reused by one warp at a time" : "Shared scratch · logical positions (padding omitted)", "coop-load-axis");
-        const count = option.timesliced ? warp_threads * state.items : total;
+      if (has_exchange) {
+        add_text(20, 263, is_timesliced ? "Shared scratch · reused by one warp at a time" : "Shared scratch · logical positions (padding omitted)", "coop-load-axis");
+        const count = is_timesliced ? warp_threads * state.items : total;
         for (let slot = 0; slot < count; ++slot) {
           const x = geometry.scratch_x + slot * 34;
           svg.append(svg_element("rect", { x, y: 306, width: 28, height: 28, rx: 4, class: "coop-load-slot coop-load-shared-slot" }));
@@ -256,14 +258,24 @@
         return token;
       });
       query("[data-detail]").textContent = option.detail;
-      query("[data-scratch]").textContent = option.scratch;
-      query("[data-caution]").textContent = state.algorithm === "vectorize" && state.items === 1 ? "One item per thread has no multi-item vector bundle in this illustration. All three ownership layouts coincide." : option.caution;
+      const single_item_block_transpose = Boolean(option.exchange && state.items === 1);
+      query("[data-scratch]").textContent = single_item_block_transpose
+        ? "No exchange scratch for a single-item block call. Every thread already owns its destination item."
+        : option.scratch;
+      query("[data-caution]").textContent = state.algorithm === "vectorize" && state.items === 1
+        ? "One item per thread has no multi-item vector bundle in this illustration. All three ownership layouts coincide."
+        : single_item_block_transpose
+          ? (state.algorithm === "transpose"
+              ? "Blocked and striped ownership coincide for one item per thread. On warps and groups of lanes, transpose still uses scratch."
+              : "Single-item block warp transpose uses no scratch, and still requires a block size divisible by 32.")
+          : option.caution;
       query("[data-tile-size]").textContent = `8 threads × ${state.items} = ${total} values`;
       for (const button of option_grid.children) button.setAttribute("aria-pressed", button.dataset.algorithm === state.algorithm);
     }
 
     function render_frame() {
       const option = algorithms[state.algorithm];
+      const has_exchange = Boolean(option.exchange && state.items > 1);
       const phase = phases[state.phase];
       for (const button of query(".coop-load-phases").children) {
         if (Number(button.dataset.phase) === state.phase) button.setAttribute("aria-current", "step");
@@ -279,11 +291,11 @@
         token.setAttribute("aria-pressed", value === state.value);
         token.setAttribute("tabindex", value === state.value ? "0" : "-1");
       });
-      const route = ["memory", "read", ...(option.exchange ? ["scratch"] : []), "output"].map((location) => point(state.value, location));
+      const route = ["memory", "read", ...(has_exchange ? ["scratch"] : []), "output"].map((location) => point(state.value, location));
       query(".coop-load-path").setAttribute("d", route.map(([x, y], index) => `${index ? "L" : "M"} ${x + 14} ${y + 14}`).join(" "));
       const [access_thread, access_slot] = ownership(option.access, state.value, state.items);
       const [owner_thread, owner_slot] = ownership(option.result, state.value, state.items);
-      query("[data-inspection]").textContent = `Value ${state.value}: memory[${state.value}] → T${access_thread}, slot ${access_slot}${option.exchange ? " → shared scratch" : ""} → T${owner_thread}, slot ${owner_slot}.`;
+      query("[data-inspection]").textContent = `Value ${state.value}: memory[${state.value}] → T${access_thread}, slot ${access_slot}${has_exchange ? " → shared scratch" : ""} → T${owner_thread}, slot ${owner_slot}.`;
       const values = Array.from({ length: state.items }, (_, slot) => tokens.findIndex((token) => Number(token.dataset.ownerThread) === state.thread && Number(token.dataset.ownerSlot) === slot));
       query("[data-thread-inspection]").textContent = `T${state.thread} receives [${values.join(", ")}] in slots 0${state.items > 1 ? `–${state.items - 1}` : ""}.`;
       query("[data-status]").setAttribute("aria-live", state.playing ? "off" : "polite");

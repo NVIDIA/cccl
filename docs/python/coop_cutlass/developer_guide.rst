@@ -1109,9 +1109,11 @@ for these settings and header-selection controls.
 For generated-code claims, inspect the final linked cubin with ``cuobjdump``.
 ``runtime/test_block_load_store.py`` checks that direct Load/Store leave no
 provider calls, shared accesses, or barriers. The final-cubin check in
-``runtime/test_block_algorithms.py`` tests striped, vectorize, and transpose.
-It requires shared-memory accesses (``LDS`` and ``STS``) and barriers only
-for transpose. The final-cubin
+``runtime/test_block_algorithms.py`` tests striped, vectorize, and the
+transpose algorithms for one and four items per thread. Multi-item transpose
+cases require shared-memory accesses (``LDS`` and ``STS``) and barriers, while
+striped, vectorize, and single-item transpose cases require zero shared
+memory and forbid ``LDS``, ``STS``, and barriers. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
 barriers for physical and logical Warp operations. They forbid shared memory

@@ -85,6 +85,33 @@ _STORAGE_FREE_ALGORITHMS = frozenset(
         GroupLoadStoreAlgorithm.VECTORIZE,
     }
 )
+_BLOCK_SINGLE_ITEM_STORAGE_FREE_ALGORITHMS = frozenset(
+    {
+        GroupLoadStoreAlgorithm.TRANSPOSE,
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE,
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+    }
+)
+
+
+def _is_storage_free_for_semantics(operation: GroupLoadStoreSemantics) -> bool:
+    return operation.algorithm in _STORAGE_FREE_ALGORITHMS or (
+        operation.items_per_thread == 1
+        and operation.algorithm in _BLOCK_SINGLE_ITEM_STORAGE_FREE_ALGORITHMS
+    )
+
+
+def _is_storage_free_for_group(
+    resolved: ThreadGroup,
+    operation: GroupLoadStoreSemantics,
+) -> bool:
+    if operation.algorithm in _STORAGE_FREE_ALGORITHMS:
+        return True
+    return (
+        resolved.kind == "block"
+        and operation.items_per_thread == 1
+        and operation.algorithm in _BLOCK_SINGLE_ITEM_STORAGE_FREE_ALGORITHMS
+    )
 
 
 @dataclass(frozen=True, eq=False)
@@ -95,7 +122,8 @@ class GroupLoadStoreSemantics:
     Argument bindings distinguish omitted arguments, known constants, and
     runtime inputs. Storage fields carry the caller's requests until the
     selected algorithm's scratch needs are known. Direct, striped, and
-    vectorized transfers need no scratch, so their semantic keys exclude those
+    vectorized transfers need no scratch, and single-item transpose transfers
+    accept no caller storage descriptors; their semantic keys exclude those
     storage requests.
     """
 
@@ -180,10 +208,11 @@ class GroupLoadStoreSemantics:
         if not isinstance(self.storage_auto_sync, bool):
             raise TypeError("storage_auto_sync must be a bool")
         if self.storage_ownership is StorageOwnership.NONE:
-            if self.algorithm not in _STORAGE_FREE_ALGORITHMS:
+            if not _is_storage_free_for_semantics(self):
                 raise ValueError(
                     "storage-free group Load/Store is valid only for direct, "
-                    "striped, or vectorize algorithms"
+                    "striped, or vectorize algorithms, or single-item "
+                    "transpose algorithms"
                 )
             if any(
                 value is not None
@@ -250,7 +279,7 @@ class GroupLoadStoreSemantics:
             self.oob_default.semantic_key,
             self.offset.semantic_key,
         )
-        if self.algorithm in _STORAGE_FREE_ALGORITHMS:
+        if _is_storage_free_for_semantics(self):
             return (*common, StorageOwnership.NONE.value)
         return (
             *common,
@@ -343,10 +372,11 @@ def _plan_load_store(
     Called by ``plan_group_primitive`` after group resolution. Select the
     block or warp implementation and describe its participation, scratch
     storage, and storage-reuse synchronization requirements for later
-    compilation and lowering. Direct, striped, and vectorized algorithms
-    require no scratch storage or storage-reuse barrier; other algorithms
-    retain the requested storage ownership, layout constraints, sharing, and
-    automatic sync policy.
+    compilation and lowering. Direct, striped, and vectorized algorithms, as
+    well as block transpose algorithms with ``items_per_thread == 1``, require
+    no scratch storage or storage-reuse barrier; other algorithms retain the
+    requested storage ownership, layout constraints, sharing, and automatic
+    sync policy.
 
     Validate static ``valid_items`` against the group tile size and check that
     pointer offsets fit signed 64-bit arithmetic. Runtime bounds remain caller
@@ -476,6 +506,17 @@ def _plan_load_store(
                 f"cub::Warp{operation.kind.value.title()} does not support "
                 f"algorithm {operation.algorithm.value!r}",
             )
+        if (
+            operation.algorithm not in _STORAGE_FREE_ALGORITHMS
+            and operation.storage_ownership is StorageOwnership.NONE
+        ):
+            return _unsupported(
+                call,
+                resolved,
+                UnsupportedReasonCode.OPERATION_VARIANT,
+                f"cub::Warp{operation.kind.value.title()} algorithm "
+                f"{operation.algorithm.value!r} requires scratch storage",
+            )
         make_specialization = (
             make_warp_load_specialization
             if operation.kind is GroupLoadStoreKind.LOAD
@@ -511,7 +552,7 @@ def _plan_load_store(
             "signed 64-bit integer"
         )
     cpp_class = f"cub::{specialization.struct_name}"
-    storage_free = operation.algorithm in _STORAGE_FREE_ALGORITHMS
+    storage_free = _is_storage_free_for_group(resolved, operation)
     requirements = _build_execution_requirements(
         resolved,
         launch,

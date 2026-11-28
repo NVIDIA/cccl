@@ -25,8 +25,10 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -886,7 +888,14 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StripedToBlocked(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    StripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    if constexpr (ItemsPerThread == 1)
+    {
+      output_items[0] = input_items[0];
+    }
+    else
+    {
+      StripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    }
   }
 
   //! @rst
@@ -900,9 +909,12 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    StripedToBlocked(items, items);
+    if constexpr (ItemsPerThread > 1)
+    {
+      StripedToBlocked(items, items);
+    }
   }
 
   //! @rst
@@ -957,7 +969,14 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToStriped(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    BlockedToStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    if constexpr (ItemsPerThread == 1)
+    {
+      output_items[0] = input_items[0];
+    }
+    else
+    {
+      BlockedToStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    }
   }
 
   //! @rst
@@ -971,9 +990,12 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    BlockedToStriped(items, items);
+    if constexpr (ItemsPerThread > 1)
+    {
+      BlockedToStriped(items, items);
+    }
   }
 
   //! @rst
@@ -1028,7 +1050,26 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   WarpStripedToBlocked(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    if constexpr (ItemsPerThread == 1)
+    {
+      if constexpr (WarpTimeSlicing)
+      {
+        output_items[0] = input_items[0];
+      }
+      else if constexpr (!::cuda::std::is_same_v<T, OutputT> || ::cuda::is_trivially_copyable_v<T>)
+      {
+        _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+      }
+      else if (static_cast<const T*>(input_items) != static_cast<const T*>(output_items))
+      {
+        // Avoid placement-constructing a non-trivially-copyable element over its own live storage.
+        _CUB::detail::uninitialized_copy_single(output_items, input_items[0]);
+      }
+    }
+    else
+    {
+      WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    }
   }
 
   //! @rst
@@ -1042,9 +1083,12 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **warp-striped** and **blocked** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    WarpStripedToBlocked(items, items);
+    if constexpr (ItemsPerThread > 1)
+    {
+      WarpStripedToBlocked(items, items);
+    }
   }
 
   //! @rst
@@ -1102,7 +1146,14 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToWarpStriped(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    if constexpr (ItemsPerThread == 1)
+    {
+      output_items[0] = input_items[0];
+    }
+    else
+    {
+      BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+    }
   }
 
   //! @rst
@@ -1116,9 +1167,12 @@ public:
   //!
   //! @param[in,out] items
   //!   Items to exchange, converting between **blocked** and **warp-striped** arrangements.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped([[maybe_unused]] T (&items)[ItemsPerThread])
   {
-    BlockedToWarpStriped(items, items);
+    if constexpr (ItemsPerThread > 1)
+    {
+      BlockedToWarpStriped(items, items);
+    }
   }
 
   //! @}

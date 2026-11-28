@@ -8,6 +8,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
 
@@ -472,5 +473,218 @@ CUB_TEST_CASE("LoadDirectStripedVectorized converts the items to the destination
   const int* input = thrust::raw_pointer_cast(d_input.data()) + offset;
 
   test_load_direct_striped_vectorized<4>(d_expected, input);
+}
+
+template <cub::BlockLoadAlgorithm Algorithm, int BlockThreads, typename T>
+__global__ void single_item_transpose_load_kernel(
+  const T* d_in, T* d_out_full, T* d_out_guarded, T* d_out_default, int valid_items, T oob_default)
+{
+  using block_load_t = cub::BlockLoad<T, BlockThreads, 1, Algorithm>;
+  static_assert(::cuda::std::is_same_v<typename block_load_t::TempStorage, cub::Uninitialized<cub::NullType>>);
+  __shared__ typename block_load_t::TempStorage temp_storage;
+
+  T item_full[1]{};
+  block_load_t(temp_storage).Load(d_in, item_full);
+  d_out_full[threadIdx.x] = item_full[0];
+
+  T item_guarded[1]{oob_default};
+  block_load_t(temp_storage).Load(d_in, item_guarded, valid_items);
+  d_out_guarded[threadIdx.x] = item_guarded[0];
+
+  T item_default[1]{};
+  block_load_t(temp_storage).Load(d_in, item_default, valid_items, oob_default);
+  d_out_default[threadIdx.x] = item_default[0];
+}
+
+template <typename KernelFn>
+void run_single_item_load_check(int block_threads, int valid_items, int oob_default, bool check_default, KernelFn launch)
+{
+  c2h::device_vector<int> d_in(block_threads);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  c2h::device_vector<int> d_out_full(block_threads, 0);
+  c2h::device_vector<int> d_out_guarded(block_threads, 0);
+  c2h::device_vector<int> d_out_default(block_threads, 0);
+
+  launch(thrust::raw_pointer_cast(d_in.data()),
+         thrust::raw_pointer_cast(d_out_full.data()),
+         thrust::raw_pointer_cast(d_out_guarded.data()),
+         thrust::raw_pointer_cast(d_out_default.data()),
+         valid_items,
+         oob_default);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_out_full == d_in);
+
+  c2h::host_vector<int> expected_partial = d_in;
+  for (int i = valid_items; i < block_threads; ++i)
+  {
+    expected_partial[i] = oob_default;
+  }
+  const c2h::device_vector<int> d_expected_partial = expected_partial;
+  REQUIRE(d_out_guarded == d_expected_partial);
+  if (check_default)
+  {
+    REQUIRE(d_out_default == d_expected_partial);
+  }
+}
+
+template <cub::BlockLoadAlgorithm Algorithm>
+void test_single_item_transpose_load()
+{
+  static constexpr int block_threads = 128;
+  constexpr int valid_items          = 73;
+  constexpr int oob_default          = -1;
+
+  run_single_item_load_check(
+    block_threads,
+    valid_items,
+    oob_default,
+    true,
+    [](const int* d_in, int* d_out_full, int* d_out_guarded, int* d_out_default, int valid, int oob) {
+      single_item_transpose_load_kernel<Algorithm, block_threads, int>
+        <<<1, block_threads>>>(d_in, d_out_full, d_out_guarded, d_out_default, valid, oob);
+    });
+}
+
+struct non_assignable_load_item
+{
+  int value{};
+
+  __host__ __device__ non_assignable_load_item() = default;
+  __host__ __device__ explicit non_assignable_load_item(int v)
+      : value(v)
+  {}
+  __host__ __device__ non_assignable_load_item(const non_assignable_load_item&) = default;
+  non_assignable_load_item& operator=(const non_assignable_load_item&)          = delete;
+  non_assignable_load_item& operator=(int)                                      = delete;
+};
+
+template <int BlockThreads>
+__global__ void single_item_warp_transpose_non_assignable_load_kernel(
+  const int* d_in, int* d_out_full, int* d_out_guarded, int valid_items, int oob_default)
+{
+  using block_load_t = cub::BlockLoad<non_assignable_load_item, BlockThreads, 1, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
+  static_assert(::cuda::std::is_same_v<typename block_load_t::TempStorage, cub::Uninitialized<cub::NullType>>);
+  __shared__ typename block_load_t::TempStorage temp_storage;
+
+  non_assignable_load_item item_full[1]{};
+  block_load_t(temp_storage).Load(d_in, item_full);
+  d_out_full[threadIdx.x] = item_full[0].value;
+
+  non_assignable_load_item item_guarded[1]{non_assignable_load_item{oob_default}};
+  block_load_t(temp_storage).Load(d_in, item_guarded, valid_items);
+  d_out_guarded[threadIdx.x] = item_guarded[0].value;
+}
+
+void test_single_item_warp_transpose_non_assignable_load()
+{
+  static constexpr int block_threads = 128;
+  constexpr int valid_items          = 73;
+  constexpr int oob_default          = -1;
+
+  run_single_item_load_check(
+    block_threads,
+    valid_items,
+    oob_default,
+    false,
+    [](const int* d_in, int* d_out_full, int* d_out_guarded, int*, int valid, int oob) {
+      single_item_warp_transpose_non_assignable_load_kernel<block_threads>
+        <<<1, block_threads>>>(d_in, d_out_full, d_out_guarded, valid, oob);
+    });
+}
+
+struct construct_and_copy_assign_load_item
+{
+  int value{};
+
+  __host__ __device__ construct_and_copy_assign_load_item() = default;
+  __host__ __device__ explicit construct_and_copy_assign_load_item(int v)
+      : value(v)
+  {}
+  __host__ __device__ construct_and_copy_assign_load_item(const construct_and_copy_assign_load_item&) = default;
+  __host__ __device__ construct_and_copy_assign_load_item&
+  operator=(const construct_and_copy_assign_load_item&) = default;
+  construct_and_copy_assign_load_item& operator=(int)   = delete;
+};
+
+template <cub::BlockLoadAlgorithm Algorithm, int BlockThreads>
+__global__ void single_item_warp_transpose_construct_copy_assign_kernel(
+  const int* d_in, int* d_out_full, int* d_out_guarded, int* d_out_default, int valid_items, int oob_default)
+{
+  using block_load_t = cub::BlockLoad<construct_and_copy_assign_load_item, BlockThreads, 1, Algorithm>;
+  static_assert(::cuda::std::is_same_v<typename block_load_t::TempStorage, cub::Uninitialized<cub::NullType>>);
+  __shared__ typename block_load_t::TempStorage temp_storage;
+
+  construct_and_copy_assign_load_item item_full[1]{};
+  block_load_t(temp_storage).Load(d_in, item_full);
+  d_out_full[threadIdx.x] = item_full[0].value;
+
+  construct_and_copy_assign_load_item item_guarded[1]{construct_and_copy_assign_load_item{oob_default}};
+  block_load_t(temp_storage).Load(d_in, item_guarded, valid_items);
+  d_out_guarded[threadIdx.x] = item_guarded[0].value;
+
+  construct_and_copy_assign_load_item item_default[1]{};
+  block_load_t(temp_storage).Load(d_in, item_default, valid_items, construct_and_copy_assign_load_item{oob_default});
+  d_out_default[threadIdx.x] = item_default[0].value;
+}
+
+template <cub::BlockLoadAlgorithm Algorithm>
+void test_single_item_warp_transpose_construct_copy_assign_load()
+{
+  static constexpr int block_threads = 128;
+  constexpr int valid_items          = 73;
+  constexpr int oob_default          = -1;
+
+  run_single_item_load_check(
+    block_threads,
+    valid_items,
+    oob_default,
+    true,
+    [](const int* d_in, int* d_out_full, int* d_out_guarded, int* d_out_default, int valid, int oob) {
+      single_item_warp_transpose_construct_copy_assign_kernel<Algorithm, block_threads>
+        <<<1, block_threads>>>(d_in, d_out_full, d_out_guarded, d_out_default, valid, oob);
+    });
+}
+
+CUB_TEST_CASE("BlockLoad uses NullType TempStorage when ItemsPerThread is 1", "[load][block]", CUB_SMALL)
+{
+  using null_storage_t = cub::Uninitialized<cub::NullType>;
+
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_DIRECT>::TempStorage, null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_STRIPED>::TempStorage, null_storage_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_VECTORIZE>::TempStorage,
+                                        null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_STRIPED_VECTORIZED>::TempStorage,
+                           null_storage_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_TRANSPOSE>::TempStorage,
+                                        null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_WARP_TRANSPOSE>::TempStorage,
+                           null_storage_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>::TempStorage,
+                           null_storage_t>);
+  STATIC_REQUIRE(sizeof(typename cub::BlockLoad<int, 128, 1, cub::BLOCK_LOAD_WARP_TRANSPOSE>::TempStorage)
+                 == sizeof(null_storage_t));
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockLoad<double, 64, 1, cub::BLOCK_LOAD_TRANSPOSE>::TempStorage) == sizeof(null_storage_t));
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockLoad<int, 128, 4, cub::BLOCK_LOAD_TRANSPOSE>::TempStorage) > sizeof(null_storage_t));
+  STATIC_REQUIRE(
+    sizeof(typename cub::BlockLoad<int, 128, 4, cub::BLOCK_LOAD_WARP_TRANSPOSE>::TempStorage) > sizeof(null_storage_t));
+  STATIC_REQUIRE(sizeof(typename cub::BlockLoad<int, 128, 4, cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>::TempStorage)
+                 > sizeof(null_storage_t));
+
+  test_single_item_transpose_load<cub::BLOCK_LOAD_TRANSPOSE>();
+  test_single_item_transpose_load<cub::BLOCK_LOAD_WARP_TRANSPOSE>();
+  test_single_item_transpose_load<cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>();
+  test_single_item_warp_transpose_non_assignable_load();
+  test_single_item_warp_transpose_construct_copy_assign_load<cub::BLOCK_LOAD_WARP_TRANSPOSE>();
+  test_single_item_warp_transpose_construct_copy_assign_load<cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>();
 }
 #endif
