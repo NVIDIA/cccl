@@ -32,10 +32,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::find_bound_sorted_values

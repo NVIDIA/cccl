@@ -19,6 +19,7 @@
 #include <cstring>
 #include <format>
 #include <mutex>
+#include <sstream>
 #include <vector>
 
 #include "cccl/c/types.h"

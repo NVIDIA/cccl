@@ -86,3 +86,18 @@ set_tests_properties(
     PASS_REGULAR_EXPRESSION
       "Dispatching DeviceReduce on compute capability [0-9]+\\.[0-9]+ with tuning: ReducePolicy \\{"
 )
+
+# Same smoke test without including <sstream>: the dispatch is still logged, but the tuning policy cannot be printed.
+cub_add_test(dispatch_no_sstream_test_target "logging.dispatch_no_sstream" "" "logging_dispatch_smoke.cu" 0)
+cub_configure_cuda_target(${dispatch_no_sstream_test_target} RDC OFF)
+target_compile_definitions(
+  ${dispatch_no_sstream_test_target}
+  PRIVATE LOGGING_TEST_NO_SSTREAM
+)
+set_tests_properties(
+  ${dispatch_no_sstream_test_target}
+  PROPERTIES
+    ENVIRONMENT "CCCL_EXPERIMENTAL_LOGGING=1"
+    PASS_REGULAR_EXPRESSION
+      "Dispatching DeviceReduce on compute capability [0-9]+\\.[0-9]+ with tuning: <unavailable"
+)

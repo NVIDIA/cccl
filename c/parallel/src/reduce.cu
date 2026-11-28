@@ -25,6 +25,7 @@
 #include <format>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
