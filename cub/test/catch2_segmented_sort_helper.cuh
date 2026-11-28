@@ -1167,29 +1167,33 @@ public:
 template <cub::SortOrder Order>
 struct lrb_sort_launcher_t
 {
+  int* selector{};
+
   template <typename KeyT, typename BeginIterator, typename EndIterator>
   cudaError_t operator()(
     std::uint8_t* storage,
     std::size_t& bytes,
-    const KeyT* input,
+    KeyT* input,
     KeyT* output,
     ::cuda::std::int64_t num_items,
-    unsigned segments,
+    ::cuda::std::int64_t segments,
     BeginIterator begins,
     EndIterator ends) const
   {
     using key_type = unwrap_value_t<KeyT>;
     cub::detail::segmented_sort_lrb::partition_result result;
-    return cub::detail::segmented_sort_lrb::dispatch<Order>(
-      storage,
-      bytes,
-      begins,
-      ends,
-      segments,
-      num_items,
-      reinterpret_cast<const key_type*>(input),
-      reinterpret_cast<key_type*>(output),
-      result);
+    cub::DoubleBuffer<key_type> keys(reinterpret_cast<key_type*>(input), reinterpret_cast<key_type*>(output));
+    if (selector)
+    {
+      keys.selector = *selector;
+    }
+    const auto error = cub::detail::segmented_sort_lrb::dispatch<Order>(
+      storage, bytes, begins, ends, segments, num_items, keys, selector != nullptr, result);
+    if (selector && error == cudaSuccess)
+    {
+      *selector = keys.selector;
+    }
+    return error;
   }
 };
 
@@ -1232,10 +1236,6 @@ void call_cub_segmented_sort_api(
     }
     else
     {
-      if (double_buffer)
-      {
-        SKIP("The internal LRB backend currently supports pointer-based key sorting only.");
-      }
       ::cuda::compute_capability cc{};
       REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
       if (!cub::detail::segmented_sort_lrb::can_use_lrb<unwrap_value_t<KeyT>>(cc))
@@ -1245,24 +1245,20 @@ void call_cub_segmented_sort_api(
       INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
       const auto run = [&](auto launcher) {
         launch(launcher,
-               static_cast<const KeyT*>(input_keys),
+               input_keys,
                output_keys,
                num_items,
-               static_cast<unsigned>(num_segments),
+               num_segments,
                d_begin_offsets,
                thrust::device_pointer_cast(d_end_offsets));
       };
       if (descending)
       {
-        run(lrb_sort_launcher_t<cub::SortOrder::Descending>{});
+        run(lrb_sort_launcher_t<cub::SortOrder::Descending>{double_buffer ? keys_selector : nullptr});
       }
       else
       {
-        run(lrb_sort_launcher_t<cub::SortOrder::Ascending>{});
-      }
-      if (keys_selector)
-      {
-        *keys_selector = 0;
+        run(lrb_sort_launcher_t<cub::SortOrder::Ascending>{double_buffer ? keys_selector : nullptr});
       }
     }
   }
@@ -1348,7 +1344,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   const bool stable_sort     = GENERATE(unstable, stable);
   const bool sort_descending = GENERATE(ascending, descending);
-  const bool sort_buffers    = test_lrb ? pointers : GENERATE(pointers, double_buffer);
+  const bool sort_buffers    = GENERATE(pointers, double_buffer);
 
   CAPTURE(c2h::type_name<KeyT>(),
           c2h::type_name<ValueT>(),
@@ -1424,7 +1420,6 @@ void test_segments_random(
   const int* d_begin_offsets,
   const int* d_end_offsets)
 {
-  constexpr bool test_lrb   = Algorithm == test_algorithm::lrb;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   CAPTURE(c2h::type_name<KeyT>(), //
@@ -1502,13 +1497,6 @@ void test_segments_random(
   {
     for (const bool sort_buffers : {pointers, double_buffer})
     {
-      if constexpr (test_lrb)
-      {
-        if (sort_buffers)
-        {
-          continue; // DoubleBuffer remains covered by the existing-backend variant.
-        }
-      }
       CAPTURE(stable_sort, sort_descending, sort_buffers);
 
       if (need_reset)

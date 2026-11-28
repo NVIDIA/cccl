@@ -157,7 +157,8 @@ struct sort_kernel_list_t
   }
 };
 
-// Non-owning views into temporary storage; all bins share one segment-ID queue.
+// All bins share one queue of window-local segment IDs. Dispatch reuses this storage for each window.
+// After the sort completes, these views describe the final window.
 struct partition_result
 {
   unsigned* bin_offsets{}; // Bounded bin count + 2 offsets, including overflow's end.
